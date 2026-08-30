@@ -2,7 +2,7 @@
 
 ## Project overview
 
-`mpvium` (mpvium) is an Android video player fork based on `mpv-android` and
+`mpvium` is an Android video player fork based on `mpv-android` and
 libmpv. It uses Kotlin, Jetpack Compose, Material 3, Room, Koin, and native
 components for media playback and media analysis.
 
@@ -46,6 +46,17 @@ The library's public Kotlin package is `net.mediaarea.mediainfo.lib`. Do not
 rename that package merely to change the GitHub owner or repository identity.
 
 ## Build and verification
+
+### Local download and installation policy
+
+- Do not install or download software, dependencies, SDKs, JDKs, Gradle
+  distributions, native toolchains, or other files on the local system unless
+  the user explicitly authorizes it.
+- Before running a command that may download or install anything, inspect the
+  local environment and ask for explicit approval if the download is required.
+- Prefer GitHub Actions for builds and verification that require downloads or
+  unavailable Android tooling. Do not run the Gradle wrapper locally merely to
+  test whether dependencies can be resolved without user approval.
 
 Use the Gradle wrapper; do not require a global Gradle installation:
 
@@ -101,4 +112,3 @@ GitHub Actions is the preferred fallback when the local machine lacks Android
 SDK, NDK, CMake, or network access. Push the project and inspect the workflow
 under the repository's **Actions** tab. Download generated APKs from the
 workflow's **Artifacts** section.
-

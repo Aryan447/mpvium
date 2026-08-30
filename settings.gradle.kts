@@ -23,6 +23,10 @@ dependencyResolutionManagement {
       content {
         // Only use JitPack for specific dependencies to avoid unnecessary checks
         includeGroup("com.github.aryan447")
+        includeGroup("com.github.abdallahmehiz")
+        includeGroup("com.github.K1rakishou")
+        includeGroup("com.github.thegrizzlylabs")
+        includeGroup("com.github.nanihadesuka")
       }
     }
   }

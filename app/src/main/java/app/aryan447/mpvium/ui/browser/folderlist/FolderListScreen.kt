@@ -84,6 +84,7 @@ import android.util.Log
 import app.aryan447.mpvium.domain.browser.FileSystemItem
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.FolderSortType
 import app.aryan447.mpvium.preferences.FolderViewMode
@@ -154,7 +155,7 @@ object FolderListScreen : Screen {
     val browserPreferences = koinInject<BrowserPreferences>()
     val gesturePreferences = koinInject<GesturePreferences>()
     val foldersPreferences = koinInject<FoldersPreferences>()
-    val dPreferences = koinInject<app.aryan447advance.mpvium.preferences.AdvancedPreferences>()
+    val advancedPreferences = koinInject<AdvancedPreferences>()
 
     // State collection
     val videoFolders by viewModel.videoFolders.collectAsState()
