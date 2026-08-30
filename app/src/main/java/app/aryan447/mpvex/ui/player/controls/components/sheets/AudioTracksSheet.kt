@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.sheets
+package app.aryan447.mpvium.ui.player.controls.components.sheets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,12 +26,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.AudioChannels
-import app.aryan447.mpvex.preferences.AudioPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.ui.player.TrackNode
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.AudioChannels
+import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.player.TrackNode
+import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.ImmutableList
 import org.koin.compose.koinInject

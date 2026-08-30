@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.utils.storage
+package app.aryan447.mpvium.utils.storage
 
 import android.content.Context
 import android.net.Uri
@@ -8,8 +8,8 @@ import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.provider.MediaStore
 import android.util.Log
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.utils.media.MediaInfoOps
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.utils.media.MediaInfoOps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext

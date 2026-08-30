@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.presentation.components.pullrefresh
+package app.aryan447.mpvium.presentation.components.pullrefresh
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
@@ -36,9 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.ui.utils.LocalBackStack
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals

@@ -1,10 +1,10 @@
-package app.aryan447.mpvex.utils.history
+package app.aryan447.mpvium.utils.history
 
 import android.annotation.SuppressLint
 import android.net.Uri
-import app.aryan447.mpvex.database.entities.RecentlyPlayedEntity
-import app.aryan447.mpvex.domain.recentlyplayed.repository.RecentlyPlayedRepository
-import app.aryan447.mpvex.preferences.AdvancedPreferences
+import app.aryan447.mpvium.database.entities.RecentlyPlayedEntity
+import app.aryan447.mpvium.domain.recentlyplayed.repository.RecentlyPlayedRepository
+import app.aryan447.mpvium.preferences.AdvancedPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -90,7 +90,7 @@ object RecentlyPlayedOps {
     }
   }
 
-  suspend fun getLastPlayedEntity(): app.aryan447.mpvex.database.entities.RecentlyPlayedEntity? {
+  suspend fun getLastPlayedEntity(): app.aryan447.mpvium.database.entities.RecentlyPlayedEntity? {
     return withContext(Dispatchers.IO) {
       val recent = kotlin.runCatching { repository.getRecentlyPlayed(limit = 50) }.getOrDefault(emptyList())
       for (entity in recent) {

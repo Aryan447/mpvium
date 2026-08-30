@@ -1,11 +1,11 @@
 
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
-import app.aryan447.mpvex.preferences.preference.PreferenceStore
-import app.aryan447.mpvex.preferences.preference.getEnum
-import app.aryan447.mpvex.ui.player.PlayerOrientation
-import app.aryan447.mpvex.ui.player.RepeatMode
-import app.aryan447.mpvex.ui.player.VideoAspect
+import app.aryan447.mpvium.preferences.preference.PreferenceStore
+import app.aryan447.mpvium.preferences.preference.getEnum
+import app.aryan447.mpvium.ui.player.PlayerOrientation
+import app.aryan447.mpvium.ui.player.RepeatMode
+import app.aryan447.mpvium.ui.player.VideoAspect
 
 class PlayerPreferences(
   preferenceStore: PreferenceStore,

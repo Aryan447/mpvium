@@ -1,8 +1,8 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import androidx.annotation.StringRes
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.presentation.Screen
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.presentation.Screen
 
 /**
  * Represents a searchable preference item.

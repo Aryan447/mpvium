@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls
+package app.aryan447.mpvium.ui.player.controls
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -53,17 +53,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `is`.xyz.mpv.MPVLib
-import app.aryan447.mpvex.preferences.AudioPreferences
-import app.aryan447.mpvex.preferences.GesturePreferences
-import app.aryan447.mpvex.preferences.PlayerPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.components.LeftSideOvalShape
-import app.aryan447.mpvex.presentation.components.RightSideOvalShape
-import app.aryan447.mpvex.ui.player.Panels
-import app.aryan447.mpvex.ui.player.PlayerUpdates
-import app.aryan447.mpvex.ui.player.PlayerViewModel
-import app.aryan447.mpvex.ui.player.SingleActionGesture
-import app.aryan447.mpvex.ui.theme.playerRippleConfiguration
+import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.GesturePreferences
+import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.components.LeftSideOvalShape
+import app.aryan447.mpvium.presentation.components.RightSideOvalShape
+import app.aryan447.mpvium.ui.player.Panels
+import app.aryan447.mpvium.ui.player.PlayerUpdates
+import app.aryan447.mpvium.ui.player.PlayerViewModel
+import app.aryan447.mpvium.ui.player.SingleActionGesture
+import app.aryan447.mpvium.ui.theme.playerRippleConfiguration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch

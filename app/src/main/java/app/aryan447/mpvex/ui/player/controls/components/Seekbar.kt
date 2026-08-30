@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components
+package app.aryan447.mpvium.ui.player.controls.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -55,9 +55,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import app.aryan447.mpvex.ui.player.controls.LocalPlayerButtonsClickEvent
-import app.aryan447.mpvex.ui.theme.spacing
-import app.aryan447.mpvex.preferences.SeekbarStyle
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
+import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.preferences.SeekbarStyle
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList

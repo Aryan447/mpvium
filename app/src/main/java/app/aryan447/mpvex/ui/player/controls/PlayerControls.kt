@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls
+package app.aryan447.mpvium.ui.player.controls
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
@@ -89,35 +89,35 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.AudioPreferences
-import app.aryan447.mpvex.preferences.PlayerPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.preferences.preference.deleteAndGet
-import app.aryan447.mpvex.preferences.preference.plusAssign
-import app.aryan447.mpvex.preferences.preference.minusAssign
-import app.aryan447.mpvex.ui.player.Decoder.Companion.getDecoderFromValue
-import app.aryan447.mpvex.ui.player.Panels
-import app.aryan447.mpvex.ui.player.PlayerActivity
-import app.aryan447.mpvex.ui.player.PlayerUpdates
-import app.aryan447.mpvex.ui.player.PlayerViewModel
-import app.aryan447.mpvex.ui.player.Sheets
-import app.aryan447.mpvex.ui.player.VideoAspect
-import app.aryan447.mpvex.ui.player.controls.components.BrightnessSlider
-import app.aryan447.mpvex.ui.player.controls.components.CompactSpeedIndicator
-import app.aryan447.mpvex.ui.player.controls.components.ControlsButton
-import app.aryan447.mpvex.ui.player.controls.components.MultipleSpeedPlayerUpdate
-import app.aryan447.mpvex.ui.player.controls.components.SeekPlayerUpdate
-import app.aryan447.mpvex.ui.player.controls.components.SeekbarWithTimers
-import app.aryan447.mpvex.ui.player.controls.components.SlideToUnlock
-import app.aryan447.mpvex.ui.player.controls.components.SpeedControlSlider
-import app.aryan447.mpvex.ui.player.controls.components.TextPlayerUpdate
-import app.aryan447.mpvex.ui.player.controls.components.VolumeSlider
-import app.aryan447.mpvex.ui.player.controls.components.sheets.toFixed
-import app.aryan447.mpvex.ui.theme.controlColor
-import app.aryan447.mpvex.ui.theme.playerRippleConfiguration
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.preferences.preference.deleteAndGet
+import app.aryan447.mpvium.preferences.preference.plusAssign
+import app.aryan447.mpvium.preferences.preference.minusAssign
+import app.aryan447.mpvium.ui.player.Decoder.Companion.getDecoderFromValue
+import app.aryan447.mpvium.ui.player.Panels
+import app.aryan447.mpvium.ui.player.PlayerActivity
+import app.aryan447.mpvium.ui.player.PlayerUpdates
+import app.aryan447.mpvium.ui.player.PlayerViewModel
+import app.aryan447.mpvium.ui.player.Sheets
+import app.aryan447.mpvium.ui.player.VideoAspect
+import app.aryan447.mpvium.ui.player.controls.components.BrightnessSlider
+import app.aryan447.mpvium.ui.player.controls.components.CompactSpeedIndicator
+import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
+import app.aryan447.mpvium.ui.player.controls.components.MultipleSpeedPlayerUpdate
+import app.aryan447.mpvium.ui.player.controls.components.SeekPlayerUpdate
+import app.aryan447.mpvium.ui.player.controls.components.SeekbarWithTimers
+import app.aryan447.mpvium.ui.player.controls.components.SlideToUnlock
+import app.aryan447.mpvium.ui.player.controls.components.SpeedControlSlider
+import app.aryan447.mpvium.ui.player.controls.components.TextPlayerUpdate
+import app.aryan447.mpvium.ui.player.controls.components.VolumeSlider
+import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
+import app.aryan447.mpvium.ui.theme.controlColor
+import app.aryan447.mpvium.ui.theme.playerRippleConfiguration
+import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.persistentListOf
@@ -224,7 +224,7 @@ fun PlayerControls(
       bottomRightControlsPref,
       bottomLeftControlsPref,
     ) {
-      val usedButtons = mutableSetOf<app.aryan447.mpvex.preferences.PlayerButton>()
+      val usedButtons = mutableSetOf<app.aryan447.mpvium.preferences.PlayerButton>()
       val topR = appearancePreferences.parseButtons(topRightControlsPref, usedButtons)
       val bottomR = appearancePreferences.parseButtons(bottomRightControlsPref, usedButtons)
       val bottomL = appearancePreferences.parseButtons(bottomLeftControlsPref, usedButtons)
@@ -548,9 +548,9 @@ fun PlayerControls(
             is PlayerUpdates.RepeatMode -> {
               val mode = (currentPlayerUpdate as PlayerUpdates.RepeatMode).mode
               val text = when (mode) {
-                app.aryan447.mpvex.ui.player.RepeatMode.OFF -> "Repeat: Off"
-                app.aryan447.mpvex.ui.player.RepeatMode.ONE -> "Repeat: Current file"
-                app.aryan447.mpvex.ui.player.RepeatMode.ALL -> {
+                app.aryan447.mpvium.ui.player.RepeatMode.OFF -> "Repeat: Off"
+                app.aryan447.mpvium.ui.player.RepeatMode.ONE -> "Repeat: Current file"
+                app.aryan447.mpvium.ui.player.RepeatMode.ALL -> {
                   if (playlistMode && viewModel.hasPlaylistSupport()) {
                     "Repeat: All playlist"
                   } else {

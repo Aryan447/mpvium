@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 /**
  * High-accuracy media filename parser inspired by kahari-parser (GizmoH2o/kahari-parser).

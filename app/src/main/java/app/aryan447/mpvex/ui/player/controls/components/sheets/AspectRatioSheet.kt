@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.sheets
+package app.aryan447.mpvium.ui.player.controls.components.sheets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,8 +33,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.presentation.components.PlayerSheet
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.presentation.components.PlayerSheet
+import app.aryan447.mpvium.ui.theme.spacing
 
 data class AspectRatio(
   val label: String,

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming
+package app.aryan447.mpvium.ui.browser.networkstreaming
 
 import android.app.Application
 import android.content.Intent
@@ -8,10 +8,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkFile
-import app.aryan447.mpvex.domain.network.NetworkProtocol
-import app.aryan447.mpvex.repository.NetworkRepository
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkProtocol
+import app.aryan447.mpvium.repository.NetworkRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -85,7 +85,7 @@ class NetworkBrowserViewModel(
         val useProxy = connection.protocol in PROXY_PROTOCOLS
 
         val uri = if (useProxy) {
-          val proxy = app.aryan447.mpvex.ui.browser.networkstreaming.proxy.NetworkStreamingProxy.getInstance()
+          val proxy = app.aryan447.mpvium.ui.browser.networkstreaming.proxy.NetworkStreamingProxy.getInstance()
           val streamId = "${connectionId}_${System.currentTimeMillis()}"
           val proxyUrl = proxy.registerStream(
             streamId = streamId,
@@ -102,7 +102,7 @@ class NetworkBrowserViewModel(
 
         // Launch the player
         val intent = Intent(Intent.ACTION_VIEW, uri)
-        intent.setClass(application, app.aryan447.mpvex.ui.player.PlayerActivity::class.java)
+        intent.setClass(application, app.aryan447.mpvium.ui.player.PlayerActivity::class.java)
         intent.putExtra("internal_launch", true)
         intent.putExtra("launch_source", "network_stream")
         intent.putExtra("title", file.name)

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow

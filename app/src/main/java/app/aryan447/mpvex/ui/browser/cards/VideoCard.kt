@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.cards
+package app.aryan447.mpvium.ui.browser.cards
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -41,12 +41,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.thumbnail.ThumbnailRepository
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import androidx.compose.foundation.combinedClickable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filter

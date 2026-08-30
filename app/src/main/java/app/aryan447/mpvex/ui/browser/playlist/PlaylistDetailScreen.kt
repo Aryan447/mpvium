@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.playlist
+package app.aryan447.mpvium.ui.browser.playlist
 
 import android.content.Intent
 import android.net.Uri
@@ -58,20 +58,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.aryan447.mpvex.database.repository.PlaylistRepository
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.preferences.GesturePreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.components.pullrefresh.PullRefreshBox
-import app.aryan447.mpvex.ui.browser.cards.M3UVideoCard
-import app.aryan447.mpvex.ui.browser.cards.VideoCard
-import app.aryan447.mpvex.ui.browser.components.BrowserTopBar
-import app.aryan447.mpvex.ui.browser.selection.rememberSelectionManager
-import app.aryan447.mpvex.ui.player.PlayerActivity
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.media.MediaInfoOps
-import app.aryan447.mpvex.utils.media.MediaUtils
+import app.aryan447.mpvium.database.repository.PlaylistRepository
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.preferences.GesturePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
+import app.aryan447.mpvium.ui.browser.cards.M3UVideoCard
+import app.aryan447.mpvium.ui.browser.cards.VideoCard
+import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
+import app.aryan447.mpvium.ui.player.PlayerActivity
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.media.MediaInfoOps
+import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
@@ -259,7 +259,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
                       selectionManager.clear()
                     } else {
                       // For regular playlists, show MediaInfo activity
-                      val intent = Intent(context, app.aryan447.mpvex.ui.mediainfo.MediaInfoActivity::class.java)
+                      val intent = Intent(context, app.aryan447.mpvium.ui.mediainfo.MediaInfoActivity::class.java)
                       intent.action = Intent.ACTION_VIEW
                       intent.data = item.video.uri
                       context.startActivity(intent)
@@ -543,7 +543,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
 private fun PlaylistVideoListContent(
   videoItems: List<PlaylistVideoItem>,
   isLoading: Boolean,
-  selectionManager: app.aryan447.mpvex.ui.browser.selection.SelectionManager<PlaylistVideoItem, Int>,
+  selectionManager: app.aryan447.mpvium.ui.browser.selection.SelectionManager<PlaylistVideoItem, Int>,
   isReorderMode: Boolean,
   onReorder: (Int, Int) -> Unit,
   onVideoItemClick: (PlaylistVideoItem) -> Unit,
@@ -553,7 +553,7 @@ private fun PlaylistVideoListContent(
   isM3uPlaylist: Boolean = false,
 ) {
   val gesturePreferences = koinInject<GesturePreferences>()
-  val browserPreferences = koinInject<app.aryan447.mpvex.preferences.BrowserPreferences>()
+  val browserPreferences = koinInject<app.aryan447.mpvium.preferences.BrowserPreferences>()
   val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
   val showSubtitleIndicator by browserPreferences.showSubtitleIndicator.collectAsState()
 

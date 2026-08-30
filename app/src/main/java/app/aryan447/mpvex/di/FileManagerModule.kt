@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.di
+package app.aryan447.mpvium.di
 
 import com.github.k1rakishou.fsaf.FileManager
 import org.koin.dsl.module

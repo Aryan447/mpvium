@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.recentlyplayed
+package app.aryan447.mpvium.ui.browser.recentlyplayed
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
@@ -56,27 +56,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.aryan447.mpvex.database.repository.PlaylistRepository
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.media.model.VideoFolder
-import app.aryan447.mpvex.domain.thumbnail.ThumbnailRepository
-import app.aryan447.mpvex.preferences.AdvancedPreferences
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.preferences.GesturePreferences
-import app.aryan447.mpvex.preferences.MediaLayoutMode
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.components.ConfirmDialog
-import app.aryan447.mpvex.presentation.components.pullrefresh.PullRefreshBox
-import app.aryan447.mpvex.ui.browser.cards.FolderCard
-import app.aryan447.mpvex.ui.browser.cards.VideoCard
-import app.aryan447.mpvex.ui.browser.components.BrowserTopBar
-import app.aryan447.mpvex.ui.browser.playlist.PlaylistDetailScreen
-import app.aryan447.mpvex.ui.browser.selection.rememberSelectionManager
-import app.aryan447.mpvex.ui.browser.sheets.PlayLinkSheet
-import app.aryan447.mpvex.ui.browser.states.EmptyState
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.media.MediaUtils
+import app.aryan447.mpvium.database.repository.PlaylistRepository
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.media.model.VideoFolder
+import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
+import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.GesturePreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.ConfirmDialog
+import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
+import app.aryan447.mpvium.ui.browser.cards.FolderCard
+import app.aryan447.mpvium.ui.browser.cards.VideoCard
+import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.playlist.PlaylistDetailScreen
+import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
+import app.aryan447.mpvium.ui.browser.sheets.PlayLinkSheet
+import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
@@ -102,7 +102,7 @@ object RecentlyPlayedScreen : Screen {
     val deleteFilesCheckbox = rememberSaveable { mutableStateOf(false) }
     val advancedPreferences = koinInject<AdvancedPreferences>()
     val enableRecentlyPlayed by advancedPreferences.enableRecentlyPlayed.collectAsState()
-    val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+    val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
 
     // FAB visibility for scroll-based hiding
     val isFabVisible = remember { mutableStateOf(true) }
@@ -176,7 +176,7 @@ object RecentlyPlayedScreen : Screen {
     val gridState = remember { LazyGridState() }
     val browserPreferences = koinInject<BrowserPreferences>()
     val mediaLayoutMode by browserPreferences.mediaLayoutMode.collectAsState()
-    app.aryan447.mpvex.ui.browser.fab.FabScrollHelper.trackScrollForFabVisibility(
+    app.aryan447.mpvium.ui.browser.fab.FabScrollHelper.trackScrollForFabVisibility(
       listState = listState,
       gridState = if (mediaLayoutMode == MediaLayoutMode.GRID) gridState else null,
       isFabVisible = isFabVisible,
@@ -195,7 +195,7 @@ object RecentlyPlayedScreen : Screen {
             onCancelSelection = { selectionManager.clear() },
             onSortClick = null, // No sorting in recently played
             onSettingsClick = {
-              backStack.add(app.aryan447.mpvex.ui.preferences.PreferencesScreen)
+              backStack.add(app.aryan447.mpvium.ui.preferences.PreferencesScreen)
             },
             isSingleSelection = selectionManager.isSingleSelection,
             onInfoClick = null, // No info in recently played
@@ -260,7 +260,7 @@ object RecentlyPlayedScreen : Screen {
             onClick = {
               isFabExpanded.value = false
               coroutineScope.launch {
-                val recentlyPlayedVideos = app.aryan447.mpvex.utils.history.RecentlyPlayedOps.getRecentlyPlayed(limit = 1)
+                val recentlyPlayedVideos = app.aryan447.mpvium.utils.history.RecentlyPlayedOps.getRecentlyPlayed(limit = 1)
                 val lastPlayed = recentlyPlayedVideos.firstOrNull()
                 if (lastPlayed != null) {
                   MediaUtils.playFile(lastPlayed.filePath, context, "recently_played_button")
@@ -419,7 +419,7 @@ object RecentlyPlayedScreen : Screen {
 private fun RecentItemsContent(
   recentItems: List<RecentlyPlayedItem>,
   playlistRepository: PlaylistRepository,
-  selectionManager: app.aryan447.mpvex.ui.browser.selection.SelectionManager<RecentlyPlayedItem, String>,
+  selectionManager: app.aryan447.mpvium.ui.browser.selection.SelectionManager<RecentlyPlayedItem, String>,
   onVideoClick: (Video) -> Unit,
   onPlaylistClick: suspend (RecentlyPlayedItem.PlaylistItem) -> Unit,
   modifier: Modifier = Modifier,
@@ -428,7 +428,7 @@ private fun RecentItemsContent(
   gridState: LazyGridState,
 ) {
   val gesturePreferences = koinInject<GesturePreferences>()
-  val browserPreferences = koinInject<app.aryan447.mpvex.preferences.BrowserPreferences>()
+  val browserPreferences = koinInject<app.aryan447.mpvium.preferences.BrowserPreferences>()
   val thumbnailRepository = koinInject<ThumbnailRepository>()
   val density = LocalDensity.current
   val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
@@ -500,7 +500,7 @@ private fun RecentItemsContent(
     modifier = modifier.fillMaxSize(),
   ) {
     if (isGridMode) {
-      val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+      val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
       Box(
         modifier = Modifier
           .fillMaxSize()
@@ -613,7 +613,7 @@ private fun RecentItemsContent(
         }
       }
     } else {
-      val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+      val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
       Box(
         modifier = Modifier
           .fillMaxSize()

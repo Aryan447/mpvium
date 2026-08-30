@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.database.entities
+package app.aryan447.mpvium.database.entities
 
 import androidx.room.Entity
 import androidx.room.ForeignKey

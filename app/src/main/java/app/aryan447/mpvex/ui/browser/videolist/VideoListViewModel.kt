@@ -1,18 +1,18 @@
-package app.aryan447.mpvex.ui.browser.videolist
+package app.aryan447.mpvium.ui.browser.videolist
 
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.playbackstate.repository.PlaybackStateRepository
-import app.aryan447.mpvex.repository.MediaFileRepository
-import app.aryan447.mpvex.ui.browser.base.BaseBrowserViewModel
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
-import app.aryan447.mpvex.utils.media.MediaLibraryEvents
-import app.aryan447.mpvex.utils.media.MetadataRetrieval
-import app.aryan447.mpvex.utils.storage.FolderViewScanner
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.repository.MediaFileRepository
+import app.aryan447.mpvium.ui.browser.base.BaseBrowserViewModel
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.media.MediaLibraryEvents
+import app.aryan447.mpvium.utils.media.MetadataRetrieval
+import app.aryan447.mpvium.utils.storage.FolderViewScanner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,9 +44,9 @@ class VideoListViewModel(
 ) : BaseBrowserViewModel(application),
   KoinComponent {
   private val playbackStateRepository: PlaybackStateRepository by inject()
-  private val appearancePreferences: app.aryan447.mpvex.preferences.AppearancePreferences by inject()
-  private val browserPreferences: app.aryan447.mpvex.preferences.BrowserPreferences by inject()
-  private val recentlyPlayedRepository: app.aryan447.mpvex.domain.recentlyplayed.repository.RecentlyPlayedRepository by inject()
+  private val appearancePreferences: app.aryan447.mpvium.preferences.AppearancePreferences by inject()
+  private val browserPreferences: app.aryan447.mpvium.preferences.BrowserPreferences by inject()
+  private val recentlyPlayedRepository: app.aryan447.mpvium.domain.recentlyplayed.repository.RecentlyPlayedRepository by inject()
   // Using MediaFileRepository singleton directly
 
   private val _videos = MutableStateFlow<List<Video>>(emptyList())

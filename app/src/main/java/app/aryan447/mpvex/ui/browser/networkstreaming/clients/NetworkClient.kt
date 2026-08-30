@@ -1,7 +1,7 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming.clients
+package app.aryan447.mpvium.ui.browser.networkstreaming.clients
 
 import android.net.Uri
-import app.aryan447.mpvex.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkFile
 import java.io.InputStream
 
 /**

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack

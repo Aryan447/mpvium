@@ -1,9 +1,9 @@
-package app.aryan447.mpvex.ui.player.controls.components.sheets
+package app.aryan447.mpvium.ui.player.controls.components.sheets
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.ui.player.Decoder
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.ui.player.Decoder
 import kotlinx.collections.immutable.toImmutableList
 
 @Composable

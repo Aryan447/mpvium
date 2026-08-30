@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.sheets
+package app.aryan447.mpvium.ui.player.controls.components.sheets
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -44,14 +44,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.domain.anime4k.Anime4KManager
-import app.aryan447.mpvex.preferences.AdvancedPreferences
-import app.aryan447.mpvex.preferences.DecoderPreferences
-import app.aryan447.mpvex.preferences.PlayerPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.components.PlayerSheet
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.anime4k.Anime4KManager
+import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.DecoderPreferences
+import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.components.PlayerSheet
+import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

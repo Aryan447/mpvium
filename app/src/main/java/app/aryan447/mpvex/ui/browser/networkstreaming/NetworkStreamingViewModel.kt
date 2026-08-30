@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming
+package app.aryan447.mpvium.ui.browser.networkstreaming
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -6,9 +6,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import app.aryan447.mpvex.domain.network.ConnectionStatus
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.repository.NetworkRepository
+import app.aryan447.mpvium.domain.network.ConnectionStatus
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.repository.NetworkRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn

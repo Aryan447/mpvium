@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.utils.update
+package app.aryan447.mpvium.utils.update
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import app.aryan447.mpvex.BuildConfig
+import app.aryan447.mpvium.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

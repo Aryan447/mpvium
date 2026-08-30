@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.preferences.preference
+package app.aryan447.mpvium.preferences.preference
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State

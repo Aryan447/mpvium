@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import android.app.Application
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -48,16 +48,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.domain.media.model.VideoFolder
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.FoldersPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.ui.browser.components.BrowserTopBar
-import app.aryan447.mpvex.ui.browser.selection.SelectionState
-import app.aryan447.mpvex.ui.browser.states.EmptyState
-import app.aryan447.mpvex.ui.utils.LocalBackStack
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.media.model.VideoFolder
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.selection.SelectionState
+import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -482,7 +482,7 @@ private fun AddFolderDialog(
  */
 private suspend fun scanAllVideoFolders(context: Application): List<VideoFolder> {
   // Use fast optimized scanning - 5-10x faster for large libraries
-  return app.aryan447.mpvex.repository.MediaFileRepository
+  return app.aryan447.mpvium.repository.MediaFileRepository
     .getAllVideoFoldersFast(
       context = context
     )

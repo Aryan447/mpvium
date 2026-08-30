@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.playlist
+package app.aryan447.mpvium.ui.browser.playlist
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -61,19 +61,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.aryan447.mpvex.database.repository.PlaylistRepository
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.preferences.MediaLayoutMode
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.components.pullrefresh.PullRefreshBox
-import app.aryan447.mpvex.ui.browser.cards.PlaylistCard
-import app.aryan447.mpvex.ui.browser.components.BrowserTopBar
-import app.aryan447.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
-import app.aryan447.mpvex.ui.browser.selection.rememberSelectionManager
-import app.aryan447.mpvex.ui.browser.sheets.PlaylistActionSheet
-import app.aryan447.mpvex.ui.browser.states.EmptyState
-import app.aryan447.mpvex.ui.utils.LocalBackStack
+import app.aryan447.mpvium.database.repository.PlaylistRepository
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
+import app.aryan447.mpvium.ui.browser.cards.PlaylistCard
+import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
+import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
+import app.aryan447.mpvium.ui.browser.sheets.PlaylistActionSheet
+import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
@@ -164,7 +164,7 @@ object PlaylistScreen : Screen {
 
     // Track scroll for FAB visibility
     val mediaLayoutMode by browserPreferences.mediaLayoutMode.collectAsState()
-    app.aryan447.mpvex.ui.browser.fab.FabScrollHelper.trackScrollForFabVisibility(
+    app.aryan447.mpvium.ui.browser.fab.FabScrollHelper.trackScrollForFabVisibility(
       listState = listState,
       gridState = if (mediaLayoutMode == MediaLayoutMode.GRID) gridState else null,
       isFabVisible = isFabVisible,
@@ -228,7 +228,7 @@ object PlaylistScreen : Screen {
               isSingleSelection = selectionManager.isSingleSelection,
               onSearchClick = { isSearching = true },
               onSettingsClick = {
-                backStack.add(app.aryan447.mpvex.ui.preferences.PreferencesScreen)
+                backStack.add(app.aryan447.mpvium.ui.preferences.PreferencesScreen)
               },
               onRenameClick = if (selectionManager.isSingleSelection) {
                 { showRenameDialog = true }
@@ -241,7 +241,7 @@ object PlaylistScreen : Screen {
           }
         },
         floatingActionButton = {
-          val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+          val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
           if (!selectionManager.isInSelectionMode && isFabVisible.value) {
             ExtendedFloatingActionButton(
               onClick = { showPlaylistActionSheet = true },
@@ -384,13 +384,13 @@ object PlaylistScreen : Screen {
     gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     isRefreshing: androidx.compose.runtime.MutableState<Boolean>,
     onRefresh: suspend () -> Unit,
-    selectionManager: app.aryan447.mpvex.ui.browser.selection.SelectionManager<PlaylistWithCount, Int>,
+    selectionManager: app.aryan447.mpvium.ui.browser.selection.SelectionManager<PlaylistWithCount, Int>,
     onPlaylistClick: (PlaylistWithCount) -> Unit,
     onPlaylistLongClick: (PlaylistWithCount) -> Unit,
     modifier: Modifier = Modifier,
     isInSelectionMode: Boolean = false,
   ) {
-    val browserPreferences = koinInject<app.aryan447.mpvex.preferences.BrowserPreferences>()
+    val browserPreferences = koinInject<app.aryan447.mpvium.preferences.BrowserPreferences>()
     val mediaLayoutMode by browserPreferences.mediaLayoutMode.collectAsState()
     val folderGridColumnsPortrait by browserPreferences.folderGridColumnsPortrait.collectAsState()
   val folderGridColumnsLandscape by browserPreferences.folderGridColumnsLandscape.collectAsState()
@@ -429,7 +429,7 @@ object PlaylistScreen : Screen {
     ) {
       if (isGridMode) {
         // Grid layout
-        val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+        val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
         Box(
           modifier = Modifier
             .fillMaxSize()
@@ -473,7 +473,7 @@ object PlaylistScreen : Screen {
         }
       } else {
         // List layout
-        val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+        val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
         Box(
           modifier = Modifier
             .fillMaxSize()

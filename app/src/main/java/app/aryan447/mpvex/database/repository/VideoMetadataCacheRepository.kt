@@ -1,11 +1,11 @@
-package app.aryan447.mpvex.database.repository
+package app.aryan447.mpvium.database.repository
 
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import app.aryan447.mpvex.database.dao.VideoMetadataDao
-import app.aryan447.mpvex.database.entities.VideoMetadataEntity
-import app.aryan447.mpvex.utils.media.MediaInfoOps
+import app.aryan447.mpvium.database.dao.VideoMetadataDao
+import app.aryan447.mpvium.database.entities.VideoMetadataEntity
+import app.aryan447.mpvium.utils.media.MediaInfoOps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll

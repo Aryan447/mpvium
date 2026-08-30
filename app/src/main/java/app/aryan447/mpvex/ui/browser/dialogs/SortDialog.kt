@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.dialogs
+package app.aryan447.mpvium.ui.browser.dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

@@ -1,9 +1,9 @@
-package app.aryan447.mpvex.database.dao
+package app.aryan447.mpvium.database.dao
 
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
-import app.aryan447.mpvex.database.entities.PlaybackStateEntity
+import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 
 @Dao
 interface PlaybackStateDao {

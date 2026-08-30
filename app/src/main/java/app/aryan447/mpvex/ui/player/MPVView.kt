@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import android.content.Context
 import android.os.Environment
@@ -6,14 +6,14 @@ import android.util.AttributeSet
 
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
-import app.aryan447.mpvex.preferences.AdvancedPreferences
-import app.aryan447.mpvex.preferences.AudioPreferences
-import app.aryan447.mpvex.preferences.DecoderPreferences
-import app.aryan447.mpvex.preferences.PlayerPreferences
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
-import app.aryan447.mpvex.domain.anime4k.Anime4KManager
-import app.aryan447.mpvex.ui.player.PlayerActivity.Companion.TAG
-import app.aryan447.mpvex.ui.player.controls.components.panels.toColorHexString
+import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.DecoderPreferences
+import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.domain.anime4k.Anime4KManager
+import app.aryan447.mpvium.ui.player.PlayerActivity.Companion.TAG
+import app.aryan447.mpvium.ui.player.controls.components.panels.toColorHexString
 import `is`.xyz.mpv.BaseMPVView
 import `is`.xyz.mpv.KeyMapping
 import `is`.xyz.mpv.MPVLib
@@ -215,17 +215,17 @@ class MPVView(
       "video-params/w" to MPVLib.MpvFormat.MPV_FORMAT_INT64,
       "video-params/h" to MPVLib.MpvFormat.MPV_FORMAT_INT64,
       "eof-reached" to MPVLib.MpvFormat.MPV_FORMAT_FLAG,
-      "user-data/mpvex/show_text" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/toggle_ui" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/show_panel" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/set_button_title" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/reset_button_title" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/toggle_button" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/seek_by" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/seek_to" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/seek_by_with_text" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/seek_to_with_text" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
-      "user-data/mpvex/software_keyboard" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/show_text" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/toggle_ui" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/show_panel" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/set_button_title" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/reset_button_title" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/toggle_button" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/seek_by" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/seek_to" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/seek_by_with_text" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/seek_to_with_text" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
+      "user-data/mpvium/software_keyboard" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
     )
 
   private fun setupAudioOptions() {

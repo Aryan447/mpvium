@@ -21,7 +21,7 @@ Get the latest stable release directly from GitHub or the IzzyOnDroid repository
 | Source              | Link                                                                                                                                                              |
 | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **GitHub Releases** | [![Download](https://img.shields.io/badge/Download-Latest%20APK-7C3AED?style=flat-square&logo=github)](https://github.com/aryan447/mpvEx/releases/latest) |
-| **IzzyOnDroid**     | [![IzzyOnDroid](https://img.shields.io/badge/Get%20it%20on-IzzyOnDroid-blue?style=flat-square)](https://apt.izzysoft.de/packages/app.aryan447.mpvex)       |
+| **IzzyOnDroid**     | [![IzzyOnDroid](https://img.shields.io/badge/Get%20it%20on-IzzyOnDroid-blue?style=flat-square)](https://apt.izzysoft.de/packages/app.aryan447.mpvium)       |
 
 ### Preview Builds
 

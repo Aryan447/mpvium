@@ -1,7 +1,7 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
-import app.aryan447.mpvex.BuildConfig
-import app.aryan447.mpvex.preferences.preference.PreferenceStore
+import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.preferences.preference.PreferenceStore
 
 class AdvancedPreferences(
   preferenceStore: PreferenceStore,

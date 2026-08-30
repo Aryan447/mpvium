@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.theme
+package app.aryan447.mpvium.ui.theme
 
 import android.graphics.Bitmap
 import android.os.Build
@@ -45,9 +45,9 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.drawToBitmap
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import org.koin.compose.koinInject
 import kotlin.math.hypot
 

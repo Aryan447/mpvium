@@ -1,6 +1,6 @@
-package app.aryan447.mpvex.domain.recentlyplayed.repository
+package app.aryan447.mpvium.domain.recentlyplayed.repository
 
-import app.aryan447.mpvex.database.entities.RecentlyPlayedEntity
+import app.aryan447.mpvium.database.entities.RecentlyPlayedEntity
 import kotlinx.coroutines.flow.Flow
 
 interface RecentlyPlayedRepository {

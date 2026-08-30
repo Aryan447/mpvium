@@ -1,9 +1,9 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import androidx.annotation.StringRes
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.DecoderPreferences
-import app.aryan447.mpvex.preferences.preference.Preference
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.DecoderPreferences
+import app.aryan447.mpvium.preferences.preference.Preference
 
 enum class PlayerOrientation(
   @StringRes val titleRes: Int,
@@ -136,7 +136,7 @@ sealed class PlayerUpdates {
   ) : PlayerUpdates()
 
   data class RepeatMode(
-    val mode: app.aryan447.mpvex.ui.player.RepeatMode,
+    val mode: app.aryan447.mpvium.ui.player.RepeatMode,
   ) : PlayerUpdates()
 
   data class Shuffle(

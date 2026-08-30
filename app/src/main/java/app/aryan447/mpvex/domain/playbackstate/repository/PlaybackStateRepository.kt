@@ -1,6 +1,6 @@
-package app.aryan447.mpvex.domain.playbackstate.repository
+package app.aryan447.mpvium.domain.playbackstate.repository
 
-import app.aryan447.mpvex.database.entities.PlaybackStateEntity
+import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 
 interface PlaybackStateRepository {
   suspend fun upsert(playbackState: PlaybackStateEntity)

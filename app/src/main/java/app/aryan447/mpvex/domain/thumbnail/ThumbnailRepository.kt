@@ -1,11 +1,11 @@
-package app.aryan447.mpvex.domain.thumbnail
+package app.aryan447.mpvium.domain.thumbnail
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.utils.media.MediaInfoOps
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.utils.media.MediaInfoOps
 import `is`.xyz.mpv.FastThumbnails
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -28,8 +28,8 @@ class ThumbnailRepository(
   private val context: Context,
 ) {
   private val appearancePreferences by lazy {
-    org.koin.java.KoinJavaComponent.get<app.aryan447.mpvex.preferences.AppearancePreferences>(
-      app.aryan447.mpvex.preferences.AppearancePreferences::class.java
+    org.koin.java.KoinJavaComponent.get<app.aryan447.mpvium.preferences.AppearancePreferences>(
+      app.aryan447.mpvium.preferences.AppearancePreferences::class.java
     )
   }
   private val diskCacheDimension = 1024

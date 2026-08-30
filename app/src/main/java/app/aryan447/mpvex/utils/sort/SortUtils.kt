@@ -1,11 +1,11 @@
-package app.aryan447.mpvex.utils.sort
+package app.aryan447.mpvium.utils.sort
 
-import app.aryan447.mpvex.domain.browser.FileSystemItem
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.media.model.VideoFolder
-import app.aryan447.mpvex.preferences.FolderSortType
-import app.aryan447.mpvex.preferences.SortOrder
-import app.aryan447.mpvex.preferences.VideoSortType
+import app.aryan447.mpvium.domain.browser.FileSystemItem
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.media.model.VideoFolder
+import app.aryan447.mpvium.preferences.FolderSortType
+import app.aryan447.mpvium.preferences.SortOrder
+import app.aryan447.mpvium.preferences.VideoSortType
 
 object SortUtils {
   /**

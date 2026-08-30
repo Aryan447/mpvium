@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.database.dao
+package app.aryan447.mpvium.database.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -7,8 +7,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import app.aryan447.mpvex.database.entities.PlaylistEntity
-import app.aryan447.mpvex.database.entities.PlaylistItemEntity
+import app.aryan447.mpvium.database.entities.PlaylistEntity
+import app.aryan447.mpvium.database.entities.PlaylistItemEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

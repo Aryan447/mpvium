@@ -1,8 +1,8 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 import android.util.Log
-import app.aryan447.mpvex.repository.NetworkRepository
-import app.aryan447.mpvex.ui.browser.networkstreaming.proxy.NetworkStreamingProxy
+import app.aryan447.mpvium.repository.NetworkRepository
+import app.aryan447.mpvium.ui.browser.networkstreaming.proxy.NetworkStreamingProxy
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

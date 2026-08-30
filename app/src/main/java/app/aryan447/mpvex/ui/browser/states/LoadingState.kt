@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.states
+package app.aryan447.mpvium.ui.browser.states
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode

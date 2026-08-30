@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.presentation.components
+package app.aryan447.mpvium.presentation.components
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.animateContentSize
@@ -30,7 +30,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.ui.theme.spacing
 
 @SuppressLint("UnrememberedMutableState")
 @Composable

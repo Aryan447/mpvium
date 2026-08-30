@@ -1,4 +1,4 @@
-package app.aryan447.mpvex
+package app.aryan447.mpvium
 
 import android.os.Bundle
 import android.util.Log
@@ -32,17 +32,17 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.repository.NetworkRepository
-import app.aryan447.mpvex.utils.update.UpdateDialog
-import app.aryan447.mpvex.utils.update.UpdateViewModel
-import app.aryan447.mpvex.ui.browser.MainScreen
-import app.aryan447.mpvex.ui.theme.DarkMode
-import app.aryan447.mpvex.ui.theme.MpvexTheme
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.permission.PermissionUtils
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.repository.NetworkRepository
+import app.aryan447.mpvium.utils.update.UpdateDialog
+import app.aryan447.mpvium.utils.update.UpdateViewModel
+import app.aryan447.mpvium.ui.browser.MainScreen
+import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.MpvexTheme
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
     PermissionUtils.setMediaAccessLauncher(mediaAccessLauncher)
 
     // Register proxy lifecycle observer for network streaming
-    lifecycle.addObserver(app.aryan447.mpvex.ui.browser.networkstreaming.proxy.ProxyLifecycleObserver())
+    lifecycle.addObserver(app.aryan447.mpvium.ui.browser.networkstreaming.proxy.ProxyLifecycleObserver())
 
     setContent {
       // Set up theme and edge-to-edge display

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,13 +32,13 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.GesturePreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.ui.player.CustomKeyCodes
-import app.aryan447.mpvex.ui.player.SingleActionGesture
-import app.aryan447.mpvex.ui.utils.LocalBackStack
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.GesturePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.player.CustomKeyCodes
+import app.aryan447.mpvium.ui.player.SingleActionGesture
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.FooterPreference

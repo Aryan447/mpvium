@@ -33,6 +33,6 @@ export const downloads: DownloadOption[] = [
     description: "Install and update automatically via IzzyOnDroid F-Droid client.",
     icon: Download,
     buttonText: "View Repository",
-    href: "https://apt.izzysoft.de/fdroid/index/apk/com.moe.mpvextended",
+    href: "https://apt.izzysoft.de/fdroid/index/apk/com.moe.mpviumtended",
   },
 ];

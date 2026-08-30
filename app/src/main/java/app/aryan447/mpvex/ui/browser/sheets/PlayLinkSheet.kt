@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.sheets
+package app.aryan447.mpvium.ui.browser.sheets
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,8 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
-import app.aryan447.mpvex.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

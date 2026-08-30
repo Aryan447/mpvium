@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.domain.anime4k
+package app.aryan447.mpvium.domain.anime4k
 
 import android.content.Context
 
@@ -17,20 +17,20 @@ class Anime4KManager(private val context: Context) {
 
   // Shader quality levels
   enum class Quality(val suffix: String, val titleRes: Int) {
-    FAST("S", app.aryan447.mpvex.R.string.anime4k_quality_fast),
-    BALANCED("M", app.aryan447.mpvex.R.string.anime4k_quality_balanced),
-    HIGH("L", app.aryan447.mpvex.R.string.anime4k_quality_high)
+    FAST("S", app.aryan447.mpvium.R.string.anime4k_quality_fast),
+    BALANCED("M", app.aryan447.mpvium.R.string.anime4k_quality_balanced),
+    HIGH("L", app.aryan447.mpvium.R.string.anime4k_quality_high)
   }
 
   // Anime4K modes
   enum class Mode(val titleRes: Int) {
-    OFF(app.aryan447.mpvex.R.string.anime4k_mode_off),
-    A(app.aryan447.mpvex.R.string.anime4k_mode_a),
-    B(app.aryan447.mpvex.R.string.anime4k_mode_b),
-    C(app.aryan447.mpvex.R.string.anime4k_mode_c),
-    A_PLUS(app.aryan447.mpvex.R.string.anime4k_mode_a_plus),
-    B_PLUS(app.aryan447.mpvex.R.string.anime4k_mode_b_plus),
-    C_PLUS(app.aryan447.mpvex.R.string.anime4k_mode_c_plus)
+    OFF(app.aryan447.mpvium.R.string.anime4k_mode_off),
+    A(app.aryan447.mpvium.R.string.anime4k_mode_a),
+    B(app.aryan447.mpvium.R.string.anime4k_mode_b),
+    C(app.aryan447.mpvium.R.string.anime4k_mode_c),
+    A_PLUS(app.aryan447.mpvium.R.string.anime4k_mode_a_plus),
+    B_PLUS(app.aryan447.mpvium.R.string.anime4k_mode_b_plus),
+    C_PLUS(app.aryan447.mpvium.R.string.anime4k_mode_c_plus)
   }
 
   private var shaderDir: File? = null

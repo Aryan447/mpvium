@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.presentation.components
+package app.aryan447.mpvium.presentation.components
 
 import androidx.annotation.IntRange
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.ui.theme.spacing
 import kotlin.math.max
 import kotlin.math.min
 

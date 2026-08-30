@@ -1,9 +1,9 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming.proxy
+package app.aryan447.mpvium.ui.browser.networkstreaming.proxy
 
 import android.util.Log
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.ui.browser.networkstreaming.clients.NetworkClient
-import app.aryan447.mpvex.ui.browser.networkstreaming.clients.NetworkClientFactory
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClient
+import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClientFactory
 import com.hierynomus.msdtyp.AccessMask
 import com.hierynomus.mssmb2.SMB2CreateDisposition
 import com.hierynomus.mssmb2.SMB2ShareAccess
@@ -237,17 +237,17 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
     return runBlocking {
       try {
         when (streamInfo.client) {
-          is app.aryan447.mpvex.ui.browser.networkstreaming.clients.SmbClient -> {
+          is app.aryan447.mpvium.ui.browser.networkstreaming.clients.SmbClient -> {
             getFileSizeSMB(streamInfo)
           }
 
-          is app.aryan447.mpvex.ui.browser.networkstreaming.clients.FtpClient -> {
+          is app.aryan447.mpvium.ui.browser.networkstreaming.clients.FtpClient -> {
             getFileSizeFTP(streamInfo)
           }
 
-          is app.aryan447.mpvex.ui.browser.networkstreaming.clients.WebDavClient -> {
+          is app.aryan447.mpvium.ui.browser.networkstreaming.clients.WebDavClient -> {
             val webDavClient =
-              streamInfo.client as app.aryan447.mpvex.ui.browser.networkstreaming.clients.WebDavClient
+              streamInfo.client as app.aryan447.mpvium.ui.browser.networkstreaming.clients.WebDavClient
             if (!webDavClient.isConnected()) {
               webDavClient.connect().getOrThrow()
             }
@@ -260,7 +260,7 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
               streamInfo.client.connect().getOrThrow()
             }
             val ftpClient =
-              streamInfo.client as? app.aryan447.mpvex.ui.browser.networkstreaming.clients.FtpClient
+              streamInfo.client as? app.aryan447.mpvium.ui.browser.networkstreaming.clients.FtpClient
             val sizeResult = ftpClient?.getFileSize(streamInfo.filePath)
             sizeResult?.getOrNull() ?: -1L
           }
@@ -477,15 +477,15 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
     return runBlocking {
       try {
         when (streamInfo.client) {
-          is app.aryan447.mpvex.ui.browser.networkstreaming.clients.SmbClient -> {
+          is app.aryan447.mpvium.ui.browser.networkstreaming.clients.SmbClient -> {
             getStreamWithOffsetSMB(streamInfo, offset)
           }
 
-          is app.aryan447.mpvex.ui.browser.networkstreaming.clients.FtpClient -> {
+          is app.aryan447.mpvium.ui.browser.networkstreaming.clients.FtpClient -> {
             getStreamWithOffsetFTP(streamInfo, offset)
           }
 
-          is app.aryan447.mpvex.ui.browser.networkstreaming.clients.WebDavClient -> {
+          is app.aryan447.mpvium.ui.browser.networkstreaming.clients.WebDavClient -> {
             getStreamWithOffsetWebDAV(streamInfo, offset)
           }
 

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.panels
+package app.aryan447.mpvium.ui.player.controls.components.panels
 
 import android.annotation.SuppressLint
 import androidx.annotation.StringRes
@@ -41,16 +41,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.SubtitleJustification
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
-import app.aryan447.mpvex.preferences.preference.deleteAndGet
-import app.aryan447.mpvex.presentation.components.ExpandableCard
-import app.aryan447.mpvex.presentation.components.ExposedTextDropDownMenu
-import app.aryan447.mpvex.presentation.components.SliderItem
-import app.aryan447.mpvex.ui.player.controls.CARDS_MAX_WIDTH
-import app.aryan447.mpvex.ui.player.controls.panelCardsColors
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.SubtitleJustification
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.preference.deleteAndGet
+import app.aryan447.mpvium.presentation.components.ExpandableCard
+import app.aryan447.mpvium.presentation.components.ExposedTextDropDownMenu
+import app.aryan447.mpvium.presentation.components.SliderItem
+import app.aryan447.mpvium.ui.player.controls.CARDS_MAX_WIDTH
+import app.aryan447.mpvium.ui.player.controls.panelCardsColors
+import app.aryan447.mpvium.ui.theme.spacing
 import com.github.k1rakishou.fsaf.FileManager
 import com.yubyf.truetypeparser.TTFFile
 import `is`.xyz.mpv.MPVLib

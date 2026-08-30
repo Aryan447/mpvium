@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -6,8 +6,8 @@ import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.ui.utils.LocalBackStack
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import java.io.File
 
@@ -20,7 +20,7 @@ import java.io.File
   replaceWith =
     ReplaceWith(
       "MediaUtils.playFile(source, context, launchSource)",
-      "app.aryan447.mpvex.utils.media.MediaUtils",
+      "app.aryan447.mpvium.utils.media.MediaUtils",
     ),
 )
 @Serializable

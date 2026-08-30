@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences.components
+package app.aryan447.mpvium.ui.preferences.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,8 +23,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.rotate
-import app.aryan447.mpvex.preferences.PlayerButton
-import app.aryan447.mpvex.preferences.getPlayerButtonLabel
+import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.getPlayerButtonLabel
 
 /**
  * A simple "Quick Settings" style chip for a player button.

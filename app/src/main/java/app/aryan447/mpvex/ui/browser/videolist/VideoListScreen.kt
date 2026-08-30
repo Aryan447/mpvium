@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.videolist
+package app.aryan447.mpvium.ui.browser.videolist
 
 import android.content.Intent
 import android.os.Environment
@@ -7,7 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import app.aryan447.mpvex.utils.media.OpenDocumentTreeContract
+import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
@@ -70,42 +70,42 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.thumbnail.ThumbnailRepository
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.preferences.FolderViewMode
-import app.aryan447.mpvex.preferences.GesturePreferences
-import app.aryan447.mpvex.preferences.MediaLayoutMode
-import app.aryan447.mpvex.preferences.PlayerPreferences
-import app.aryan447.mpvex.preferences.SortOrder
-import app.aryan447.mpvex.preferences.VideoSortType
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.components.pullrefresh.PullRefreshBox
-import app.aryan447.mpvex.BuildConfig
-import app.aryan447.mpvex.ui.browser.cards.VideoCard
-import app.aryan447.mpvex.ui.browser.components.BrowserBottomBar
-import app.aryan447.mpvex.ui.browser.components.BrowserTopBar
-import app.aryan447.mpvex.ui.browser.dialogs.AddToPlaylistDialog
-import app.aryan447.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
-import app.aryan447.mpvex.ui.browser.dialogs.FileOperationProgressDialog
-import app.aryan447.mpvex.ui.browser.dialogs.FolderPickerDialog
-import app.aryan447.mpvex.ui.browser.dialogs.GridColumnSelector
-import app.aryan447.mpvex.ui.browser.dialogs.LoadingDialog
-import app.aryan447.mpvex.ui.browser.dialogs.RenameDialog
-import app.aryan447.mpvex.ui.browser.dialogs.SortDialog
-import app.aryan447.mpvex.ui.browser.dialogs.ViewModeSelector
-import app.aryan447.mpvex.ui.browser.dialogs.VisibilityToggle
-import app.aryan447.mpvex.ui.browser.fab.FabScrollHelper
-import app.aryan447.mpvex.ui.browser.selection.SelectionManager
-import app.aryan447.mpvex.ui.browser.selection.rememberSelectionManager
-import app.aryan447.mpvex.ui.browser.states.EmptyState
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
-import app.aryan447.mpvex.utils.media.CopyPasteOps
-import app.aryan447.mpvex.utils.media.MediaUtils
-import app.aryan447.mpvex.utils.sort.SortUtils
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.FolderViewMode
+import app.aryan447.mpvium.preferences.GesturePreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
+import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.SortOrder
+import app.aryan447.mpvium.preferences.VideoSortType
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
+import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.ui.browser.cards.VideoCard
+import app.aryan447.mpvium.ui.browser.components.BrowserBottomBar
+import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.dialogs.AddToPlaylistDialog
+import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
+import app.aryan447.mpvium.ui.browser.dialogs.FileOperationProgressDialog
+import app.aryan447.mpvium.ui.browser.dialogs.FolderPickerDialog
+import app.aryan447.mpvium.ui.browser.dialogs.GridColumnSelector
+import app.aryan447.mpvium.ui.browser.dialogs.LoadingDialog
+import app.aryan447.mpvium.ui.browser.dialogs.RenameDialog
+import app.aryan447.mpvium.ui.browser.dialogs.SortDialog
+import app.aryan447.mpvium.ui.browser.dialogs.ViewModeSelector
+import app.aryan447.mpvium.ui.browser.dialogs.VisibilityToggle
+import app.aryan447.mpvium.ui.browser.fab.FabScrollHelper
+import app.aryan447.mpvium.ui.browser.selection.SelectionManager
+import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
+import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.media.CopyPasteOps
+import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.sort.SortUtils
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
@@ -130,7 +130,7 @@ data class VideoListScreen(
     val browserPreferences = koinInject<BrowserPreferences>()
     val playerPreferences = koinInject<PlayerPreferences>()
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+    val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
 
     // ViewModel
     val viewModel: VideoListViewModel =
@@ -271,14 +271,14 @@ data class VideoListScreen(
           onCancelSelection = { selectionManager.clear() },
           onSortClick = { sortDialogOpen.value = true },
           onSettingsClick = {
-            backstack.add(app.aryan447.mpvex.ui.preferences.PreferencesScreen)
+            backstack.add(app.aryan447.mpvium.ui.preferences.PreferencesScreen)
           },
           isSingleSelection = selectionManager.isSingleSelection,
           onInfoClick = {
             if (selectionManager.isSingleSelection) {
               val video = selectionManager.getSelectedItems().firstOrNull()
               if (video != null) {
-                val intent = Intent(context, app.aryan447.mpvex.ui.mediainfo.MediaInfoActivity::class.java)
+                val intent = Intent(context, app.aryan447.mpvium.ui.mediainfo.MediaInfoActivity::class.java)
                 intent.action = Intent.ACTION_VIEW
                 intent.data = video.uri
                 context.startActivity(intent)
@@ -297,7 +297,7 @@ data class VideoListScreen(
         )
       },
       floatingActionButton = {
-        val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+        val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
         if (sortedVideosWithInfo.isNotEmpty()) {
           TooltipBox(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
@@ -572,7 +572,7 @@ private fun VideoListContent(
   val showSubtitleIndicator by browserPreferences.showSubtitleIndicator.collectAsState()
   val showVideoThumbnails by browserPreferences.showVideoThumbnails.collectAsState()
   val density = LocalDensity.current
-  val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+  val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
   // Must match the thumbnail size logic inside `VideoCard` for this screen,
   // otherwise the cache keys won't line up and the UI won't receive updates.
   val thumbWidthDp = if (mediaLayoutMode == MediaLayoutMode.GRID) 160.dp else 128.dp

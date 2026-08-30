@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls
+package app.aryan447.mpvium.ui.player.controls
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -28,16 +28,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.preferences.PlayerButton
-import app.aryan447.mpvex.ui.player.Panels
-import app.aryan447.mpvex.ui.player.PlayerActivity
-import app.aryan447.mpvex.ui.player.PlayerViewModel
-import app.aryan447.mpvex.ui.player.Sheets
-import app.aryan447.mpvex.ui.player.VideoAspect
-import app.aryan447.mpvex.ui.player.controls.components.ControlsButton
-import app.aryan447.mpvex.ui.player.controls.components.ControlsGroup
-import app.aryan447.mpvex.ui.theme.controlColor
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.ui.player.Panels
+import app.aryan447.mpvium.ui.player.PlayerActivity
+import app.aryan447.mpvium.ui.player.PlayerViewModel
+import app.aryan447.mpvium.ui.player.Sheets
+import app.aryan447.mpvium.ui.player.VideoAspect
+import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
+import app.aryan447.mpvium.ui.player.controls.components.ControlsGroup
+import app.aryan447.mpvium.ui.theme.controlColor
+import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 
 @Composable
@@ -155,7 +155,7 @@ fun BottomPlayerControlsPortrait(
   aspect: VideoAspect,
   mediaTitle: String?,
   hideBackground: Boolean,
-  decoder: app.aryan447.mpvex.ui.player.Decoder,
+  decoder: app.aryan447.mpvium.ui.player.Decoder,
   playbackSpeed: Float,
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,

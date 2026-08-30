@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences.components
+package app.aryan447.mpvium.ui.preferences.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.aryan447.mpvex.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.AppTheme
 
 
 /**

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.cards
+package app.aryan447.mpvium.ui.browser.cards
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,7 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkConnection
 
 @Composable
 fun NetworkConnectionCard(

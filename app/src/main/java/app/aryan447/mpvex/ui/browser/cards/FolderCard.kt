@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.cards
+package app.aryan447.mpvium.ui.browser.cards
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -28,10 +28,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.domain.media.model.VideoFolder
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
+import app.aryan447.mpvium.domain.media.model.VideoFolder
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.ListItemDefaults.verticalAlignment
 import org.koin.compose.koinInject

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.theme
+package app.aryan447.mpvium.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable

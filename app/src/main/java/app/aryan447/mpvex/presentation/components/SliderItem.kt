@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.presentation.components
+package app.aryan447.mpvium.presentation.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,7 +22,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.ui.theme.spacing
 
 @Composable
 fun SliderItem(

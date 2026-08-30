@@ -13,8 +13,8 @@ export const siteConfig = {
   version: "v1.2.7",
   description:
     "Advanced mpv-based video player for Android with powerful features, seamless playback, and open-source freedom.",
-  url: "https://mpvex.vercel.app",
-  ogImage: "https://mpvex.vercel.app/og.jpg",
+  url: "https://mpvium.vercel.app",
+  ogImage: "https://mpvium.vercel.app/og.jpg",
   icons: {
     icon: "/icon.svg",
     apple: "/apple-icon.png",
@@ -23,7 +23,7 @@ export const siteConfig = {
     github: "https://github.com/aryan447/mpvEx",
     releases: "https://github.com/aryan447/mpvEx/releases",
     latestRelease: "https://github.com/aryan447/mpvEx/releases/latest",
-    izzyOnAndroid: "https://apt.izzysoft.de/packages/app.aryan447.mpvex",
+    izzyOnAndroid: "https://apt.izzysoft.de/packages/app.aryan447.mpvium",
     contributors: "https://github.com/aryan447/mpvEx/graphs/contributors",
   },
   author: {

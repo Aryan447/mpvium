@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -41,14 +41,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.PlayerButton
-import app.aryan447.mpvex.preferences.allPlayerButtons
-import app.aryan447.mpvex.preferences.preference.Preference
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.components.ConfirmDialog
-import app.aryan447.mpvex.ui.preferences.components.PlayerButtonChip
-import app.aryan447.mpvex.ui.utils.LocalBackStack
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.allPlayerButtons
+import app.aryan447.mpvium.preferences.preference.Preference
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.ConfirmDialog
+import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.PreferenceCategory
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -452,7 +452,7 @@ private fun IconsLegend() {
                         }
 
                         Text(
-                            text = app.aryan447.mpvex.preferences.getPlayerButtonLabel(button),
+                            text = app.aryan447.mpvium.preferences.getPlayerButtonLabel(button),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(end = 4.dp)

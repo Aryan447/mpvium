@@ -1,6 +1,6 @@
 @file:Suppress("ktlint:standard:no-wildcard-imports")
 
-package app.aryan447.mpvex.ui.player.controls.components.panels
+package app.aryan447.mpvium.ui.player.controls.components.panels
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -27,9 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.AudioPreferences
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt

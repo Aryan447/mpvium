@@ -1,15 +1,15 @@
-package app.aryan447.mpvex.preferences.preference
+package app.aryan447.mpvium.preferences.preference
 
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
-import app.aryan447.mpvex.preferences.preference.AndroidPreference.BooleanPrimitive
-import app.aryan447.mpvex.preferences.preference.AndroidPreference.FloatPrimitive
-import app.aryan447.mpvex.preferences.preference.AndroidPreference.IntPrimitive
-import app.aryan447.mpvex.preferences.preference.AndroidPreference.LongPrimitive
-import app.aryan447.mpvex.preferences.preference.AndroidPreference.Object
-import app.aryan447.mpvex.preferences.preference.AndroidPreference.StringPrimitive
-import app.aryan447.mpvex.preferences.preference.AndroidPreference.StringSetPrimitive
+import app.aryan447.mpvium.preferences.preference.AndroidPreference.BooleanPrimitive
+import app.aryan447.mpvium.preferences.preference.AndroidPreference.FloatPrimitive
+import app.aryan447.mpvium.preferences.preference.AndroidPreference.IntPrimitive
+import app.aryan447.mpvium.preferences.preference.AndroidPreference.LongPrimitive
+import app.aryan447.mpvium.preferences.preference.AndroidPreference.Object
+import app.aryan447.mpvium.preferences.preference.AndroidPreference.StringPrimitive
+import app.aryan447.mpvium.preferences.preference.AndroidPreference.StringSetPrimitive
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 

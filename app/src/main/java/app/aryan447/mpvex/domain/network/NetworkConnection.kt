@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.domain.network
+package app.aryan447.mpvium.domain.network
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

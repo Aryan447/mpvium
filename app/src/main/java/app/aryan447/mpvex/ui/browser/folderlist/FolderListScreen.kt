@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.folderlist
+package app.aryan447.mpvium.ui.browser.folderlist
 
 import android.content.Context
 import android.content.Intent
@@ -81,40 +81,40 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.util.Log
-import app.aryan447.mpvex.domain.browser.FileSystemItem
-import app.aryan447.mpvex.domain.media.model.VideoFolder
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.preferences.FolderSortType
-import app.aryan447.mpvex.preferences.FolderViewMode
-import app.aryan447.mpvex.preferences.FoldersPreferences
-import app.aryan447.mpvex.preferences.GesturePreferences
-import app.aryan447.mpvex.preferences.MediaLayoutMode
-import app.aryan447.mpvex.preferences.SortOrder
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.components.pullrefresh.PullRefreshBox
-import app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight
-import app.aryan447.mpvex.ui.browser.cards.FolderCard
-import app.aryan447.mpvex.ui.browser.cards.VideoCard
-import app.aryan447.mpvex.ui.browser.components.BrowserTopBar
-import app.aryan447.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
-import app.aryan447.mpvex.ui.browser.dialogs.GridColumnSelector
-import app.aryan447.mpvex.ui.browser.dialogs.SortDialog
-import app.aryan447.mpvex.ui.browser.dialogs.ViewModeSelector
-import app.aryan447.mpvex.ui.browser.dialogs.VisibilityToggle
-import app.aryan447.mpvex.ui.browser.filesystem.FileSystemDirectoryScreen
-import app.aryan447.mpvex.ui.browser.filesystem.FileSystemBrowserRootScreen
-import app.aryan447.mpvex.ui.browser.selection.rememberSelectionManager
-import app.aryan447.mpvex.ui.browser.sheets.PlayLinkSheet
-import app.aryan447.mpvex.ui.browser.states.EmptyState
-import app.aryan447.mpvex.ui.browser.states.LoadingState
-import app.aryan447.mpvex.ui.browser.states.PermissionDeniedState
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
-import app.aryan447.mpvex.utils.media.MediaUtils
-import app.aryan447.mpvex.utils.permission.PermissionUtils
-import app.aryan447.mpvex.utils.sort.SortUtils
+import app.aryan447.mpvium.domain.browser.FileSystemItem
+import app.aryan447.mpvium.domain.media.model.VideoFolder
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.FolderSortType
+import app.aryan447.mpvium.preferences.FolderViewMode
+import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.GesturePreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
+import app.aryan447.mpvium.preferences.SortOrder
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
+import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
+import app.aryan447.mpvium.ui.browser.cards.FolderCard
+import app.aryan447.mpvium.ui.browser.cards.VideoCard
+import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
+import app.aryan447.mpvium.ui.browser.dialogs.GridColumnSelector
+import app.aryan447.mpvium.ui.browser.dialogs.SortDialog
+import app.aryan447.mpvium.ui.browser.dialogs.ViewModeSelector
+import app.aryan447.mpvium.ui.browser.dialogs.VisibilityToggle
+import app.aryan447.mpvium.ui.browser.filesystem.FileSystemDirectoryScreen
+import app.aryan447.mpvium.ui.browser.filesystem.FileSystemBrowserRootScreen
+import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
+import app.aryan447.mpvium.ui.browser.sheets.PlayLinkSheet
+import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.browser.states.LoadingState
+import app.aryan447.mpvium.ui.browser.states.PermissionDeniedState
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.permission.PermissionUtils
+import app.aryan447.mpvium.utils.sort.SortUtils
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import kotlinx.coroutines.launch
@@ -154,7 +154,7 @@ object FolderListScreen : Screen {
     val browserPreferences = koinInject<BrowserPreferences>()
     val gesturePreferences = koinInject<GesturePreferences>()
     val foldersPreferences = koinInject<FoldersPreferences>()
-    val dPreferences = koinInject<app.aryan447advance.mpvex.preferences.AdvancedPreferences>()
+    val dPreferences = koinInject<app.aryan447advance.mpvium.preferences.AdvancedPreferences>()
 
     // State collection
     val videoFolders by viewModel.videoFolders.collectAsState()
@@ -246,7 +246,7 @@ object FolderListScreen : Screen {
       getId = { it.bucketId },
       onDeleteItems = { folders, _ ->
         val ids = folders.map { it.bucketId }.toSet()
-        val videos = app.aryan447.mpvex.repository.MediaFileRepository.getVideosForBuckets(context, ids)
+        val videos = app.aryan447.mpvium.repository.MediaFileRepository.getVideosForBuckets(context, ids)
         viewModel.deleteVideos(videos)
         Pair(videos.size, 0)
       },
@@ -260,7 +260,7 @@ object FolderListScreen : Screen {
 
     // Update MainScreen about permission state
     LaunchedEffect(permissionState.status) {
-      app.aryan447.mpvex.ui.browser.MainScreen.updatePermissionState(
+      app.aryan447.mpvium.ui.browser.MainScreen.updatePermissionState(
         isDenied = permissionState.status is PermissionStatus.Denied
       )
     }
@@ -290,7 +290,7 @@ object FolderListScreen : Screen {
     }
 
     // FAB scroll tracking
-    app.aryan447.mpvex.ui.browser.fab.FabScrollHelper.trackScrollForFabVisibility(
+    app.aryan447.mpvium.ui.browser.fab.FabScrollHelper.trackScrollForFabVisibility(
       listState = listState,
       gridState = if (mediaLayoutMode == MediaLayoutMode.GRID) gridState else null,
       isFabVisible = isFabVisible,
@@ -344,7 +344,7 @@ object FolderListScreen : Screen {
           }
         } else {
           BrowserTopBar(
-            title = stringResource(app.aryan447.mpvex.R.string.app_name),
+            title = stringResource(app.aryan447.mpvium.R.string.app_name),
             isInSelectionMode = selectionManager.isInSelectionMode,
             selectedCount = selectionManager.selectedCount,
             totalCount = videoFolders.size,
@@ -353,7 +353,7 @@ object FolderListScreen : Screen {
             onSortClick = { sortDialogOpen.value = true },
             onSearchClick = { isSearching = !isSearching },
             onSettingsClick = {
-              backstack.add(app.aryan447.mpvex.ui.preferences.PreferencesScreen)
+              backstack.add(app.aryan447.mpvium.ui.preferences.PreferencesScreen)
             },
             onDeleteClick = { deleteDialogOpen.value = true },
             onRenameClick = null,
@@ -362,7 +362,7 @@ object FolderListScreen : Screen {
             onShareClick = {
               coroutineScope.launch {
                 val selectedIds = selectionManager.getSelectedItems().map { it.bucketId }.toSet()
-                val allVideos = app.aryan447.mpvex.repository.MediaFileRepository
+                val allVideos = app.aryan447.mpvium.repository.MediaFileRepository
                   .getVideosForBuckets(context, selectedIds)
                 if (allVideos.isNotEmpty()) {
                   MediaUtils.shareVideos(context, allVideos)
@@ -372,14 +372,14 @@ object FolderListScreen : Screen {
             onPlayClick = {
               coroutineScope.launch {
                 val selectedIds = selectionManager.getSelectedItems().map { it.bucketId }.toSet()
-                val allVideos = app.aryan447.mpvex.repository.MediaFileRepository
+                val allVideos = app.aryan447.mpvium.repository.MediaFileRepository
                   .getVideosForBuckets(context, selectedIds)
                 if (allVideos.isNotEmpty()) {
                   if (allVideos.size == 1) {
                     MediaUtils.playFile(allVideos.first(), context)
                   } else {
                     val intent = Intent(Intent.ACTION_VIEW, allVideos.first().uri)
-                    intent.setClass(context, app.aryan447.mpvex.ui.player.PlayerActivity::class.java)
+                    intent.setClass(context, app.aryan447.mpvium.ui.player.PlayerActivity::class.java)
                     intent.putExtra("internal_launch", true)
                     intent.putParcelableArrayListExtra("playlist", ArrayList(allVideos.map { it.uri }))
                     intent.putExtra("playlist_index", 0)
@@ -402,7 +402,7 @@ object FolderListScreen : Screen {
                 viewModel.refresh()
                 android.widget.Toast.makeText(
                   context,
-                  context.getString(app.aryan447.mpvex.R.string.pref_folders_blacklisted),
+                  context.getString(app.aryan447.mpvium.R.string.pref_folders_blacklisted),
                   android.widget.Toast.LENGTH_SHORT,
                 ).show()
               }
@@ -431,7 +431,7 @@ object FolderListScreen : Screen {
             ) {
               ToggleFloatingActionButton(
                 modifier = Modifier.animateFloatingActionButton(
-                  visible = !selectionManager.isInSelectionMode && isFabVisible.value && !app.aryan447.mpvex.ui.browser.MainScreen.getPermissionDeniedState(),
+                  visible = !selectionManager.isInSelectionMode && isFabVisible.value && !app.aryan447.mpvium.ui.browser.MainScreen.getPermissionDeniedState(),
                   alignment = Alignment.BottomEnd,
                 ),
                 checked = isFabExpanded.value,
@@ -514,7 +514,7 @@ object FolderListScreen : Screen {
                     searchResults = searchResults,
                     navigationBarHeight = navigationBarHeight,
                     onFolderClick = { folder ->
-                      backstack.add(app.aryan447.mpvex.ui.browser.videolist.VideoListScreen(folder.bucketId, folder.name))
+                      backstack.add(app.aryan447.mpvium.ui.browser.videolist.VideoListScreen(folder.bucketId, folder.name))
                     },
                     onVideoClick = { video ->
                       MediaUtils.playFile(video, context)
@@ -546,7 +546,7 @@ object FolderListScreen : Screen {
                   if (selectionManager.isInSelectionMode) {
                     selectionManager.toggle(folder)
                   } else {
-                    backstack.add(app.aryan447.mpvex.ui.browser.videolist.VideoListScreen(folder.bucketId, folder.name))
+                    backstack.add(app.aryan447.mpvium.ui.browser.videolist.VideoListScreen(folder.bucketId, folder.name))
                   }
                 },
                 onFolderLongClick = { folder ->
@@ -596,7 +596,7 @@ object FolderListScreen : Screen {
 @Composable
 private fun FolderListContent(
   folders: List<VideoFolder>,
-  foldersWithNewCount: List<app.aryan447.mpvex.ui.browser.folderlist.FolderWithNewCount>,
+  foldersWithNewCount: List<app.aryan447.mpvium.ui.browser.folderlist.FolderWithNewCount>,
   recentlyPlayedFilePath: String?,
   isLoading: Boolean,
   scanStatus: String?,
@@ -609,7 +609,7 @@ private fun FolderListContent(
   listState: LazyListState,
   gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
   isRefreshing: androidx.compose.runtime.MutableState<Boolean>,
-  selectionManager: app.aryan447.mpvex.ui.browser.selection.SelectionManager<VideoFolder, String>,
+  selectionManager: app.aryan447.mpvium.ui.browser.selection.SelectionManager<VideoFolder, String>,
   onRefresh: suspend () -> Unit,
   onFolderClick: (VideoFolder) -> Unit,
   onFolderLongClick: (VideoFolder) -> Unit,
@@ -708,14 +708,14 @@ private fun FolderListContent(
 @Composable
 private fun GridContent(
   folders: List<VideoFolder>,
-  foldersWithNewCount: List<app.aryan447.mpvex.ui.browser.folderlist.FolderWithNewCount>,
+  foldersWithNewCount: List<app.aryan447.mpvium.ui.browser.folderlist.FolderWithNewCount>,
   recentlyPlayedFilePath: String?,
   folderGridColumns: Int,
   tapThumbnailToSelect: Boolean,
   navigationBarHeight: androidx.compose.ui.unit.Dp,
   gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
   scrollbarAlpha: Float,
-  selectionManager: app.aryan447.mpvex.ui.browser.selection.SelectionManager<VideoFolder, String>,
+  selectionManager: app.aryan447.mpvium.ui.browser.selection.SelectionManager<VideoFolder, String>,
   onFolderClick: (VideoFolder) -> Unit,
   onFolderLongClick: (VideoFolder) -> Unit,
 ) {
@@ -788,7 +788,7 @@ private fun ListContent(
   navigationBarHeight: androidx.compose.ui.unit.Dp,
   listState: LazyListState,
   scrollbarAlpha: Float,
-  selectionManager: app.aryan447.mpvex.ui.browser.selection.SelectionManager<VideoFolder, String>,
+  selectionManager: app.aryan447.mpvium.ui.browser.selection.SelectionManager<VideoFolder, String>,
   onFolderClick: (VideoFolder) -> Unit,
   onFolderLongClick: (VideoFolder) -> Unit,
 ) {
@@ -1010,13 +1010,13 @@ private fun FolderSortDialog(
 private fun SearchResultsContent(
   searchResults: List<FileSystemItem>,
   navigationBarHeight: androidx.compose.ui.unit.Dp,
-  onFolderClick: (app.aryan447.mpvex.domain.media.model.VideoFolder) -> Unit,
-  onVideoClick: (app.aryan447.mpvex.domain.media.model.Video) -> Unit,
-  mediaLayoutMode: app.aryan447.mpvex.preferences.MediaLayoutMode,
+  onFolderClick: (app.aryan447.mpvium.domain.media.model.VideoFolder) -> Unit,
+  onVideoClick: (app.aryan447.mpvium.domain.media.model.Video) -> Unit,
+  mediaLayoutMode: app.aryan447.mpvium.preferences.MediaLayoutMode,
   folderGridColumns: Int,
 ) {
   val folders = searchResults.filterIsInstance<FileSystemItem.Folder>().map { folder ->
-    app.aryan447.mpvex.domain.media.model.VideoFolder(
+    app.aryan447.mpvium.domain.media.model.VideoFolder(
       bucketId = folder.path,  // Use path as bucketId since FileSystemItem.Folder doesn't have bucketId
       name = folder.name,
       path = folder.path,
@@ -1028,7 +1028,7 @@ private fun SearchResultsContent(
   }
   val videos = searchResults.filterIsInstance<FileSystemItem.VideoFile>().map { it.video }
 
-  val isGridMode = mediaLayoutMode == app.aryan447.mpvex.preferences.MediaLayoutMode.GRID
+  val isGridMode = mediaLayoutMode == app.aryan447.mpvium.preferences.MediaLayoutMode.GRID
 
   Box(modifier = Modifier.fillMaxSize()) {
     if (isGridMode) {
@@ -1124,7 +1124,7 @@ private suspend fun searchFoldersAndVideos(
     Log.d("FolderListScreen", "Searching for: $query")
 
     // Get all video folders
-    val folders = app.aryan447.mpvex.repository.MediaFileRepository
+    val folders = app.aryan447.mpvium.repository.MediaFileRepository
       .getAllVideoFoldersFast(context)
 
     // Search in folders
@@ -1144,7 +1144,7 @@ private suspend fun searchFoldersAndVideos(
       }
 
       // Also search within videos in this folder
-      val videos = app.aryan447.mpvex.repository.MediaFileRepository
+      val videos = app.aryan447.mpvium.repository.MediaFileRepository
         .getVideosInFolder(context, folder.bucketId)
 
       videos.forEach { video ->

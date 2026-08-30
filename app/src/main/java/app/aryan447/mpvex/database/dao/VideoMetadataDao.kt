@@ -1,10 +1,10 @@
-package app.aryan447.mpvex.database.dao
+package app.aryan447.mpvium.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import app.aryan447.mpvex.database.entities.VideoMetadataEntity
+import app.aryan447.mpvium.database.entities.VideoMetadataEntity
 
 @Dao
 interface VideoMetadataDao {

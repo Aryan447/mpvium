@@ -1,11 +1,11 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.documentfile.provider.DocumentFile
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import app.aryan447.mpvex.utils.media.OpenDocumentTreeContract
+import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,9 +23,9 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import app.aryan447.mpvex.repository.wyzie.WyzieEncodings
-import app.aryan447.mpvex.repository.wyzie.WyzieFormats
-import app.aryan447.mpvex.repository.wyzie.WyzieSources
+import app.aryan447.mpvium.repository.wyzie.WyzieEncodings
+import app.aryan447.mpvium.repository.wyzie.WyzieFormats
+import app.aryan447.mpvium.repository.wyzie.WyzieSources
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -48,14 +48,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.media.CustomFontEntry
-import app.aryan447.mpvex.utils.media.copyFontsFromDirectory
-import app.aryan447.mpvex.utils.media.loadCustomFontEntries
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.media.CustomFontEntry
+import app.aryan447.mpvium.utils.media.copyFontsFromDirectory
+import app.aryan447.mpvium.utils.media.loadCustomFontEntries
 import com.github.k1rakishou.fsaf.FileManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,7 +69,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.TextButton
 import android.net.Uri
-import app.aryan447.mpvex.repository.wyzie.WyzieLanguages
+import app.aryan447.mpvium.repository.wyzie.WyzieLanguages
 import org.koin.compose.koinInject
 
 @Serializable

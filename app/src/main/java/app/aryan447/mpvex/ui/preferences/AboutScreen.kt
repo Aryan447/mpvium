@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -58,12 +58,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.aryan447.mpvex.BuildConfig
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.crash.CrashActivity.Companion.collectDeviceInfo
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.update.UpdateViewModel
+import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.crash.CrashActivity.Companion.collectDeviceInfo
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.update.UpdateViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 

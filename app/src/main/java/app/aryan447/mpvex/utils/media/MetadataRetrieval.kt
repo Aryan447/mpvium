@@ -1,12 +1,12 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import app.aryan447.mpvex.database.repository.VideoMetadataCacheRepository
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.media.model.VideoFolder
-import app.aryan447.mpvex.preferences.BrowserPreferences
+import app.aryan447.mpvium.database.repository.VideoMetadataCacheRepository
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.media.model.VideoFolder
+import app.aryan447.mpvium.preferences.BrowserPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

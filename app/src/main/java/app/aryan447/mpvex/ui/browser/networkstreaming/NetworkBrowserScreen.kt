@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming
+package app.aryan447.mpvium.ui.browser.networkstreaming
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -31,18 +31,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.aryan447.mpvex.database.dao.NetworkConnectionDao
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkFile
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.components.pullrefresh.PullRefreshBox
-import app.aryan447.mpvex.ui.browser.cards.NetworkFolderCard
-import app.aryan447.mpvex.ui.browser.cards.NetworkVideoCard
-import app.aryan447.mpvex.ui.browser.components.BrowserTopBar
-import app.aryan447.mpvex.ui.browser.states.EmptyState
-import app.aryan447.mpvex.ui.preferences.PreferencesScreen
-import app.aryan447.mpvex.ui.utils.LocalBackStack
+import app.aryan447.mpvium.database.dao.NetworkConnectionDao
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkFile
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
+import app.aryan447.mpvium.ui.browser.cards.NetworkFolderCard
+import app.aryan447.mpvium.ui.browser.cards.NetworkVideoCard
+import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.preferences.PreferencesScreen
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
 import my.nanihadesuka.compose.ScrollbarSettings
@@ -98,7 +98,7 @@ data class NetworkBrowserScreen(
           onSortClick = null,
           onSearchClick = null,
           onSettingsClick = {
-            backstack.add(app.aryan447.mpvex.ui.preferences.PreferencesScreen)
+            backstack.add(app.aryan447.mpvium.ui.preferences.PreferencesScreen)
           },
           onDeleteClick = null,
           onRenameClick = null,
@@ -228,7 +228,7 @@ private fun NetworkBrowserContent(
         listState = networkListState,
         modifier = modifier.fillMaxSize(),
       ) {
-        val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+        val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
         Box(
           modifier = Modifier
             .fillMaxSize()

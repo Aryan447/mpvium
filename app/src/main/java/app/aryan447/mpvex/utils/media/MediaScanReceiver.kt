@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 import android.content.BroadcastReceiver
 import android.content.Context

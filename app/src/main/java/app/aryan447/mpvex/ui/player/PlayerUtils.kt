@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -6,7 +6,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
-import app.aryan447.mpvex.ui.player.PlayerActivity.Companion.TAG
+import app.aryan447.mpvium.ui.player.PlayerActivity.Companion.TAG
 import `is`.xyz.mpv.MPVNode
 import `is`.xyz.mpv.Utils
 import kotlinx.serialization.json.Json

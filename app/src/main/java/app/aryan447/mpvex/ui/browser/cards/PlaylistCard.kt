@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.cards
+package app.aryan447.mpvium.ui.browser.cards
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
@@ -7,8 +7,8 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.database.entities.PlaylistEntity
-import app.aryan447.mpvex.domain.media.model.VideoFolder
+import app.aryan447.mpvium.database.entities.PlaylistEntity
+import app.aryan447.mpvium.domain.media.model.VideoFolder
 
 /**
  * Card for displaying a playlist item

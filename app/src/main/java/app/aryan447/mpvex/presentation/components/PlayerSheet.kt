@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package app.aryan447.mpvex.presentation.components
+package app.aryan447.mpvium.presentation.components
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE

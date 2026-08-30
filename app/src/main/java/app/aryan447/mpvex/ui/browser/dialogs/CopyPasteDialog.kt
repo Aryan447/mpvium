@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.dialogs
+package app.aryan447.mpvium.ui.browser.dialogs
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.utils.media.CopyPasteOps
+import app.aryan447.mpvium.utils.media.CopyPasteOps
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

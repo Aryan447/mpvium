@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.presentation.crash
+package app.aryan447.mpvium.presentation.crash
 
 import android.app.Activity
 import android.content.ClipData
@@ -56,14 +56,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.coroutineScope
-import app.aryan447.mpvex.BuildConfig
-import app.aryan447.mpvex.MainActivity
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.ui.theme.DarkMode
-import app.aryan447.mpvex.ui.theme.MpvexTheme
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.MainActivity
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.MpvexTheme
+import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -110,9 +110,9 @@ class CrashActivity : ComponentActivity() {
 
   private fun deleteDatabase(): Boolean =
     try {
-      val dbFile = getDatabasePath("mpvex.db")
-      val dbWalFile = File(dbFile.parent, "mpvex.db-wal")
-      val dbShmFile = File(dbFile.parent, "mpvex.db-shm")
+      val dbFile = getDatabasePath("mpvium.db")
+      val dbWalFile = File(dbFile.parent, "mpvium.db-wal")
+      val dbShmFile = File(dbFile.parent, "mpvium.db-shm")
 
       var deleted = false
       if (dbFile.exists()) {
@@ -138,8 +138,8 @@ class CrashActivity : ComponentActivity() {
         "database",
         "sqlite",
         "room",
-        "mpvex.db",
-        "mpvexDatabase",
+        "mpvium.db",
+        "mpviumDatabase",
         "android.database",
         "androidx.room",
         "SQLiteException",
@@ -163,7 +163,7 @@ class CrashActivity : ComponentActivity() {
       activity: Activity,
     ) {
       withContext(NonCancellable) {
-        val file = File(activity.cacheDir, "mpvex_logs.txt")
+        val file = File(activity.cacheDir, "mpvium_logs.txt")
         if (file.exists()) file.delete()
         file.createNewFile()
         file.appendText(concatLogs(deviceInfo, exceptionString, logcat))

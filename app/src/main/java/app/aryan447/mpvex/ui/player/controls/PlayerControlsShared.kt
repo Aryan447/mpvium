@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls
+package app.aryan447.mpvium.ui.player.controls
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -76,16 +76,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.preferences.PlayerButton
-import app.aryan447.mpvex.ui.player.Panels
-import app.aryan447.mpvex.ui.player.PlayerActivity
-import app.aryan447.mpvex.ui.player.PlayerViewModel
-import app.aryan447.mpvex.ui.player.Sheets
-import app.aryan447.mpvex.ui.player.VideoAspect
-import app.aryan447.mpvex.ui.player.controls.components.ControlsButton
-import app.aryan447.mpvex.ui.player.controls.components.CurrentChapter
-import app.aryan447.mpvex.ui.theme.controlColor
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.ui.player.Panels
+import app.aryan447.mpvium.ui.player.PlayerActivity
+import app.aryan447.mpvium.ui.player.PlayerViewModel
+import app.aryan447.mpvium.ui.player.Sheets
+import app.aryan447.mpvium.ui.player.VideoAspect
+import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
+import app.aryan447.mpvium.ui.player.controls.components.CurrentChapter
+import app.aryan447.mpvium.ui.theme.controlColor
+import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 
 @Composable
@@ -99,7 +99,7 @@ fun RenderPlayerButton(
   aspect: VideoAspect,
   mediaTitle: String?,
   hideBackground: Boolean,
-  decoder: app.aryan447.mpvex.ui.player.Decoder,
+  decoder: app.aryan447.mpvium.ui.player.Decoder,
   playbackSpeed: Float,
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
@@ -612,21 +612,21 @@ fun RenderPlayerButton(
     PlayerButton.REPEAT_MODE -> {
       val repeatMode by viewModel.repeatMode.collectAsState()
       val icon = when (repeatMode) {
-        app.aryan447.mpvex.ui.player.RepeatMode.OFF -> Icons.Default.Repeat
-        app.aryan447.mpvex.ui.player.RepeatMode.ONE -> Icons.Default.RepeatOne
-        app.aryan447.mpvex.ui.player.RepeatMode.ALL -> Icons.Default.RepeatOn
+        app.aryan447.mpvium.ui.player.RepeatMode.OFF -> Icons.Default.Repeat
+        app.aryan447.mpvium.ui.player.RepeatMode.ONE -> Icons.Default.RepeatOne
+        app.aryan447.mpvium.ui.player.RepeatMode.ALL -> Icons.Default.RepeatOn
       }
       ControlsButton(
         icon = icon,
         onClick = viewModel::cycleRepeatMode,
         color = if (hideBackground) {
           when (repeatMode) {
-            app.aryan447.mpvex.ui.player.RepeatMode.OFF -> controlColor
+            app.aryan447.mpvium.ui.player.RepeatMode.OFF -> controlColor
             else -> MaterialTheme.colorScheme.primary
           }
         } else {
           when (repeatMode) {
-            app.aryan447.mpvex.ui.player.RepeatMode.OFF -> MaterialTheme.colorScheme.onSurface
+            app.aryan447.mpvium.ui.player.RepeatMode.OFF -> MaterialTheme.colorScheme.onSurface
             else -> MaterialTheme.colorScheme.primary
           }
         },
@@ -635,7 +635,7 @@ fun RenderPlayerButton(
     }
 
     PlayerButton.CUSTOM_SKIP -> {
-      val playerPreferences = org.koin.compose.koinInject<app.aryan447.mpvex.preferences.PlayerPreferences>()
+      val playerPreferences = org.koin.compose.koinInject<app.aryan447.mpvium.preferences.PlayerPreferences>()
       ControlsButton(
         icon = Icons.Default.FastForward,
         onClick = { viewModel.seekBy(playerPreferences.customSkipDuration.get()) },

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls
+package app.aryan447.mpvium.ui.player.controls
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -7,23 +7,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.ui.player.Decoder
-import app.aryan447.mpvex.ui.player.Panels
-import app.aryan447.mpvex.ui.player.Sheets
-import app.aryan447.mpvex.ui.player.TrackNode
-import app.aryan447.mpvex.ui.player.controls.components.sheets.AspectRatioSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.AudioTracksSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.ChaptersSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.DecodersSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.FrameNavigationSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.MoreSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.PlaybackSpeedSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.PlaylistSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.SubtitlesSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.OnlineSubtitleSearchSheet
-import app.aryan447.mpvex.ui.player.controls.components.sheets.VideoZoomSheet
-import app.aryan447.mpvex.utils.media.MediaInfoParser
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.player.Decoder
+import app.aryan447.mpvium.ui.player.Panels
+import app.aryan447.mpvium.ui.player.Sheets
+import app.aryan447.mpvium.ui.player.TrackNode
+import app.aryan447.mpvium.ui.player.controls.components.sheets.AspectRatioSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.AudioTracksSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.ChaptersSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.DecodersSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.FrameNavigationSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.MoreSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.PlaybackSpeedSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.SubtitlesSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.OnlineSubtitleSearchSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.VideoZoomSheet
+import app.aryan447.mpvium.utils.media.MediaInfoParser
 import dev.vivvvek.seeker.Segment
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -36,7 +36,7 @@ import androidx.compose.runtime.setValue
 @Composable
 fun PlayerSheets(
   sheetShown: Sheets,
-  viewModel: app.aryan447.mpvex.ui.player.PlayerViewModel,
+  viewModel: app.aryan447.mpvium.ui.player.PlayerViewModel,
   // subtitles sheet
   subtitles: ImmutableList<TrackNode>,
   onAddSubtitle: (Uri) -> Unit,
@@ -81,7 +81,7 @@ fun PlayerSheets(
           onAddSubtitle(it)
         }
 
-      val subtitlesPreferences = koinInject<app.aryan447.mpvex.preferences.SubtitlesPreferences>()
+      val subtitlesPreferences = koinInject<app.aryan447.mpvium.preferences.SubtitlesPreferences>()
       val savedPickerPath = subtitlesPreferences.pickerPath.get()
 
       val currentMediaTitle = viewModel.currentMediaTitle
@@ -93,7 +93,7 @@ fun PlayerSheets(
       var showFilePicker by remember { mutableStateOf(false) }
 
       if (showFilePicker) {
-          app.aryan447.mpvex.ui.browser.dialogs.FilePickerDialog(
+          app.aryan447.mpvium.ui.browser.dialogs.FilePickerDialog(
               isOpen = true,
               currentPath = savedPickerPath ?: android.os.Environment.getExternalStorageDirectory().absolutePath,
               onDismiss = { showFilePicker = false },
@@ -265,14 +265,14 @@ fun PlayerSheets(
     }
 
     Sheets.AspectRatios -> {
-      val playerPreferences = koinInject<app.aryan447.mpvex.preferences.PlayerPreferences>()
+      val playerPreferences = koinInject<app.aryan447.mpvium.preferences.PlayerPreferences>()
       val customRatiosSet by playerPreferences.customAspectRatios.collectAsState()
       val currentRatio by viewModel.currentAspectRatio.composeCollectAsState()
       val customRatios =
         customRatiosSet.mapNotNull { str ->
           val parts = str.split("|")
           if (parts.size == 2) {
-            app.aryan447.mpvex.ui.player.controls.components.sheets.AspectRatio(
+            app.aryan447.mpvium.ui.player.controls.components.sheets.AspectRatio(
               label = parts[0],
               ratio = parts[1].toDoubleOrNull() ?: return@mapNotNull null,
               isCustom = true,
@@ -288,7 +288,7 @@ fun PlayerSheets(
         onSelectRatio = { ratio ->
           if (ratio < 0) {
             // Default selected - apply Fit mode
-            viewModel.changeVideoAspect(app.aryan447.mpvex.ui.player.VideoAspect.Fit)
+            viewModel.changeVideoAspect(app.aryan447.mpvium.ui.player.VideoAspect.Fit)
           } else {
             // Custom ratio selected
             viewModel.setCustomAspectRatio(ratio)
@@ -303,7 +303,7 @@ fun PlayerSheets(
           playerPreferences.customAspectRatios.set(customRatiosSet - toRemove)
           // If the deleted ratio is currently active, reset to default (Fit)
           if (kotlin.math.abs(currentRatio - ratio.ratio) < 0.01) {
-            viewModel.changeVideoAspect(app.aryan447.mpvex.ui.player.VideoAspect.Fit)
+            viewModel.changeVideoAspect(app.aryan447.mpvium.ui.player.VideoAspect.Fit)
           }
         },
         onDismissRequest = onDismissRequest,
@@ -334,7 +334,7 @@ fun PlayerSheets(
 
       // Observe playlist updates
       val playlist by viewModel.playlistItems.collectAsState()
-      val playerPreferences = koinInject<app.aryan447.mpvex.preferences.PlayerPreferences>()
+      val playerPreferences = koinInject<app.aryan447.mpvium.preferences.PlayerPreferences>()
 
       if (playlist.isNotEmpty()) {
         val playlistImmutable = playlist.toImmutableList()

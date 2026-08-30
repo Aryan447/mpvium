@@ -1,12 +1,12 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
 import android.content.Context
 import android.net.Uri
 import android.util.Xml
-import app.aryan447.mpvex.database.MpvExDatabase
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkProtocol
-import app.aryan447.mpvex.preferences.preference.PreferenceStore
+import app.aryan447.mpvium.database.MpvExDatabase
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkProtocol
+import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.xmlpull.v1.XmlPullParser

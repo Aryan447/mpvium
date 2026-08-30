@@ -1,7 +1,7 @@
-package app.aryan447.mpvex.di
+package app.aryan447.mpvium.di
 
-import app.aryan447.mpvex.domain.anime4k.Anime4KManager
-import app.aryan447.mpvex.repository.wyzie.WyzieSearchRepository
+import app.aryan447.mpvium.domain.anime4k.Anime4KManager
+import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import okhttp3.OkHttpClient
 import org.koin.dsl.module
 import org.koin.android.ext.koin.androidContext

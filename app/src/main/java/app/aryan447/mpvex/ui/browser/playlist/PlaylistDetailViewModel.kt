@@ -1,16 +1,16 @@
-package app.aryan447.mpvex.ui.browser.playlist
+package app.aryan447.mpvium.ui.browser.playlist
 
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import app.aryan447.mpvex.database.entities.PlaylistEntity
-import app.aryan447.mpvex.database.entities.PlaylistItemEntity
-import app.aryan447.mpvex.database.repository.PlaylistRepository
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.repository.MediaFileRepository
-import app.aryan447.mpvex.ui.browser.base.BaseBrowserViewModel
+import app.aryan447.mpvium.database.entities.PlaylistEntity
+import app.aryan447.mpvium.database.entities.PlaylistItemEntity
+import app.aryan447.mpvium.database.repository.PlaylistRepository
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.repository.MediaFileRepository
+import app.aryan447.mpvium.ui.browser.base.BaseBrowserViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

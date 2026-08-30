@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import dev.vivvvek.seeker.Segment
 import kotlinx.serialization.SerialName

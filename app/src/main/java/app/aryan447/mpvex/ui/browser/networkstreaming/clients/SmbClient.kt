@@ -1,8 +1,8 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming.clients
+package app.aryan447.mpvium.ui.browser.networkstreaming.clients
 
 import android.net.Uri
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkFile
 import com.hierynomus.msdtyp.AccessMask
 import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation
 import com.hierynomus.mssmb2.SMB2CreateDisposition

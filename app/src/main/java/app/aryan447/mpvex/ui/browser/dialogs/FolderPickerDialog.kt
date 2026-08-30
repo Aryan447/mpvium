@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.dialogs
+package app.aryan447.mpvium.ui.browser.dialogs
 
 import android.content.Context
 import android.os.Environment
@@ -42,7 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.utils.storage.StorageVolumeUtils
+import app.aryan447.mpvium.utils.storage.StorageVolumeUtils
 import java.io.File
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

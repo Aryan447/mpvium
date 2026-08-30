@@ -1,13 +1,13 @@
-package app.aryan447.mpvex
+package app.aryan447.mpvium
 
 import android.app.Application
-import app.aryan447.mpvex.database.repository.VideoMetadataCacheRepository
-import app.aryan447.mpvex.di.DatabaseModule
-import app.aryan447.mpvex.di.FileManagerModule
-import app.aryan447.mpvex.di.PreferencesModule
-import app.aryan447.mpvex.presentation.crash.CrashActivity
-import app.aryan447.mpvex.presentation.crash.GlobalExceptionHandler
-import app.aryan447.mpvex.utils.media.MediaLibraryEvents
+import app.aryan447.mpvium.database.repository.VideoMetadataCacheRepository
+import app.aryan447.mpvium.di.DatabaseModule
+import app.aryan447.mpvium.di.FileManagerModule
+import app.aryan447.mpvium.di.PreferencesModule
+import app.aryan447.mpvium.presentation.crash.CrashActivity
+import app.aryan447.mpvium.presentation.crash.GlobalExceptionHandler
+import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import `is`.xyz.mpv.FastThumbnails
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +33,7 @@ class App : Application() {
         PreferencesModule,
         DatabaseModule,
         FileManagerModule,
-        app.aryan447.mpvex.di.domainModule,
+        app.aryan447.mpvium.di.domainModule,
       )
     }
 

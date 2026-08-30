@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.filesystem
+package app.aryan447.mpvium.ui.browser.filesystem
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.domain.browser.PathComponent
+import app.aryan447.mpvium.domain.browser.PathComponent
 
 @Composable
 fun BreadcrumbNavigation(

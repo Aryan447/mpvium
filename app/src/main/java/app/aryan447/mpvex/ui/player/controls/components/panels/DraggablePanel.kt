@@ -1,6 +1,6 @@
 @file:Suppress("ktlint:standard:no-wildcard-imports")
 
-package app.aryan447.mpvex.ui.player.controls.components.panels
+package app.aryan447.mpvium.ui.player.controls.components.panels
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -21,7 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import app.aryan447.mpvex.ui.player.controls.panelCardsColors
+import app.aryan447.mpvium.ui.player.controls.panelCardsColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf

@@ -1,13 +1,13 @@
-package app.aryan447.mpvex.database.repository
+package app.aryan447.mpvium.database.repository
 
 import android.content.Context
 import android.net.Uri
-import app.aryan447.mpvex.database.dao.PlaylistDao
-import app.aryan447.mpvex.database.entities.PlaylistEntity
-import app.aryan447.mpvex.database.entities.PlaylistItemEntity
-import app.aryan447.mpvex.utils.media.M3UParser
-import app.aryan447.mpvex.utils.media.M3UParseResult
-import app.aryan447.mpvex.utils.media.M3UPlaylistItem
+import app.aryan447.mpvium.database.dao.PlaylistDao
+import app.aryan447.mpvium.database.entities.PlaylistEntity
+import app.aryan447.mpvium.database.entities.PlaylistItemEntity
+import app.aryan447.mpvium.utils.media.M3UParser
+import app.aryan447.mpvium.utils.media.M3UParseResult
+import app.aryan447.mpvium.utils.media.M3UPlaylistItem
 import kotlinx.coroutines.flow.Flow
 
 class PlaylistRepository(private val playlistDao: PlaylistDao) {

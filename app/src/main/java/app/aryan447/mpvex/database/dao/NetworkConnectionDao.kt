@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.database.dao
+package app.aryan447.mpvium.database.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import app.aryan447.mpvex.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkConnection
 import kotlinx.coroutines.flow.Flow
 
 /**

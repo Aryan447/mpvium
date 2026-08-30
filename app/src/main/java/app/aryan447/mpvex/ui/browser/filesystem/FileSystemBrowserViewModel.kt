@@ -1,22 +1,22 @@
-package app.aryan447.mpvex.ui.browser.filesystem
+package app.aryan447.mpvium.ui.browser.filesystem
 
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import app.aryan447.mpvex.domain.browser.FileSystemItem
-import app.aryan447.mpvex.domain.browser.PathComponent
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.playbackstate.repository.PlaybackStateRepository
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.repository.MediaFileRepository
-import app.aryan447.mpvex.ui.browser.base.BaseBrowserViewModel
-import app.aryan447.mpvex.utils.media.MediaLibraryEvents
-import app.aryan447.mpvex.utils.media.MetadataRetrieval
-import app.aryan447.mpvex.utils.sort.SortUtils
-import app.aryan447.mpvex.utils.storage.FolderViewScanner
-import app.aryan447.mpvex.utils.storage.TreeViewScanner
+import app.aryan447.mpvium.domain.browser.FileSystemItem
+import app.aryan447.mpvium.domain.browser.PathComponent
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.repository.MediaFileRepository
+import app.aryan447.mpvium.ui.browser.base.BaseBrowserViewModel
+import app.aryan447.mpvium.utils.media.MediaLibraryEvents
+import app.aryan447.mpvium.utils.media.MetadataRetrieval
+import app.aryan447.mpvium.utils.sort.SortUtils
+import app.aryan447.mpvium.utils.storage.FolderViewScanner
+import app.aryan447.mpvium.utils.storage.TreeViewScanner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +40,7 @@ class FileSystemBrowserViewModel(
   KoinComponent {
   private val playbackStateRepository: PlaybackStateRepository by inject()
   private val browserPreferences: BrowserPreferences by inject()
-  private val appearancePreferences: app.aryan447.mpvex.preferences.AppearancePreferences by inject()
+  private val appearancePreferences: app.aryan447.mpvium.preferences.AppearancePreferences by inject()
 
   // Special marker for "show storage volumes" mode
   // Similar to Fossify's root/home folder detection

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.domain.network
+package app.aryan447.mpvium.domain.network
 
 /**
  * Represents a file or directory on a network share

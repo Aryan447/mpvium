@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.dialogs
+package app.aryan447.mpvium.ui.browser.dialogs
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,8 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkProtocol
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkProtocol
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.sheets
+package app.aryan447.mpvium.ui.player.controls.components.sheets
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -62,9 +62,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.geometry.Offset
-import app.aryan447.mpvex.presentation.components.PlayerSheet
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.presentation.components.PlayerSheet
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -233,7 +233,7 @@ fun PlaylistSheet(
   onItemClick: (PlaylistItem) -> Unit,
   totalCount: Int = playlist.size,
   isM3UPlaylist: Boolean = false,
-  playerPreferences: app.aryan447.mpvex.preferences.PlayerPreferences,
+  playerPreferences: app.aryan447.mpvium.preferences.PlayerPreferences,
   modifier: Modifier = Modifier,
 ) {
   val context = LocalContext.current

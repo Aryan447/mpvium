@@ -1,11 +1,11 @@
-package app.aryan447.mpvex.ui.theme
+package app.aryan447.mpvium.ui.theme
 
 import androidx.annotation.StringRes
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
-import app.aryan447.mpvex.R
+import app.aryan447.mpvium.R
 
 /**
  * App themes inspired by Aniyomi design

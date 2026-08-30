@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.panels
+package app.aryan447.mpvium.ui.player.controls.components.panels
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
@@ -44,12 +44,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
-import app.aryan447.mpvex.presentation.components.OutlinedNumericChooser
-import app.aryan447.mpvex.ui.player.controls.CARDS_MAX_WIDTH
-import app.aryan447.mpvex.ui.player.controls.panelCardsColors
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.presentation.components.OutlinedNumericChooser
+import app.aryan447.mpvium.ui.player.controls.CARDS_MAX_WIDTH
+import app.aryan447.mpvium.ui.player.controls.panelCardsColors
+import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject

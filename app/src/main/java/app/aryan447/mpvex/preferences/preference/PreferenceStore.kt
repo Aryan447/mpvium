@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.preferences.preference
+package app.aryan447.mpvium.preferences.preference
 
 interface PreferenceStore {
   fun getString(

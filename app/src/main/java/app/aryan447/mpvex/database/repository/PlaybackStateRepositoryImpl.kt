@@ -1,8 +1,8 @@
-package app.aryan447.mpvex.database.repository
+package app.aryan447.mpvium.database.repository
 
-import app.aryan447.mpvex.database.entities.PlaybackStateEntity
-import app.aryan447.mpvex.database.MpvExDatabase
-import app.aryan447.mpvex.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.database.entities.PlaybackStateEntity
+import app.aryan447.mpvium.database.MpvExDatabase
+import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
 
 class PlaybackStateRepositoryImpl(
   private val database: MpvExDatabase,

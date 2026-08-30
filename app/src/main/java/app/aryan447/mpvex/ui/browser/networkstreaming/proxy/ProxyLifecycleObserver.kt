@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming.proxy
+package app.aryan447.mpvium.ui.browser.networkstreaming.proxy
 
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver

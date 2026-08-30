@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser
+package app.aryan447.mpvium.ui.browser
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
@@ -39,12 +39,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.ui.browser.folderlist.FolderListScreen
-import app.aryan447.mpvex.ui.browser.networkstreaming.NetworkStreamingScreen
-import app.aryan447.mpvex.ui.browser.playlist.PlaylistScreen
-import app.aryan447.mpvex.ui.browser.recentlyplayed.RecentlyPlayedScreen
-import app.aryan447.mpvex.ui.browser.selection.SelectionManager
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
+import app.aryan447.mpvium.ui.browser.networkstreaming.NetworkStreamingScreen
+import app.aryan447.mpvium.ui.browser.playlist.PlaylistScreen
+import app.aryan447.mpvium.ui.browser.recentlyplayed.RecentlyPlayedScreen
+import app.aryan447.mpvium.ui.browser.selection.SelectionManager
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 

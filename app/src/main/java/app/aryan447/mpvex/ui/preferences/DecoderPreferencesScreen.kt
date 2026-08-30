@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import android.content.Context
 import android.content.Intent
@@ -36,14 +36,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.DecoderPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.ui.player.Debanding
-import app.aryan447.mpvex.ui.player.MPVProfile
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.ui.preferences.VulkanUtils
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.DecoderPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.player.Debanding
+import app.aryan447.mpvium.ui.player.MPVProfile
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.ui.preferences.VulkanUtils
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals

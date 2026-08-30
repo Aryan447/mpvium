@@ -1,7 +1,7 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming.clients
+package app.aryan447.mpvium.ui.browser.networkstreaming.clients
 
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkProtocol
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkProtocol
 
 object NetworkClientFactory {
   fun createClient(connection: NetworkConnection): NetworkClient =

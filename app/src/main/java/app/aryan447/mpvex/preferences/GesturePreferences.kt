@@ -1,8 +1,8 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
-import app.aryan447.mpvex.preferences.preference.PreferenceStore
-import app.aryan447.mpvex.preferences.preference.getEnum
-import app.aryan447.mpvex.ui.player.SingleActionGesture
+import app.aryan447.mpvium.preferences.preference.PreferenceStore
+import app.aryan447.mpvium.preferences.preference.getEnum
+import app.aryan447.mpvium.ui.player.SingleActionGesture
 
 class GesturePreferences(
   preferenceStore: PreferenceStore,

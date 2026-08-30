@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.domain.media.model
+package app.aryan447.mpvium.domain.media.model
 
 import android.net.Uri
 import androidx.compose.runtime.Immutable

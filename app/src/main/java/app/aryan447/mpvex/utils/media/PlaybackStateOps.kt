@@ -1,7 +1,7 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 import android.util.Log
-import app.aryan447.mpvex.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
 import org.koin.java.KoinJavaComponent.inject
 import java.io.File
 

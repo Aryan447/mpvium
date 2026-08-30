@@ -1,7 +1,7 @@
-package app.aryan447.mpvex.database.converters
+package app.aryan447.mpvium.database.converters
 
 import androidx.room.TypeConverter
-import app.aryan447.mpvex.domain.network.NetworkProtocol
+import app.aryan447.mpvium.domain.network.NetworkProtocol
 
 /**
  * Type converter for NetworkProtocol enum

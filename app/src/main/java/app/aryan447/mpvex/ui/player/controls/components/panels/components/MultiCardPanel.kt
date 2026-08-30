@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.panels.components
+package app.aryan447.mpvium.ui.player.controls.components.panels.components
 
 import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import androidx.activity.compose.BackHandler
@@ -39,8 +39,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
-import app.aryan447.mpvex.ui.player.controls.CARDS_MAX_WIDTH
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.ui.player.controls.CARDS_MAX_WIDTH
+import app.aryan447.mpvium.ui.theme.spacing
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable

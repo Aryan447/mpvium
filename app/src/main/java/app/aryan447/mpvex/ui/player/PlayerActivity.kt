@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -35,21 +35,21 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
-import app.aryan447.mpvex.database.entities.PlaybackStateEntity
-import app.aryan447.mpvex.databinding.PlayerLayoutBinding
-import app.aryan447.mpvex.domain.playbackstate.repository.PlaybackStateRepository
-import app.aryan447.mpvex.preferences.AdvancedPreferences
-import app.aryan447.mpvex.preferences.AudioPreferences
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.preferences.PlayerPreferences
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
-import app.aryan447.mpvex.ui.player.controls.PlayerControls
-import app.aryan447.mpvex.ui.theme.MpvexTheme
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
-import app.aryan447.mpvex.utils.media.HttpUtils
-import app.aryan447.mpvex.utils.media.SubtitleOps
-import app.aryan447.mpvex.utils.storage.FileTypeUtils
-import app.aryan447.mpvex.utils.storage.FileFilterUtils
+import app.aryan447.mpvium.database.entities.PlaybackStateEntity
+import app.aryan447.mpvium.databinding.PlayerLayoutBinding
+import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.ui.player.controls.PlayerControls
+import app.aryan447.mpvium.ui.theme.MpvexTheme
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.media.HttpUtils
+import app.aryan447.mpvium.utils.media.SubtitleOps
+import app.aryan447.mpvium.utils.storage.FileTypeUtils
+import app.aryan447.mpvium.utils.storage.FileFilterUtils
 import com.github.k1rakishou.fsaf.FileManager
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.MPVNode
@@ -111,7 +111,7 @@ class PlayerActivity :
   /**
    * Repository for managing playlists.
    */
-  private val playlistRepository: app.aryan447.mpvex.database.repository.PlaylistRepository by inject()
+  private val playlistRepository: app.aryan447.mpvium.database.repository.PlaylistRepository by inject()
 
   /**
    * Preferences for player settings.
@@ -3270,14 +3270,14 @@ class PlayerActivity :
           val videoSortOrder = browserPreferences.videoSortOrder.get()
           val bucketId = parentFolder.absolutePath.replace("\\", "/")
           val videosInFolder =
-            app.aryan447.mpvex.repository.MediaFileRepository.getVideosForBuckets(
+            app.aryan447.mpvium.repository.MediaFileRepository.getVideosForBuckets(
               context,
               setOf(bucketId)
             )
-          val sortedVideos = app.aryan447.mpvex.utils.sort.SortUtils.sortVideos(videosInFolder, videoSortType, videoSortOrder)
+          val sortedVideos = app.aryan447.mpvium.utils.sort.SortUtils.sortVideos(videosInFolder, videoSortType, videoSortOrder)
           sortedVideos.mapNotNull { video -> files.find { it.absolutePath == video.path } }
         } else {
-          files.sortedWith { f1, f2 -> app.aryan447.mpvex.utils.sort.SortUtils.NaturalOrderComparator.DEFAULT.compare(f1.name, f2.name) }
+          files.sortedWith { f1, f2 -> app.aryan447.mpvium.utils.sort.SortUtils.NaturalOrderComparator.DEFAULT.compare(f1.name, f2.name) }
         }
 
         if (siblingFiles.size <= 1) return@runCatching
@@ -3313,7 +3313,7 @@ class PlayerActivity :
     /**
      * Intent action used to return playback result data to the calling activity.
      */
-    private const val RESULT_INTENT = "app.aryan447.mpvex.ui.player.PlayerActivity.result"
+    private const val RESULT_INTENT = "app.aryan447.mpvium.ui.player.PlayerActivity.result"
 
     /**
      * Constant for "brightness not set".
@@ -3353,6 +3353,6 @@ class PlayerActivity :
     /**
      * General tag for logging from PlayerActivity.
      */
-    const val TAG = "mpvex"
+    const val TAG = "mpvium"
   }
 }

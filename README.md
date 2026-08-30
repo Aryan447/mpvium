@@ -1,8 +1,8 @@
 ![banner](fastlane/metadata/android/en-US/images/featureGraphic.png)
 
 # mpvExtended
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/aryan447/mpvex.svg?logo=github&label=GitHub&cacheSeconds=3600)](https://github.com/aryan447/mpvex/releases/latest)
-[![GitHub all releases](https://img.shields.io/github/downloads/aryan447/mpvex/total?logo=github&cacheSeconds=3600)](https://github.com/aryan447/mpvex/releases/latest)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/aryan447/mpvium.svg?logo=github&label=GitHub&cacheSeconds=3600)](https://github.com/aryan447/mpvium/releases/latest)
+[![GitHub all releases](https://img.shields.io/github/downloads/aryan447/mpvium/total?logo=github&cacheSeconds=3600)](https://github.com/aryan447/mpvium/releases/latest)
 
 
 **mpvExtended is a fork of [mpv-android](https://github.com/mpv-android/mpv-android), built on the libmpv library. It aims
@@ -41,7 +41,7 @@ Download the latest stable version from the [GitHub releases page](https://githu
 
 Or you can get the stable releases here
 
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroidButtonGreyBorder_nofont.png" height="50" alt="Get it at IzzyOnDroid">](https://apt.izzysoft.de/packages/app.aryan447.mpvex)
+[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroidButtonGreyBorder_nofont.png" height="50" alt="Get it at IzzyOnDroid">](https://apt.izzysoft.de/packages/app.aryan447.mpvium)
 
 ### Preview Builds
 For testing purposes only

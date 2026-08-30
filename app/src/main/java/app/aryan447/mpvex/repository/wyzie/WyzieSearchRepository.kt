@@ -1,12 +1,12 @@
-package app.aryan447.mpvex.repository.wyzie
+package app.aryan447.mpvium.repository.wyzie
 
 import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
-import app.aryan447.mpvex.utils.media.ChecksumUtils
-import app.aryan447.mpvex.utils.media.MediaInfoParser
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.utils.media.ChecksumUtils
+import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable

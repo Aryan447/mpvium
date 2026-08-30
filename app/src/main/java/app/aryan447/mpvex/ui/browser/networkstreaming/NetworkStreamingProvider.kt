@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming
+package app.aryan447.mpvium.ui.browser.networkstreaming
 
 import android.content.ContentProvider
 import android.content.ContentValues
@@ -8,8 +8,8 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import android.util.Log
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.ui.browser.networkstreaming.clients.NetworkClientFactory
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClientFactory
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -22,7 +22,7 @@ class NetworkStreamingProvider : ContentProvider() {
     // Cache for active connections
     private val connectionCache = mutableMapOf<Long, NetworkConnection>()
     private val clientCache =
-      mutableMapOf<Long, app.aryan447.mpvex.ui.browser.networkstreaming.clients.NetworkClient>()
+      mutableMapOf<Long, app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClient>()
 
     fun getUri(context: android.content.Context, connectionId: Long, filePath: String): Uri {
       val authority = "${context.packageName}.networkstreaming"

@@ -1,8 +1,8 @@
-package app.aryan447.mpvex.database.repository
+package app.aryan447.mpvium.database.repository
 
-import app.aryan447.mpvex.database.dao.RecentlyPlayedDao
-import app.aryan447.mpvex.database.entities.RecentlyPlayedEntity
-import app.aryan447.mpvex.domain.recentlyplayed.repository.RecentlyPlayedRepository
+import app.aryan447.mpvium.database.dao.RecentlyPlayedDao
+import app.aryan447.mpvium.database.entities.RecentlyPlayedEntity
+import app.aryan447.mpvium.domain.recentlyplayed.repository.RecentlyPlayedRepository
 import kotlinx.coroutines.flow.Flow
 
 class RecentlyPlayedRepositoryImpl(

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.presentation.components
+package app.aryan447.mpvium.presentation.components
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
@@ -21,8 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.ui.theme.spacing
 
 @Composable
 fun OutlinedNumericChooser(

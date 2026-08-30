@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.components
+package app.aryan447.mpvium.ui.browser.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

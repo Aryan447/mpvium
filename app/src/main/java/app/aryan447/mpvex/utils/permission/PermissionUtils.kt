@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.utils.permission
+package app.aryan447.mpvium.utils.permission
 
 import android.app.Activity
 import android.content.Context
@@ -22,11 +22,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import app.aryan447.mpvex.BuildConfig
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
-import app.aryan447.mpvex.utils.media.MediaLibraryEvents
-import app.aryan447.mpvex.utils.media.PlaybackStateOps
+import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.media.MediaLibraryEvents
+import app.aryan447.mpvium.utils.media.PlaybackStateOps
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus

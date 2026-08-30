@@ -1,6 +1,6 @@
-package app.aryan447.mpvex.domain.browser
+package app.aryan447.mpvium.domain.browser
 
-import app.aryan447.mpvex.domain.media.model.Video
+import app.aryan447.mpvium.domain.media.model.Video
 
 /**
  * Represents an item in the filesystem browser (either a folder or a video file)

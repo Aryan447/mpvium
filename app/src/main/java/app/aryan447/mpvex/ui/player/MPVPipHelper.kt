@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import android.app.PendingIntent
 import android.app.PictureInPictureParams
@@ -14,8 +14,8 @@ import android.util.Log
 import android.util.Rational
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.PlayerPreferences
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.PlayerPreferences
 import `is`.xyz.mpv.MPVLib
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject

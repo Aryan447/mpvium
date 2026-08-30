@@ -1,8 +1,8 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import android.util.Log
-import app.aryan447.mpvex.preferences.AudioPreferences
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.delay
 

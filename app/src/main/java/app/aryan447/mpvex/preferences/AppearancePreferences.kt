@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,12 +9,12 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.preference.PreferenceStore
-import app.aryan447.mpvex.preferences.preference.getEnum
-import app.aryan447.mpvex.ui.theme.AppTheme
-import app.aryan447.mpvex.ui.theme.DarkMode
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.preference.PreferenceStore
+import app.aryan447.mpvium.preferences.preference.getEnum
+import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
 
 class AppearancePreferences(

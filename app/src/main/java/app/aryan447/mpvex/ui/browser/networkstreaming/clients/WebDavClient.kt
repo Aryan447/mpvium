@@ -1,9 +1,9 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming.clients
+package app.aryan447.mpvium.ui.browser.networkstreaming.clients
 
 import android.net.Uri
 import android.util.Log
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkFile
 import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import com.thegrizzlylabs.sardineandroid.DavResource

@@ -1,12 +1,12 @@
-package app.aryan447.mpvex.utils.storage
+package app.aryan447.mpvium.utils.storage
 
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.media.model.VideoFolder
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.media.model.VideoFolder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

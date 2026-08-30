@@ -1,16 +1,16 @@
-package app.aryan447.mpvex.di
+package app.aryan447.mpvium.di
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import app.aryan447.mpvex.database.MpvExDatabase
-import app.aryan447.mpvex.database.repository.PlaybackStateRepositoryImpl
-import app.aryan447.mpvex.database.repository.PlaylistRepository
-import app.aryan447.mpvex.database.repository.RecentlyPlayedRepositoryImpl
-import app.aryan447.mpvex.domain.playbackstate.repository.PlaybackStateRepository
-import app.aryan447.mpvex.domain.recentlyplayed.repository.RecentlyPlayedRepository
-import app.aryan447.mpvex.domain.thumbnail.ThumbnailRepository
+import app.aryan447.mpvium.database.MpvExDatabase
+import app.aryan447.mpvium.database.repository.PlaybackStateRepositoryImpl
+import app.aryan447.mpvium.database.repository.PlaylistRepository
+import app.aryan447.mpvium.database.repository.RecentlyPlayedRepositoryImpl
+import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.domain.recentlyplayed.repository.RecentlyPlayedRepository
+import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
 import kotlinx.serialization.json.Json
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
@@ -472,7 +472,7 @@ val DatabaseModule =
     single<MpvExDatabase> {
       val context = androidContext()
       Room
-        .databaseBuilder(context, MpvExDatabase::class.java, "mpvex.db")
+        .databaseBuilder(context, MpvExDatabase::class.java, "mpvium.db")
         .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
         .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
         .fallbackToDestructiveMigration(true) // Fallback if migration fails (last resort)
@@ -488,7 +488,7 @@ val DatabaseModule =
     single { ThumbnailRepository(androidContext()) }
 
     single {
-      app.aryan447.mpvex.database.repository.VideoMetadataCacheRepository(
+      app.aryan447.mpvium.database.repository.VideoMetadataCacheRepository(
         context = androidContext(),
         dao = get<MpvExDatabase>().videoMetadataDao(),
       )
@@ -501,7 +501,7 @@ val DatabaseModule =
     }
 
     single {
-      app.aryan447.mpvex.repository.NetworkRepository(
+      app.aryan447.mpvium.repository.NetworkRepository(
         dao = get(),
       )
     }

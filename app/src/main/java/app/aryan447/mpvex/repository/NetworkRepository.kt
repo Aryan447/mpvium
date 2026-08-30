@@ -1,11 +1,11 @@
-package app.aryan447.mpvex.repository
+package app.aryan447.mpvium.repository
 
-import app.aryan447.mpvex.database.dao.NetworkConnectionDao
-import app.aryan447.mpvex.domain.network.ConnectionStatus
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkFile
-import app.aryan447.mpvex.ui.browser.networkstreaming.clients.NetworkClient
-import app.aryan447.mpvex.ui.browser.networkstreaming.clients.NetworkClientFactory
+import app.aryan447.mpvium.database.dao.NetworkConnectionDao
+import app.aryan447.mpvium.domain.network.ConnectionStatus
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkFile
+import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClient
+import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClientFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

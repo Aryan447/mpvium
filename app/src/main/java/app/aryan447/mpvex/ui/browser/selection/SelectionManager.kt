@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.selection
+package app.aryan447.mpvium.ui.browser.selection
 
 import android.content.Context
 import android.content.Intent
@@ -11,9 +11,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.ui.player.PlayerActivity
-import app.aryan447.mpvex.utils.media.MediaUtils
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.ui.player.PlayerActivity
+import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 

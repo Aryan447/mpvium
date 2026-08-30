@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.presentation.crash
+package app.aryan447.mpvium.presentation.crash
 
 import android.content.Context
 import android.content.Intent

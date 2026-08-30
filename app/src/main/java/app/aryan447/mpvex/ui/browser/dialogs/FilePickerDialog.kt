@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.dialogs
+package app.aryan447.mpvium.ui.browser.dialogs
 
 import android.content.Context
 import android.content.res.Configuration
@@ -49,7 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import app.aryan447.mpvex.utils.storage.StorageVolumeUtils
+import app.aryan447.mpvium.utils.storage.StorageVolumeUtils
 import java.io.File
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -134,7 +134,7 @@ fun FilePickerDialog(
 
       // Use NaturalOrderComparator for better sorting (e.g., Ep 2 < Ep 10)
       val dirs = allFiles.filter { it.isDirectory }.sortedWith { f1, f2 ->
-          app.aryan447.mpvex.utils.sort.SortUtils.NaturalOrderComparator.DEFAULT.compare(f1.name, f2.name)
+          app.aryan447.mpvium.utils.sort.SortUtils.NaturalOrderComparator.DEFAULT.compare(f1.name, f2.name)
       }
 
       val filteredFiles = allFiles.filter { file ->
@@ -151,7 +151,7 @@ fun FilePickerDialog(
           } else if (!m1 && m2) {
               1
           } else {
-              app.aryan447.mpvex.utils.sort.SortUtils.NaturalOrderComparator.DEFAULT.compare(f1.name, f2.name)
+              app.aryan447.mpvium.utils.sort.SortUtils.NaturalOrderComparator.DEFAULT.compare(f1.name, f2.name)
           }
       }
 

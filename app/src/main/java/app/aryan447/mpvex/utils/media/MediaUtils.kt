@@ -1,14 +1,14 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
-import app.aryan447.mpvex.BuildConfig
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.ui.player.PlayerActivity
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.ui.player.PlayerActivity
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import `is`.xyz.mpv.Utils
 import java.io.File
 
@@ -110,7 +110,7 @@ object MediaUtils {
     replaceWith =
       ReplaceWith(
         "RecentlyPlayedOps.getLastPlayed()",
-        "app.aryan447.mpvex.utils.history.RecentlyPlayedOps",
+        "app.aryan447.mpvium.utils.history.RecentlyPlayedOps",
       ),
   )
   suspend fun getRecentlyPlayedFile(): String? = RecentlyPlayedOps.getLastPlayed()
@@ -123,7 +123,7 @@ object MediaUtils {
     replaceWith =
       ReplaceWith(
         "RecentlyPlayedOps.hasRecentlyPlayed()",
-        "app.aryan447.mpvex.utils.history.RecentlyPlayedOps",
+        "app.aryan447.mpvium.utils.history.RecentlyPlayedOps",
       ),
   )
   suspend fun hasRecentlyPlayedFile(): Boolean = RecentlyPlayedOps.hasRecentlyPlayed()

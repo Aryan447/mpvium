@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.networkstreaming
+package app.aryan447.mpvium.ui.browser.networkstreaming
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,20 +52,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.ui.browser.components.BrowserTopBar
-import app.aryan447.mpvex.ui.browser.cards.NetworkConnectionCard
-import app.aryan447.mpvex.ui.browser.dialogs.AddConnectionSheet
-import app.aryan447.mpvex.ui.browser.dialogs.EditConnectionSheet
-import app.aryan447.mpvex.ui.browser.states.EmptyState
-import app.aryan447.mpvex.ui.preferences.PreferencesScreen
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.media.MediaUtils
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.cards.NetworkConnectionCard
+import app.aryan447.mpvium.ui.browser.dialogs.AddConnectionSheet
+import app.aryan447.mpvium.ui.browser.dialogs.EditConnectionSheet
+import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.preferences.PreferencesScreen
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
-import app.aryan447.mpvex.preferences.FolderViewMode
+import app.aryan447.mpvium.preferences.FolderViewMode
 
 @Serializable
 object NetworkStreamingScreen : Screen {
@@ -79,10 +79,10 @@ object NetworkStreamingScreen : Screen {
 
     val connections by viewModel.connections.collectAsState()
     val connectionStatuses by viewModel.connectionStatuses.collectAsState()
-    val browserPreferences = koinInject<app.aryan447.mpvex.preferences.BrowserPreferences>()
+    val browserPreferences = koinInject<app.aryan447.mpvium.preferences.BrowserPreferences>()
     var showAddSheet by remember { mutableStateOf(false) }
     var editingConnection by remember { mutableStateOf<NetworkConnection?>(null) }
-    val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+    val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
 
     // LazyList state for scroll tracking
     val listState = LazyListState()
@@ -127,7 +127,7 @@ object NetworkStreamingScreen : Screen {
           // Search functionality disabled for production
           onSearchClick = null,
           onSettingsClick = {
-            backstack.add(app.aryan447.mpvex.ui.preferences.PreferencesScreen)
+            backstack.add(app.aryan447.mpvium.ui.preferences.PreferencesScreen)
           },
           onDeleteClick = null,
           onRenameClick = null,
@@ -141,7 +141,7 @@ object NetworkStreamingScreen : Screen {
         )
       },
       floatingActionButton = {
-        val navigationBarHeight = app.aryan447.mpvex.ui.browser.LocalNavigationBarHeight.current
+        val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
         if (isFabVisible) {
           ExtendedFloatingActionButton(
             onClick = { showAddSheet = true },

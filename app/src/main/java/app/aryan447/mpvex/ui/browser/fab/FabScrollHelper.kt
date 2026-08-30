@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.fab
+package app.aryan447.mpvium.ui.browser.fab
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState

@@ -1,12 +1,12 @@
-package app.aryan447.mpvex.ui.browser.base
+package app.aryan447.mpvium.ui.browser.base
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import app.aryan447.mpvex.database.repository.VideoMetadataCacheRepository
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
-import app.aryan447.mpvex.utils.permission.PermissionUtils.StorageOps
+import app.aryan447.mpvium.database.repository.VideoMetadataCacheRepository
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.permission.PermissionUtils.StorageOps
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn

@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.recentlyplayed
+package app.aryan447.mpvium.ui.browser.recentlyplayed
 
 import android.app.Application
 import android.net.Uri
@@ -8,13 +8,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import app.aryan447.mpvex.database.MpvExDatabase
-import app.aryan447.mpvex.database.entities.RecentlyPlayedEntity
-import app.aryan447.mpvex.database.repository.PlaylistRepository
-import app.aryan447.mpvex.database.repository.VideoMetadataCacheRepository
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.domain.recentlyplayed.repository.RecentlyPlayedRepository
-import app.aryan447.mpvex.utils.permission.PermissionUtils
+import app.aryan447.mpvium.database.MpvExDatabase
+import app.aryan447.mpvium.database.entities.RecentlyPlayedEntity
+import app.aryan447.mpvium.database.repository.PlaylistRepository
+import app.aryan447.mpvium.database.repository.VideoMetadataCacheRepository
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.recentlyplayed.repository.RecentlyPlayedRepository
+import app.aryan447.mpvium.utils.permission.PermissionUtils
 
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,7 +59,7 @@ class RecentlyPlayedViewModel(application: Application) : AndroidViewModel(appli
 
   private suspend fun loadRecentVideosFromEntities(
     allRecentEntities: List<RecentlyPlayedEntity>,
-    recentPlaylists: List<app.aryan447.mpvex.database.dao.RecentlyPlayedDao.RecentlyPlayedPlaylistInfo>,
+    recentPlaylists: List<app.aryan447.mpvium.database.dao.RecentlyPlayedDao.RecentlyPlayedPlaylistInfo>,
   ) {
     try {
       val items = mutableListOf<RecentlyPlayedItem>()

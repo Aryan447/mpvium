@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components
+package app.aryan447.mpvium.ui.player.controls.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween

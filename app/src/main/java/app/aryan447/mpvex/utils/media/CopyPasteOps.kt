@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 import android.content.ContentValues
 import android.content.Context
@@ -12,9 +12,9 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.documentfile.provider.DocumentFile
-import app.aryan447.mpvex.domain.media.model.Video
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
-import app.aryan447.mpvex.utils.permission.PermissionUtils
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

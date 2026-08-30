@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.utils.media
+package app.aryan447.mpvium.utils.media
 
 import android.net.Uri
 import android.util.Log
@@ -38,7 +38,7 @@ object HttpUtils {
       connection.requestMethod = "HEAD"
       connection.connectTimeout = CONNECTION_TIMEOUT
       connection.readTimeout = READ_TIMEOUT
-      connection.setRequestProperty("User-Agent", "mpvex/1.0")
+      connection.setRequestProperty("User-Agent", "mpvium/1.0")
       connection.instanceFollowRedirects = true
       connection.connect()
 

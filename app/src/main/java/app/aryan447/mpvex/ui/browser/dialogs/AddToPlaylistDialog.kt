@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.dialogs
+package app.aryan447.mpvium.ui.browser.dialogs
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -43,9 +43,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.database.entities.PlaylistEntity
-import app.aryan447.mpvex.database.repository.PlaylistRepository
-import app.aryan447.mpvex.domain.media.model.Video
+import app.aryan447.mpvium.database.entities.PlaylistEntity
+import app.aryan447.mpvium.database.repository.PlaylistRepository
+import app.aryan447.mpvium.domain.media.model.Video
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import java.text.SimpleDateFormat

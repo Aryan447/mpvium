@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import android.content.Context
 import android.content.Intent
@@ -16,15 +16,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.AudioPreferences
-import app.aryan447.mpvex.preferences.GesturePreferences
-import app.aryan447.mpvex.preferences.PlayerPreferences
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
-import app.aryan447.mpvex.repository.wyzie.WyzieSearchRepository
-import app.aryan447.mpvex.repository.wyzie.WyzieSubtitle
-import app.aryan447.mpvex.utils.media.ChecksumUtils
-import app.aryan447.mpvex.utils.media.MediaInfoParser
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.GesturePreferences
+import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
+import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
+import app.aryan447.mpvium.utils.media.ChecksumUtils
+import app.aryan447.mpvium.utils.media.MediaInfoParser
 import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -52,7 +52,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 import androidx.documentfile.provider.DocumentFile
-import app.aryan447.mpvex.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.AdvancedPreferences
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -89,12 +89,12 @@ class PlayerViewModel(
   private val subtitlesPreferences: SubtitlesPreferences by inject()
   private val advancedPreferences: AdvancedPreferences by inject()
   private val json: Json by inject()
-  private val playbackStateDao: app.aryan447.mpvex.database.dao.PlaybackStateDao by inject()
+  private val playbackStateDao: app.aryan447.mpvium.database.dao.PlaybackStateDao by inject()
   private val wyzieRepository: WyzieSearchRepository by inject()
 
   // Playlist items for the playlist sheet
-  private val _playlistItems = kotlinx.coroutines.flow.MutableStateFlow<List<app.aryan447.mpvex.ui.player.controls.components.sheets.PlaylistItem>>(emptyList())
-  val playlistItems: kotlinx.coroutines.flow.StateFlow<List<app.aryan447.mpvex.ui.player.controls.components.sheets.PlaylistItem>> = _playlistItems.asStateFlow()
+  private val _playlistItems = kotlinx.coroutines.flow.MutableStateFlow<List<app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem>>(emptyList())
+  val playlistItems: kotlinx.coroutines.flow.StateFlow<List<app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem>> = _playlistItems.asStateFlow()
 
   // Wyzie Search Results
   private val _wyzieSearchResults = MutableStateFlow<List<WyzieSubtitle>>(emptyList())
@@ -110,31 +110,31 @@ class PlayerViewModel(
   val isOnlineSectionExpanded: StateFlow<Boolean> = _isOnlineSectionExpanded.asStateFlow()
 
   // Media Search / Autocomplete
-  private val _mediaSearchResults = MutableStateFlow<List<app.aryan447.mpvex.repository.wyzie.WyzieTmdbResult>>(emptyList())
-  val mediaSearchResults: StateFlow<List<app.aryan447.mpvex.repository.wyzie.WyzieTmdbResult>> = _mediaSearchResults.asStateFlow()
+  private val _mediaSearchResults = MutableStateFlow<List<app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult>>(emptyList())
+  val mediaSearchResults: StateFlow<List<app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult>> = _mediaSearchResults.asStateFlow()
 
   private val _isSearchingMedia = MutableStateFlow(false)
   val isSearchingMedia: StateFlow<Boolean> = _isSearchingMedia.asStateFlow()
 
   // TV Show Details
-  private val _selectedTvShow = MutableStateFlow<app.aryan447.mpvex.repository.wyzie.WyzieTvShowDetails?>(null)
-  val selectedTvShow: StateFlow<app.aryan447.mpvex.repository.wyzie.WyzieTvShowDetails?> = _selectedTvShow.asStateFlow()
+  private val _selectedTvShow = MutableStateFlow<app.aryan447.mpvium.repository.wyzie.WyzieTvShowDetails?>(null)
+  val selectedTvShow: StateFlow<app.aryan447.mpvium.repository.wyzie.WyzieTvShowDetails?> = _selectedTvShow.asStateFlow()
 
   private val _isFetchingTvDetails = MutableStateFlow(false)
   val isFetchingTvDetails: StateFlow<Boolean> = _isFetchingTvDetails.asStateFlow()
 
   // Season / Episode
-  private val _selectedSeason = MutableStateFlow<app.aryan447.mpvex.repository.wyzie.WyzieSeason?>(null)
-  val selectedSeason: StateFlow<app.aryan447.mpvex.repository.wyzie.WyzieSeason?> = _selectedSeason.asStateFlow()
+  private val _selectedSeason = MutableStateFlow<app.aryan447.mpvium.repository.wyzie.WyzieSeason?>(null)
+  val selectedSeason: StateFlow<app.aryan447.mpvium.repository.wyzie.WyzieSeason?> = _selectedSeason.asStateFlow()
 
-  private val _seasonEpisodes = MutableStateFlow<List<app.aryan447.mpvex.repository.wyzie.WyzieEpisode>>(emptyList())
-  val seasonEpisodes: StateFlow<List<app.aryan447.mpvex.repository.wyzie.WyzieEpisode>> = _seasonEpisodes.asStateFlow()
+  private val _seasonEpisodes = MutableStateFlow<List<app.aryan447.mpvium.repository.wyzie.WyzieEpisode>>(emptyList())
+  val seasonEpisodes: StateFlow<List<app.aryan447.mpvium.repository.wyzie.WyzieEpisode>> = _seasonEpisodes.asStateFlow()
 
   private val _isFetchingEpisodes = MutableStateFlow(false)
   val isFetchingEpisodes: StateFlow<Boolean> = _isFetchingEpisodes.asStateFlow()
 
-  private val _selectedEpisode = MutableStateFlow<app.aryan447.mpvex.repository.wyzie.WyzieEpisode?>(null)
-  val selectedEpisode: StateFlow<app.aryan447.mpvex.repository.wyzie.WyzieEpisode?> = _selectedEpisode.asStateFlow()
+  private val _selectedEpisode = MutableStateFlow<app.aryan447.mpvium.repository.wyzie.WyzieEpisode?>(null)
+  val selectedEpisode: StateFlow<app.aryan447.mpvium.repository.wyzie.WyzieEpisode?> = _selectedEpisode.asStateFlow()
 
   fun toggleOnlineSection() {
       _isOnlineSectionExpanded.value = !_isOnlineSectionExpanded.value
@@ -655,7 +655,7 @@ class PlayerViewModel(
     }
   }
 
-  fun selectMedia(result: app.aryan447.mpvex.repository.wyzie.WyzieTmdbResult) {
+  fun selectMedia(result: app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult) {
     _mediaSearchResults.value = emptyList() // Clear results after selection
     _wyzieSearchResults.value = emptyList() // Clear old subtitle results
 
@@ -685,7 +685,7 @@ class PlayerViewModel(
     }
   }
 
-  fun selectSeason(season: app.aryan447.mpvex.repository.wyzie.WyzieSeason) {
+  fun selectSeason(season: app.aryan447.mpvium.repository.wyzie.WyzieSeason) {
     val tvShowId = _selectedTvShow.value?.id ?: return
     _selectedSeason.value = season
 
@@ -704,7 +704,7 @@ class PlayerViewModel(
     }
   }
 
-  fun selectEpisode(episode: app.aryan447.mpvex.repository.wyzie.WyzieEpisode) {
+  fun selectEpisode(episode: app.aryan447.mpvium.repository.wyzie.WyzieEpisode) {
     _selectedEpisode.value = episode
     val tvShowName = _selectedTvShow.value?.name ?: currentMediaTitle
     searchSubtitles(tvShowName, episode.season_number, episode.episode_number)
@@ -1442,7 +1442,7 @@ class PlayerViewModel(
     return activity.playlist.size
   }
 
-  fun getPlaylistData(): List<app.aryan447.mpvex.ui.player.controls.components.sheets.PlaylistItem>? {
+  fun getPlaylistData(): List<app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem>? {
     val activity = host as? PlayerActivity ?: return null
     if (activity.playlist.isEmpty()) return null
 
@@ -1464,7 +1464,7 @@ class PlayerViewModel(
       val cacheKey = uri.toString()
       val (durationStr, resolutionStr) = synchronized(metadataCache) { metadataCache[cacheKey] } ?: ("" to "")
 
-      app.aryan447.mpvex.ui.player.controls.components.sheets.PlaylistItem(
+      app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem(
         uri = uri,
         title = title,
         index = index,
@@ -1704,7 +1704,7 @@ class PlayerViewModel(
    * Uses batched updates to avoid O(n²) complexity with large playlists.
    * Skips metadata extraction for M3U playlists (network streams).
    */
-  private fun loadPlaylistMetadataAsync(items: List<app.aryan447.mpvex.ui.player.controls.components.sheets.PlaylistItem>) {
+  private fun loadPlaylistMetadataAsync(items: List<app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem>) {
     viewModelScope.launch(Dispatchers.IO) {
       // Skip metadata extraction for M3U playlists
       val activity = host as? PlayerActivity
@@ -1861,9 +1861,9 @@ class PlayerViewModel(
 
     // Use labeled video filter for mirroring to avoid state desync
     if (newMirrorState) {
-      MPVLib.command("vf", "add", "@mpvex_hflip:hflip")
+      MPVLib.command("vf", "add", "@mpvium_hflip:hflip")
     } else {
-      MPVLib.command("vf", "remove", "@mpvex_hflip")
+      MPVLib.command("vf", "remove", "@mpvium_hflip")
     }
     playerUpdate.value = PlayerUpdates.ShowText(if (newMirrorState) "H-Flip On" else "H-Flip Off")
   }
@@ -1874,9 +1874,9 @@ class PlayerViewModel(
 
     // Use labeled video filter for vflip to avoid state desync
     if (newState) {
-      MPVLib.command("vf", "add", "@mpvex_vflip:vflip")
+      MPVLib.command("vf", "add", "@mpvium_vflip:vflip")
     } else {
-      MPVLib.command("vf", "remove", "@mpvex_vflip")
+      MPVLib.command("vf", "remove", "@mpvium_vflip")
     }
 
     playerUpdate.value = PlayerUpdates.ShowText(if (newState) "V-Flip On" else "V-Flip Off")

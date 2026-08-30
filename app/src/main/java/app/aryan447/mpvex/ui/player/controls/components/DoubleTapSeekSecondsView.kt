@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components
+package app.aryan447.mpvium.ui.player.controls.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -15,7 +15,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
+import app.aryan447.mpvium.R
 
 /**
  * View that shows the arrows animation when double tapping to seek

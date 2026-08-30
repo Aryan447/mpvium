@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences.components
+package app.aryan447.mpvium.ui.preferences.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,8 +17,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.ui.theme.AppTheme
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.ui.theme.AppTheme
 
 /**
  * A horizontal scrollable theme picker with preview cards.

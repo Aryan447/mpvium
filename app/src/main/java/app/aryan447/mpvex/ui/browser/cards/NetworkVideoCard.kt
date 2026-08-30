@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.cards
+package app.aryan447.mpvium.ui.browser.cards
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -27,11 +27,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.preferences.AppearancePreferences
-import app.aryan447.mpvex.preferences.BrowserPreferences
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.domain.network.NetworkConnection
-import app.aryan447.mpvex.domain.network.NetworkFile
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkFile
 import androidx.compose.foundation.combinedClickable
 import org.koin.compose.koinInject
 import java.text.SimpleDateFormat

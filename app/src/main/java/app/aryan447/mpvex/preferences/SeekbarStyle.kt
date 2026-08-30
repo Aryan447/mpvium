@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
 enum class SeekbarStyle {
     Standard,

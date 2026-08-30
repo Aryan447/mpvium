@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.sheets
+package app.aryan447.mpvium.ui.player.controls.components.sheets
 
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -18,10 +18,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.repository.wyzie.WyzieSubtitle
-import app.aryan447.mpvex.ui.theme.spacing
-import app.aryan447.mpvex.utils.media.MediaInfoParser
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
+import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -43,18 +43,18 @@ fun OnlineSubtitleSearchSheet(
   modifier: Modifier = Modifier,
   mediaTitle: String = "",
   // Autocomplete & Series Selection
-  mediaSearchResults: ImmutableList<app.aryan447.mpvex.repository.wyzie.WyzieTmdbResult> = emptyList<app.aryan447.mpvex.repository.wyzie.WyzieTmdbResult>().toImmutableList(),
+  mediaSearchResults: ImmutableList<app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult> = emptyList<app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult>().toImmutableList(),
   isSearchingMedia: Boolean = false,
   onSearchMedia: (String) -> Unit = {},
-  onSelectMedia: (app.aryan447.mpvex.repository.wyzie.WyzieTmdbResult) -> Unit = {},
-  selectedTvShow: app.aryan447.mpvex.repository.wyzie.WyzieTvShowDetails? = null,
+  onSelectMedia: (app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult) -> Unit = {},
+  selectedTvShow: app.aryan447.mpvium.repository.wyzie.WyzieTvShowDetails? = null,
   isFetchingTvDetails: Boolean = false,
-  selectedSeason: app.aryan447.mpvex.repository.wyzie.WyzieSeason? = null,
-  onSelectSeason: (app.aryan447.mpvex.repository.wyzie.WyzieSeason) -> Unit = {},
-  seasonEpisodes: ImmutableList<app.aryan447.mpvex.repository.wyzie.WyzieEpisode> = emptyList<app.aryan447.mpvex.repository.wyzie.WyzieEpisode>().toImmutableList(),
+  selectedSeason: app.aryan447.mpvium.repository.wyzie.WyzieSeason? = null,
+  onSelectSeason: (app.aryan447.mpvium.repository.wyzie.WyzieSeason) -> Unit = {},
+  seasonEpisodes: ImmutableList<app.aryan447.mpvium.repository.wyzie.WyzieEpisode> = emptyList<app.aryan447.mpvium.repository.wyzie.WyzieEpisode>().toImmutableList(),
   isFetchingEpisodes: Boolean = false,
-  selectedEpisode: app.aryan447.mpvex.repository.wyzie.WyzieEpisode? = null,
-  onSelectEpisode: (app.aryan447.mpvex.repository.wyzie.WyzieEpisode) -> Unit = {},
+  selectedEpisode: app.aryan447.mpvium.repository.wyzie.WyzieEpisode? = null,
+  onSelectEpisode: (app.aryan447.mpvium.repository.wyzie.WyzieEpisode) -> Unit = {},
   onClearMediaSelection: () -> Unit = {}
 ) {
   val items = remember(searchResults, isSearching, isOnlineSectionExpanded) {
@@ -321,7 +321,7 @@ fun WyzieSubtitleRow(
 
 @Composable
 fun TmdbResultRow(
-    result: app.aryan447.mpvex.repository.wyzie.WyzieTmdbResult,
+    result: app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -350,14 +350,14 @@ fun TmdbResultRow(
 
 @Composable
 fun SeriesDetailsSection(
-    tvShow: app.aryan447.mpvex.repository.wyzie.WyzieTvShowDetails,
+    tvShow: app.aryan447.mpvium.repository.wyzie.WyzieTvShowDetails,
     isFetchingSeasons: Boolean,
-    selectedSeason: app.aryan447.mpvex.repository.wyzie.WyzieSeason?,
-    onSelectSeason: (app.aryan447.mpvex.repository.wyzie.WyzieSeason) -> Unit,
+    selectedSeason: app.aryan447.mpvium.repository.wyzie.WyzieSeason?,
+    onSelectSeason: (app.aryan447.mpvium.repository.wyzie.WyzieSeason) -> Unit,
     isFetchingEpisodes: Boolean,
-    episodes: ImmutableList<app.aryan447.mpvex.repository.wyzie.WyzieEpisode>,
-    selectedEpisode: app.aryan447.mpvex.repository.wyzie.WyzieEpisode?,
-    onSelectEpisode: (app.aryan447.mpvex.repository.wyzie.WyzieEpisode) -> Unit,
+    episodes: ImmutableList<app.aryan447.mpvium.repository.wyzie.WyzieEpisode>,
+    selectedEpisode: app.aryan447.mpvium.repository.wyzie.WyzieEpisode?,
+    onSelectEpisode: (app.aryan447.mpvium.repository.wyzie.WyzieEpisode) -> Unit,
     onClose: () -> Unit
 ) {
     Card(

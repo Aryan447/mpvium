@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls.components.panels
+package app.aryan447.mpvium.ui.player.controls.components.panels
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
@@ -37,15 +37,15 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.core.graphics.toColorInt
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.SubtitlesPreferences
-import app.aryan447.mpvex.preferences.preference.Preference
-import app.aryan447.mpvex.preferences.preference.deleteAndGet
-import app.aryan447.mpvex.presentation.components.ExpandableCard
-import app.aryan447.mpvex.presentation.components.TintedSliderItem
-import app.aryan447.mpvex.ui.player.controls.CARDS_MAX_WIDTH
-import app.aryan447.mpvex.ui.player.controls.panelCardsColors
-import app.aryan447.mpvex.ui.theme.spacing
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.preference.Preference
+import app.aryan447.mpvium.preferences.preference.deleteAndGet
+import app.aryan447.mpvium.presentation.components.ExpandableCard
+import app.aryan447.mpvium.presentation.components.TintedSliderItem
+import app.aryan447.mpvium.ui.player.controls.CARDS_MAX_WIDTH
+import app.aryan447.mpvium.ui.player.controls.panelCardsColors
+import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import org.koin.compose.koinInject
 

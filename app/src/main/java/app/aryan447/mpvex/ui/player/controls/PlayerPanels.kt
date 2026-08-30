@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player.controls
+package app.aryan447.mpvium.ui.player.controls
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -15,11 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.ui.player.Panels
-import app.aryan447.mpvex.ui.player.controls.components.panels.AudioDelayPanel
-import app.aryan447.mpvex.ui.player.controls.components.panels.SubtitleDelayPanel
-import app.aryan447.mpvex.ui.player.controls.components.panels.SubtitleSettingsPanel
-import app.aryan447.mpvex.ui.player.controls.components.panels.VideoSettingsPanel
+import app.aryan447.mpvium.ui.player.Panels
+import app.aryan447.mpvium.ui.player.controls.components.panels.AudioDelayPanel
+import app.aryan447.mpvium.ui.player.controls.components.panels.SubtitleDelayPanel
+import app.aryan447.mpvium.ui.player.controls.components.panels.SubtitleSettingsPanel
+import app.aryan447.mpvium.ui.player.controls.components.panels.VideoSettingsPanel
 
 @Composable
 fun PlayerPanels(

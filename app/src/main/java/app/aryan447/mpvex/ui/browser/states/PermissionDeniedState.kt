@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package app.aryan447.mpvex.ui.browser.states
+package app.aryan447.mpvium.ui.browser.states
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -58,8 +58,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvex.BuildConfig
-import app.aryan447.mpvex.R
+import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.R
 
 @SuppressLint("UseKtx")
 @Composable
@@ -236,7 +236,7 @@ fun PermissionDeniedState(
   // Explanation Dialog
   if (showExplanationDialog) {
     val uriHandler = LocalUriHandler.current
-    val githubUrl = "https://github.com/aryan447/mpvex"
+    val githubUrl = "https://github.com/aryan447/mpvium"
 
     AlertDialog(
       onDismissRequest = { showExplanationDialog = false },

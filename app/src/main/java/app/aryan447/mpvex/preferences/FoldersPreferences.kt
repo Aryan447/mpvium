@@ -1,6 +1,6 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
-import app.aryan447.mpvex.preferences.preference.PreferenceStore
+import app.aryan447.mpvium.preferences.preference.PreferenceStore
 
 /**
  * Preferences for folder management

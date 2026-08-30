@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.preferences
+package app.aryan447.mpvium.ui.preferences
 
 import android.content.Intent
 import android.net.Uri
@@ -8,7 +8,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
-import app.aryan447.mpvex.utils.media.OpenDocumentTreeContract
+import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -44,17 +44,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.util.fastJoinToString
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.database.MpvExDatabase
-import app.aryan447.mpvex.domain.thumbnail.ThumbnailRepository
-import app.aryan447.mpvex.preferences.AdvancedPreferences
-import app.aryan447.mpvex.preferences.SettingsManager
-import app.aryan447.mpvex.preferences.preference.collectAsState
-import app.aryan447.mpvex.presentation.Screen
-import app.aryan447.mpvex.presentation.components.ConfirmDialog
-import app.aryan447.mpvex.presentation.crash.CrashActivity
-import app.aryan447.mpvex.ui.utils.LocalBackStack
-import app.aryan447.mpvex.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.database.MpvExDatabase
+import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
+import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.SettingsManager
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.ConfirmDialog
+import app.aryan447.mpvium.presentation.crash.CrashActivity
+import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -445,7 +445,7 @@ object AdvancedPreferencesScreen : Screen {
           item {
             PreferenceCard {
               var isConfirmDialogShown by remember { mutableStateOf(false) }
-              val mpvexDatabase = koinInject<MpvExDatabase>()
+              val mpviumDatabase = koinInject<MpvExDatabase>()
               val enableRecentlyPlayed by preferences.enableRecentlyPlayed.collectAsState()
 
               SwitchPreference(
@@ -474,7 +474,7 @@ object AdvancedPreferencesScreen : Screen {
                   onConfirm = {
                     scope.launch(Dispatchers.IO) {
                       runCatching {
-                        mpvexDatabase.videoDataDao().clearAllPlaybackStates()
+                        mpviumDatabase.videoDataDao().clearAllPlaybackStates()
                         RecentlyPlayedOps.clearAll()
                       }.onSuccess {
                         withContext(Dispatchers.Main) {

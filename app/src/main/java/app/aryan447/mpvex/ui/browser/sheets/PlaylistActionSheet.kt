@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.sheets
+package app.aryan447.mpvium.ui.browser.sheets
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
 fun PlaylistActionSheet(
   isOpen: Boolean,
   onDismiss: () -> Unit,
-  repository: app.aryan447.mpvex.database.repository.PlaylistRepository,
+  repository: app.aryan447.mpvium.database.repository.PlaylistRepository,
   context: android.content.Context,
   modifier: Modifier = Modifier,
 ) {

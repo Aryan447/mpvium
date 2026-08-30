@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.MPVNode

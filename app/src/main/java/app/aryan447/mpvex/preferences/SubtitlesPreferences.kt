@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
@@ -8,9 +8,9 @@ import androidx.compose.material.icons.filled.FormatAlignJustify
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
-import app.aryan447.mpvex.preferences.preference.PreferenceStore
-import app.aryan447.mpvex.preferences.preference.getEnum
-import app.aryan447.mpvex.ui.player.controls.components.panels.SubtitlesBorderStyle
+import app.aryan447.mpvium.preferences.preference.PreferenceStore
+import app.aryan447.mpvium.preferences.preference.getEnum
+import app.aryan447.mpvium.ui.player.controls.components.panels.SubtitlesBorderStyle
 
 class SubtitlesPreferences(
   preferenceStore: PreferenceStore,

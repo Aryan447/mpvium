@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.player
+package app.aryan447.mpvium.ui.player
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -21,10 +21,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.media.MediaBrowserServiceCompat
 import androidx.media.session.MediaButtonReceiver
-import app.aryan447.mpvex.R
+import app.aryan447.mpvium.R
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.MPVNode
-import app.aryan447.mpvex.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.PlayerPreferences
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -38,7 +38,7 @@ class MediaPlaybackService :
   companion object {
     private const val TAG = "MediaPlaybackService"
     private const val NOTIFICATION_ID = 1
-    private const val NOTIFICATION_CHANNEL_ID = "mpvex_playback_channel"
+    private const val NOTIFICATION_CHANNEL_ID = "mpvium_playback_channel"
 
     @Volatile
     internal var thumbnail: Bitmap? = null

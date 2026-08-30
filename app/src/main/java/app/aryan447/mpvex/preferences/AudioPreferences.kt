@@ -1,9 +1,9 @@
-package app.aryan447.mpvex.preferences
+package app.aryan447.mpvium.preferences
 
 import androidx.annotation.StringRes
-import app.aryan447.mpvex.R
-import app.aryan447.mpvex.preferences.preference.PreferenceStore
-import app.aryan447.mpvex.preferences.preference.getEnum
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.preference.PreferenceStore
+import app.aryan447.mpvium.preferences.preference.getEnum
 
 class AudioPreferences(
   preferenceStore: PreferenceStore,

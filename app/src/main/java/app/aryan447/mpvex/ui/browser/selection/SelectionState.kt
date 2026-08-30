@@ -1,4 +1,4 @@
-package app.aryan447.mpvex.ui.browser.selection
+package app.aryan447.mpvium.ui.browser.selection
 
 import androidx.compose.runtime.Stable
 
