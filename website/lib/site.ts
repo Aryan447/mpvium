@@ -9,7 +9,7 @@
  * Contains metadata, external links, and author information used throughout the application.
  */
 export const siteConfig = {
-  name: "mpvExtended",
+  name: "mpvium",
   version: "v1.2.7",
   description:
     "Advanced mpv-based video player for Android with powerful features, seamless playback, and open-source freedom.",
@@ -20,11 +20,11 @@ export const siteConfig = {
     apple: "/apple-icon.png",
   },
   links: {
-    github: "https://github.com/aryan447/mpvEx",
-    releases: "https://github.com/aryan447/mpvEx/releases",
-    latestRelease: "https://github.com/aryan447/mpvEx/releases/latest",
+    github: "https://github.com/aryan447/mpvium",
+    releases: "https://github.com/aryan447/mpvium/releases",
+    latestRelease: "https://github.com/aryan447/mpvium/releases/latest",
     izzyOnAndroid: "https://apt.izzysoft.de/packages/app.aryan447.mpvium",
-    contributors: "https://github.com/aryan447/mpvEx/graphs/contributors",
+    contributors: "https://github.com/aryan447/mpvium/graphs/contributors",
   },
   author: {
     name: "aryan447",

@@ -35,7 +35,7 @@ export function DownloadsSection({ downloadUrl }: { downloadUrl?: string }) {
           </span>
         </h2>
         <p className="text-lg text-muted-foreground text-center mb-20 max-w-2xl mx-auto">
-          Download mpvExtended from your preferred source and start experiencing
+          Download mpvium from your preferred source and start experiencing
           premium playback today.
         </p>
 

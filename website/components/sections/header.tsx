@@ -50,7 +50,7 @@ export function Header({ downloadUrl }: { downloadUrl?: string }) {
           <div className="relative w-10 h-10 flex items-center justify-center shrink-0 bg-foreground/5 dark:bg-white/5 rounded-xl overflow-hidden border border-border/50 shadow-sm transition-transform duration-300 group-hover:scale-110">
             <Image
               src="/icon.png"
-              alt="mpvEx Logo"
+              alt="mpvium Logo"
               width={40}
               height={40}
               priority
@@ -58,7 +58,7 @@ export function Header({ downloadUrl }: { downloadUrl?: string }) {
             />
           </div>
           <span className="text-foreground font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
-            mpvEx
+            mpvium
           </span>
         </div>
 

@@ -86,7 +86,7 @@ export function Footer() {
           </a>
           <span className="text-muted-foreground/30">•</span>
           <p className="text-sm text-muted-foreground">
-            {`© ${currentYear} mpvExtended Project. Apache 2.0 License`}
+            {`© ${currentYear} mpvium Project. Apache 2.0 License`}
           </p>
         </div>
       </div>

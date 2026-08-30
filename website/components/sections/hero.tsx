@@ -91,7 +91,7 @@ export function HeroSection({
           className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight mb-6"
         >
           <span className="bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/60">
-            mpvExtended
+            mpvium
           </span>
         </motion.h1>
 
@@ -134,7 +134,7 @@ export function HeroSection({
        <motion.img
          variants={itemVariants}
          src="/player.png"
-         alt="MpvEx Player Image"
+         alt="mpvium Player Image"
          className="mt-0 max-w-screen-md w-full mx-auto rounded-lg shadow-lg"
        >
      </motion.img>

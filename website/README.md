@@ -1,11 +1,11 @@
 <div align="center">
-  <img src="public/featureGraphic.png" width="100%" alt="mpvExtended Banner" />
+  <img src="public/featureGraphic.png" width="100%" alt="mpvium Banner" />
 
 **The Most Powerful, Material3-Powered Video Experience for Android**
 
-[![GitHub release](https://img.shields.io/github/v/release/aryan447/mpvEx?style=for-the-badge&logo=github&color=7C3AED)](https://github.com/aryan447/mpvEx/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/aryan447/mpvEx/total?style=for-the-badge&logo=github&color=3B82F6)](https://github.com/aryan447/mpvEx/releases/latest)
-[![Stars](https://img.shields.io/github/stars/aryan447/mpvEx?style=for-the-badge&logo=github&color=F59E0B)](https://github.com/aryan447/mpvEx/stargazers)
+[![GitHub release](https://img.shields.io/github/v/release/aryan447/mpvium?style=for-the-badge&logo=github&color=7C3AED)](https://github.com/aryan447/mpvium/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/aryan447/mpvium/total?style=for-the-badge&logo=github&color=3B82F6)](https://github.com/aryan447/mpvium/releases/latest)
+[![Stars](https://img.shields.io/github/stars/aryan447/mpvium?style=for-the-badge&logo=github&color=F59E0B)](https://github.com/aryan447/mpvium/stargazers)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge)](LICENSE)
 
 </div>
@@ -20,19 +20,19 @@ Get the latest stable release directly from GitHub or the IzzyOnDroid repository
 
 | Source              | Link                                                                                                                                                              |
 | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub Releases** | [![Download](https://img.shields.io/badge/Download-Latest%20APK-7C3AED?style=flat-square&logo=github)](https://github.com/aryan447/mpvEx/releases/latest) |
+| **GitHub Releases** | [![Download](https://img.shields.io/badge/Download-Latest%20APK-7C3AED?style=flat-square&logo=github)](https://github.com/aryan447/mpvium/releases/latest) |
 | **IzzyOnDroid**     | [![IzzyOnDroid](https://img.shields.io/badge/Get%20it%20on-IzzyOnDroid-blue?style=flat-square)](https://apt.izzysoft.de/packages/app.aryan447.mpvium)       |
 
 ### Preview Builds
 
 Want to try the cutting-edge features? Download the preview builds (Testing only).
-[![Preview](https://img.shields.io/badge/Download-Preview%20Builds-red?style=for-the-badge)](https://aryan447.github.io/mpvEx/)
+[![Preview](https://img.shields.io/badge/Download-Preview%20Builds-red?style=for-the-badge)](https://aryan447.github.io/mpvium/)
 
 ---
 
-## 🌐 mpvEx Web
+## 🌐 mpvium Web
 
-This is the official Next.js website for **mpvExtended** - a powerful Android video player built on mpv. The website showcases features, provides downloads, and serves as the project's online presence.
+This is the official Next.js website for **mpvium** - a powerful Android video player built on mpv. The website showcases features, provides downloads, and serves as the project's online presence.
 
 ### 🚀 Quick Start
 
@@ -92,6 +92,6 @@ We stand on the shoulders of giants:
 
 ## ❤️ Support & Community
 
-If you love mpvExtended, consider supporting the development and starring the repo!
+If you love mpvium, consider supporting the development and starring the repo!
 
 **Website Created with ❤️ by [Riteshp2001](https://github.com/Riteshp2001)**
