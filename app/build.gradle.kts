@@ -10,11 +10,11 @@ plugins {
 }
 
 android {
-  namespace = "app.aryan447.mpvex"
+  namespace = "app.aryan447.mpvium"
   compileSdk = 36
 
   defaultConfig {
-    applicationId = "app.aryan447.mpvex"
+    applicationId = "app.aryan447.mpvium"
     minSdk = 26
     targetSdk = 36
     versionCode = 129

@@ -19,7 +19,7 @@ export interface GitHubContributor {
 }
 
 const REPO_OWNER = "aryan447";
-const REPO_NAME = "mpvEx";
+const REPO_NAME = "mpvium";
 const GITHUB_API_URL = "https://api.github.com";
 
 export async function getRepositoryContributors(
