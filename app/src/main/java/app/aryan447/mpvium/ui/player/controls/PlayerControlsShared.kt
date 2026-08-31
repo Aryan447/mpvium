@@ -644,6 +644,22 @@ fun RenderPlayerButton(
       )
     }
 
+    PlayerButton.SKIP_INTRO,
+    PlayerButton.SKIP_RECAP -> {
+      val playerPreferences = org.koin.compose.koinInject<app.aryan447.mpvium.preferences.PlayerPreferences>()
+      val skipDuration = if (button == PlayerButton.SKIP_INTRO) {
+        playerPreferences.skipIntroDuration.get()
+      } else {
+        playerPreferences.skipRecapDuration.get()
+      }
+      ControlsButton(
+        icon = Icons.Default.FastForward,
+        onClick = { viewModel.seekBy(skipDuration) },
+        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.size(buttonSize),
+      )
+    }
+
     PlayerButton.SHUFFLE -> {
       // Only show shuffle button if there's a playlist (more than one video)
       if (viewModel.hasPlaylistSupport()) {

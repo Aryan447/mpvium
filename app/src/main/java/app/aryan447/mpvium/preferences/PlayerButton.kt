@@ -56,6 +56,8 @@ enum class PlayerButton(
   VERTICAL_FLIP(Icons.Outlined.Flip),
   AB_LOOP(Icons.Outlined.Autorenew),
   CUSTOM_SKIP(Icons.Outlined.FastForward),
+  SKIP_INTRO(Icons.Outlined.FastForward),
+  SKIP_RECAP(Icons.Outlined.FastForward),
   BACKGROUND_PLAYBACK(Icons.Outlined.Headset),
   NONE(Icons.Outlined.Bookmarks),
 }
@@ -99,6 +101,8 @@ fun getPlayerButtonLabel(button: PlayerButton): String =
     PlayerButton.VERTICAL_FLIP -> "Vertical Flip"
     PlayerButton.AB_LOOP -> "A-B Loop"
     PlayerButton.CUSTOM_SKIP -> "Custom Skip"
+    PlayerButton.SKIP_INTRO -> "Skip Intro"
+    PlayerButton.SKIP_RECAP -> "Skip Recap"
     PlayerButton.BACKGROUND_PLAYBACK -> "Background Playback"
     PlayerButton.NONE -> "None"
   }

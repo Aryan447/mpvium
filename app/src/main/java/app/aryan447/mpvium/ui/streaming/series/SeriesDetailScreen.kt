@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -60,10 +61,13 @@ import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,8 +90,10 @@ data class SeriesDetailScreen(
     var series by remember { mutableStateOf<LocalSeries?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedSeason by remember { mutableIntStateOf(1) }
+    var reloadKey by remember { mutableIntStateOf(0) }
+    var pendingDeletion by remember { mutableStateOf<Pair<String, List<Video>>?>(null) }
 
-    LaunchedEffect(seriesId) {
+    LaunchedEffect(seriesId, reloadKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
         val found = detected.series.find { it.id == seriesId }
@@ -178,6 +184,20 @@ data class SeriesDetailScreen(
                   contentDescription = "Back",
                   tint = Color.White,
                 )
+              }
+
+              IconButton(
+                onClick = {
+                  pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
+                },
+                modifier = Modifier
+                  .align(Alignment.TopEnd)
+                  .padding(top = 40.dp, end = 12.dp)
+                  .size(40.dp)
+                  .clip(CircleShape)
+                  .background(Color.Black.copy(alpha = 0.5f)),
+              ) {
+                Icon(Icons.Filled.Delete, contentDescription = "Delete series", tint = Color.White)
               }
             }
           }
@@ -335,11 +355,33 @@ data class SeriesDetailScreen(
             EpisodeItemCard(
               episode = episode,
               onClick = { MediaUtils.playFile(episode.video, context, "series_episode_click") },
+              onDelete = { pendingDeletion = episode.displayTitle to listOf(episode.video) },
               modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             )
           }
         }
       }
+    }
+
+    pendingDeletion?.let { (name, videos) ->
+      DeleteConfirmationDialog(
+        isOpen = true,
+        onDismiss = { pendingDeletion = null },
+        onConfirm = {
+          coroutineScope.launch {
+            val (deleted, _) = PermissionUtils.StorageOps.deleteVideos(context, videos)
+            if (deleted == videos.size && videos.size == series?.totalEpisodes) {
+              backstack.removeLastOrNull()
+            } else {
+              isLoading = true
+              reloadKey++
+            }
+          }
+        },
+        itemType = if (videos.size == 1) "episode" else "show",
+        itemCount = videos.size,
+        itemNames = if (videos.size == 1) listOf(name) else emptyList(),
+      )
     }
   }
 }
@@ -348,6 +390,7 @@ data class SeriesDetailScreen(
 fun EpisodeItemCard(
   episode: LocalEpisode,
   onClick: () -> Unit,
+  onDelete: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   Surface(
@@ -484,6 +527,10 @@ fun EpisodeItemCard(
           tint = MaterialTheme.colorScheme.primary,
           modifier = Modifier.size(18.dp),
         )
+      }
+
+      IconButton(onClick = onDelete) {
+        Icon(Icons.Filled.Delete, contentDescription = "Delete episode")
       }
     }
   }
