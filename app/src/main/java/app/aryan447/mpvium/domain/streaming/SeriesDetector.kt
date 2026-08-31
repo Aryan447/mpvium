@@ -79,7 +79,7 @@ class SeriesDetector(
         val positionMs = (playbackState?.lastPosition ?: 0) * 1000L
         val durationMs = video.duration
         val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-        val isWatched = (playbackState?.hasBeenWatched == 1) || (progress >= WATCHED_PERCENTAGE_THRESHOLD)
+        val isWatched = (playbackState?.hasBeenWatched == true) || (progress >= WATCHED_PERCENTAGE_THRESHOLD)
 
         // Check if video is TV series or movie
         var isTvSeries = parsed.type == "tv" || parsed.season != null || parsed.episode != null

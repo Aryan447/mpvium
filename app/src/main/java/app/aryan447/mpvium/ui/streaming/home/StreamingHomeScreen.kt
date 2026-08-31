@@ -183,7 +183,7 @@ object StreamingHomeScreen : Screen {
               modifier = Modifier.fillMaxSize(),
               contentAlignment = Alignment.Center,
             ) {
-              Column(horizontalAlignment = Alignment.CenterVertically) {
+              Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
