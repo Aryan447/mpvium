@@ -1969,7 +1969,18 @@ class PlayerActivity :
    * @param mediaTitle The title of the media being played
    */
   private fun saveVideoPlaybackState(mediaTitle: String) {
-    if (mediaIdentifier.isBlank()) return
+    val snapshotIdentifier = mediaIdentifier
+    if (snapshotIdentifier.isBlank()) return
+
+    // Snapshot mutable playback values on the main thread before launching IO work
+    val snapshotPos = viewModel.pos
+    val snapshotDuration = viewModel.duration
+    val snapshotSid = player.sid
+    val snapshotSecondarySid = player.secondarySid
+    val snapshotAid = player.aid
+    val snapshotExternalSubs = viewModel.externalSubtitles.joinToString("|")
+    val snapshotWatchedThreshold = browserPreferences.watchedThreshold.get()
+    val snapshotSavePositionEnabled = playerPreferences.savePositionOnQuit.get()
 
     // Cancel any previous pending save operation
     savePlaybackStateJob?.cancel()
@@ -1977,34 +1988,40 @@ class PlayerActivity :
     // Launch new save job and track it
     savePlaybackStateJob = lifecycleScope.launch(Dispatchers.IO) {
       runCatching {
-        val oldState = playbackStateRepository.getVideoDataByTitle(mediaIdentifier)
-        Log.d(TAG, "Saving playback state for: $mediaTitle (identifier: $mediaIdentifier)")
+        val oldState = playbackStateRepository.getVideoDataByTitle(snapshotIdentifier)
+        Log.d(TAG, "Saving playback state for: $mediaTitle (identifier: $snapshotIdentifier)")
 
-        val lastPosition = calculateSavePosition(oldState)
-        val duration = viewModel.duration ?: 0
+        val lastPosition = if (!snapshotSavePositionEnabled) {
+          oldState?.lastPosition ?: 0
+        } else {
+          val pos = snapshotPos ?: 0
+          val duration = snapshotDuration ?: 0
+          if (pos < duration - 1) pos else 0
+        }
+        val duration = snapshotDuration ?: 0
         val timeRemaining = if (duration > lastPosition) duration - lastPosition else 0
 
         playbackStateRepository.upsert(
           PlaybackStateEntity(
-            mediaTitle = mediaIdentifier,
+            mediaTitle = snapshotIdentifier,
             lastPosition = lastPosition,
             playbackSpeed = MPVLib.getPropertyDouble("speed") ?: DEFAULT_PLAYBACK_SPEED,
             videoZoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f,
-            sid = player.sid,
-            secondarySid = player.secondarySid,
+            sid = snapshotSid,
+            secondarySid = snapshotSecondarySid,
             subDelay = ((MPVLib.getPropertyDouble("sub-delay") ?: 0.0) * MILLISECONDS_TO_SECONDS).toInt(),
             subSpeed = MPVLib.getPropertyDouble("sub-speed") ?: DEFAULT_SUB_SPEED,
-            aid = player.aid,
+            aid = snapshotAid,
             audioDelay =
               (
                 (MPVLib.getPropertyDouble("audio-delay") ?: 0.0) * MILLISECONDS_TO_SECONDS
                 ).toInt(),
             timeRemaining = timeRemaining,
-            externalSubtitles = viewModel.externalSubtitles.joinToString("|"),
+            externalSubtitles = snapshotExternalSubs,
             hasBeenWatched = run {
-              val watchedThreshold = browserPreferences.watchedThreshold.get()
+              val watchedThreshold = snapshotWatchedThreshold
               val durationSeconds = duration.toFloat()
-              val currentPos = viewModel.pos ?: 0
+              val currentPos = snapshotPos ?: 0
 
               // Check if we are at the end (effectively watched)
               // Using a small buffer (1s) to account for float inaccuracies or near-end stops
@@ -2265,6 +2282,11 @@ class PlayerActivity :
    */
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
+
+    // Save outgoing video state before switching media
+    if (fileName.isNotBlank()) {
+      saveVideoPlaybackState(fileName)
+    }
 
     // Update the intent first so getFileName uses the new intent data
     setIntent(intent)

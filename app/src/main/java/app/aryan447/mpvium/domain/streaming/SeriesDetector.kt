@@ -37,7 +37,8 @@ class SeriesDetector(
 ) {
   companion object {
     private const val TAG = "SeriesDetector"
-    private const val WATCHED_PERCENTAGE_THRESHOLD = 0.90f
+    private const val WATCHED_PERCENTAGE_THRESHOLD = 0.95f
+    private const val MAX_FALLBACK_EPISODE_DURATION_MS = 90 * 60 * 1000L
     private val SEASON_FOLDER_REGEX = Regex("""(?:Season|S|Series|Specials)\s*(\d{1,2})?""", RegexOption.IGNORE_CASE)
     private val EPISODE_NUM_REGEX = Regex("""(?:^|[^\d])(?:E|EP|Episode|#)?\s*(\d{1,4})(?:[^\d]|$)""", RegexOption.IGNORE_CASE)
   }
@@ -86,6 +87,7 @@ class SeriesDetector(
         var seriesTitle = parsed.title
         var seasonNum = parsed.season ?: 1
         var episodeNum = parsed.episode
+        var isFolderFallback = false
 
         // Folder-level fallback heuristic (e.g. Breaking Bad / Season 1 / 01.mp4)
         if (!isTvSeries) {
@@ -96,6 +98,7 @@ class SeriesDetector(
           val seasonMatch = SEASON_FOLDER_REGEX.find(parentName)
           if (seasonMatch != null) {
             isTvSeries = true
+            isFolderFallback = true
             seasonNum = seasonMatch.groupValues[1].toIntOrNull() ?: 1
             seriesTitle = if (grandParentName.isNotBlank() && grandParentName != "0" && !grandParentName.equals("emulated", true)) {
               MediaInfoParser.parse(grandParentName).title.ifBlank { grandParentName }
@@ -107,6 +110,12 @@ class SeriesDetector(
               episodeNum = epMatch?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
             }
           }
+        }
+
+        // A long video in a folder named "Season" is more likely a standalone movie
+        // than an episode. Keep explicit episode filename matches untouched.
+        if (isFolderFallback && durationMs >= MAX_FALLBACK_EPISODE_DURATION_MS) {
+          isTvSeries = false
         }
 
         if (isTvSeries && seriesTitle.isNotBlank()) {
@@ -133,7 +142,7 @@ class SeriesDetector(
           rawSeriesMap.getOrPut(normalizedSeriesId) { mutableListOf() }.add(Pair(episode, video))
 
           // Continue Watching for in-progress series episode
-          if (positionMs > 10_000L && progress < WATCHED_PERCENTAGE_THRESHOLD) {
+          if (positionMs > 10_000L && !isWatched && progress < WATCHED_PERCENTAGE_THRESHOLD) {
             continueWatchingList.add(
               ContinueWatchingItem(
                 video = video,
@@ -166,7 +175,7 @@ class SeriesDetector(
           detectedMovies.add(movie)
 
           // Continue Watching for in-progress movie
-          if (positionMs > 10_000L && progress < WATCHED_PERCENTAGE_THRESHOLD) {
+          if (positionMs > 10_000L && !isWatched && progress < WATCHED_PERCENTAGE_THRESHOLD) {
             val remainingMins = (durationMs - positionMs) / (1000 * 60)
             continueWatchingList.add(
               ContinueWatchingItem(

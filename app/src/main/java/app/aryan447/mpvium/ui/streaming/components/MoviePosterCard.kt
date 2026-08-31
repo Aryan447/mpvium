@@ -1,7 +1,8 @@
 package app.aryan447.mpvium.ui.streaming.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,10 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MoviePosterCard(
   movie: LocalMovie,
   onClick: () -> Unit,
+  onLongClick: (() -> Unit)? = null,
   modifier: Modifier = Modifier,
   cardWidth: Dp = 140.dp,
 ) {
@@ -46,7 +49,7 @@ fun MoviePosterCard(
     modifier = modifier
       .width(cardWidth)
       .clip(RoundedCornerShape(14.dp))
-      .clickable(onClick = onClick),
+      .combinedClickable(onClick = onClick, onLongClick = onLongClick),
   ) {
     // Poster (2:3 Aspect Ratio)
     Box(

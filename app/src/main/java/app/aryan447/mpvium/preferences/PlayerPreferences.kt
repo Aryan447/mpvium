@@ -59,6 +59,8 @@ class PlayerPreferences(
   val useWavySeekbar = preferenceStore.getBoolean("use_wavy_seekbar", true)
 
   val customSkipDuration = preferenceStore.getInt("custom_skip_duration", 90)
+  val skipIntroDuration = preferenceStore.getInt("skip_intro_duration", 90)
+  val skipRecapDuration = preferenceStore.getInt("skip_recap_duration", 90)
 
   val repeatMode = preferenceStore.getEnum("repeat_mode", RepeatMode.OFF)
   val shuffleEnabled = preferenceStore.getBoolean("shuffle_enabled", false)
