@@ -15,11 +15,11 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,10 +42,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
-import app.aryan447.mpvium.ui.browser.networkstreaming.NetworkStreamingScreen
-import app.aryan447.mpvium.ui.browser.playlist.PlaylistScreen
-import app.aryan447.mpvium.ui.browser.recentlyplayed.RecentlyPlayedScreen
 import app.aryan447.mpvium.ui.browser.selection.SelectionManager
+import app.aryan447.mpvium.ui.streaming.home.StreamingHomeScreen
+import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
+import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
+import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 
@@ -88,7 +90,6 @@ object MainScreen : Screen {
     this.sharedVideoSelectionManager = selectionManager
 
     // Only hide navigation bar when videos are selected AND in selection mode
-    // This fixes the issue where bottom bar disappears when only videos are selected
     this.shouldHideNavigationBar = isInSelectionMode && isOnlyVideosSelected
   }
 
@@ -108,14 +109,13 @@ object MainScreen : Screen {
    * Update bottom navigation bar visibility based on floating bottom bar state
    */
   fun updateBottomBarVisibility(shouldShow: Boolean) {
-    // Hide bottom navigation when floating bottom bar is visible
     this.shouldHideNavigationBar = !shouldShow
   }
 
   @Composable
   @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
   override fun Content() {
-    var selectedTab by remember {
+    var selectedTab by rememberSaveable {
       mutableIntStateOf(persistentSelectedTab)
     }
 
@@ -130,32 +130,25 @@ object MainScreen : Screen {
     // Check for state changes to ensure UI updates
     LaunchedEffect(Unit) {
       while (true) {
-        // Update FAB visibility state
         if (isInSelectionMode.value != isInSelectionModeShared) {
           isInSelectionMode.value = isInSelectionModeShared
-          android.util.Log.d("MainScreen", "Selection mode changed to: $isInSelectionModeShared")
         }
 
-        // Update navigation bar visibility state - now considers if only videos are selected
         if (hideNavigationBar.value != shouldHideNavigationBar) {
           hideNavigationBar.value = shouldHideNavigationBar
-          android.util.Log.d("MainScreen", "Navigation bar visibility changed to: ${!shouldHideNavigationBar}, onlyVideosSelected: $onlyVideosSelected")
         }
 
-        // Update selection manager
         val currentManager = sharedVideoSelectionManager as? SelectionManager<*, *>
         if (videoSelectionManager.value != currentManager) {
           videoSelectionManager.value = currentManager
         }
 
-        // Minimal delay for polling
-        delay(16) // Roughly matches a frame at 60fps for responsive updates
+        delay(16)
       }
     }
 
     // Update persistent state whenever tab changes
     LaunchedEffect(selectedTab) {
-      android.util.Log.d("MainScreen", "selectedTab changed to: $selectedTab (was ${persistentSelectedTab})")
       persistentSelectedTab = selectedTab
     }
 
@@ -163,7 +156,6 @@ object MainScreen : Screen {
     Scaffold(
       modifier = Modifier.fillMaxSize(),
       bottomBar = {
-        // Animated bottom navigation bar with slide animations
         AnimatedVisibility(
           visible = !hideNavigationBar.value,
           enter = slideInVertically(
@@ -179,12 +171,13 @@ object MainScreen : Screen {
             modifier = Modifier
               .clip(
                 RoundedCornerShape(
-                  topStart = 28.dp,
-                  topEnd = 28.dp,
+                  topStart = 20.dp,
+                  topEnd = 20.dp,
                   bottomStart = 0.dp,
                   bottomEnd = 0.dp
                 )
-              )
+              ),
+            tonalElevation = 3.dp
           ) {
             NavigationBarItem(
               icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
@@ -193,40 +186,43 @@ object MainScreen : Screen {
               onClick = { selectedTab = 0 }
             )
             NavigationBarItem(
-              icon = { Icon(Icons.Filled.History, contentDescription = "Recents") },
-              label = { Text("Recents") },
+              icon = { Icon(Icons.Filled.Tv, contentDescription = "Series") },
+              label = { Text("Series") },
               selected = selectedTab == 1,
               onClick = { selectedTab = 1 }
             )
             NavigationBarItem(
-              icon = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = "Playlists") },
-              label = { Text("Playlists") },
+              icon = { Icon(Icons.Filled.Movie, contentDescription = "Movies") },
+              label = { Text("Movies") },
               selected = selectedTab == 2,
               onClick = { selectedTab = 2 }
             )
             NavigationBarItem(
-              icon = { Icon(Icons.Filled.Language, contentDescription = "Network") },
-              label = { Text("Network") },
+              icon = { Icon(Icons.Filled.Folder, contentDescription = "Folders") },
+              label = { Text("Folders") },
               selected = selectedTab == 3,
               onClick = { selectedTab = 3 }
+            )
+            NavigationBarItem(
+              icon = { Icon(Icons.Filled.VideoLibrary, contentDescription = "Library") },
+              label = { Text("Library") },
+              selected = selectedTab == 4,
+              onClick = { selectedTab = 4 }
             )
           }
         }
       }
     ) { paddingValues ->
       Box(modifier = Modifier.fillMaxSize()) {
-        // Always use 80dp bottom padding regardless of navigation bar visibility
         val fabBottomPadding = 80.dp
 
         AnimatedContent(
           targetState = selectedTab,
           transitionSpec = {
-            // Material 3 Expressive slide-in-fade animation (like Google Phone app)
             val slideDistance = with(density) { 48.dp.roundToPx() }
             val animationDuration = 250
 
             if (targetState > initialState) {
-              // Moving forward: slide in from right with fade
               (slideInHorizontally(
                 animationSpec = tween(
                   durationMillis = animationDuration,
@@ -251,7 +247,6 @@ object MainScreen : Screen {
                 )
               ))
             } else {
-              // Moving backward: slide in from left with fade
               (slideInHorizontally(
                 animationSpec = tween(
                   durationMillis = animationDuration,
@@ -283,10 +278,11 @@ object MainScreen : Screen {
             LocalNavigationBarHeight provides fabBottomPadding
           ) {
             when (targetTab) {
-              0 -> FolderListScreen.Content()
-              1 -> RecentlyPlayedScreen.Content()
-              2 -> PlaylistScreen.Content()
-              3 -> NetworkStreamingScreen.Content()
+              0 -> StreamingHomeScreen.Content()
+              1 -> SeriesGridScreen.Content()
+              2 -> MoviesGridScreen.Content()
+              3 -> FolderListScreen.Content()
+              4 -> MoreLibraryScreen.Content()
             }
           }
         }

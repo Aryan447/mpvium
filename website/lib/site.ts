@@ -10,7 +10,7 @@
  */
 export const siteConfig = {
   name: "mpvium",
-  version: "v1.2.7",
+  version: "v1.1.0",
   description:
     "Advanced mpv-based video player for Android with powerful features, seamless playback, and open-source freedom.",
   url: "https://mpvium.vercel.app",
