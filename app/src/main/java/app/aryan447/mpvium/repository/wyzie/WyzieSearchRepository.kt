@@ -9,12 +9,12 @@ import app.aryan447.mpvium.utils.media.ChecksumUtils
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -93,6 +93,80 @@ data class WyzieSeasonDetails(
     val id: String? = null,
     val season_number: Int,
     val episodes: List<WyzieEpisode> = emptyList()
+)
+
+// Stremio / Cinemeta models (keyless)
+@Serializable
+private data class CinemetaSearchResponse(
+    val metas: List<CinemetaMetaPreview> = emptyList(),
+    val cacheMaxAge: Int? = null
+)
+
+@Serializable
+private data class CinemetaMetaPreview(
+    val id: String = "",
+    @SerialName("imdb_id") val imdbId: String? = null,
+    val type: String = "",
+    val name: String = "",
+    val poster: String? = null,
+    val background: String? = null,
+    val releaseInfo: String? = null,
+    val genres: List<String> = emptyList()
+)
+
+@Serializable
+private data class CinemetaMetaResponse(
+    val meta: CinemetaMeta? = null
+)
+
+@Serializable
+private data class CinemetaMeta(
+    val id: String = "",
+    val imdb_id: String? = null,
+    val type: String = "",
+    val name: String = "",
+    val poster: String? = null,
+    val background: String? = null,
+    val releaseInfo: String? = null,
+    val year: String? = null,
+    val description: String? = null,
+    val genres: List<String> = emptyList(),
+    val runtime: String? = null,
+    val videos: List<CinemetaVideo> = emptyList()
+)
+
+@Serializable
+private data class CinemetaVideo(
+    val id: String = "",
+    val title: String? = null,
+    val name: String? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
+    // some entries use number/episode interchangeably
+    val number: Int? = null,
+    val released: String? = null,
+    val overview: String? = null,
+    val thumbnail: String? = null
+)
+
+@Serializable
+private data class StremioSubtitlesResponse(
+    val subtitles: List<StremioSubtitle> = emptyList()
+)
+
+@Serializable
+private data class StremioSubtitle(
+    val id: String = "",
+    val url: String = "",
+    val lang: String = "",
+    val SubEncoding: String? = null,
+    val subtitleFileName: String? = null,
+    val movieReleaseName: String? = null,
+    val releaseGroup: String? = null,
+    val releaseFormat: String? = null,
+    val fpsMilli: Int? = null,
+    val season: Int? = null,
+    val episode: Int? = null
 )
 
 object WyzieSources {
@@ -200,13 +274,46 @@ object WyzieLanguages {
     val SORTED = ALL.toList().sortedBy { it.second }.toMap()
 }
 
+// ISO 639-2 (Stremio) -> ISO 639-1 (app) mapping for common languages
+private val ISO3_TO_ISO2 = mapOf(
+    "eng" to "en", "spa" to "es", "fre" to "fr", "fra" to "fr", "ger" to "de", "deu" to "de",
+    "ita" to "it", "por" to "pt", "pob" to "pt", "rus" to "ru", "zho" to "zh", "chi" to "zh",
+    "jpn" to "ja", "jap" to "ja", "kor" to "ko", "ara" to "ar", "hin" to "hi", "ben" to "bn",
+    "pan" to "pa", "jav" to "jv", "vie" to "vi", "tel" to "te", "mar" to "mr", "tam" to "ta",
+    "urd" to "ur", "tur" to "tr", "pol" to "pl", "ukr" to "uk", "dut" to "nl", "nld" to "nl",
+    "gre" to "el", "ell" to "el", "hun" to "hu", "swe" to "sv", "cze" to "cs", "ces" to "cs",
+    "rum" to "ro", "ron" to "ro", "dan" to "da", "fin" to "fi", "nor" to "no", "heb" to "he",
+    "ind" to "id", "may" to "ms", "msa" to "ms", "tha" to "th", "per" to "fa", "fas" to "fa",
+    "slo" to "sk", "slk" to "sk", "bul" to "bg", "hrv" to "hr", "scr" to "hr", "srp" to "sr",
+    "scc" to "sr", "slv" to "sl", "est" to "et", "lav" to "lv", "lit" to "lt", "afr" to "af",
+    "alb" to "sq", "sqi" to "sq", "amh" to "am", "arm" to "hy", "hye" to "hy", "aze" to "az",
+    "baq" to "eu", "eus" to "eu", "bel" to "be", "bos" to "bs", "cat" to "ca", "wel" to "cy",
+    "cym" to "cy", "epo" to "eo", "gle" to "ga", "glg" to "gl", "geo" to "ka", "kat" to "ka",
+    "guj" to "gu", "hat" to "ht", "ice" to "is", "isl" to "is", "kan" to "kn", "kaz" to "kk",
+    "khm" to "km", "kir" to "ky", "lao" to "lo", "mac" to "mk", "mkd" to "mk", "mlg" to "mg",
+    "mlt" to "mt", "mao" to "mi", "mri" to "mi", "mon" to "mn", "nep" to "ne", "pus" to "ps",
+    "sin" to "si", "swa" to "sw", "tgk" to "tg", "tat" to "tt", "uzb" to "uz", "yid" to "yi",
+    "yor" to "yo", "zul" to "zu"
+)
+
+private fun iso3ToIso2(code: String): String {
+    val lower = code.lowercase()
+    return ISO3_TO_ISO2[lower] ?: lower.take(2)
+}
+
 class WyzieSearchRepository(
     private val context: Context,
     private val client: OkHttpClient,
     private val json: Json,
     private val preferences: SubtitlesPreferences
 ) {
-    private val baseUrl = "https://sub.wyzie.ru"
+    // Primary keyless provider: Stremio / Cinemeta + OpenSubtitles v3
+    private val cinemetaBase = "https://v3-cinemeta.strem.io"
+    private val stremioSubsBase = "https://opensubtitles-v3.strem.io"
+    // Fallback Wyzie (requires API key, now optional)
+    private val wyzieBase = "https://sub.wyzie.io"
+    // Cache numericId -> ttId for series details
+    private val idToTtCache = mutableMapOf<Int, String>()
 
     suspend fun search(
         query: String,
@@ -215,11 +322,24 @@ class WyzieSearchRepository(
         year: String? = null
     ): Result<List<WyzieSubtitle>> = withContext(Dispatchers.IO) {
         try {
+            // Try Stremio keyless path first
+            val stremioResult = runCatching { stremioSearch(query, season, episode, year) }.getOrNull()
+            if (stremioResult != null && stremioResult.isNotEmpty()) {
+                return@withContext Result.success(filterAndSort(stremioResult, query))
+            }
+            // If Stremio returned empty and we have no Wyzie key, return empty (no 401)
+            val wyzieKey = preferences.wyzieApiKey.get().trim()
+            if (wyzieKey.isBlank()) {
+                // Stremio was empty, no Wyzie key to fallback -> return empty or stremio empty
+                if (stremioResult != null) return@withContext Result.success(emptyList())
+                // Try Wyzie without key to give better error? It will 401, so return friendly error
+                return@withContext Result.failure(IOException("No subtitles found. Try a different title or check language filters. (Stremio keyless search)"))
+            }
+            // Fallback to Wyzie with key
             var searchId = query
             if (!query.startsWith("tt", ignoreCase = true) && !query.all { it.isDigit() }) {
                 val tmdbResults = tmdbSearch(query)
                 if (tmdbResults.isNotEmpty()) {
-                    // If year is provided, prefer match with matching release year
                     val result = if (year != null) {
                         tmdbResults.firstOrNull { it.releaseYear == year }
                             ?: tmdbResults.firstOrNull { it.releaseYear?.startsWith(year.take(3)) == true }
@@ -249,7 +369,7 @@ class WyzieSearchRepository(
 
             val hearingImpaired = preferences.wyzieHearingImpaired.get()
 
-            val results = fetchSubtitles(
+            val results = fetchWyzieSubtitles(
                 id = searchId,
                 season = season,
                 episode = episode,
@@ -260,41 +380,195 @@ class WyzieSearchRepository(
                 hi = if (hearingImpaired) true else null
             )
 
-            // The Wyzie API often returns all languages regardless of query parameters.
-            // We must strictly filter the results locally based on selected languages.
             val filteredResults = if (languages != null && languages != "all") {
                 val allowedLangs = languages.split(",").map { it.trim() }
                 results.filter { sub ->
-                    // Map the subtitle language code (which is sometimes lowercase, sometimes not)
                     val subLangCode = WyzieLanguages.ALL.entries.find {
                         it.value.equals(sub.language, ignoreCase = true)
                     }?.key ?: sub.language?.lowercase()
-
                     allowedLangs.contains(subLangCode)
                 }
             } else {
                 results
             }
 
-            val sortedResults = filteredResults.sortedWith(compareByDescending<WyzieSubtitle> { sub ->
-                val name = sub.displayName.lowercase()
-                val q = query.lowercase()
-                var score = 0
-                if (name.contains(q)) score += 100
-                if (name.contains("720p") || name.contains("1080p") || name.contains("2160p")) score += 50
-                if (name.contains("web-dl") || name.contains("webrip") || name.contains("bluray")) score += 40
-                if (name.contains("yify") || name.contains("sparks") || name.contains("rarbg")) score += 30
-                score
-            }.thenByDescending { it.displayName.length })
-
-            Result.success(sortedResults)
+            Result.success(filterAndSort(filteredResults, query))
         } catch (e: Exception) {
             Log.e("WyzieSearchRepository", "Search failed: ${e.message}", e)
             Result.failure(e)
         }
     }
 
-    private fun fetchSubtitles(
+    private fun filterAndSort(results: List<WyzieSubtitle>, query: String): List<WyzieSubtitle> {
+        val selectedLangsRaw = preferences.subdlLanguages.get()
+        val languages = if (selectedLangsRaw.isNotEmpty() && !selectedLangsRaw.contains("all")) {
+            selectedLangsRaw.joinToString(",").lowercase()
+        } else null
+        val filtered = if (languages != null && languages != "all") {
+            val allowedLangs = languages.split(",").map { it.trim() }
+            results.filter { sub ->
+                val subLangCode = WyzieLanguages.ALL.entries.find {
+                    it.value.equals(sub.language, ignoreCase = true)
+                }?.key ?: sub.language?.lowercase()
+                allowedLangs.contains(subLangCode)
+            }
+        } else results
+
+        return filtered.sortedWith(compareByDescending<WyzieSubtitle> { sub ->
+            val name = sub.displayName.lowercase()
+            val q = query.lowercase()
+            var score = 0
+            if (name.contains(q)) score += 100
+            if (name.contains("720p") || name.contains("1080p") || name.contains("2160p")) score += 50
+            if (name.contains("web-dl") || name.contains("webrip") || name.contains("bluray")) score += 40
+            if (name.contains("yify") || name.contains("sparks") || name.contains("rarbg")) score += 30
+            score
+        }.thenByDescending { it.displayName.length })
+    }
+
+    // ---- Stremio keyless implementation ----
+    private fun stremioSearch(
+        query: String,
+        season: Int?,
+        episode: Int?,
+        year: String?
+    ): List<WyzieSubtitle> {
+        // Resolve IMDB ID. When searching a TV show (season+episode), prefer the series catalog
+        // so we don't accidentally resolve to a movie with a similar title.
+        val isSeries = season != null && episode != null
+        val imdbId = resolveImdbId(query, year, preferSeries = isSeries)
+            ?: throw IOException("Could not resolve IMDB ID for '$query'")
+        // Determine type via Cinemeta meta: use series if season/episode supplied, otherwise probe
+        val type = if (isSeries) "series" else detectType(imdbId)
+        return fetchStremioSubtitles(imdbId, type, season, episode)
+    }
+
+    private fun resolveImdbId(query: String, year: String?, preferSeries: Boolean): String? {
+        // Already an IMDB ID
+        if (query.startsWith("tt", ignoreCase = true)) return query.lowercase()
+        if (query.all { it.isDigit() } && query.length >= 5) return "tt$query"
+        // Try Cinemeta search (type-aware)
+        val cinemetaId = cinemetaSearchForImdbId(query, year, preferSeries)
+        if (cinemetaId != null) return cinemetaId
+        // Fallback to Wyzie TMDB search for IMDB mapping (still keyless for search)
+        return try {
+            val tmdbResults = tmdbSearch(query)
+            if (tmdbResults.isEmpty()) return null
+            // Prefer results matching the expected media type
+            val expectedType = if (preferSeries) "tv" else "movie"
+            val typed = tmdbResults.filter { it.mediaType == expectedType }
+            val pool = if (typed.isNotEmpty()) typed else tmdbResults
+            val result = if (year != null) {
+                pool.firstOrNull { it.releaseYear == year }
+                    ?: pool.firstOrNull { it.releaseYear?.startsWith(year.take(3)) == true }
+                    ?: pool[0]
+            } else pool[0]
+            // Try to get IMDB via Cinemeta detail using TMDB? We can search again with title
+            cinemetaSearchForImdbId(result.title, year, preferSeries) ?: "tt${result.id}"
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun detectType(imdbId: String): String {
+        // Fetch meta to detect type, checking both movie and series catalogs
+        val ttId = if (imdbId.startsWith("tt")) imdbId else "tt$imdbId"
+        listOf("movie", "series").forEach { catalogType ->
+            try {
+                val url = "$cinemetaBase/meta/$catalogType/$ttId.json"
+                val req = Request.Builder().url(url).build()
+                client.newCall(req).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        val body = resp.body?.string() ?: return@forEach
+                        val parsed = json.decodeFromString<CinemetaMetaResponse>(body)
+                        val metaType = parsed.meta?.type
+                        if (!metaType.isNullOrBlank()) return metaType
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        return "movie"
+    }
+
+    private fun cinemetaSearchForImdbId(query: String, year: String?, preferSeries: Boolean): String? {
+        val encoded = URLEncoder.encode(query, "UTF-8")
+        // Search only the relevant catalog. Searching both lets a movie with a similar name
+        // shadow the TV series (and vice-versa), so restrict to the expected type.
+        val url = if (preferSeries) {
+            "$cinemetaBase/catalog/series/top/search=$encoded.json"
+        } else {
+            "$cinemetaBase/catalog/movie/top/search=$encoded.json"
+        }
+        val candidates = mutableListOf<CinemetaMetaPreview>()
+        try {
+            val req = Request.Builder().url(url).build()
+            client.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) return null
+                val body = resp.body?.string() ?: return null
+                val parsed = json.decodeFromString<CinemetaSearchResponse>(body)
+                candidates.addAll(parsed.metas)
+            }
+        } catch (e: Exception) {
+            Log.w("WyzieSearchRepository", "Cinemeta search failed for $url: ${e.message}")
+        }
+        if (candidates.isEmpty()) return null
+        // Prefer exact year match if provided
+        val filtered = if (year != null) {
+            candidates.firstOrNull { it.releaseInfo == year } ?: candidates.firstOrNull { it.releaseInfo?.startsWith(year.take(3)) == true }
+        } else null
+        val best = filtered ?: candidates.firstOrNull { it.name.equals(query, ignoreCase = true) } ?: candidates[0]
+        return best.id.takeIf { it.startsWith("tt") } ?: best.imdbId
+    }
+
+    private fun fetchStremioSubtitles(
+        imdbId: String,
+        type: String,
+        season: Int?,
+        episode: Int?
+    ): List<WyzieSubtitle> {
+        val normalizedId = if (imdbId.startsWith("tt")) imdbId else "tt$imdbId"
+        val url = if (type == "series" && season != null && episode != null) {
+            "$stremioSubsBase/subtitles/series/$normalizedId:$season:$episode.json"
+        } else if (type == "series") {
+            // For series without episode, try movie-style? Use series base without episode
+            "$stremioSubsBase/subtitles/series/$normalizedId.json"
+        } else {
+            "$stremioSubsBase/subtitles/movie/$normalizedId.json"
+        }
+        val request = Request.Builder().url(url).header("User-Agent", "mpvium/1.0").build()
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string() ?: throw IOException("Empty body from $url")
+            if (!response.isSuccessful) {
+                if (response.code == 404) return emptyList()
+                throw IOException("Stremio subtitles failed: ${response.code} $body")
+            }
+            val parsed = json.decodeFromString<StremioSubtitlesResponse>(body)
+            return parsed.subtitles.mapNotNull { s -> stremioToWyzie(s) }
+        }
+    }
+
+    private fun stremioToWyzie(s: StremioSubtitle): WyzieSubtitle? {
+        if (s.url.isBlank()) return null
+        val iso2 = iso3ToIso2(s.lang)
+        val langName = WyzieLanguages.ALL[iso2] ?: s.lang
+        val ext = s.subtitleFileName?.substringAfterLast(".", "")?.lowercase()
+            ?: s.url.substringAfterLast(".", "").substringBefore("?").lowercase().takeIf { it.isNotEmpty() } ?: "srt"
+        return WyzieSubtitle(
+            id = s.id,
+            url = s.url,
+            language = iso2,
+            display = langName,
+            format = ext,
+            fileName = s.subtitleFileName,
+            release = s.movieReleaseName,
+            media = s.subtitleFileName,
+            source = "OpenSubtitles",
+            origin = s.releaseGroup,
+            downloadCount = null
+        )
+    }
+
+    private fun fetchWyzieSubtitles(
         id: String,
         season: Int? = null,
         episode: Int? = null,
@@ -305,41 +579,36 @@ class WyzieSearchRepository(
         hi: Boolean? = null
     ): List<WyzieSubtitle> {
         fun encode(s: String) = URLEncoder.encode(s, "UTF-8")
-
-        val url = StringBuilder("$baseUrl/search?id=${encode(id)}")
+        val wyzieKey = preferences.wyzieApiKey.get().trim()
+        val url = StringBuilder("$wyzieBase/search?id=${encode(id)}")
             .apply {
                 if (season != null && episode != null) {
                     append("&season=$season")
                     append("&episode=$episode")
                 }
-
-                // Wyzie API language format: single or multiple language codes are comma separated: `language=en,es`
                 language?.filter { !it.isWhitespace() }?.let { append("&language=${encode(it)}") }
-
-                // Format and Encoding parameters
                 format?.split(",")?.filter { it.isNotBlank() }?.forEach { append("&${encode(it.trim())}=true") }
                 encoding?.split(",")?.filter { it.isNotBlank() }?.forEach { append("&${encode(it.trim())}=true") }
-
-                // Source is a special case, "all" defaults to all sources implicitly, but adding specific sources works like `opensubtitles=true`
                 if (source != "all") {
-                   source.split(",").filter { it.isNotBlank() }.forEach { append("&${encode(it.trim())}=true") }
+                    source.split(",").filter { it.isNotBlank() }.forEach { append("&${encode(it.trim())}=true") }
                 }
-
                 append("&unzip=true")
                 hi?.let { append("&hi=$it") }
+                if (wyzieKey.isNotBlank()) append("&key=${encode(wyzieKey)}")
             }.toString()
 
         val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             val responseBodyString = response.body?.string() ?: ""
             if (!response.isSuccessful) {
-                // Wyzie API returns 400 when no subtitles are found for valid parameters
                 if (response.code == 400 && responseBodyString.contains("No subtitles found", ignoreCase = true)) {
                     return emptyList()
                 }
-
                 if (response.code == 400 && responseBodyString.contains("season and episode", ignoreCase = true)) {
                     throw IOException("Please select both a Season and an Episode.")
+                }
+                if (response.code == 401) {
+                    throw IOException("Wyzie API key required or invalid. Get a free key at https://store.wyzie.io/redeem and set it in Settings > Subtitles, or use the default keyless Stremio provider.")
                 }
                 val errorMsg = "Search failed: HTTP ${response.code} for URL: $url | Body: $responseBodyString"
                 Log.e("WyzieSearchRepository", errorMsg)
@@ -364,7 +633,6 @@ class WyzieSearchRepository(
             val extension = subtitle.format?.lowercase() ?: urlExtension.takeIf { it.isNotEmpty() } ?: "srt"
 
             val saveFolderUri = preferences.subtitleSaveFolder.get()
-            // Use CRC32 checksum of mediaTitle for the folder name
             val folderName = ChecksumUtils.getCRC32(mediaTitle)
             val fullTitle = mediaTitle.substringBeforeLast(".")
             val langCode = subtitle.language ?: "en"
@@ -375,7 +643,6 @@ class WyzieSearchRepository(
                 if (parentDir?.exists() == true) {
                     var movieDir = parentDir.findFile(folderName) ?: parentDir.createDirectory(folderName)
                     if (movieDir != null) {
-                        // Check for existing file or create new one
                         val subFile = movieDir.findFile(subFileName) ?: movieDir.createFile("application/octet-stream", subFileName)
                         if (subFile != null) {
                             context.contentResolver.openOutputStream(subFile.uri)?.use { it.write(bytes) }
@@ -398,6 +665,10 @@ class WyzieSearchRepository(
 
     suspend fun searchMedia(query: String): Result<List<WyzieTmdbResult>> = withContext(Dispatchers.IO) {
         try {
+            // Try Cinemeta keyless search first
+            val cinemetaResults = runCatching { cinemetaSearchMedia(query) }.getOrNull()
+            if (!cinemetaResults.isNullOrEmpty()) return@withContext Result.success(cinemetaResults)
+            // Fallback to Wyzie TMDB search (still keyless for this endpoint currently)
             Result.success(tmdbSearch(query))
         } catch (e: Exception) {
             Log.e("WyzieSearchRepository", "Media search failed", e)
@@ -405,9 +676,49 @@ class WyzieSearchRepository(
         }
     }
 
+    private fun cinemetaSearchMedia(query: String): List<WyzieTmdbResult> {
+        val encoded = URLEncoder.encode(query, "UTF-8")
+        val results = mutableListOf<WyzieTmdbResult>()
+        listOf("movie" to "movie", "series" to "tv").forEach { (catalogType, mediaType) ->
+            val url = "$cinemetaBase/catalog/$catalogType/top/search=$encoded.json"
+            try {
+                val req = Request.Builder().url(url).build()
+                client.newCall(req).execute().use { resp ->
+                    if (!resp.isSuccessful) return@forEach
+                    val body = resp.body?.string() ?: return@forEach
+                    val parsed = json.decodeFromString<CinemetaSearchResponse>(body)
+                    parsed.metas.forEach { meta ->
+                        val numericId = meta.id.removePrefix("tt").toIntOrNull() ?: meta.id.hashCode()
+                        idToTtCache[numericId] = meta.id
+                        results.add(
+                            WyzieTmdbResult(
+                                id = numericId,
+                                mediaType = mediaType,
+                                title = meta.name,
+                                releaseYear = meta.releaseInfo?.take(4),
+                                poster = meta.poster,
+                                backdrop = meta.background,
+                                overview = null
+                            )
+                        )
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        // Deduplicate by id
+        return results.distinctBy { it.id to it.mediaType }.take(10)
+    }
+
     suspend fun getTvShowDetails(id: Int): Result<WyzieTvShowDetails> = withContext(Dispatchers.IO) {
         try {
-            val url = "$baseUrl/api/tmdb/tv/$id"
+            // First try Cinemeta (keyless) - need to map Int id back to ttId
+            val ttId = findTtIdForNumericId(id, "series")
+            if (ttId != null) {
+                val cinemetaResult = runCatching { cinemetaGetTvShowDetails(ttId, id) }.getOrNull()
+                if (cinemetaResult != null) return@withContext Result.success(cinemetaResult)
+            }
+            // Fallback to Wyzie
+            val url = "$wyzieBase/api/tmdb/tv/$id"
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("Failed to get TV show details: ${response.code}")
@@ -420,9 +731,80 @@ class WyzieSearchRepository(
         }
     }
 
+    private fun findTtIdForNumericId(numericId: Int, expectedType: String): String? {
+        idToTtCache[numericId]?.let { return it }
+        val candidates = listOf(
+            "tt" + numericId.toString().padStart(7, '0'),
+            "tt$numericId"
+        )
+        // Verify by fetching meta
+        for (tt in candidates) {
+            try {
+                val url = "$cinemetaBase/meta/series/$tt.json"
+                val req = Request.Builder().url(url).build()
+                client.newCall(req).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        idToTtCache[numericId] = tt
+                        return tt
+                    }
+                }
+            } catch (_: Exception) {}
+            // Try movie as well
+            try {
+                val url = "$cinemetaBase/meta/movie/$tt.json"
+                val req = Request.Builder().url(url).build()
+                client.newCall(req).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        idToTtCache[numericId] = tt
+                        return tt
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        return null
+    }
+
+    private fun cinemetaGetTvShowDetails(ttId: String, originalId: Int): WyzieTvShowDetails {
+        val url = "$cinemetaBase/meta/series/$ttId.json"
+        val req = Request.Builder().url(url).build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw IOException("Cinemeta meta failed: ${resp.code}")
+            val body = resp.body?.string() ?: throw IOException("Empty body")
+            val parsed = json.decodeFromString<CinemetaMetaResponse>(body)
+            val meta = parsed.meta ?: throw IOException("No meta for $ttId")
+            // Group videos by season
+            val seasonMap = mutableMapOf<Int, MutableList<CinemetaVideo>>()
+            meta.videos.forEach { v ->
+                val s = v.season ?: return@forEach
+                if (s == 0) return@forEach // skip specials for now
+                seasonMap.getOrPut(s) { mutableListOf() }.add(v)
+            }
+            val seasons = seasonMap.entries.sortedBy { it.key }.map { (seasonNum, vids) ->
+                WyzieSeason(
+                    id = seasonNum,
+                    name = "Season $seasonNum",
+                    season_number = seasonNum,
+                    episode_count = vids.size,
+                    poster_path = null,
+                    overview = null
+                )
+            }
+            return WyzieTvShowDetails(
+                id = originalId,
+                name = meta.name,
+                seasons = seasons
+            )
+        }
+    }
+
     suspend fun getSeasonEpisodes(id: Int, season: Int): Result<List<WyzieEpisode>> = withContext(Dispatchers.IO) {
         try {
-            val url = "$baseUrl/api/tmdb/tv/$id/$season"
+            val ttId = findTtIdForNumericId(id, "series")
+            if (ttId != null) {
+                val cinemetaEps = runCatching { cinemetaGetEpisodes(ttId, season) }.getOrNull()
+                if (cinemetaEps != null) return@withContext Result.success(cinemetaEps)
+            }
+            val url = "$wyzieBase/api/tmdb/tv/$id/$season"
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("Failed to get season episodes: ${response.code}")
@@ -435,8 +817,34 @@ class WyzieSearchRepository(
         }
     }
 
+    private fun cinemetaGetEpisodes(ttId: String, season: Int): List<WyzieEpisode> {
+        val url = "$cinemetaBase/meta/series/$ttId.json"
+        val req = Request.Builder().url(url).build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw IOException("Cinemeta meta failed: ${resp.code}")
+            val body = resp.body?.string() ?: throw IOException("Empty body")
+            val parsed = json.decodeFromString<CinemetaMetaResponse>(body)
+            val meta = parsed.meta ?: return emptyList()
+            return meta.videos.filter { it.season == season }
+                .sortedBy { it.episode ?: it.number ?: 0 }
+                .map { v ->
+                    val epNum = v.episode ?: v.number ?: 0
+                    WyzieEpisode(
+                        id = epNum,
+                        name = v.title ?: v.name ?: "Episode $epNum",
+                        episode_number = epNum,
+                        season_number = season,
+                        still_path = v.thumbnail,
+                        overview = v.overview
+                    )
+                }
+        }
+    }
+
     private fun tmdbSearch(query: String): List<WyzieTmdbResult> {
-        val url = "$baseUrl/api/tmdb/search?q=${URLEncoder.encode(query, "UTF-8")}"
+        val wyzieKey = preferences.wyzieApiKey.get().trim()
+        val suffix = if (wyzieKey.isNotBlank()) "&key=${URLEncoder.encode(wyzieKey, "UTF-8")}" else ""
+        val url = "$wyzieBase/api/tmdb/search?q=${URLEncoder.encode(query, "UTF-8")}$suffix"
         val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("TMDb search failed: ${response.code}")

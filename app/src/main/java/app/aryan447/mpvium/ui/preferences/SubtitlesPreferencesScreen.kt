@@ -556,28 +556,93 @@ object SubtitlesPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              // Wyzie Tag
-              Row(
+              // Wyzie API Key (optional fallback)
+              val wyzieApiKey by preferences.wyzieApiKey.collectAsState()
+              TextFieldPreference(
+                value = wyzieApiKey,
+                onValueChange = { preferences.wyzieApiKey.set(it) },
+                title = { Text("Wyzie API Key (optional)") },
+                summary = {
+                  if (wyzieApiKey.isBlank()) {
+                    Text(
+                      "Fallback for Wyzie. Primary is Stremio (keyless). Get free key at store.wyzie.io/redeem",
+                      color = MaterialTheme.colorScheme.outline,
+                      style = MaterialTheme.typography.bodySmall
+                    )
+                  } else {
+                    Text(
+                      "Key set (${wyzieApiKey.take(4)}****)",
+                      color = MaterialTheme.colorScheme.outline
+                    )
+                  }
+                },
+                textToValue = { it },
+                textField = { value, onValueChange, _ ->
+                  TextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Enter Wyzie API key") },
+                    singleLine = true
+                  )
+                }
+              )
+
+              PreferenceDivider()
+
+              // Provider Tag - now keyless
+              Column(
                 modifier = Modifier
                   .fillMaxWidth()
                   .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(4.dp)
               ) {
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Text(
+                    text = "Subtitle Search provided by",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                  Text(
+                    text = "opensubtitles-v3.strem.io",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                      val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://opensubtitles-v3.strem.io"))
+                      context.startActivity(intent)
+                    }
+                  )
+                }
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Text(
+                    text = "Metadata via",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                  Text(
+                    text = "v3-cinemeta.strem.io",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                      val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://v3-cinemeta.strem.io"))
+                      context.startActivity(intent)
+                    }
+                  )
+                }
                 Text(
-                  text = "Subtitle Search provided by",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                  text = "sub.wyzie.ru",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.primary,
-                  fontWeight = FontWeight.Bold,
-                  modifier = Modifier.clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://sub.wyzie.ru"))
-                    context.startActivity(intent)
-                  }
+                  text = "Keyless • No API key required",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
               }
             }
