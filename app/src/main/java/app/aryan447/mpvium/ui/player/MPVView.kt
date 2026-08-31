@@ -316,8 +316,11 @@ class MPVView(
     MPVLib.setOptionString("secondary-sub-border-style", borderStyle)
     MPVLib.setOptionString("secondary-sub-shadow-offset", shadowOffset)
     MPVLib.setOptionString("secondary-sub-scale", subScale)
-    // Position secondary subtitle at top (10) instead of bottom to avoid overlap with primary
-    MPVLib.setOptionString("secondary-sub-pos", "10")
+    // Position secondary subtitle at bottom (just above primary) to keep all non-ASS subs at bottom
+    // Primary is at subPos (default 100). Secondary is placed slightly above to avoid exact overlap
+    // For ASS subtitles with override disabled, mpv respects the ASS file's native positioning
+    val secondaryPos = (subPos.toIntOrNull() ?: 100).let { (it - 10).coerceIn(0, 100) }.toString()
+    MPVLib.setOptionString("secondary-sub-pos", secondaryPos)
 
     val scaleByWindow = if (subtitlesPreferences.scaleByWindow.get()) "yes" else "no"
     MPVLib.setOptionString("sub-scale-by-window", scaleByWindow)
