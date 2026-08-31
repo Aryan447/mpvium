@@ -72,6 +72,11 @@ android {
 
   buildTypes {
     named("release") {
+      // Only CI may opt into the debug key; production releases use the
+      // secret-based signing step in the release workflow.
+      if (providers.gradleProperty("ciDebugSigning").isPresent) {
+        signingConfig = signingConfigs.getByName("debug")
+      }
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(
