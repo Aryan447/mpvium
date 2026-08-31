@@ -178,8 +178,9 @@ private fun NormalTopBar(
       containerColor = if (MaterialTheme.colorScheme.background == Color.Black) {
         Color.Black
       } else {
-        MaterialTheme.colorScheme.surfaceContainer
+        MaterialTheme.colorScheme.surfaceContainerLow
       },
+      titleContentColor = MaterialTheme.colorScheme.onSurface,
     ),
     title = {
       val titleModifier = Modifier
@@ -212,13 +213,9 @@ private fun NormalTopBar(
       Text(
         title,
         style =
-          if (onBackClick == null) {
-            MaterialTheme.typography.headlineMediumEmphasized
-          } else {
-            MaterialTheme.typography.headlineSmall
-          },
-        fontWeight = FontWeight.ExtraBold,
-        color = MaterialTheme.colorScheme.primary,
+          MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier =
@@ -241,7 +238,7 @@ private fun NormalTopBar(
             Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = stringResource(R.string.back),
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.secondary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
       }
@@ -257,7 +254,7 @@ private fun NormalTopBar(
             Icons.Filled.Search,
             contentDescription = "Search",
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.secondary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
       }
@@ -270,7 +267,7 @@ private fun NormalTopBar(
             Icons.Default.ViewComfy,
             contentDescription = stringResource(R.string.sort),
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.secondary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
       }
@@ -283,7 +280,7 @@ private fun NormalTopBar(
             Icons.Filled.Settings,
             contentDescription = "Settings",
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.secondary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
       }

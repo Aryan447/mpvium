@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="1280dp"
+    android:height="1280dp"
+    android:viewportWidth="1280"
+    android:viewportHeight="1280">
+
+    <!-- Deep cinematic background gradient -->
+    <path
+        android:pathData="M0,0h1280v1280h-1280z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="1280"
+                android:endY="1280"
+                android:startColor="#1E1635"
+                android:centerColor="#0E0B1A"
+                android:endColor="#05030A" />
+        </aapt:attr>
+    </path>
+
+    <!-- Subtle ambient radial backlight glow behind play icon -->
+    <path
+        android:pathData="M640,640m-520,0a520,520 0 1,1 1040,0a520,520 0 1,1 -1040,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="640"
+                android:centerY="640"
+                android:gradientRadius="480"
+                android:startColor="#338A2BE2"
+                android:endColor="#00000000" />
+        </aapt:attr>
+    </path>
+
+    <!-- Subtle diagonal ambient light streak for modern glass polish -->
+    <path
+        android:pathData="M0,0 L700,0 L350,1280 L0,1280 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="700"
+                android:endY="1280"
+                android:startColor="#0DFFFFFF"
+                android:endColor="#00FFFFFF" />
+        </aapt:attr>
+    </path>
+</vector>
