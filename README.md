@@ -1,6 +1,6 @@
 <div align="center">
 
-![mpvium](fastlane/metadata/android/en-US/images/featureGraphic.png)
+<!-- ![mpvium](fastlane/metadata/android/en-US/images/featureGraphic.png) -->
 
 # mpvium
 
