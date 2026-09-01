@@ -97,6 +97,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.preferences.preference.deleteAndGet
 import app.aryan447.mpvium.preferences.preference.plusAssign
 import app.aryan447.mpvium.preferences.preference.minusAssign
+import app.aryan447.mpvium.repository.intro.IntroSegmentType
 import app.aryan447.mpvium.ui.player.Decoder.Companion.getDecoderFromValue
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
@@ -107,6 +108,7 @@ import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.BrightnessSlider
 import app.aryan447.mpvium.ui.player.controls.components.CompactSpeedIndicator
 import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
+import app.aryan447.mpvium.ui.player.controls.components.IntroSkipChip
 import app.aryan447.mpvium.ui.player.controls.components.MultipleSpeedPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.SeekPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.SeekbarWithTimers
@@ -300,6 +302,7 @@ fun PlayerControls(
         val playerPauseButton = createRef()
         val seekbar = createRef()
         val (playerUpdates) = createRefs()
+        val introSkipButton = createRef()
 
         val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
         val isVolumeSliderShown by viewModel.isVolumeSliderShown.collectAsState()
@@ -1056,6 +1059,40 @@ fun PlayerControls(
             viewModel = viewModel,
             activity = activity,
           )
+        }
+
+        val introSkipShown by viewModel.introSkipShown.collectAsState()
+        val introSkipWindow by viewModel.introSkipWindow.collectAsState()
+
+        AnimatedVisibility(
+          visible = introSkipShown && introSkipWindow != null,
+          enter = slideInVertically { it } + fadeIn(),
+          exit = slideOutVertically { it } + fadeOut(),
+          modifier =
+            Modifier
+              .then(
+                if (showSystemStatusBar) {
+                  Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                } else {
+                  Modifier
+                }
+              )
+              .constrainAs(introSkipButton) {
+                top.linkTo(parent.top, if (isPortrait) 96.dp else 56.dp)
+                end.linkTo(parent.end, spacing.large)
+              },
+        ) {
+          val window = introSkipWindow
+          if (window != null) {
+            IntroSkipChip(
+              label = if (window.type == IntroSegmentType.RECAP) {
+                stringResource(R.string.player_skip_recap)
+              } else {
+                stringResource(R.string.player_skip_intro)
+              },
+              onClick = viewModel::skipIntro,
+            )
+          }
         }
 
         AnimatedVisibility(

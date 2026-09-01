@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
@@ -168,6 +169,9 @@ object StreamingHomeScreen : Screen {
               }
             },
             actions = {
+              IconButton(onClick = { viewModel.refreshMetadata() }) {
+                Icon(Icons.Filled.Refresh, contentDescription = "Refresh details")
+              }
               IconButton(onClick = { viewModel.setSearching(true) }) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }

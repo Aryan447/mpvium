@@ -100,128 +100,130 @@ class StreamingMetadataRepository(
     }
   }
 
-  suspend fun enrichSeries(series: LocalSeries): LocalSeries = withContext(Dispatchers.IO) {
-    ensureCacheLoaded()
-    val cacheKey = "series_${series.id}"
-    val cached = memoryCache[cacheKey]
+  suspend fun enrichSeries(series: LocalSeries, forceRefresh: Boolean = false) =
+    withContext(Dispatchers.IO) {
+      ensureCacheLoaded()
+      val cacheKey = "series_${series.id}"
+      val cached = memoryCache[cacheKey]
 
-    if (cached != null) {
-      return@withContext applyMetadataToSeries(series, cached)
-    }
+      if (cached != null && !forceRefresh) {
+        return@withContext applyMetadataToSeries(series, cached)
+      }
 
-    // Fetch from TMDb / Wyzie
-    try {
-      val searchResults = wyzieRepository.searchMedia(series.title).getOrNull() ?: emptyList()
-      val bestMatch = searchResults.firstOrNull { it.mediaType.equals("tv", ignoreCase = true) }
-        ?: searchResults.firstOrNull()
+      // Fetch from TMDb / Wyzie
+      try {
+        val searchResults = wyzieRepository.searchMedia(series.title).getOrNull() ?: emptyList()
+        val bestMatch = searchResults.firstOrNull { it.mediaType.equals("tv", ignoreCase = true) }
+          ?: searchResults.firstOrNull()
 
-      if (bestMatch != null) {
-        var poster = bestMatch.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-        var backdrop = bestMatch.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
-        var overview = bestMatch.overview
-        var year = bestMatch.releaseYear ?: series.year
-        var rating = extractRatingFromTmdb(bestMatch.id, isTv = true)
+        if (bestMatch != null) {
+          var poster = bestMatch.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
+          var backdrop = bestMatch.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
+          var overview = bestMatch.overview
+          var year = bestMatch.releaseYear ?: series.year
+          var rating = extractRatingFromTmdb(bestMatch.id, isTv = true)
 
-        // Try getting full TV show details
-        val showDetails = runCatching { wyzieRepository.getTvShowDetails(bestMatch.id).getOrNull() }.getOrNull()
+          // Try getting full TV show details
+          val showDetails = runCatching { wyzieRepository.getTvShowDetails(bestMatch.id).getOrNull() }.getOrNull()
 
-        val episodeStills = mutableMapOf<String, String>()
-        val episodeTitles = mutableMapOf<String, String>()
-        val episodeOverviews = mutableMapOf<String, String>()
-        val episodeRatings = mutableMapOf<String, Float>()
+          val episodeStills = mutableMapOf<String, String>()
+          val episodeTitles = mutableMapOf<String, String>()
+          val episodeOverviews = mutableMapOf<String, String>()
+          val episodeRatings = mutableMapOf<String, Float>()
 
-        // Fetch season episodes for all present seasons
-        series.seasons.keys.forEach { seasonNum ->
-          runCatching {
-            val episodes = wyzieRepository.getSeasonEpisodes(bestMatch.id, seasonNum).getOrNull() ?: emptyList()
-            episodes.forEach { ep ->
-              val epKey = "S${seasonNum}E${ep.episode_number}"
-              ep.name?.takeIf { it.isNotBlank() }?.let { episodeTitles[epKey] = it }
-              ep.still_path?.takeIf { it.isNotBlank() }?.let { episodeStills[epKey] = formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-              ep.overview?.takeIf { it.isNotBlank() }?.let { episodeOverviews[epKey] = it }
+          // Fetch season episodes for all present seasons
+          series.seasons.keys.forEach { seasonNum ->
+            runCatching {
+              val episodes = wyzieRepository.getSeasonEpisodes(bestMatch.id, seasonNum).getOrNull() ?: emptyList()
+              episodes.forEach { ep ->
+                val epKey = "S${seasonNum}E${ep.episode_number}"
+                ep.name?.takeIf { it.isNotBlank() }?.let { episodeTitles[epKey] = it }
+                ep.still_path?.takeIf { it.isNotBlank() }?.let { episodeStills[epKey] = formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
+                ep.overview?.takeIf { it.isNotBlank() }?.let { episodeOverviews[epKey] = it }
+              }
             }
           }
+
+          val cachedMetadata = CachedMediaMetadata(
+            tmdbId = bestMatch.id,
+            title = bestMatch.title.ifBlank { series.title },
+            posterUrl = poster,
+            backdropUrl = backdrop,
+            rating = rating,
+            overview = overview,
+            year = year,
+            episodeStills = episodeStills,
+            episodeTitles = episodeTitles,
+            episodeOverviews = episodeOverviews,
+            episodeRatings = episodeRatings,
+          )
+
+          memoryCache[cacheKey] = cachedMetadata
+          persistCache()
+          return@withContext applyMetadataToSeries(series, cachedMetadata)
         }
-
-        val cachedMetadata = CachedMediaMetadata(
-          tmdbId = bestMatch.id,
-          title = bestMatch.title.ifBlank { series.title },
-          posterUrl = poster,
-          backdropUrl = backdrop,
-          rating = rating,
-          overview = overview,
-          year = year,
-          episodeStills = episodeStills,
-          episodeTitles = episodeTitles,
-          episodeOverviews = episodeOverviews,
-          episodeRatings = episodeRatings,
-        )
-
-        memoryCache[cacheKey] = cachedMetadata
-        persistCache()
-        return@withContext applyMetadataToSeries(series, cachedMetadata)
+      } catch (e: Exception) {
+        Log.w(TAG, "Error fetching metadata for series: ${series.title}", e)
       }
-    } catch (e: Exception) {
-      Log.w(TAG, "Error fetching metadata for series: ${series.title}", e)
+
+      series
     }
 
-    series
-  }
+  suspend fun enrichMovie(movie: LocalMovie, forceRefresh: Boolean = false) =
+    withContext(Dispatchers.IO) {
+      ensureCacheLoaded()
+      val cacheKey = "movie_${movie.title.lowercase().replace(Regex("[^a-z0-9]"), "")}"
+      val cached = memoryCache[cacheKey]
 
-  suspend fun enrichMovie(movie: LocalMovie): LocalMovie = withContext(Dispatchers.IO) {
-    ensureCacheLoaded()
-    val cacheKey = "movie_${movie.title.lowercase().replace(Regex("[^a-z0-9]"), "")}"
-    val cached = memoryCache[cacheKey]
-
-    if (cached != null) {
-      return@withContext movie.copy(
-        posterUrl = cached.posterUrl ?: movie.posterUrl,
-        backdropUrl = cached.backdropUrl ?: movie.backdropUrl,
-        rating = cached.rating ?: movie.rating,
-        overview = cached.overview ?: movie.overview,
-        year = cached.year ?: movie.year,
-        tmdbId = cached.tmdbId ?: movie.tmdbId,
-      )
-    }
-
-    try {
-      val searchResults = wyzieRepository.searchMedia(movie.title).getOrNull() ?: emptyList()
-      val bestMatch = searchResults.firstOrNull { it.mediaType.equals("movie", ignoreCase = true) }
-        ?: searchResults.firstOrNull()
-
-      if (bestMatch != null) {
-        val poster = bestMatch.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-        val backdrop = bestMatch.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
-        val rating = extractRatingFromTmdb(bestMatch.id, isTv = false)
-
-        val cachedMetadata = CachedMediaMetadata(
-          tmdbId = bestMatch.id,
-          title = bestMatch.title.ifBlank { movie.title },
-          posterUrl = poster,
-          backdropUrl = backdrop,
-          rating = rating,
-          overview = bestMatch.overview,
-          year = bestMatch.releaseYear ?: movie.year,
-        )
-
-        memoryCache[cacheKey] = cachedMetadata
-        persistCache()
-
+      if (cached != null && !forceRefresh) {
         return@withContext movie.copy(
-          posterUrl = poster,
-          backdropUrl = backdrop,
-          rating = rating,
-          overview = bestMatch.overview,
-          year = bestMatch.releaseYear ?: movie.year,
-          tmdbId = bestMatch.id,
+          posterUrl = cached.posterUrl ?: movie.posterUrl,
+          backdropUrl = cached.backdropUrl ?: movie.backdropUrl,
+          rating = cached.rating ?: movie.rating,
+          overview = cached.overview ?: movie.overview,
+          year = cached.year ?: movie.year,
+          tmdbId = cached.tmdbId ?: movie.tmdbId,
         )
       }
-    } catch (e: Exception) {
-      Log.w(TAG, "Error fetching metadata for movie: ${movie.title}", e)
-    }
 
-    movie
-  }
+      try {
+        val searchResults = wyzieRepository.searchMedia(movie.title).getOrNull() ?: emptyList()
+        val bestMatch = searchResults.firstOrNull { it.mediaType.equals("movie", ignoreCase = true) }
+          ?: searchResults.firstOrNull()
+
+        if (bestMatch != null) {
+          val poster = bestMatch.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
+          val backdrop = bestMatch.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
+          val rating = extractRatingFromTmdb(bestMatch.id, isTv = false)
+
+          val cachedMetadata = CachedMediaMetadata(
+            tmdbId = bestMatch.id,
+            title = bestMatch.title.ifBlank { movie.title },
+            posterUrl = poster,
+            backdropUrl = backdrop,
+            rating = rating,
+            overview = bestMatch.overview,
+            year = bestMatch.releaseYear ?: movie.year,
+          )
+
+          memoryCache[cacheKey] = cachedMetadata
+          persistCache()
+
+          return@withContext movie.copy(
+            posterUrl = poster,
+            backdropUrl = backdrop,
+            rating = rating,
+            overview = bestMatch.overview,
+            year = bestMatch.releaseYear ?: movie.year,
+            tmdbId = bestMatch.id,
+          )
+        }
+      } catch (e: Exception) {
+        Log.w(TAG, "Error fetching metadata for movie: ${movie.title}", e)
+      }
+
+      movie
+    }
 
   private fun applyMetadataToSeries(series: LocalSeries, metadata: CachedMediaMetadata): LocalSeries {
     val enrichedSeasons = series.seasons.mapValues { (seasonNum, episodes) ->
