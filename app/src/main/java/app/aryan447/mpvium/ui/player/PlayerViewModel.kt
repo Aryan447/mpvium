@@ -169,6 +169,10 @@ class PlayerViewModel(
 
   private var introSkipTitle = ""
 
+  // Media title for subtitle association (must be declared before init blocks that reference it)
+  var currentMediaTitle: String = ""
+  private var lastAutoSelectedMediaTitle: String? = null
+
   // Audio state
   val currentVolume = MutableStateFlow(host.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
   private val volumeBoostCap by MPVLib.propInt["volume-max"].collectAsState(viewModelScope)
@@ -300,10 +304,6 @@ class PlayerViewModel(
   private var timerJob: Job? = null
   private val _remainingTime = MutableStateFlow(0)
   val remainingTime: StateFlow<Int> = _remainingTime.asStateFlow()
-
-  // Media title for subtitle association
-  var currentMediaTitle: String = ""
-  private var lastAutoSelectedMediaTitle: String? = null
 
   // External subtitle tracking
   private val _externalSubtitles = mutableListOf<String>()
@@ -766,7 +766,6 @@ class PlayerViewModel(
     _selectedSeason.value = null
     _seasonEpisodes.value = emptyList()
     _selectedEpisode.value = null
-    _mediaSearchResults.value = emptyList()
   }
 
   // --- Subtitle Search ---
