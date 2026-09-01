@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -63,6 +66,7 @@ import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
@@ -93,6 +97,9 @@ data class SeriesDetailScreen(
     var selectedSeason by remember { mutableIntStateOf(1) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var pendingDeletion by remember { mutableStateOf<Pair<String, List<Video>>?>(null) }
+    var showMatchPicker by remember { mutableStateOf(false) }
+    var matchOptions by remember { mutableStateOf<List<WyzieTmdbResult>>(emptyList()) }
+    var isSearchingMatches by remember { mutableStateOf(false) }
 
     LaunchedEffect(seriesId, reloadKey) {
       withContext(Dispatchers.IO) {
@@ -109,6 +116,18 @@ data class SeriesDetailScreen(
         } else {
           isLoading = false
         }
+      }
+    }
+
+    // Load search candidates whenever the match picker opens
+    LaunchedEffect(showMatchPicker) {
+      val target = series
+      if (showMatchPicker && target != null) {
+        isSearchingMatches = true
+        matchOptions = withContext(Dispatchers.IO) {
+          metadataRepository.searchSeriesMatches(target.title)
+        }
+        isSearchingMatches = false
       }
     }
 
@@ -195,14 +214,14 @@ data class SeriesDetailScreen(
               ) {
                 IconButton(
                   onClick = {
-                    reloadKey++
+                    showMatchPicker = true
                   },
                   modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.5f)),
                 ) {
-                  Icon(Icons.Filled.Refresh, contentDescription = "Refresh details", tint = Color.White)
+                  Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
                 }
                 IconButton(
                   onClick = {
@@ -399,6 +418,171 @@ data class SeriesDetailScreen(
         itemCount = videos.size,
         itemNames = if (videos.size == 1) listOf(name) else emptyList(),
       )
+    }
+
+    if (showMatchPicker) {
+      val target = series
+      AlertDialog(
+        onDismissRequest = { showMatchPicker = false },
+        title = {
+          Text(
+            text = "Choose the correct match",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+          )
+        },
+        text = {
+          Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+          ) {
+            Text(
+              text = if (target != null) "Search results for \"${target.title}\" — pick the one that matches your show." else "Searching...",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            when {
+              isSearchingMatches -> {
+                Box(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                  contentAlignment = Alignment.Center,
+                ) {
+                  CircularProgressIndicator()
+                }
+              }
+
+              matchOptions.isEmpty() -> {
+                Text(
+                  text = "No matches found. Check your connection and try again.",
+                  style = MaterialTheme.typography.bodyMedium,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  modifier = Modifier.padding(vertical = 12.dp),
+                )
+              }
+
+              else -> {
+                LazyColumn(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 340.dp),
+                  verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                  items(matchOptions, key = { "${it.id}_${it.mediaType}" }) { option ->
+                    MatchOptionRow(
+                      option = option,
+                      onClick = {
+                        showMatchPicker = false
+                        val selectedTarget = series
+                        if (selectedTarget != null) {
+                          coroutineScope.launch {
+                            val enriched = withContext(Dispatchers.IO) {
+                              metadataRepository.enrichSeries(
+                                selectedTarget,
+                                forceRefresh = true,
+                                preferred = option,
+                              )
+                            }
+                            series = enriched
+                          }
+                        }
+                        matchOptions = emptyList()
+                      },
+                    )
+                  }
+                }
+              }
+            }
+          }
+        },
+        confirmButton = {
+          TextButton(onClick = { showMatchPicker = false }) {
+            Text("Cancel", fontWeight = FontWeight.Medium)
+          }
+        },
+        dismissButton = {
+          TextButton(
+            onClick = {
+              showMatchPicker = false
+              coroutineScope.launch(Dispatchers.IO) {
+                val targetId = series?.id
+                if (targetId != null) {
+                  metadataRepository.clearSeriesMetadata(targetId)
+                  reloadKey++
+                }
+              }
+            },
+          ) {
+            Text("Use auto match", fontWeight = FontWeight.Medium)
+          }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shape = MaterialTheme.shapes.extraLarge,
+      )
+    }
+  }
+}
+
+@Composable
+private fun MatchOptionRow(
+  option: WyzieTmdbResult,
+  onClick: () -> Unit,
+) {
+  val isTv = option.mediaType.equals("tv", ignoreCase = true)
+  Surface(
+    modifier = Modifier
+      .fillMaxWidth()
+      .clip(RoundedCornerShape(10.dp))
+      .clickable(onClick = onClick),
+    color = MaterialTheme.colorScheme.surfaceContainer,
+    shape = RoundedCornerShape(10.dp),
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Box(
+        modifier = Modifier
+          .width(52.dp)
+          .height(76.dp)
+          .clip(RoundedCornerShape(6.dp)),
+      ) {
+        StreamingImage(
+          url = option.poster,
+          isSeries = isTv,
+          contentScale = ContentScale.Crop,
+          modifier = Modifier.fillMaxSize(),
+        )
+      }
+
+      Spacer(modifier = Modifier.width(12.dp))
+
+      Column(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.Center,
+      ) {
+        Text(
+          text = option.title,
+          style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+          color = MaterialTheme.colorScheme.onSurface,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+          text = buildString {
+            append(if (isTv) "TV Series" else "Movie")
+            option.releaseYear?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
+          },
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
     }
   }
 }
