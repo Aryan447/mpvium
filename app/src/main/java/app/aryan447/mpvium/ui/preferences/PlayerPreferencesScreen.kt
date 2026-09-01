@@ -241,6 +241,32 @@ object PlayerPreferencesScreen : Screen {
                 onSliderValueChange = { preferences.customSkipDuration.set(it.roundToInt()) },
                 sliderValue = customSkipDuration.toFloat(),
               )
+
+              PreferenceDivider()
+
+              val skipIntroDuration by preferences.skipIntroDuration.collectAsState()
+              SliderPreference(
+                value = skipIntroDuration.toFloat(),
+                onValueChange = { preferences.skipIntroDuration.set(it.roundToInt()) },
+                title = { Text("Skip intro duration") },
+                valueRange = 5f..300f,
+                summary = { Text("Skip forward $skipIntroDuration s", color = MaterialTheme.colorScheme.outline) },
+                onSliderValueChange = { preferences.skipIntroDuration.set(it.roundToInt()) },
+                sliderValue = skipIntroDuration.toFloat(),
+              )
+
+              PreferenceDivider()
+
+              val skipRecapDuration by preferences.skipRecapDuration.collectAsState()
+              SliderPreference(
+                value = skipRecapDuration.toFloat(),
+                onValueChange = { preferences.skipRecapDuration.set(it.roundToInt()) },
+                title = { Text("Skip recap duration") },
+                valueRange = 5f..300f,
+                summary = { Text("Skip forward $skipRecapDuration s", color = MaterialTheme.colorScheme.outline) },
+                onSliderValueChange = { preferences.skipRecapDuration.set(it.roundToInt()) },
+                sliderValue = skipRecapDuration.toFloat(),
+              )
             }
           }
           // Gestures Section

@@ -1,6 +1,10 @@
 package app.aryan447.mpvium
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -43,6 +47,7 @@ import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.MpviumTheme
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.permission.PermissionUtils
+import com.google.accompanist.permissions.PermissionStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -92,6 +97,13 @@ class MainActivity : ComponentActivity() {
         autoConnectToNetworks()
       }
 
+      val storagePermissionState = PermissionUtils.handleStoragePermission(onPermissionGranted = {})
+      LaunchedEffect(storagePermissionState.status) {
+        if (storagePermissionState.status is PermissionStatus.Denied) {
+          requestStoragePermission(storagePermissionState::launchPermissionRequest)
+        }
+      }
+
       MpviumTheme {
         Surface {
           Navigator()
@@ -105,6 +117,21 @@ class MainActivity : ComponentActivity() {
       super.onDestroy()
     } catch (e: Exception) {
       Log.e("MainActivity", "Error during onDestroy", e)
+    }
+  }
+
+  private fun requestStoragePermission(requestRuntimePermission: () -> Unit) {
+    if (!BuildConfig.SCOPED_STORAGE_ONLY && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      try {
+        startActivity(
+          Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+            .setData(Uri.parse("package:$packageName")),
+        )
+      } catch (_: Exception) {
+        startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+      }
+    } else {
+      requestRuntimePermission()
     }
   }
 

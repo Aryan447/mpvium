@@ -30,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,11 +44,14 @@ import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 
@@ -75,6 +79,8 @@ object MoviesGridScreen : Screen {
     var isLoading by remember { mutableStateOf(true) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
+    var moviePendingDeletion by remember { mutableStateOf<LocalMovie?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
       withContext(Dispatchers.IO) {
@@ -186,11 +192,28 @@ object MoviesGridScreen : Screen {
             MoviePosterCard(
               movie = movie,
               onClick = { MediaUtils.playFile(movie.video, context, "movie_grid_play") },
+              onLongClick = { moviePendingDeletion = movie },
               cardWidth = 180.dp,
             )
           }
         }
       }
+    }
+
+    moviePendingDeletion?.let { movie ->
+      DeleteConfirmationDialog(
+        isOpen = true,
+        onDismiss = { moviePendingDeletion = null },
+        onConfirm = {
+          coroutineScope.launch {
+            PermissionUtils.StorageOps.deleteVideos(context, listOf(movie.video))
+            movieList = movieList.filterNot { it.video.id == movie.video.id }
+          }
+        },
+        itemType = "movie",
+        itemCount = 1,
+        itemNames = listOf(movie.title),
+      )
     }
   }
 }
