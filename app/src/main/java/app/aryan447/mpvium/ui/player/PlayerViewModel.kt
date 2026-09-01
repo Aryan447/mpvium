@@ -91,6 +91,7 @@ class PlayerViewModel(
   private val json: Json by inject()
   private val playbackStateDao: app.aryan447.mpvium.database.dao.PlaybackStateDao by inject()
   private val wyzieRepository: WyzieSearchRepository by inject()
+  private val introSkipRepository: app.aryan447.mpvium.repository.intro.IntroSkipRepository by inject()
 
   // Playlist items for the playlist sheet
   private val _playlistItems = kotlinx.coroutines.flow.MutableStateFlow<List<app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem>>(emptyList())
@@ -159,6 +160,15 @@ class PlayerViewModel(
   private val _preciseDuration = MutableStateFlow(0f)
   val preciseDuration = _preciseDuration.asStateFlow()
 
+  // Intro/recap skip state
+  private val _introSkipWindow = MutableStateFlow<app.aryan447.mpvium.repository.intro.IntroWindow?>(null)
+  val introSkipWindow: StateFlow<app.aryan447.mpvium.repository.intro.IntroWindow?> = _introSkipWindow.asStateFlow()
+
+  private val _introSkipShown = MutableStateFlow(false)
+  val introSkipShown: StateFlow<Boolean> = _introSkipShown.asStateFlow()
+
+  private var introSkipTitle = ""
+
   // Audio state
   val currentVolume = MutableStateFlow(host.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
   private val volumeBoostCap by MPVLib.propInt["volume-max"].collectAsState(viewModelScope)
@@ -184,6 +194,21 @@ class PlayerViewModel(
         }
       }
     }
+
+    // Detect when playback enters an intro/recap window so the UI can offer a skip
+    viewModelScope.launch {
+      while (isActive) {
+        val window = _introSkipWindow.value
+        val titleKnown = currentMediaTitle.isNotBlank()
+        if (window != null && !introSkipShown.value && titleKnown) {
+          val pos = MPVLib.getPropertyInt("time-pos") ?: 0
+          if (window.contains(pos)) {
+            _introSkipShown.value = true
+          }
+        }
+        delay(250)
+      }
+    }
   }
   val maxVolume = host.audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
@@ -204,8 +229,9 @@ class PlayerViewModel(
   val chapters: StateFlow<List<dev.vivvvek.seeker.Segment>> =
     MPVLib.propNode["chapter-list"]
       .map { node ->
-        node?.toObject<List<ChapterNode>>(json)?.map { it.toSegment() }?.toImmutableList()
-          ?: persistentListOf()
+        runCatching {
+          node?.toObject<List<ChapterNode>>(json)?.map { it.toSegment() }?.toImmutableList()
+        }.getOrElse { persistentListOf() } ?: persistentListOf()
       }.stateIn(viewModelScope, SharingStarted.Lazily, persistentListOf())
 
   // UI state
@@ -599,7 +625,32 @@ class PlayerViewModel(
           }
       }
       // ---------------------------------------------------
+
+      // Load intro/recap skip window for the new media
+      loadIntroSkip(mediaTitle)
     }
+  }
+
+  private fun loadIntroSkip(mediaTitle: String) {
+    introSkipTitle = mediaTitle
+    _introSkipShown.value = false
+    _introSkipWindow.value = null
+    viewModelScope.launch(Dispatchers.IO) {
+      val window = introSkipRepository.getSkipWindow(mediaTitle)
+      if (introSkipTitle == mediaTitle) {
+        _introSkipWindow.value = window
+        if (window == null) {
+          _introSkipShown.value = false
+        }
+      }
+    }
+  }
+
+  fun skipIntro() {
+    _introSkipShown.value = false
+    val window = _introSkipWindow.value ?: return
+    val target = window.endSeconds.coerceIn(0, duration ?: 0)
+    seekTo(target)
   }
 
 

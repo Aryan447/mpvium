@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -102,8 +103,8 @@ data class SeriesDetailScreen(
           selectedSeason = found.seasons.keys.firstOrNull() ?: 1
           isLoading = false
 
-          // Enrich in background
-          val enriched = metadataRepository.enrichSeries(found)
+          // Enrich in background; manual reload (reloadKey > 0) forces a re-fetch
+          val enriched = metadataRepository.enrichSeries(found, forceRefresh = reloadKey > 0)
           series = enriched
         } else {
           isLoading = false
@@ -186,18 +187,34 @@ data class SeriesDetailScreen(
                 )
               }
 
-              IconButton(
-                onClick = {
-                  pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
-                },
+              Row(
                 modifier = Modifier
                   .align(Alignment.TopEnd)
-                  .padding(top = 40.dp, end = 12.dp)
-                  .size(40.dp)
-                  .clip(CircleShape)
-                  .background(Color.Black.copy(alpha = 0.5f)),
+                  .padding(top = 40.dp, end = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
               ) {
-                Icon(Icons.Filled.Delete, contentDescription = "Delete series", tint = Color.White)
+                IconButton(
+                  onClick = {
+                    reloadKey++
+                  },
+                  modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                  Icon(Icons.Filled.Refresh, contentDescription = "Refresh details", tint = Color.White)
+                }
+                IconButton(
+                  onClick = {
+                    pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
+                  },
+                  modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                  Icon(Icons.Filled.Delete, contentDescription = "Delete series", tint = Color.White)
+                }
               }
             }
           }

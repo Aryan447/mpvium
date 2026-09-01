@@ -96,11 +96,11 @@ class StreamingHomeViewModel(
     }
   }
 
-  private fun enrichSeriesMetadata(seriesList: List<LocalSeries>, moviesList: List<LocalMovie>) {
+  private fun enrichSeriesMetadata(seriesList: List<LocalSeries>, moviesList: List<LocalMovie>, forceRefresh: Boolean = false) {
     viewModelScope.launch(Dispatchers.IO) {
       // Enrich series
       val enrichedSeries = seriesList.map { series ->
-        val enriched = metadataRepository.enrichSeries(series)
+        val enriched = metadataRepository.enrichSeries(series, forceRefresh = forceRefresh)
         // Update hero if matching
         _uiState.update { state ->
           val updatedHero = if (state.heroSeries?.id == enriched.id) enriched else state.heroSeries
@@ -112,12 +112,34 @@ class StreamingHomeViewModel(
 
       // Enrich movies
       moviesList.map { movie ->
-        val enriched = metadataRepository.enrichMovie(movie)
+        val enriched = metadataRepository.enrichMovie(movie, forceRefresh = forceRefresh)
         _uiState.update { state ->
           val updatedMovies = state.movies.map { if (it.video.id == enriched.video.id) enriched else it }
           state.copy(movies = updatedMovies)
         }
         enriched
+      }
+    }
+  }
+
+  fun refreshMetadata() {
+    viewModelScope.launch(Dispatchers.IO) {
+      try {
+        val detected = seriesDetector.detectLibrary()
+        _uiState.update {
+          it.copy(
+            heroSeries = detected.series.firstOrNull { s -> s.lastWatchedEpisode != null && !s.lastWatchedEpisode.isWatched }
+              ?: detected.series.firstOrNull(),
+            continueWatching = detected.continueWatching,
+            series = detected.series,
+            movies = detected.movies,
+            folders = detected.folders,
+            totalVideos = detected.totalVideoCount,
+          )
+        }
+        enrichSeriesMetadata(detected.series, detected.movies, forceRefresh = true)
+      } catch (e: Exception) {
+        Log.e("StreamingHomeViewModel", "Error refreshing library", e)
       }
     }
   }
