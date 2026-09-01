@@ -1,7 +1,9 @@
 package app.aryan447.mpvium.repository.intro
 
 import android.util.Log
+import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
+import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -49,6 +51,7 @@ class IntroSkipRepository(
   private val client: OkHttpClient,
   private val json: Json,
   private val wyzieRepository: WyzieSearchRepository,
+  private val metadataRepository: StreamingMetadataRepository,
 ) {
   companion object {
     private const val TAG = "IntroSkipRepository"
@@ -106,14 +109,12 @@ class IntroSkipRepository(
     val isTv = parsed.type == "tv" || parsed.season != null || parsed.episode != null
     val searchType = if (isTv) "tv" else "movie"
     val tmdbId =
-      try {
-        val results = wyzieRepository.searchMedia(parsed.title).getOrNull() ?: emptyList()
-        val best = results.firstOrNull { it.mediaType.equals(searchType, ignoreCase = true) }
-          ?: results.firstOrNull()
-        best?.id
-      } catch (e: Exception) {
-        null
-      }
+      // Prefer the already-resolved match (honors a manual fix on the series screen)
+      metadataRepository.getCachedTmdbId(parsed.title)
+        ?: runCatching {
+            val results = wyzieRepository.searchMedia(parsed.title).getOrNull() ?: emptyList()
+            pickBestMatch(results, searchType, parsed.year)?.id
+          }.getOrNull()
     if (tmdbId == null) {
       Log.d(TAG, "Could not resolve TMDB id for '$mediaTitle'")
       return null
@@ -173,4 +174,15 @@ class IntroSkipRepository(
 
   private fun normalizeKey(title: String): String =
     title.lowercase().replace(Regex("[^a-z0-9]"), "")
+
+  private fun pickBestMatch(results: List<WyzieTmdbResult>, searchType: String, year: String?): WyzieTmdbResult? {
+    val typed = results.filter { it.mediaType.equals(searchType, ignoreCase = true) }
+    val pool = if (typed.isNotEmpty()) typed else results
+    if (pool.isEmpty()) return null
+    year?.let { y ->
+      pool.firstOrNull { it.releaseYear == y }?.let { return it }
+      pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
+    }
+    return pool.firstOrNull()
+  }
 }

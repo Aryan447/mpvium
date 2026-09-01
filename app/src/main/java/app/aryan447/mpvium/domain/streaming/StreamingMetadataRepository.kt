@@ -37,6 +37,7 @@ data class CachedMediaMetadata(
   val overview: String? = null,
   val genres: List<String> = emptyList(),
   val year: String? = null,
+  val manuallySelected: Boolean = false, // true when the user explicitly chose this TMDb match
   val episodeStills: Map<String, String> = emptyMap(), // "S1E2" -> stillUrl
   val episodeTitles: Map<String, String> = emptyMap(), // "S1E2" -> title
   val episodeOverviews: Map<String, String> = emptyMap(), // "S1E2" -> overview
@@ -100,74 +101,148 @@ class StreamingMetadataRepository(
     }
   }
 
-  suspend fun enrichSeries(series: LocalSeries, forceRefresh: Boolean = false) =
+  suspend fun enrichSeries(
+    series: LocalSeries,
+    forceRefresh: Boolean = false,
+    preferred: WyzieTmdbResult? = null,
+  ) =
     withContext(Dispatchers.IO) {
       ensureCacheLoaded()
       val cacheKey = "series_${series.id}"
       val cached = memoryCache[cacheKey]
 
-      if (cached != null && !forceRefresh) {
+      if (cached != null && preferred == null && !forceRefresh) {
         return@withContext applyMetadataToSeries(series, cached)
       }
 
       // Fetch from TMDb / Wyzie
       try {
-        val searchResults = wyzieRepository.searchMedia(series.title).getOrNull() ?: emptyList()
-        val bestMatch = searchResults.firstOrNull { it.mediaType.equals("tv", ignoreCase = true) }
-          ?: searchResults.firstOrNull()
+        var match = preferred
+        var manualOverride = match != null
+        if (match == null && cached?.manuallySelected == true && cached.tmdbId != null) {
+          // Keep a previously chosen match across forced refreshes instead of re-picking
+          match = WyzieTmdbResult(id = cached.tmdbId!!, mediaType = "tv", title = cached.title)
+          manualOverride = true
+        }
+        if (match == null) {
+          val searchResults = wyzieRepository.searchMedia(series.title).getOrNull() ?: emptyList()
+          match = pickBestTvMatch(searchResults, series.year)
+        }
+        if (match == null) return@withContext series
 
-        if (bestMatch != null) {
-          var poster = bestMatch.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-          var backdrop = bestMatch.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
-          var overview = bestMatch.overview
-          var year = bestMatch.releaseYear ?: series.year
-          var rating = extractRatingFromTmdb(bestMatch.id, isTv = true)
+        var poster = match.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
+        var backdrop = match.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
+        var overview = match.overview
+        var year = match.releaseYear ?: series.year
+        var rating: Float? = if (manualOverride) null else extractRatingFromTmdb(match.id, isTv = true)
 
-          // Try getting full TV show details
-          val showDetails = runCatching { wyzieRepository.getTvShowDetails(bestMatch.id).getOrNull() }.getOrNull()
+        // Try getting full TV show details
+        val showDetails = runCatching { wyzieRepository.getTvShowDetails(match.id).getOrNull() }.getOrNull()
 
-          val episodeStills = mutableMapOf<String, String>()
-          val episodeTitles = mutableMapOf<String, String>()
-          val episodeOverviews = mutableMapOf<String, String>()
-          val episodeRatings = mutableMapOf<String, Float>()
+        val episodeStills = mutableMapOf<String, String>()
+        val episodeTitles = mutableMapOf<String, String>()
+        val episodeOverviews = mutableMapOf<String, String>()
+        val episodeRatings = mutableMapOf<String, Float>()
 
-          // Fetch season episodes for all present seasons
-          series.seasons.keys.forEach { seasonNum ->
-            runCatching {
-              val episodes = wyzieRepository.getSeasonEpisodes(bestMatch.id, seasonNum).getOrNull() ?: emptyList()
-              episodes.forEach { ep ->
-                val epKey = "S${seasonNum}E${ep.episode_number}"
-                ep.name?.takeIf { it.isNotBlank() }?.let { episodeTitles[epKey] = it }
-                ep.still_path?.takeIf { it.isNotBlank() }?.let { episodeStills[epKey] = formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-                ep.overview?.takeIf { it.isNotBlank() }?.let { episodeOverviews[epKey] = it }
-              }
+        // Fetch season episodes for all present seasons
+        series.seasons.keys.forEach { seasonNum ->
+          runCatching {
+            val episodes = wyzieRepository.getSeasonEpisodes(match.id, seasonNum).getOrNull() ?: emptyList()
+            episodes.forEach { ep ->
+              val epKey = "S${seasonNum}E${ep.episode_number}"
+              ep.name?.takeIf { it.isNotBlank() }?.let { episodeTitles[epKey] = it }
+              ep.still_path?.takeIf { it.isNotBlank() }?.let { episodeStills[epKey] = formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
+              ep.overview?.takeIf { it.isNotBlank() }?.let { episodeOverviews[epKey] = it }
             }
           }
-
-          val cachedMetadata = CachedMediaMetadata(
-            tmdbId = bestMatch.id,
-            title = bestMatch.title.ifBlank { series.title },
-            posterUrl = poster,
-            backdropUrl = backdrop,
-            rating = rating,
-            overview = overview,
-            year = year,
-            episodeStills = episodeStills,
-            episodeTitles = episodeTitles,
-            episodeOverviews = episodeOverviews,
-            episodeRatings = episodeRatings,
-          )
-
-          memoryCache[cacheKey] = cachedMetadata
-          persistCache()
-          return@withContext applyMetadataToSeries(series, cachedMetadata)
         }
+
+        val cachedMetadata = CachedMediaMetadata(
+          tmdbId = match.id,
+          title = match.title.ifBlank { series.title },
+          posterUrl = poster,
+          backdropUrl = backdrop,
+          rating = rating,
+          overview = overview,
+          year = year,
+          manuallySelected = manualOverride,
+          episodeStills = episodeStills,
+          episodeTitles = episodeTitles,
+          episodeOverviews = episodeOverviews,
+          episodeRatings = episodeRatings,
+        )
+
+        // A manually chosen match may only carry an id, so preserve artwork already in cache
+        val mergedMetadata = if (manualOverride) {
+          cachedMetadata.copy(
+            posterUrl = poster ?: cached?.posterUrl,
+            backdropUrl = backdrop ?: cached?.backdropUrl,
+            overview = overview ?: cached?.overview,
+            rating = rating ?: cached?.rating,
+          )
+        } else {
+          cachedMetadata
+        }
+
+        memoryCache[cacheKey] = mergedMetadata
+        persistCache()
+        return@withContext applyMetadataToSeries(series, mergedMetadata)
       } catch (e: Exception) {
         Log.w(TAG, "Error fetching metadata for series: ${series.title}", e)
       }
 
       series
     }
+
+  /**
+   * Returns search candidates (series first, then movies) so the user can manually fix a match.
+   */
+  suspend fun searchSeriesMatches(title: String): List<WyzieTmdbResult> = withContext(Dispatchers.IO) {
+    val results = wyzieRepository.searchMedia(title).getOrNull() ?: emptyList()
+    results.sortedBy { it.mediaType != "tv" }
+  }
+
+  /**
+   * Forgets the cached metadata (including any manual match) for a series so the next
+   * enrichment runs automatic detection again.
+   */
+  suspend fun clearSeriesMetadata(seriesId: String) {
+    memoryCache.remove("series_$seriesId")
+    persistCache()
+  }
+
+  /**
+   * Returns the already-resolved (and possibly manually chosen) TMDb id for a title,
+   * so other features like intro skip can reuse the correct match instead of re-guessing.
+   */
+  suspend fun getCachedTmdbId(title: String): Int? = withContext(Dispatchers.IO) {
+    ensureCacheLoaded()
+    val normalized = title.lowercase().replace(Regex("[^a-z0-9]"), "")
+    memoryCache["series_$normalized"]?.tmdbId
+      ?: memoryCache["movie_$normalized"]?.tmdbId
+  }
+
+  private fun pickBestTvMatch(results: List<WyzieTmdbResult>, year: String?): WyzieTmdbResult? {
+    val tvResults = results.filter { it.mediaType.equals("tv", ignoreCase = true) }
+    val pool = if (tvResults.isNotEmpty()) tvResults else results
+    if (pool.isEmpty()) return null
+    year?.let { y ->
+      pool.firstOrNull { it.releaseYear == y }?.let { return it }
+      pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
+    }
+    return pool.firstOrNull()
+  }
+
+  private fun pickBestMovieMatch(results: List<WyzieTmdbResult>, year: String?): WyzieTmdbResult? {
+    val movieResults = results.filter { it.mediaType.equals("movie", ignoreCase = true) }
+    val pool = if (movieResults.isNotEmpty()) movieResults else results
+    if (pool.isEmpty()) return null
+    year?.let { y ->
+      pool.firstOrNull { it.releaseYear == y }?.let { return it }
+      pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
+    }
+    return pool.firstOrNull()
+  }
 
   suspend fun enrichMovie(movie: LocalMovie, forceRefresh: Boolean = false) =
     withContext(Dispatchers.IO) {
@@ -188,8 +263,7 @@ class StreamingMetadataRepository(
 
       try {
         val searchResults = wyzieRepository.searchMedia(movie.title).getOrNull() ?: emptyList()
-        val bestMatch = searchResults.firstOrNull { it.mediaType.equals("movie", ignoreCase = true) }
-          ?: searchResults.firstOrNull()
+        val bestMatch = pickBestMovieMatch(searchResults, movie.year)
 
         if (bestMatch != null) {
           val poster = bestMatch.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
