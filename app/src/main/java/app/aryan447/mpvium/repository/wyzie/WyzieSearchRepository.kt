@@ -433,68 +433,83 @@ class WyzieSearchRepository(
         episode: Int?,
         year: String?
     ): List<WyzieSubtitle> {
-        // Resolve IMDB ID
-        val imdbId = resolveImdbId(query, year) ?: throw IOException("Could not resolve IMDB ID for '$query'")
+        // Resolve IMDB ID. When searching a TV show (season+episode), prefer the series catalog
+        // so we don't accidentally resolve to a movie with a similar title.
         val isSeries = season != null && episode != null
-        // Determine type via Cinemeta meta? Try to infer: if season/episode supplied, use series, else probe
+        val imdbId = resolveImdbId(query, year, preferSeries = isSeries)
+            ?: throw IOException("Could not resolve IMDB ID for '$query'")
+        // Determine type via Cinemeta meta: use series if season/episode supplied, otherwise probe
         val type = if (isSeries) "series" else detectType(imdbId)
         return fetchStremioSubtitles(imdbId, type, season, episode)
     }
 
-    private fun resolveImdbId(query: String, year: String?): String? {
+    private fun resolveImdbId(query: String, year: String?, preferSeries: Boolean): String? {
         // Already an IMDB ID
         if (query.startsWith("tt", ignoreCase = true)) return query.lowercase()
         if (query.all { it.isDigit() } && query.length >= 5) return "tt$query"
-        // Try Cinemeta search
-        val cinemetaId = cinemetaSearchForImdbId(query, year)
+        // Try Cinemeta search (type-aware)
+        val cinemetaId = cinemetaSearchForImdbId(query, year, preferSeries)
         if (cinemetaId != null) return cinemetaId
         // Fallback to Wyzie TMDB search for IMDB mapping (still keyless for search)
         return try {
             val tmdbResults = tmdbSearch(query)
             if (tmdbResults.isEmpty()) return null
+            // Prefer results matching the expected media type
+            val expectedType = if (preferSeries) "tv" else "movie"
+            val typed = tmdbResults.filter { it.mediaType == expectedType }
+            val pool = if (typed.isNotEmpty()) typed else tmdbResults
             val result = if (year != null) {
-                tmdbResults.firstOrNull { it.releaseYear == year } ?: tmdbResults[0]
-            } else tmdbResults[0]
+                pool.firstOrNull { it.releaseYear == year }
+                    ?: pool.firstOrNull { it.releaseYear?.startsWith(year.take(3)) == true }
+                    ?: pool[0]
+            } else pool[0]
             // Try to get IMDB via Cinemeta detail using TMDB? We can search again with title
-            cinemetaSearchForImdbId(result.title, year) ?: "tt${result.id}"
+            cinemetaSearchForImdbId(result.title, year, preferSeries) ?: "tt${result.id}"
         } catch (_: Exception) {
             null
         }
     }
 
     private fun detectType(imdbId: String): String {
-        // Fetch meta to detect type, default to movie
-        return try {
-            val url = "$cinemetaBase/meta/movie/$imdbId.json"
-            val req = Request.Builder().url(url).build()
-            client.newCall(req).execute().use { resp ->
-                if (resp.isSuccessful) {
-                    val body = resp.body?.string() ?: return "movie"
-                    val parsed = json.decodeFromString<CinemetaMetaResponse>(body)
-                    parsed.meta?.type ?: "movie"
-                } else "movie"
-            }
-        } catch (_: Exception) { "movie" }
-    }
-
-    private fun cinemetaSearchForImdbId(query: String, year: String?): String? {
-        val encoded = URLEncoder.encode(query, "UTF-8")
-        // Search both movie and series catalogs
-        val movieUrl = "$cinemetaBase/catalog/movie/top/search=$encoded.json"
-        val seriesUrl = "$cinemetaBase/catalog/series/top/search=$encoded.json"
-        val candidates = mutableListOf<CinemetaMetaPreview>()
-        listOf(movieUrl, seriesUrl).forEach { url ->
+        // Fetch meta to detect type, checking both movie and series catalogs
+        val ttId = if (imdbId.startsWith("tt")) imdbId else "tt$imdbId"
+        listOf("movie", "series").forEach { catalogType ->
             try {
+                val url = "$cinemetaBase/meta/$catalogType/$ttId.json"
                 val req = Request.Builder().url(url).build()
                 client.newCall(req).execute().use { resp ->
-                    if (!resp.isSuccessful) return@forEach
-                    val body = resp.body?.string() ?: return@forEach
-                    val parsed = json.decodeFromString<CinemetaSearchResponse>(body)
-                    candidates.addAll(parsed.metas)
+                    if (resp.isSuccessful) {
+                        val body = resp.body?.string() ?: return@forEach
+                        val parsed = json.decodeFromString<CinemetaMetaResponse>(body)
+                        val metaType = parsed.meta?.type
+                        if (!metaType.isNullOrBlank()) return metaType
+                    }
                 }
-            } catch (e: Exception) {
-                Log.w("WyzieSearchRepository", "Cinemeta search failed for $url: ${e.message}")
+            } catch (_: Exception) {}
+        }
+        return "movie"
+    }
+
+    private fun cinemetaSearchForImdbId(query: String, year: String?, preferSeries: Boolean): String? {
+        val encoded = URLEncoder.encode(query, "UTF-8")
+        // Search only the relevant catalog. Searching both lets a movie with a similar name
+        // shadow the TV series (and vice-versa), so restrict to the expected type.
+        val url = if (preferSeries) {
+            "$cinemetaBase/catalog/series/top/search=$encoded.json"
+        } else {
+            "$cinemetaBase/catalog/movie/top/search=$encoded.json"
+        }
+        val candidates = mutableListOf<CinemetaMetaPreview>()
+        try {
+            val req = Request.Builder().url(url).build()
+            client.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) return null
+                val body = resp.body?.string() ?: return null
+                val parsed = json.decodeFromString<CinemetaSearchResponse>(body)
+                candidates.addAll(parsed.metas)
             }
+        } catch (e: Exception) {
+            Log.w("WyzieSearchRepository", "Cinemeta search failed for $url: ${e.message}")
         }
         if (candidates.isEmpty()) return null
         // Prefer exact year match if provided
