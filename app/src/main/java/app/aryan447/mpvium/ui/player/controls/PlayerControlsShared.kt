@@ -592,19 +592,16 @@ fun RenderPlayerButton(
     }
 
     PlayerButton.CURRENT_CHAPTER -> {
-      if (isPortrait) {
-      } else {
-        AnimatedVisibility(
-          chapters.getOrNull(currentChapter ?: 0) != null,
-          enter = fadeIn(),
-          exit = fadeOut(),
-        ) {
-          chapters.getOrNull(currentChapter ?: 0)?.let { chapter ->
-            CurrentChapter(
-              chapter = chapter,
-              onClick = { onOpenSheet(Sheets.Chapters) },
-            )
-          }
+      AnimatedVisibility(
+        chapters.getOrNull(currentChapter ?: 0) != null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+      ) {
+        chapters.getOrNull(currentChapter ?: 0)?.let { chapter ->
+          CurrentChapter(
+            chapter = chapter,
+            onClick = { onOpenSheet(Sheets.Chapters) },
+          )
         }
       }
     }
