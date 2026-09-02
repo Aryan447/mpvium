@@ -53,7 +53,8 @@ data class WyzieTmdbResult(
     val releaseYear: String? = null,
     val poster: String? = null,
     val backdrop: String? = null,
-    val overview: String? = null
+    val overview: String? = null,
+    val imdbId: String? = null
 )
 
 @Serializable
@@ -691,7 +692,10 @@ class WyzieSearchRepository(
                     val parsed = json.decodeFromString<CinemetaSearchResponse>(body)
                     parsed.metas.take(10).forEach { meta ->
                         val numericId = meta.id.removePrefix("tt").toIntOrNull() ?: meta.id.hashCode()
-                        idToTtCache[numericId] = meta.id
+                        val ttId = meta.id.takeIf { it.startsWith("tt") } ?: meta.imdbId
+                        if (ttId != null) {
+                            idToTtCache[numericId] = ttId
+                        }
                         results.add(
                             WyzieTmdbResult(
                                 id = numericId,
@@ -700,7 +704,8 @@ class WyzieSearchRepository(
                                 releaseYear = meta.releaseInfo?.take(4),
                                 poster = meta.poster,
                                 backdrop = meta.background,
-                                overview = meta.description ?: meta.overview
+                                overview = meta.description ?: meta.overview,
+                                imdbId = ttId
                             )
                         )
                     }

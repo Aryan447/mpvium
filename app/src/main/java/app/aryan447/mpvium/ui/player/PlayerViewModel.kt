@@ -161,6 +161,7 @@ class PlayerViewModel(
   val preciseDuration = _preciseDuration.asStateFlow()
 
   // Intro/recap skip state
+  private val _introSkipWindows = MutableStateFlow<List<app.aryan447.mpvium.repository.intro.IntroWindow>>(emptyList())
   private val _introSkipWindow = MutableStateFlow<app.aryan447.mpvium.repository.intro.IntroWindow?>(null)
   val introSkipWindow: StateFlow<app.aryan447.mpvium.repository.intro.IntroWindow?> = _introSkipWindow.asStateFlow()
 
@@ -202,13 +203,21 @@ class PlayerViewModel(
     // Detect when playback enters an intro/recap window so the UI can offer a skip
     viewModelScope.launch {
       while (isActive) {
-        val window = _introSkipWindow.value
+        val windows = _introSkipWindows.value
         val titleKnown = currentMediaTitle.isNotBlank()
-        if (window != null && !introSkipShown.value && titleKnown) {
-          val pos = MPVLib.getPropertyInt("time-pos") ?: 0
-          if (window.contains(pos)) {
-            _introSkipShown.value = true
+        if (windows.isNotEmpty() && titleKnown) {
+          val pos = MPVLib.getPropertyDouble("time-pos")?.toInt()
+            ?: MPVLib.getPropertyInt("time-pos")
+            ?: 0
+          val active = windows.firstOrNull { it.contains(pos) }
+          _introSkipWindow.value = active
+          val shouldShow = active != null
+          if (_introSkipShown.value != shouldShow) {
+            _introSkipShown.value = shouldShow
           }
+        } else if (_introSkipShown.value) {
+          _introSkipWindow.value = null
+          _introSkipShown.value = false
         }
         delay(250)
       }
@@ -634,14 +643,12 @@ class PlayerViewModel(
   private fun loadIntroSkip(mediaTitle: String) {
     introSkipTitle = mediaTitle
     _introSkipShown.value = false
+    _introSkipWindows.value = emptyList()
     _introSkipWindow.value = null
     viewModelScope.launch(Dispatchers.IO) {
-      val window = introSkipRepository.getSkipWindow(mediaTitle)
+      val windows = introSkipRepository.getSkipWindows(mediaTitle)
       if (introSkipTitle == mediaTitle) {
-        _introSkipWindow.value = window
-        if (window == null) {
-          _introSkipShown.value = false
-        }
+        _introSkipWindows.value = windows
       }
     }
   }

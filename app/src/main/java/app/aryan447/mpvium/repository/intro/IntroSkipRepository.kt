@@ -29,9 +29,9 @@ data class IntroWindow(
 
 enum class IntroSegmentType { INTRO, RECAP }
 
-private sealed interface CachedWindow {
-  data class Present(val window: IntroWindow) : CachedWindow
-  data object None : CachedWindow
+private sealed interface CachedWindows {
+  data class Present(val windows: List<IntroWindow>) : CachedWindows
+  data object None : CachedWindows
 }
 
 @Serializable
@@ -63,20 +63,20 @@ class IntroSkipRepository(
     private const val THE_INTRO_DB_BASE = "https://api.theintrodb.org/v3/media"
   }
 
-  private val cache = ConcurrentHashMap<String, CachedWindow>()
+  private val cache = ConcurrentHashMap<String, CachedWindows>()
   private val inflight = ConcurrentHashMap<String, Mutex>()
 
   /**
-   * Resolves the skip window for [mediaTitle]. Returns null when the media cannot
-   * be identified or no intro/recap data exists.
+   * Resolves all skip windows (intro, recap) for [mediaTitle]. Returns empty list when
+   * the media cannot be identified or no intro/recap data exists.
    */
-  suspend fun getSkipWindow(mediaTitle: String): IntroWindow? {
-    if (mediaTitle.isBlank()) return null
+  suspend fun getSkipWindows(mediaTitle: String): List<IntroWindow> {
+    if (mediaTitle.isBlank()) return emptyList()
     val key = normalizeKey(mediaTitle)
 
     when (val cached = cache[key]) {
-      is CachedWindow.Present -> return cached.window
-      is CachedWindow.None -> return null
+      is CachedWindows.Present -> return cached.windows
+      is CachedWindows.None -> return emptyList()
       null -> Unit
     }
 
@@ -85,21 +85,21 @@ class IntroSkipRepository(
     return try {
       mutex.withLock {
         when (val cached = cache[key]) {
-          is CachedWindow.Present -> return@withLock cached.window
-          is CachedWindow.None -> return@withLock null
+          is CachedWindows.Present -> return@withLock cached.windows
+          is CachedWindows.None -> return@withLock emptyList()
           null -> Unit
         }
 
         val result = withContext(Dispatchers.IO) {
           fetchFromApi(mediaTitle)
         }
-        cache[key] = if (result != null) CachedWindow.Present(result) else CachedWindow.None
+        cache[key] = if (result.isNotEmpty()) CachedWindows.Present(result) else CachedWindows.None
         result
       }
     } catch (e: Exception) {
-      Log.w(TAG, "Failed to get skip window for '$mediaTitle'", e)
-      cache[key] = CachedWindow.None
-      null
+      Log.w(TAG, "Failed to get skip windows for '$mediaTitle'", e)
+      cache[key] = CachedWindows.None
+      emptyList()
     } finally {
       inflight.remove(key)
     }
@@ -110,63 +110,78 @@ class IntroSkipRepository(
     cache.clear()
   }
 
-  private suspend fun fetchFromApi(mediaTitle: String): IntroWindow? {
+  private suspend fun fetchFromApi(mediaTitle: String): List<IntroWindow> {
     val parsed = MediaInfoParser.parse(mediaTitle)
-    if (parsed.title.isBlank()) return null
+    if (parsed.title.isBlank()) return emptyList()
 
     val isTv = parsed.type == "tv" || parsed.season != null || parsed.episode != null
     val searchType = if (isTv) "tv" else "movie"
-    val tmdbId =
-      // Prefer the already-resolved match (honors a manual fix on the series screen)
-      metadataRepository.getCachedTmdbId(parsed.title)
-        ?: runCatching {
-            val results = wyzieRepository.searchMedia(parsed.title).getOrNull() ?: emptyList()
-            pickBestMatch(results, searchType, parsed.year)?.id
-          }.getOrNull()
-    if (tmdbId == null) {
-      Log.d(TAG, "Could not resolve TMDB id for '$mediaTitle'")
-      return null
+
+    // 1. Check if TMDb ID was already resolved and cached in metadata repository
+    val cachedTmdbId = metadataRepository.getCachedTmdbId(parsed.title)
+
+    // 2. Search candidates from Wyzie / Cinemeta
+    val searchMatch = if (cachedTmdbId == null) {
+      runCatching {
+        val results = wyzieRepository.searchMedia(parsed.title).getOrNull() ?: emptyList()
+        pickBestMatch(results, searchType, parsed.year)
+      }.getOrNull()
+    } else null
+
+    val tmdbId = cachedTmdbId ?: searchMatch?.id?.takeIf { searchMatch.imdbId == null }
+    val imdbId = searchMatch?.imdbId ?: searchMatch?.id?.let { "tt${it.toString().padStart(7, '0')}" }
+
+    val queryParams = mutableListOf<String>()
+    if (isTv) {
+      parsed.season?.let { queryParams.add("season=$it") }
+      parsed.episode?.let { queryParams.add("episode=$it") }
+    }
+    val suffix = if (queryParams.isNotEmpty()) "&" + queryParams.joinToString("&") else ""
+
+    // Try query with tmdb_id if available
+    if (tmdbId != null) {
+      val url = "$THE_INTRO_DB_BASE?tmdb_id=$tmdbId$suffix"
+      val windows = queryTheIntroDb(url, mediaTitle)
+      if (windows.isNotEmpty()) return windows
     }
 
-    val url =
-      buildString {
-        append("$THE_INTRO_DB_BASE?tmdb_id=$tmdbId")
-        if (isTv) {
-          parsed.season?.let { append("&season=$it") }
-          parsed.episode?.let { append("&episode=$it") }
-        }
-      }
+    // Fall back to query with imdb_id if available
+    if (imdbId != null) {
+      val url = "$THE_INTRO_DB_BASE?imdb_id=$imdbId$suffix"
+      val windows = queryTheIntroDb(url, mediaTitle)
+      if (windows.isNotEmpty()) return windows
+    }
 
+    return emptyList()
+  }
+
+  private fun queryTheIntroDb(url: String, mediaTitle: String): List<IntroWindow> {
     return try {
       val request = Request.Builder().url(url).build()
       client.newCall(request).execute().use { resp ->
         if (!resp.isSuccessful) {
-          Log.d(TAG, "TheIntroDB returned ${resp.code} for '$mediaTitle'")
-          return null
+          Log.d(TAG, "TheIntroDB returned ${resp.code} for '$mediaTitle' via $url")
+          return emptyList()
         }
-        val body = resp.body?.string() ?: return null
+        val body = resp.body?.string() ?: return emptyList()
         val parsedResp = json.decodeFromString<TheIntroDbResponse>(body)
-        pickWindow(parsedResp)
+        collectWindows(parsedResp)
       }
     } catch (e: Exception) {
-      Log.w(TAG, "Error fetching intro data for '$mediaTitle'", e)
-      null
+      Log.w(TAG, "Error fetching intro data for '$mediaTitle' from $url", e)
+      emptyList()
     }
   }
 
-  private fun pickWindow(response: TheIntroDbResponse): IntroWindow? {
-    // Prefer intro, fall back to recap.
-    response.intro
-      ?.asSequence()
-      ?.map { toWindow(it, IntroSegmentType.INTRO) }
-      ?.firstOrNull { it != null }
-      ?.let { return it }
-    response.recap
-      ?.asSequence()
-      ?.map { toWindow(it, IntroSegmentType.RECAP) }
-      ?.firstOrNull { it != null }
-      ?.let { return it }
-    return null
+  private fun collectWindows(response: TheIntroDbResponse): List<IntroWindow> {
+    val list = mutableListOf<IntroWindow>()
+    response.recap?.forEach { segment ->
+      toWindow(segment, IntroSegmentType.RECAP)?.let { list.add(it) }
+    }
+    response.intro?.forEach { segment ->
+      toWindow(segment, IntroSegmentType.INTRO)?.let { list.add(it) }
+    }
+    return list.sortedBy { it.startSeconds }
   }
 
   private fun toWindow(segment: TheIntroDbSegment, type: IntroSegmentType): IntroWindow? {

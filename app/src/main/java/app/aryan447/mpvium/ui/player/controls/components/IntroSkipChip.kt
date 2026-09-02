@@ -27,6 +27,7 @@ fun IntroSkipChip(
   onClick: () -> Unit = {},
 ) {
   Surface(
+    onClick = onClick,
     modifier = modifier.clip(RoundedCornerShape(50)),
     shape = RoundedCornerShape(50),
     color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),
