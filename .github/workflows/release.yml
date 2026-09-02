@@ -6,8 +6,12 @@ permissions:
 on:
   push:
     tags:
-      - 'v[0-9]*.[0-9]*.[0-9]*'
-      - 'v[0-9]*.[0-9]*.[0-9]*-*'
+      - 'v*'
+    tags-ignore:
+      - 'v*-preview*'
+      - 'v*.preview*'
+      - '*-preview*'
+      - '*.preview*'
 
 jobs:
   release-for-github:
