@@ -415,24 +415,59 @@ private fun SquigglySeekbar(
     // Draw path up to progress position using clipping
     val clipTop = lineAmplitude + strokeWidth
 
+    val chapterGapHalf = 1.dp.toPx()
+    val chapterGaps = if (totalWidth > 0f && duration > 0f && chapters.isNotEmpty()) {
+      chapters.mapNotNull { chapter ->
+        val chapterStart = chapter.start
+        if (chapterStart > 0f && chapterStart < duration) {
+          val chapterPx = (chapterStart / duration) * totalWidth
+          (chapterPx - chapterGapHalf) to (chapterPx + chapterGapHalf)
+        } else null
+      }
+    } else emptyList()
+
     fun drawPathWithGaps(
       startX: Float,
       endX: Float,
       color: Color,
     ) {
       if (endX <= startX) return
-      // Chapter markers removed - draw continuous path
-      clipRect(
-        left = startX,
-        top = centerY - clipTop,
-        right = endX,
-        bottom = centerY + clipTop,
-      ) {
-        drawPath(
-          path = path,
-          color = color,
-          style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-        )
+      val relevantGaps = chapterGaps
+        .filter { (gStart, gEnd) -> gEnd > startX && gStart < endX }
+        .sortedBy { it.first }
+
+      var currentPos = startX
+      for ((gStart, gEnd) in relevantGaps) {
+        val segmentEnd = gStart.coerceAtMost(endX)
+        if (segmentEnd > currentPos) {
+          clipRect(
+            left = currentPos,
+            top = centerY - clipTop,
+            right = segmentEnd,
+            bottom = centerY + clipTop,
+          ) {
+            drawPath(
+              path = path,
+              color = color,
+              style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+            )
+          }
+        }
+        currentPos = gEnd.coerceAtLeast(currentPos)
+      }
+      if (currentPos < endX) {
+        clipRect(
+          left = currentPos,
+          top = centerY - clipTop,
+          right = endX,
+          bottom = centerY + clipTop,
+        ) {
+          drawPath(
+            path = path,
+            color = color,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+          )
+        }
       }
     }
 
@@ -625,8 +660,16 @@ fun StandardSeekbar(
                 val thumbGapStart = (playedPx - gapHalf).coerceIn(0f, size.width)
                 val thumbGapEnd = (playedPx + gapHalf).coerceIn(0f, size.width)
 
-                // Chapter markers removed
-                val chapterGaps = emptyList<Pair<Float, Float>>()
+                val chapterGaps = if (chapters.isNotEmpty()) {
+                    chapters.mapNotNull { chapter ->
+                        val chapterStart = chapter.start
+                        if (chapterStart > min && chapterStart < max) {
+                            val chapterFraction = ((chapterStart - min) / range).coerceIn(0f, 1f)
+                            val chapterPx = size.width * chapterFraction
+                            (chapterPx - chapterGapHalf) to (chapterPx + chapterGapHalf)
+                        } else null
+                    }
+                } else emptyList()
 
                 fun drawSegment(startX: Float, endX: Float, color: Color) {
                     if (endX - startX < 0.5f) return

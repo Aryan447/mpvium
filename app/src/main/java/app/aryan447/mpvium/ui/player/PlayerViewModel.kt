@@ -243,7 +243,12 @@ class PlayerViewModel(
     MPVLib.propNode["chapter-list"]
       .map { node ->
         runCatching {
-          node?.toObject<List<ChapterNode>>(json)?.map { it.toSegment() }?.toImmutableList()
+          node?.toObject<List<ChapterNode>>(json)?.mapIndexed { index, chapter ->
+            val name = chapter.title.orEmpty().ifBlank { "Chapter ${index + 1}" }
+            dev.vivvvek.seeker.Segment(name, chapter.time.toFloat())
+          }?.toImmutableList()
+        }.onFailure { e ->
+          Log.e("PlayerViewModel", "Error parsing chapter-list: ${e.message}", e)
         }.getOrElse { persistentListOf() } ?: persistentListOf()
       }.stateIn(viewModelScope, SharingStarted.Lazily, persistentListOf())
 

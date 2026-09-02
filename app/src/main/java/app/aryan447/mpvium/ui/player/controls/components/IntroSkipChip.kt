@@ -19,6 +19,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.controlColor
 import app.aryan447.mpvium.ui.theme.spacing
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun IntroSkipChip(
@@ -54,5 +56,15 @@ fun IntroSkipChip(
         overflow = TextOverflow.Ellipsis,
       )
     }
+  }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun IntroSkipChipPreview() {
+  MaterialTheme(colorScheme = darkColorScheme()) {
+    IntroSkipChip(
+      label = "Skip Intro",
+    )
   }
 }

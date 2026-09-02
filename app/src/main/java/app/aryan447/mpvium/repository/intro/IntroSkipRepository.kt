@@ -114,22 +114,13 @@ class IntroSkipRepository(
     val parsed = MediaInfoParser.parse(mediaTitle)
     if (parsed.title.isBlank()) return emptyList()
 
+    val searchTitle = WyzieSearchRepository.TITLE_ALIASES[parsed.title.lowercase().trim()] ?: parsed.title
+
     val isTv = parsed.type == "tv" || parsed.season != null || parsed.episode != null
     val searchType = if (isTv) "tv" else "movie"
 
-    // 1. Check if TMDb ID was already resolved and cached in metadata repository
-    val cachedTmdbId = metadataRepository.getCachedTmdbId(parsed.title)
-
-    // 2. Search candidates from Wyzie / Cinemeta
-    val searchMatch = if (cachedTmdbId == null) {
-      runCatching {
-        val results = wyzieRepository.searchMedia(parsed.title).getOrNull() ?: emptyList()
-        pickBestMatch(results, searchType, parsed.year)
-      }.getOrNull()
-    } else null
-
-    val tmdbId = cachedTmdbId ?: searchMatch?.id?.takeIf { searchMatch.imdbId == null }
-    val imdbId = searchMatch?.imdbId ?: searchMatch?.id?.let { "tt${it.toString().padStart(7, '0')}" }
+    // 1. Resolve TMDb/IMDb IDs
+    val cachedTmdbId = metadataRepository.getCachedTmdbId(searchTitle) ?: metadataRepository.getCachedTmdbId(parsed.title)
 
     val queryParams = mutableListOf<String>()
     if (isTv) {
@@ -138,14 +129,33 @@ class IntroSkipRepository(
     }
     val suffix = if (queryParams.isNotEmpty()) "&" + queryParams.joinToString("&") else ""
 
-    // Try query with tmdb_id if available
-    if (tmdbId != null) {
-      val url = "$THE_INTRO_DB_BASE?tmdb_id=$tmdbId$suffix"
+    // Try query with cached tmdb_id if available
+    if (cachedTmdbId != null) {
+      val url = "$THE_INTRO_DB_BASE?tmdb_id=$cachedTmdbId$suffix"
       val windows = queryTheIntroDb(url, mediaTitle)
       if (windows.isNotEmpty()) return windows
     }
 
-    // Fall back to query with imdb_id if available
+    // Search fresh candidates from Wyzie / Cinemeta if cached ID failed or was missing
+    val searchMatch = runCatching {
+      var results = wyzieRepository.searchMedia(searchTitle).getOrNull() ?: emptyList()
+      if (results.isEmpty() && searchTitle != parsed.title) {
+        results = wyzieRepository.searchMedia(parsed.title).getOrNull() ?: emptyList()
+      }
+      pickBestMatch(results, searchType, parsed.year, searchTitle)
+    }.getOrNull()
+
+    val freshTmdbId = searchMatch?.id
+    val imdbId = searchMatch?.imdbId
+
+    // Try query with freshly resolved tmdb_id (if different from cached)
+    if (freshTmdbId != null && freshTmdbId != cachedTmdbId) {
+      val url = "$THE_INTRO_DB_BASE?tmdb_id=$freshTmdbId$suffix"
+      val windows = queryTheIntroDb(url, mediaTitle)
+      if (windows.isNotEmpty()) return windows
+    }
+
+    // Try query with imdb_id if available
     if (imdbId != null) {
       val url = "$THE_INTRO_DB_BASE?imdb_id=$imdbId$suffix"
       val windows = queryTheIntroDb(url, mediaTitle)
@@ -157,13 +167,16 @@ class IntroSkipRepository(
 
   private fun queryTheIntroDb(url: String, mediaTitle: String): List<IntroWindow> {
     return try {
-      val request = Request.Builder().url(url).build()
+      val request = Request.Builder()
+        .url(url)
+        .header("User-Agent", "mpvium/1.0")
+        .build()
       client.newCall(request).execute().use { resp ->
         if (!resp.isSuccessful) {
           Log.d(TAG, "TheIntroDB returned ${resp.code} for '$mediaTitle' via $url")
           return emptyList()
         }
-        val body = resp.body?.string() ?: return emptyList()
+        val body = resp.body.string()
         val parsedResp = json.decodeFromString<TheIntroDbResponse>(body)
         collectWindows(parsedResp)
       }
@@ -198,10 +211,14 @@ class IntroSkipRepository(
   private fun normalizeKey(title: String): String =
     title.lowercase().replace(Regex("[^a-z0-9]"), "")
 
-  private fun pickBestMatch(results: List<WyzieTmdbResult>, searchType: String, year: String?): WyzieTmdbResult? {
+  private fun pickBestMatch(results: List<WyzieTmdbResult>, searchType: String, year: String?, targetTitle: String): WyzieTmdbResult? {
     val typed = results.filter { it.mediaType.equals(searchType, ignoreCase = true) }
     val pool = if (typed.isNotEmpty()) typed else results
     if (pool.isEmpty()) return null
+
+    // Prefer exact title match ignoring case
+    pool.firstOrNull { it.title.equals(targetTitle, ignoreCase = true) }?.let { return it }
+
     year?.let { y ->
       pool.firstOrNull { it.releaseYear == y }?.let { return it }
       pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
