@@ -187,7 +187,7 @@ object MainScreen : Screen {
               onClick = { selectedTab = 0 }
             )
             NavigationBarItem(
-              icon = { Icon(Icons.Filled.Tv, contentDescription = "Series") },
+              icon = { Icon(Icons.Filled.Tv, contentDescription = "TV Shows") },
               label = { Text("Series") },
               selected = selectedTab == 1,
               onClick = { selectedTab = 1 }

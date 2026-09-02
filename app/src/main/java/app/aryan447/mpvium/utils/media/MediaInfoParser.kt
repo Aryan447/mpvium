@@ -112,8 +112,8 @@ object MediaInfoParser {
 
     // ── Regex patterns ───────────────────────────────────────────────────────────
 
-    // Season-Episode: S01E02, S1E2, s01e02 — also captures multi-episode S01E01E02
-    private val SEASON_EPISODE_REGEX = Regex("""[Ss](\d{1,2})[Ee](\d{1,4})""")
+    // Season-Episode: S01E02, S1E2, s01e02, S01 E02 — also captures multi-episode S01E01E02
+    private val SEASON_EPISODE_REGEX = Regex("""[Ss](\d{1,2})[\s._-]*[Ee](\d{1,4})""")
 
     // Cross-format: 1x02 format
     private val CROSS_FORMAT_REGEX = Regex("""\b(\d{1,2})[xX](\d{1,4})\b""")

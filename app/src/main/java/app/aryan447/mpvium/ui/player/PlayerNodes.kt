@@ -6,12 +6,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChapterNode(
-  val time: Float,
+  val time: Double = 0.0,
   val title: String? = null,
 ) {
   fun toSegment(): Segment {
-    val name = title.orEmpty().ifBlank { "Chapter ${time.toInt() + 1}" }
-    return Segment(name, time)
+    val name = title.orEmpty().ifBlank { "Chapter" }
+    return Segment(name, time.toFloat())
   }
 }
 

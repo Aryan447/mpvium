@@ -2,7 +2,6 @@ package app.aryan447.mpvium.ui.streaming.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,9 +30,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 
 @Composable
@@ -45,6 +46,31 @@ fun SeriesPosterCard(
 ) {
   val fallbackVideo = series.seasons.values.firstOrNull()?.firstOrNull()?.video
 
+  SeriesPosterCard(
+    series = series,
+    image = {
+      StreamingImage(
+        url = series.posterUrl,
+        fallbackVideo = fallbackVideo,
+        isSeries = true,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.fillMaxSize(),
+      )
+    },
+    onClick = onClick,
+    modifier = modifier,
+    cardWidth = cardWidth,
+  )
+}
+
+@Composable
+private fun SeriesPosterCard(
+  series: LocalSeries,
+  image: @Composable () -> Unit,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  cardWidth: Dp = 140.dp,
+) {
   Column(
     modifier = modifier
       .width(cardWidth)
@@ -59,13 +85,7 @@ fun SeriesPosterCard(
         .clip(RoundedCornerShape(14.dp))
         .background(MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
-      StreamingImage(
-        url = series.posterUrl,
-        fallbackVideo = fallbackVideo,
-        isSeries = true,
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.fillMaxSize(),
-      )
+      image()
 
       // Gradient overlay at the bottom of the poster
       Box(
@@ -158,6 +178,7 @@ fun SeriesPosterCard(
       color = MaterialTheme.colorScheme.onSurface,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(horizontal = 4.dp),
     )
 
     // Year or Genre info
@@ -175,6 +196,75 @@ fun SeriesPosterCard(
         color = if (series.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(horizontal = 4.dp),
+      )
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesPosterCardPreview() {
+  val series = LocalSeries(
+    id = "breaking-bad",
+    title = "Breaking Bad",
+    year = "2008",
+    rating = 9.5f,
+    totalEpisodes = 62,
+    watchedEpisodesCount = 20,
+    seasons = mapOf(1 to emptyList(), 2 to emptyList(), 3 to emptyList(), 4 to emptyList(), 5 to emptyList())
+  )
+  MaterialTheme {
+    Surface {
+      SeriesPosterCard(
+        series = series,
+        image = {
+          Box(
+            modifier = Modifier
+              .fillMaxSize()
+              .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+          ) {
+            Text("Image")
+          }
+        },
+        onClick = {},
+        modifier = Modifier.padding(16.dp)
+      )
+    }
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesPosterCardCompletedPreview() {
+  val series = LocalSeries(
+    id = "arcane",
+    title = "Arcane",
+    year = "2021",
+    rating = 9.0f,
+    totalEpisodes = 9,
+    watchedEpisodesCount = 9,
+    seasons = mapOf(1 to emptyList())
+  )
+  MaterialTheme {
+    Surface {
+      SeriesPosterCard(
+        series = series,
+        image = {
+          Box(
+            modifier = Modifier
+              .fillMaxSize()
+              .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
+          ) {
+            Text("Arcane")
+          }
+        },
+        onClick = {},
+        modifier = Modifier.padding(16.dp)
       )
     }
   }
