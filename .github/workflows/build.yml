@@ -1,9 +1,9 @@
 name: CI/CD Build
 
 on:
-  pull_request:
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
+  # pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
