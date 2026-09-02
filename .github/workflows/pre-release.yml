@@ -90,12 +90,13 @@ jobs:
             if [ -f "$src" ]; then
               cp "$src" "$dest"
               sha=$(sha256sum "$dest" | awk '{ print $1 }')
-              echo "apk-${abi}-sha256=$sha" >> $GITHUB_ENV
+              varname="apk_${abi//-/_}_sha256"
+              echo "$varname=$sha" >> "$GITHUB_ENV"
             fi
           done
 
       - name: Create GitHub pre-release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION_TAG }}
           name: "mpvium ${{ env.VERSION_TAG }}"
@@ -104,11 +105,11 @@ jobs:
             ### Checksums
             | Variant | SHA-256 |
             | ------- | ------- |
-            | arm64-v8a | ${{ env.apk-arm64-v8a-sha256 }} |
-            | armeabi-v7a | ${{ env.apk-armeabi-v7a-sha256 }} |
-            | Universal | ${{ env.apk-universal-sha256 }} |
-            | x86 | ${{ env.apk-x86-sha256 }} |
-            | x86_64 | ${{ env.apk-x86_64-sha256 }} |
+            | arm64-v8a | ${{ env.apk_arm64_v8a_sha256 }} |
+            | armeabi-v7a | ${{ env.apk_armeabi_v7a_sha256 }} |
+            | Universal | ${{ env.apk_universal_sha256 }} |
+            | x86 | ${{ env.apk_x86_sha256 }} |
+            | x86_64 | ${{ env.apk_x86_64_sha256 }} |
           files: |
             preview/mpvium-preview-universal-${{ env.VERSION_TAG }}.apk
             preview/mpvium-preview-arm64-v8a-${{ env.VERSION_TAG }}.apk
