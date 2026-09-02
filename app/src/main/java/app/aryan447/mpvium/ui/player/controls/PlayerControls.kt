@@ -181,14 +181,24 @@ fun PlayerControls(
   var isSeeking by remember { mutableStateOf(false) }
   var resetControlsTimestamp by remember { mutableStateOf(0L) }
   val seekText by viewModel.seekText.collectAsState()
-  val currentChapter by MPVLib.propInt["chapter"].collectAsState()
+  val currentChapterRaw by MPVLib.propInt["chapter"].collectAsState()
+  val pos by viewModel.precisePosition.collectAsState()
+  val chapters by viewModel.chapters.collectAsState(persistentListOf())
+  val currentChapter = remember(currentChapterRaw, pos, chapters) {
+    if (currentChapterRaw != null && currentChapterRaw!! >= 0) {
+      currentChapterRaw
+    } else if (chapters.isNotEmpty()) {
+      chapters.indexOfLast { it.start <= pos }.coerceAtLeast(0)
+    } else {
+      null
+    }
+  }
   val mpvDecoder by MPVLib.propString["hwdec-current"].collectAsState()
   val decoder by remember { derivedStateOf { getDecoderFromValue(mpvDecoder ?: "auto") } }
   val isSpeedNonOne by remember(playbackSpeed) {
     derivedStateOf { abs((playbackSpeed ?: 1f) - 1f) > 0.001f }
   }
   val playerTimeToDisappear by playerPreferences.playerTimeToDisappear.collectAsState()
-  val chapters by viewModel.chapters.collectAsState(persistentListOf())
   val playlistMode by playerPreferences.playlistMode.collectAsState()
     val haptic = LocalHapticFeedback.current
 

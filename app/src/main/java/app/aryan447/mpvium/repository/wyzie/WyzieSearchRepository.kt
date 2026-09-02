@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.utils.media.ChecksumUtils
-import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -53,7 +52,8 @@ data class WyzieTmdbResult(
     val releaseYear: String? = null,
     val poster: String? = null,
     val backdrop: String? = null,
-    val overview: String? = null
+    val overview: String? = null,
+    val imdbId: String? = null
 )
 
 @Serializable
@@ -317,6 +317,21 @@ class WyzieSearchRepository(
     // Cache numericId -> ttId for series details
     private val idToTtCache = mutableMapOf<Int, String>()
 
+    companion object {
+        internal val TITLE_ALIASES = mapOf(
+            "got" to "Game of Thrones",
+            "aot" to "Attack on Titan",
+            "mha" to "My Hero Academia",
+            "fmab" to "Fullmetal Alchemist Brotherhood",
+            "b99" to "Brooklyn Nine-Nine",
+            "hotd" to "House of the Dragon",
+            "lotr" to "The Lord of the Rings",
+            "twd" to "The Walking Dead",
+            "bb" to "Breaking Bad",
+            "bcs" to "Better Call Saul",
+        )
+    }
+
     suspend fun search(
         query: String,
         season: Int? = null,
@@ -481,7 +496,7 @@ class WyzieSearchRepository(
                 val req = Request.Builder().url(url).build()
                 client.newCall(req).execute().use { resp ->
                     if (resp.isSuccessful) {
-                        val body = resp.body?.string() ?: return@forEach
+                        val body = resp.body.string()
                         val parsed = json.decodeFromString<CinemetaMetaResponse>(body)
                         val metaType = parsed.meta?.type
                         if (!metaType.isNullOrBlank()) return metaType
@@ -667,11 +682,23 @@ class WyzieSearchRepository(
 
     suspend fun searchMedia(query: String): Result<List<WyzieTmdbResult>> = withContext(Dispatchers.IO) {
         try {
-            // Try Cinemeta keyless search first
-            val cinemetaResults = runCatching { cinemetaSearchMedia(query) }.getOrNull()
+            val expandedQuery = TITLE_ALIASES[query.lowercase().trim()] ?: query
+            
+            // Try Wyzie TMDB search first as it provides real TMDB IDs
+            val tmdbResults = runCatching { tmdbSearch(expandedQuery) }.getOrNull()
+            if (!tmdbResults.isNullOrEmpty()) return@withContext Result.success(tmdbResults)
+            
+            // Fallback to Cinemeta keyless search
+            val cinemetaResults = runCatching { cinemetaSearchMedia(expandedQuery) }.getOrNull()
             if (!cinemetaResults.isNullOrEmpty()) return@withContext Result.success(cinemetaResults)
-            // Fallback to Wyzie TMDB search (still keyless for this endpoint currently)
-            Result.success(tmdbSearch(query))
+            
+            // Final fallback to original query if expanded query failed
+            if (expandedQuery != query) {
+                val originalResults = runCatching { tmdbSearch(query) }.getOrNull()
+                if (!originalResults.isNullOrEmpty()) return@withContext Result.success(originalResults)
+            }
+
+            Result.success(emptyList())
         } catch (e: Exception) {
             Log.e("WyzieSearchRepository", "Media search failed", e)
             Result.failure(e)
@@ -691,7 +718,10 @@ class WyzieSearchRepository(
                     val parsed = json.decodeFromString<CinemetaSearchResponse>(body)
                     parsed.metas.take(10).forEach { meta ->
                         val numericId = meta.id.removePrefix("tt").toIntOrNull() ?: meta.id.hashCode()
-                        idToTtCache[numericId] = meta.id
+                        val ttId = meta.id.takeIf { it.startsWith("tt") } ?: meta.imdbId
+                        if (ttId != null) {
+                            idToTtCache[numericId] = ttId
+                        }
                         results.add(
                             WyzieTmdbResult(
                                 id = numericId,
@@ -700,7 +730,8 @@ class WyzieSearchRepository(
                                 releaseYear = meta.releaseInfo?.take(4),
                                 poster = meta.poster,
                                 backdrop = meta.background,
-                                overview = meta.description ?: meta.overview
+                                overview = meta.description ?: meta.overview,
+                                imdbId = ttId
                             )
                         )
                     }
