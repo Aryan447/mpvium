@@ -29,6 +29,11 @@ data class IntroWindow(
 
 enum class IntroSegmentType { INTRO, RECAP }
 
+private sealed interface CachedWindow {
+  data class Present(val window: IntroWindow) : CachedWindow
+  data object None : CachedWindow
+}
+
 @Serializable
 private data class TheIntroDbSegment(
   @SerialName("start_ms") val startMs: Long? = null,
@@ -58,7 +63,7 @@ class IntroSkipRepository(
     private const val THE_INTRO_DB_BASE = "https://api.theintrodb.org/v3/media"
   }
 
-  private val cache = ConcurrentHashMap<String, IntroWindow?>()
+  private val cache = ConcurrentHashMap<String, CachedWindow>()
   private val inflight = ConcurrentHashMap<String, Mutex>()
 
   /**
@@ -69,28 +74,31 @@ class IntroSkipRepository(
     if (mediaTitle.isBlank()) return null
     val key = normalizeKey(mediaTitle)
 
-    cache[key]?.let { return it }
-    val existing = inflight[key]
-    if (existing != null) {
-      return existing.withLock { cache[key] }
+    when (val cached = cache[key]) {
+      is CachedWindow.Present -> return cached.window
+      is CachedWindow.None -> return null
+      null -> Unit
     }
-    val mutex = Mutex()
-    inflight[key] = mutex
+
+    val mutex = inflight.getOrPut(key) { Mutex() }
 
     return try {
       mutex.withLock {
-        val cached = cache[key]
-        if (cached != null) {
-          return@withLock cached
+        when (val cached = cache[key]) {
+          is CachedWindow.Present -> return@withLock cached.window
+          is CachedWindow.None -> return@withLock null
+          null -> Unit
         }
-        withContext(Dispatchers.IO) {
-          val result = fetchFromApi(mediaTitle)
-          cache[key] = result
-          result
+
+        val result = withContext(Dispatchers.IO) {
+          fetchFromApi(mediaTitle)
         }
+        cache[key] = if (result != null) CachedWindow.Present(result) else CachedWindow.None
+        result
       }
     } catch (e: Exception) {
-      cache[key] = null
+      Log.w(TAG, "Failed to get skip window for '$mediaTitle'", e)
+      cache[key] = CachedWindow.None
       null
     } finally {
       inflight.remove(key)
