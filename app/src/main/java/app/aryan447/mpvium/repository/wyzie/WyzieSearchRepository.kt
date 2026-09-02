@@ -111,6 +111,8 @@ private data class CinemetaMetaPreview(
     val poster: String? = null,
     val background: String? = null,
     val releaseInfo: String? = null,
+    val description: String? = null,
+    val overview: String? = null,
     val genres: List<String> = emptyList()
 )
 
@@ -679,7 +681,7 @@ class WyzieSearchRepository(
     private fun cinemetaSearchMedia(query: String): List<WyzieTmdbResult> {
         val encoded = URLEncoder.encode(query, "UTF-8")
         val results = mutableListOf<WyzieTmdbResult>()
-        listOf("movie" to "movie", "series" to "tv").forEach { (catalogType, mediaType) ->
+        listOf("series" to "tv", "movie" to "movie").forEach { (catalogType, mediaType) ->
             val url = "$cinemetaBase/catalog/$catalogType/top/search=$encoded.json"
             try {
                 val req = Request.Builder().url(url).build()
@@ -687,7 +689,7 @@ class WyzieSearchRepository(
                     if (!resp.isSuccessful) return@forEach
                     val body = resp.body?.string() ?: return@forEach
                     val parsed = json.decodeFromString<CinemetaSearchResponse>(body)
-                    parsed.metas.forEach { meta ->
+                    parsed.metas.take(10).forEach { meta ->
                         val numericId = meta.id.removePrefix("tt").toIntOrNull() ?: meta.id.hashCode()
                         idToTtCache[numericId] = meta.id
                         results.add(
@@ -698,15 +700,15 @@ class WyzieSearchRepository(
                                 releaseYear = meta.releaseInfo?.take(4),
                                 poster = meta.poster,
                                 backdrop = meta.background,
-                                overview = null
+                                overview = meta.description ?: meta.overview
                             )
                         )
                     }
                 }
             } catch (_: Exception) {}
         }
-        // Deduplicate by id
-        return results.distinctBy { it.id to it.mediaType }.take(10)
+        // Deduplicate and keep all results across both series and movies
+        return results.distinctBy { it.id to it.mediaType }
     }
 
     suspend fun getTvShowDetails(id: Int): Result<WyzieTvShowDetails> = withContext(Dispatchers.IO) {
