@@ -296,7 +296,8 @@ fun PlayerControls(
       val tabletBottomOffset = remember(configuration, isTablet) {
         if (isTablet) {
           val scale = (configuration.smallestScreenWidthDp / 720f).coerceIn(0.6f, 1.0f)
-          (160 * scale).dp
+          // (160 * scale).dp
+          (28 * scale).dp // or 32.dp — lowers it by ~130–140 dp (~0.8 to 1 inch)
         } else {
           0.dp
         }
