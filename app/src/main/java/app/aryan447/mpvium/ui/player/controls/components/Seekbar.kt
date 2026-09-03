@@ -617,11 +617,11 @@ fun StandardSeekbar(
     }
 
     val isThick = seekbarStyle == SeekbarStyle.Thick
-    val baseTrackHeight = if (isThick) 16.dp else 8.dp
-    val trackHeightDp = baseTrackHeight * heightFraction // Apply animation to track height
-    val thumbWidth = 6.dp
-    val thumbHeight = if (isThick) 16.dp else 24.dp
-    val thumbShape = if (isThick) RoundedCornerShape(thumbWidth / 2) else CircleShape
+    val baseTrackHeight = if (isThick) 16.dp else 4.dp
+    val trackHeightDp = if (isThick) baseTrackHeight * heightFraction else baseTrackHeight
+    val thumbWidth = if (isThick) 6.dp else 14.dp
+    val thumbHeight = if (isThick) 16.dp else 14.dp
+    val thumbShape = if (isThick) RoundedCornerShape(3.dp) else CircleShape
 
     Slider(
         value = position,
@@ -650,10 +650,10 @@ fun StandardSeekbar(
                 // Radius for the outer ends of the seekbar
                 val outerRadius = trackHeight / 2f
 
-                // MODIFIED: For Thick style, inner corners now match the outer rounding
+                // For Thick style, inner corners match outer rounding; for Standard, small rounding
                 val innerRadius = if (isThick) outerRadius else 2.dp.toPx()
 
-                val thumbTrackGapSize = 14.dp.toPx()
+                val thumbTrackGapSize = if (isThick) 14.dp.toPx() else 0f
                 val gapHalf = thumbTrackGapSize / 2f
                 val chapterGapHalf = 1.dp.toPx()
 
@@ -676,7 +676,7 @@ fun StandardSeekbar(
 
                     val path = Path()
                     val isOuterLeft = startX <= 0.5f
-                    val isInnerLeft = kotlin.math.abs(startX - thumbGapEnd) < 0.5f
+                    val isInnerLeft = isThick && kotlin.math.abs(startX - thumbGapEnd) < 0.5f
 
                     val cornerRadiusLeft = when {
                         isOuterLeft -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
@@ -685,7 +685,7 @@ fun StandardSeekbar(
                     }
 
                     val isOuterRight = endX >= size.width - 0.5f
-                    val isInnerRight = kotlin.math.abs(endX - thumbGapStart) < 0.5f
+                    val isInnerRight = isThick && kotlin.math.abs(endX - thumbGapStart) < 0.5f
 
                     val cornerRadiusRight = when {
                         isOuterRight -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
@@ -733,11 +733,13 @@ fun StandardSeekbar(
                 }
 
                 // 1. Unplayed Background
-                drawRangeWithGaps(thumbGapEnd, size.width, chapterGaps, primaryColor.copy(alpha = disabledAlpha))
+                val unplayedStart = if (isThick) thumbGapEnd else playedPx
+                drawRangeWithGaps(unplayedStart, size.width, chapterGaps, primaryColor.copy(alpha = disabledAlpha))
 
                 // 2. Played
-                if (thumbGapStart > 0) {
-                    drawRangeWithGaps(0f, thumbGapStart, chapterGaps, primaryColor)
+                val playedEnd = if (isThick) thumbGapStart else playedPx
+                if (playedEnd > 0) {
+                    drawRangeWithGaps(0f, playedEnd, chapterGaps, primaryColor)
                 }
 
                 // 3. A-B Loop Indicators

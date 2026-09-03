@@ -160,6 +160,7 @@ fun MoviePosterCard(
       color = MaterialTheme.colorScheme.onSurface,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(horizontal = 4.dp),
     )
 
     // Year
@@ -170,6 +171,9 @@ fun MoviePosterCard(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+          .padding(horizontal = 4.dp)
+          .padding(bottom = 4.dp),
       )
     }
   }

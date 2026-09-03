@@ -148,12 +148,23 @@ class StreamingMetadataRepository(
         // Fetch season episodes for all present seasons
         series.seasons.keys.forEach { seasonNum ->
           runCatching {
-            val episodes = wyzieRepository.getSeasonEpisodes(match.id, seasonNum).getOrNull() ?: emptyList()
+            val episodes = wyzieRepository.getSeasonEpisodes(match.id, seasonNum, match.imdbId).getOrNull() ?: emptyList()
             episodes.forEach { ep ->
-              val epKey = "S${seasonNum}E${ep.episode_number}"
-              ep.name?.takeIf { it.isNotBlank() }?.let { episodeTitles[epKey] = it }
-              ep.still_path?.takeIf { it.isNotBlank() }?.let { episodeStills[epKey] = formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-              ep.overview?.takeIf { it.isNotBlank() }?.let { episodeOverviews[epKey] = it }
+              val epKeyStandard = "S${seasonNum}E${ep.episode_number}"
+              val epKeyPadded = "S${seasonNum.toString().padStart(2, '0')}E${ep.episode_number.toString().padStart(2, '0')}"
+              ep.name?.takeIf { it.isNotBlank() }?.let {
+                episodeTitles[epKeyStandard] = it
+                episodeTitles[epKeyPadded] = it
+              }
+              ep.still_path?.takeIf { it.isNotBlank() }?.let {
+                val formatted = formatImageUrl(it, TMDB_IMAGE_BASE_W500)
+                episodeStills[epKeyStandard] = formatted
+                episodeStills[epKeyPadded] = formatted
+              }
+              ep.overview?.takeIf { it.isNotBlank() }?.let {
+                episodeOverviews[epKeyStandard] = it
+                episodeOverviews[epKeyPadded] = it
+              }
             }
           }
         }
@@ -304,11 +315,12 @@ class StreamingMetadataRepository(
     val enrichedSeasons = series.seasons.mapValues { (seasonNum, episodes) ->
       episodes.map { ep ->
         val epKey = "S${seasonNum}E${ep.episodeNumber}"
+        val epKeyPadded = "S${seasonNum.toString().padStart(2, '0')}E${ep.episodeNumber.toString().padStart(2, '0')}"
         ep.copy(
-          episodeTitle = metadata.episodeTitles[epKey] ?: ep.episodeTitle,
-          stillUrl = metadata.episodeStills[epKey] ?: ep.stillUrl,
-          overview = metadata.episodeOverviews[epKey] ?: ep.overview,
-          rating = metadata.episodeRatings[epKey] ?: ep.rating,
+          episodeTitle = metadata.episodeTitles[epKey] ?: metadata.episodeTitles[epKeyPadded] ?: ep.episodeTitle,
+          stillUrl = metadata.episodeStills[epKey] ?: metadata.episodeStills[epKeyPadded] ?: ep.stillUrl,
+          overview = metadata.episodeOverviews[epKey] ?: metadata.episodeOverviews[epKeyPadded] ?: ep.overview,
+          rating = metadata.episodeRatings[epKey] ?: metadata.episodeRatings[epKeyPadded] ?: ep.rating,
         )
       }
     }
