@@ -1,15 +1,12 @@
-package app.aryan447.mpvium.ui.streaming.series
+package app.aryan447.mpvium.ui.streaming.movies
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,13 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -33,8 +28,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,14 +54,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
-import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
-import app.aryan447.mpvium.domain.streaming.model.LocalSeries
-import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.domain.streaming.model.LocalMovie
+import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
-import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
@@ -80,8 +72,9 @@ import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 
 @Serializable
-data class SeriesDetailScreen(
-  val seriesId: String,
+data class MovieDetailScreen(
+  val videoId: Long,
+  val movieTitle: String,
 ) : Screen {
 
   @Composable
@@ -92,40 +85,36 @@ data class SeriesDetailScreen(
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val coroutineScope = rememberCoroutineScope()
 
-    var series by remember { mutableStateOf<LocalSeries?>(null) }
+    var movie by remember { mutableStateOf<LocalMovie?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    var selectedSeason by remember { mutableIntStateOf(1) }
     var reloadKey by remember { mutableIntStateOf(0) }
-    var pendingDeletion by remember { mutableStateOf<Pair<String, List<Video>>?>(null) }
+    var pendingDeletion by remember { mutableStateOf<Video?>(null) }
     var showMatchPicker by remember { mutableStateOf(false) }
     var matchOptions by remember { mutableStateOf<List<WyzieTmdbResult>>(emptyList()) }
     var isSearchingMatches by remember { mutableStateOf(false) }
 
-    LaunchedEffect(seriesId, reloadKey) {
+    LaunchedEffect(videoId, reloadKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
-        val found = detected.series.find { it.id == seriesId }
+        val found = detected.movies.find { it.video.id == videoId } ?: detected.movies.find { it.title.equals(movieTitle, ignoreCase = true) }
         if (found != null) {
-          series = found
-          selectedSeason = found.seasons.keys.firstOrNull() ?: 1
+          movie = found
           isLoading = false
 
-          // Enrich in background; manual reload (reloadKey > 0) forces a re-fetch
-          val enriched = metadataRepository.enrichSeries(found, forceRefresh = reloadKey > 0)
-          series = enriched
+          val enriched = metadataRepository.enrichMovie(found, forceRefresh = reloadKey > 0)
+          movie = enriched
         } else {
           isLoading = false
         }
       }
     }
 
-    // Load search candidates whenever the match picker opens
     LaunchedEffect(showMatchPicker) {
-      val target = series
+      val target = movie
       if (showMatchPicker && target != null) {
         isSearchingMatches = true
         matchOptions = withContext(Dispatchers.IO) {
-          metadataRepository.searchSeriesMatches(target.title)
+          metadataRepository.searchMovieMatches(target.title)
         }
         isSearchingMatches = false
       }
@@ -141,20 +130,18 @@ data class SeriesDetailScreen(
         ) {
           CircularProgressIndicator()
         }
-      } else if (series == null) {
+      } else if (movie == null) {
         Box(
           modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding),
           contentAlignment = Alignment.Center,
         ) {
-          Text("Series not found", style = MaterialTheme.typography.bodyLarge)
+          Text("Movie not found", style = MaterialTheme.typography.bodyLarge)
         }
       } else {
-        val currentSeries = series!!
-        val episodesForSeason = currentSeries.seasons[selectedSeason] ?: emptyList()
-        val backdropUrl = currentSeries.backdropUrl ?: currentSeries.posterUrl
-        val fallbackVideo = currentSeries.seasons.values.firstOrNull()?.firstOrNull()?.video
+        val currentMovie = movie!!
+        val backdropUrl = currentMovie.backdropUrl ?: currentMovie.posterUrl
 
         LazyColumn(
           modifier = Modifier
@@ -170,8 +157,8 @@ data class SeriesDetailScreen(
             ) {
               StreamingImage(
                 url = backdropUrl,
-                fallbackVideo = fallbackVideo,
-                isSeries = true,
+                fallbackVideo = currentMovie.video,
+                isSeries = false,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
               )
@@ -219,9 +206,7 @@ data class SeriesDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
               ) {
                 IconButton(
-                  onClick = {
-                    showMatchPicker = true
-                  },
+                  onClick = { showMatchPicker = true },
                   modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
@@ -230,21 +215,19 @@ data class SeriesDetailScreen(
                   Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
                 }
                 IconButton(
-                  onClick = {
-                    pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
-                  },
+                  onClick = { pendingDeletion = currentMovie.video },
                   modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.5f)),
                 ) {
-                  Icon(Icons.Filled.Delete, contentDescription = "Delete series", tint = Color.White)
+                  Icon(Icons.Filled.Delete, contentDescription = "Delete movie", tint = Color.White)
                 }
               }
             }
           }
 
-          // Series Information Header
+          // Movie Information Section
           item {
             Column(
               modifier = Modifier
@@ -256,7 +239,7 @@ data class SeriesDetailScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
               ) {
-                if (currentSeries.rating != null && currentSeries.rating > 0f) {
+                if (currentMovie.rating != null && currentMovie.rating > 0f) {
                   Surface(
                     color = Color(0xFFE5A00D).copy(alpha = 0.95f),
                     shape = RoundedCornerShape(6.dp),
@@ -273,7 +256,7 @@ data class SeriesDetailScreen(
                       )
                       Spacer(modifier = Modifier.width(3.dp))
                       Text(
-                        text = String.format(java.util.Locale.US, "%.1f", currentSeries.rating),
+                        text = String.format(java.util.Locale.US, "%.1f", currentMovie.rating),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = Color.Black,
                       )
@@ -281,25 +264,42 @@ data class SeriesDetailScreen(
                   }
                 }
 
-                Surface(
-                  color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                  shape = RoundedCornerShape(6.dp),
-                ) {
-                  Text(
-                    text = "${currentSeries.seasonCount} Seasons • ${currentSeries.totalEpisodes} Episodes",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                  )
-                }
-
-                if (!currentSeries.year.isNullOrBlank()) {
+                if (!currentMovie.year.isNullOrBlank()) {
                   Surface(
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     shape = RoundedCornerShape(6.dp),
                   ) {
                     Text(
-                      text = currentSeries.year,
+                      text = currentMovie.year,
                       style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                      modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                    )
+                  }
+                }
+
+                if (currentMovie.video.durationFormatted.isNotBlank() && currentMovie.video.durationFormatted != "0s") {
+                  Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    shape = RoundedCornerShape(6.dp),
+                  ) {
+                    Text(
+                      text = currentMovie.video.durationFormatted,
+                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                      modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                    )
+                  }
+                }
+
+                currentMovie.video.resolution.takeIf { it != "--" }?.let { resolution ->
+                  val displayRes = resolution.substringBefore("@")
+                  Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(6.dp),
+                  ) {
+                    Text(
+                      text = displayRes,
+                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                      color = MaterialTheme.colorScheme.onPrimaryContainer,
                       modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                     )
                   }
@@ -310,7 +310,7 @@ data class SeriesDetailScreen(
 
               // Title
               Text(
-                text = currentSeries.title,
+                text = currentMovie.title,
                 style = MaterialTheme.typography.headlineMedium.copy(
                   fontWeight = FontWeight.ExtraBold,
                   letterSpacing = (-0.5).sp,
@@ -319,7 +319,7 @@ data class SeriesDetailScreen(
               )
 
               // Synopsis / Overview
-              currentSeries.overview?.let { overview ->
+              currentMovie.overview?.let { overview ->
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                   text = overview,
@@ -328,110 +328,55 @@ data class SeriesDetailScreen(
                 )
               }
 
-              Spacer(modifier = Modifier.height(16.dp))
-
-              // Big Play Button
-              val playNext = currentSeries.nextEpisodeToWatch ?: currentSeries.seasons.values.firstOrNull()?.firstOrNull()
-              if (playNext != null) {
-                Button(
-                  onClick = { MediaUtils.playFile(playNext.video, context, "series_detail_play") },
-                  modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                  colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                  ),
-                  shape = RoundedCornerShape(12.dp),
-                ) {
-                  Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
-                  Spacer(modifier = Modifier.width(8.dp))
-                  Text(
-                    text = "Play ${playNext.formattedEpisodeTag}: ${playNext.displayTitle}",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                  )
-                }
-              }
-
               Spacer(modifier = Modifier.height(20.dp))
 
-              // Season Selector Tabs
-              if (currentSeries.seasons.size > 1) {
+              // Big Play Button
+              Button(
+                onClick = { MediaUtils.playFile(currentMovie.video, context, "movie_detail_play") },
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                  containerColor = MaterialTheme.colorScheme.primary,
+                  contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                shape = RoundedCornerShape(12.dp),
+              ) {
+                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                  text = "Seasons",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  modifier = Modifier.padding(bottom = 8.dp),
-                )
-                LazyRow(
-                  horizontalArrangement = Arrangement.spacedBy(8.dp),
-                  modifier = Modifier.padding(bottom = 12.dp),
-                ) {
-                  items(currentSeries.seasons.keys.toList()) { seasonNum ->
-                    val selected = seasonNum == selectedSeason
-                    FilterChip(
-                      selected = selected,
-                      onClick = { selectedSeason = seasonNum },
-                      label = { Text("Season $seasonNum") },
-                      colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                      ),
-                      shape = RoundedCornerShape(20.dp),
-                    )
-                  }
-                }
-              } else {
-                Text(
-                  text = "Episodes",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  modifier = Modifier.padding(bottom = 8.dp),
+                  text = "Play Movie",
+                  style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 )
               }
             }
-          }
-
-          // Episodes List
-          items(episodesForSeason, key = { "ep_${it.video.id}_${it.seasonNumber}_${it.episodeNumber}" }) { episode ->
-            EpisodeItemCard(
-              episode = episode,
-              onClick = { MediaUtils.playFile(episode.video, context, "series_episode_click") },
-              onDelete = { pendingDeletion = episode.displayTitle to listOf(episode.video) },
-              modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-            )
           }
         }
       }
     }
 
-    pendingDeletion?.let { (name, videos) ->
+    pendingDeletion?.let { video ->
       DeleteConfirmationDialog(
         isOpen = true,
         onDismiss = { pendingDeletion = null },
         onConfirm = {
           coroutineScope.launch {
-            val (deleted, _) = PermissionUtils.StorageOps.deleteVideos(context, videos)
-            if (deleted == videos.size && videos.size == series?.totalEpisodes) {
-              if (backstack.size > 1) {
-                backstack.removeLastOrNull()
-              } else {
-                (context as? android.app.Activity)?.finish()
-              }
+            PermissionUtils.StorageOps.deleteVideos(context, listOf(video))
+            if (backstack.size > 1) {
+              backstack.removeLastOrNull()
             } else {
-              isLoading = true
-              reloadKey++
+              (context as? android.app.Activity)?.finish()
             }
           }
         },
-        itemType = if (videos.size == 1) "episode" else "show",
-        itemCount = videos.size,
-        itemNames = if (videos.size == 1) listOf(name) else emptyList(),
+        itemType = "movie",
+        itemCount = 1,
+        itemNames = listOf(movie?.title ?: video.title),
       )
     }
 
     if (showMatchPicker) {
-      val target = series
+      val target = movie
       AlertDialog(
         onDismissRequest = { showMatchPicker = false },
         title = {
@@ -447,7 +392,7 @@ data class SeriesDetailScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
           ) {
             Text(
-              text = if (target != null) "Search results for \"${target.title}\" — pick the one that matches your show." else "Searching...",
+              text = if (target != null) "Search results for \"${target.title}\" — pick the one that matches your movie." else "Searching...",
               style = MaterialTheme.typography.bodyMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -485,17 +430,17 @@ data class SeriesDetailScreen(
                       option = option,
                       onClick = {
                         showMatchPicker = false
-                        val selectedTarget = series
+                        val selectedTarget = movie
                         if (selectedTarget != null) {
                           coroutineScope.launch {
                             val enriched = withContext(Dispatchers.IO) {
-                              metadataRepository.enrichSeries(
+                              metadataRepository.enrichMovie(
                                 selectedTarget,
                                 forceRefresh = true,
                                 preferred = option,
                               )
                             }
-                            series = enriched
+                            movie = enriched
                           }
                         }
                         matchOptions = emptyList()
@@ -517,9 +462,9 @@ data class SeriesDetailScreen(
             onClick = {
               showMatchPicker = false
               coroutineScope.launch(Dispatchers.IO) {
-                val targetId = series?.id
-                if (targetId != null) {
-                  metadataRepository.clearSeriesMetadata(targetId)
+                val targetTitle = movie?.title
+                if (targetTitle != null) {
+                  metadataRepository.clearMovieMetadata(targetTitle)
                   reloadKey++
                 }
               }
@@ -541,7 +486,7 @@ private fun MatchOptionRow(
   option: WyzieTmdbResult,
   onClick: () -> Unit,
 ) {
-  val isTv = option.mediaType.equals("tv", ignoreCase = true)
+  val isMovie = option.mediaType.equals("movie", ignoreCase = true)
   Surface(
     modifier = Modifier
       .fillMaxWidth()
@@ -564,7 +509,7 @@ private fun MatchOptionRow(
       ) {
         StreamingImage(
           url = option.poster,
-          isSeries = isTv,
+          isSeries = !isMovie,
           contentScale = ContentScale.Crop,
           modifier = Modifier.fillMaxSize(),
         )
@@ -586,162 +531,12 @@ private fun MatchOptionRow(
         Spacer(modifier = Modifier.height(2.dp))
         Text(
           text = buildString {
-            append(if (isTv) "TV Series" else "Movie")
+            append(if (isMovie) "Movie" else "TV Series")
             option.releaseYear?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
           },
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-      }
-    }
-  }
-}
-
-@Composable
-fun EpisodeItemCard(
-  episode: LocalEpisode,
-  onClick: () -> Unit,
-  onDelete: () -> Unit,
-  modifier: Modifier = Modifier,
-) {
-  Surface(
-    modifier = modifier
-      .fillMaxWidth()
-      .clip(RoundedCornerShape(12.dp))
-      .clickable(onClick = onClick),
-    color = MaterialTheme.colorScheme.surfaceContainer,
-    shape = RoundedCornerShape(12.dp),
-  ) {
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(10.dp),
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      // Episode Thumbnail
-      Box(
-        modifier = Modifier
-          .width(110.dp)
-          .aspectRatio(16f / 9f)
-          .clip(RoundedCornerShape(8.dp))
-          .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center,
-      ) {
-        StreamingImage(
-          url = episode.stillUrl,
-          fallbackVideo = episode.video,
-          isSeries = true,
-          contentScale = ContentScale.Crop,
-          modifier = Modifier.fillMaxSize(),
-        )
-
-        // Center Play Icon
-        Box(
-          modifier = Modifier
-            .size(28.dp)
-            .clip(CircleShape)
-            .background(Color.Black.copy(alpha = 0.55f)),
-          contentAlignment = Alignment.Center,
-        ) {
-          Icon(
-            Icons.Filled.PlayArrow,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(16.dp),
-          )
-        }
-
-        // Progress bar at bottom
-        if (episode.progressPercentage > 0f && !episode.isWatched) {
-          Box(
-            modifier = Modifier
-              .align(Alignment.BottomCenter)
-              .fillMaxWidth()
-              .height(3.dp)
-              .background(Color.Black.copy(alpha = 0.5f)),
-          ) {
-            Box(
-              modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(episode.progressPercentage)
-                .background(MaterialTheme.colorScheme.primary),
-            )
-          }
-        }
-      }
-
-      Spacer(modifier = Modifier.width(12.dp))
-
-      // Episode Details
-      Column(
-        modifier = Modifier.weight(1f),
-        verticalArrangement = Arrangement.Center,
-      ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Text(
-            text = episode.formattedEpisodeTag,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.primary,
-          )
-          Spacer(modifier = Modifier.width(6.dp))
-          Text(
-            text = episode.displayTitle,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-          )
-        }
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        // Duration & Size chips
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-          if (episode.video.durationFormatted.isNotBlank() && episode.video.durationFormatted != "0s") {
-            Text(
-              text = episode.video.durationFormatted,
-              style = MaterialTheme.typography.labelSmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-          if (episode.video.sizeFormatted.isNotBlank()) {
-            Text(
-              text = "• ${episode.video.sizeFormatted}",
-              style = MaterialTheme.typography.labelSmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-        }
-
-        // Overview snippet if present
-        episode.overview?.takeIf { it.isNotBlank() }?.let { epOverview ->
-          Spacer(modifier = Modifier.height(2.dp))
-          Text(
-            text = epOverview,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-          )
-        }
-      }
-
-      // Watched Checkmark indicator
-      if (episode.isWatched) {
-        Spacer(modifier = Modifier.width(8.dp))
-        Icon(
-          Icons.Filled.CheckCircle,
-          contentDescription = "Watched",
-          tint = MaterialTheme.colorScheme.primary,
-          modifier = Modifier.size(18.dp),
-        )
-      }
-
-      IconButton(onClick = onDelete) {
-        Icon(Icons.Filled.Delete, contentDescription = "Delete episode")
       }
     }
   }

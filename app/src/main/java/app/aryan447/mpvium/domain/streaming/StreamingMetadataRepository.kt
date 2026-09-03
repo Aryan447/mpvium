@@ -256,13 +256,35 @@ class StreamingMetadataRepository(
     return pool.firstOrNull()
   }
 
-  suspend fun enrichMovie(movie: LocalMovie, forceRefresh: Boolean = false) =
+  /**
+   * Returns search candidates (movies first, then series) so the user can manually fix a match for movies.
+   */
+  suspend fun searchMovieMatches(title: String): List<WyzieTmdbResult> = withContext(Dispatchers.IO) {
+    val results = wyzieRepository.searchMedia(title).getOrNull() ?: emptyList()
+    results.sortedBy { it.mediaType != "movie" }
+  }
+
+  /**
+   * Forgets the cached metadata (including any manual match) for a movie so the next
+   * enrichment runs automatic detection again.
+   */
+  suspend fun clearMovieMetadata(movieTitle: String) {
+    val cacheKey = "movie_${movieTitle.lowercase().replace(Regex("[^a-z0-9]"), "")}"
+    memoryCache.remove(cacheKey)
+    persistCache()
+  }
+
+  suspend fun enrichMovie(
+    movie: LocalMovie,
+    forceRefresh: Boolean = false,
+    preferred: WyzieTmdbResult? = null,
+  ): LocalMovie =
     withContext(Dispatchers.IO) {
       ensureCacheLoaded()
       val cacheKey = "movie_${movie.title.lowercase().replace(Regex("[^a-z0-9]"), "")}"
       val cached = memoryCache[cacheKey]
 
-      if (cached != null && !forceRefresh) {
+      if (cached != null && preferred == null && !forceRefresh) {
         return@withContext movie.copy(
           posterUrl = cached.posterUrl ?: movie.posterUrl,
           backdropUrl = cached.backdropUrl ?: movie.backdropUrl,
@@ -274,34 +296,56 @@ class StreamingMetadataRepository(
       }
 
       try {
-        val searchResults = wyzieRepository.searchMedia(movie.title).getOrNull() ?: emptyList()
-        val bestMatch = pickBestMovieMatch(searchResults, movie.year)
+        var match = preferred
+        var manualOverride = match != null
+        if (match == null && cached?.manuallySelected == true && cached.tmdbId != null) {
+          match = WyzieTmdbResult(id = cached.tmdbId!!, mediaType = "movie", title = cached.title)
+          manualOverride = true
+        }
+        if (match == null) {
+          val searchResults = wyzieRepository.searchMedia(movie.title).getOrNull() ?: emptyList()
+          match = pickBestMovieMatch(searchResults, movie.year)
+        }
 
-        if (bestMatch != null) {
-          val poster = bestMatch.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-          val backdrop = bestMatch.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
-          val rating = extractRatingFromTmdb(bestMatch.id, isTv = false)
+        if (match != null) {
+          val poster = match.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
+          val backdrop = match.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
+          val overview = match.overview
+          val year = match.releaseYear ?: movie.year
+          val rating = if (manualOverride) null else extractRatingFromTmdb(match.id, isTv = false)
 
           val cachedMetadata = CachedMediaMetadata(
-            tmdbId = bestMatch.id,
-            title = bestMatch.title.ifBlank { movie.title },
+            tmdbId = match.id,
+            title = match.title.ifBlank { movie.title },
             posterUrl = poster,
             backdropUrl = backdrop,
             rating = rating,
-            overview = bestMatch.overview,
-            year = bestMatch.releaseYear ?: movie.year,
+            overview = overview,
+            year = year,
+            manuallySelected = manualOverride,
           )
 
-          memoryCache[cacheKey] = cachedMetadata
+          val mergedMetadata = if (manualOverride) {
+            cachedMetadata.copy(
+              posterUrl = poster ?: cached?.posterUrl,
+              backdropUrl = backdrop ?: cached?.backdropUrl,
+              overview = overview ?: cached?.overview,
+              rating = rating ?: cached?.rating,
+            )
+          } else {
+            cachedMetadata
+          }
+
+          memoryCache[cacheKey] = mergedMetadata
           persistCache()
 
           return@withContext movie.copy(
-            posterUrl = poster,
-            backdropUrl = backdrop,
-            rating = rating,
-            overview = bestMatch.overview,
-            year = bestMatch.releaseYear ?: movie.year,
-            tmdbId = bestMatch.id,
+            posterUrl = mergedMetadata.posterUrl ?: movie.posterUrl,
+            backdropUrl = mergedMetadata.backdropUrl ?: movie.backdropUrl,
+            rating = mergedMetadata.rating ?: movie.rating,
+            overview = mergedMetadata.overview ?: movie.overview,
+            year = mergedMetadata.year ?: movie.year,
+            tmdbId = mergedMetadata.tmdbId ?: movie.tmdbId,
           )
         }
       } catch (e: Exception) {

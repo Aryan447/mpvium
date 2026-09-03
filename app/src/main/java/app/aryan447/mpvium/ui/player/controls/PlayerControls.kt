@@ -290,6 +290,17 @@ fun PlayerControls(
       val isPortrait by remember(configuration) {
         derivedStateOf { configuration.orientation == ORIENTATION_PORTRAIT }
       }
+      val isTablet = remember(configuration) {
+        configuration.smallestScreenWidthDp >= 600
+      }
+      val tabletBottomOffset = remember(configuration, isTablet) {
+        if (isTablet) {
+          val scale = (configuration.smallestScreenWidthDp / 720f).coerceIn(0.6f, 1.0f)
+          (160 * scale).dp
+        } else {
+          0.dp
+        }
+      }
 
       ConstraintLayout(
         modifier =
@@ -383,7 +394,7 @@ fun PlayerControls(
                 end.linkTo(parent.end, if (isPortrait) spacing.large else spacing.extraLarge)
               }
               top.linkTo(parent.top, spacing.larger)
-              bottom.linkTo(parent.bottom, spacing.extraLarge)
+              bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
             },
         ) { BrightnessSlider(brightness, 0f..1f) }
 
@@ -413,7 +424,7 @@ fun PlayerControls(
                 start.linkTo(parent.start, if (isPortrait) spacing.large else spacing.extraLarge)
               }
               top.linkTo(parent.top, spacing.larger)
-              bottom.linkTo(parent.bottom, spacing.extraLarge)
+              bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
             },
         ) {
           val boostCap by audioPreferences.volumeBoostCap.collectAsState()
@@ -611,7 +622,7 @@ fun PlayerControls(
           modifier =
             Modifier
               .constrainAs(unlockControlsButton) {
-                bottom.linkTo(parent.bottom, spacing.extraLarge)
+                bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
               },
@@ -896,7 +907,7 @@ fun PlayerControls(
                 if (isPortrait) {
                   bottom.linkTo(playerPauseButton.top, spacing.small)
                 } else {
-                  bottom.linkTo(parent.bottom, spacing.small)
+                  bottom.linkTo(parent.bottom, spacing.small + tabletBottomOffset)
                 }
                 start.linkTo(parent.start, spacing.large)
                 end.linkTo(parent.end, spacing.large)
@@ -919,11 +930,12 @@ fun PlayerControls(
               }
               isSeeking = true
               resetControlsTimestamp = System.currentTimeMillis()
-              viewModel.seekTo(it.toInt())
+              viewModel.seekTo(it.toInt(), isScrubbing = true)
             },
             onValueChangeFinished = {
               isSeeking = false
               resetControlsTimestamp = System.currentTimeMillis()
+              viewModel.seekTo(precisePosition.toInt(), isScrubbing = false)
               // Unpause if it wasn't paused before seeking
               if (!wasPlayerAlreadyPaused) {
                 viewModel.unpause()
@@ -1136,7 +1148,7 @@ fun PlayerControls(
               )
               .constrainAs(bottomRightControls) {
                 if (isPortrait) {
-                  bottom.linkTo(parent.bottom, spacing.extraLarge)
+                  bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
                   start.linkTo(parent.start, spacing.large)
                   end.linkTo(parent.end, spacing.large)
                   width = Dimension.fillToConstraints

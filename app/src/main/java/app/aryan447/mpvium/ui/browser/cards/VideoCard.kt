@@ -38,6 +38,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.LocalAppTheme
+import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
@@ -86,6 +89,7 @@ fun VideoCard(
   val showUnplayedOldVideoLabel by appearancePreferences.showUnplayedOldVideoLabel.collectAsState()
   val unplayedOldVideoDays by appearancePreferences.unplayedOldVideoDays.collectAsState()
   val maxLines = if (unlimitedNameLines) Int.MAX_VALUE else 2
+  val isCinema = LocalAppTheme.current == AppTheme.Cinema
 
   // Use override parameters if provided, otherwise use preferences
   val showSizeChip = overrideShowSizeChip ?: showSizeChipPref
@@ -162,6 +166,7 @@ fun VideoCard(
             .aspectRatio(aspect)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier)
             .combinedClickable(
               onClick = onThumbClick,
               onLongClick = onLongClick,
@@ -439,6 +444,7 @@ fun VideoCard(
               .aspectRatio(aspect)
               .clip(RoundedCornerShape(12.dp))
               .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+              .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier)
               .combinedClickable(
                 onClick = onThumbClick,
                 onLongClick = onLongClick,

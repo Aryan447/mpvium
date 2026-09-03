@@ -26,7 +26,6 @@ import android.view.WindowManager
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
@@ -325,7 +324,6 @@ class PlayerActivity :
       }
     }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
@@ -412,8 +410,10 @@ class PlayerActivity :
     // Apply persisted shuffle state after playlist is loaded
     viewModel.applyPersistedShuffleState()
 
-    window.attributes.layoutInDisplayCutoutMode =
-      WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      window.attributes.layoutInDisplayCutoutMode =
+        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+    }
   }
 
   override fun attachBaseContext(newBase: Context?) {
@@ -441,7 +441,6 @@ class PlayerActivity :
     onBackPressedDispatcher.addCallback(
       this,
       object : OnBackPressedCallback(true) {
-        @RequiresApi(Build.VERSION_CODES.P)
         override fun handleOnBackPressed() {
           handleBackPress()
         }
@@ -449,7 +448,6 @@ class PlayerActivity :
     )
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   private fun handleBackPress() {
     // Dismiss overlays first
     if (viewModel.sheetShown.value != Sheets.None) {
@@ -474,7 +472,6 @@ class PlayerActivity :
     finish()
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   private fun setupPlayerControls() {
     binding.controls.setContent {
       MpviumTheme {
@@ -556,7 +553,6 @@ class PlayerActivity :
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   override fun onDestroy() {
     Log.d(TAG, "PlayerActivity onDestroy")
 
@@ -657,7 +653,6 @@ class PlayerActivity :
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   override fun onPause() {
     runCatching {
       val isInPip = isInPictureInPictureMode
@@ -690,7 +685,6 @@ class PlayerActivity :
     super.onPause()
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   override fun finish() {
     runCatching {
       // Don't restore UI during normal finish to prevent flickering
@@ -756,7 +750,6 @@ class PlayerActivity :
     super.onStop()
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   override fun onStart() {
     super.onStart()
 
@@ -795,10 +788,11 @@ class PlayerActivity :
     window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   private fun setupSystemUI() {
-    window.attributes.layoutInDisplayCutoutMode =
-      WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      window.attributes.layoutInDisplayCutoutMode =
+        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+    }
 
     // Set status bar color for when it will be shown (with controls)
     if (playerPreferences.showSystemStatusBar.get()) {
@@ -826,15 +820,16 @@ class PlayerActivity :
         if (playerPreferences.showSystemStatusBar.get()) 0 else View.SYSTEM_UI_FLAG_LOW_PROFILE
   }
 
-  @RequiresApi(Build.VERSION_CODES.P)
   private fun restoreSystemUI() {
     // Clear flags first for immediate effect
     window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
     // Set cutout mode before showing bars for smoother transition
-    window.attributes.layoutInDisplayCutoutMode =
-      WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      window.attributes.layoutInDisplayCutoutMode =
+        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+    }
 
     // Update window insets configuration
     WindowCompat.setDecorFitsSystemWindows(window, true)
@@ -2368,7 +2363,6 @@ class PlayerActivity :
    * @param isInPictureInPictureMode true if entering PiP, false if exiting
    * @param newConfig The new configuration
    */
-  @RequiresApi(Build.VERSION_CODES.P)
   override fun onPictureInPictureModeChanged(
     isInPictureInPictureMode: Boolean,
     newConfig: Configuration,
@@ -2411,7 +2405,6 @@ class PlayerActivity :
    * Restores window configuration when exiting Picture-in-Picture mode.
    * Hides system UI for immersive playback.
    */
-  @RequiresApi(Build.VERSION_CODES.P)
   private fun exitPipUIMode() {
     setupWindowFlags()
     setupSystemUI()
@@ -2800,7 +2793,6 @@ class PlayerActivity :
    * Manually triggers background playback when the user clicks the background playback button.
    * This works independently of the automaticBackgroundPlayback preference.
    */
-  @RequiresApi(Build.VERSION_CODES.P)
   fun triggerBackgroundPlayback() {
     if (fileName.isBlank() || !isReady) {
       Log.w(TAG, "Cannot trigger background playback: video not ready")

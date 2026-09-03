@@ -395,7 +395,7 @@ class PlayerViewModel(
 
           // Update hr-seek settings dynamically
           MPVLib.setPropertyString("hr-seek", if (shouldUsePreciseSeeking) "yes" else "no")
-          MPVLib.setPropertyString("hr-seek-framedrop", if (shouldUsePreciseSeeking) "no" else "yes")
+          MPVLib.setPropertyString("hr-seek-framedrop", "yes")
         }
       }
     }
@@ -949,7 +949,7 @@ class PlayerViewModel(
     coalesceSeek(offset)
   }
 
-  fun seekTo(position: Int) {
+  fun seekTo(position: Int, isScrubbing: Boolean = false) {
     viewModelScope.launch(Dispatchers.IO) {
       val maxDuration = MPVLib.getPropertyInt("duration") ?: 0
       var clampedPosition = position.coerceIn(0, maxDuration)
@@ -971,7 +971,15 @@ class PlayerViewModel(
 
       // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
       val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
-      val seekMode = if (shouldUsePreciseSeeking) "absolute+exact" else "absolute+keyframes"
+      // During active scrubbing (dragging finger), use fast keyframe seeking for butter-smooth preview updates without decoder stalls.
+      // On release or discrete seek, use precise exact seeking if enabled.
+      val seekMode = if (isScrubbing) {
+        "absolute+keyframes"
+      } else if (shouldUsePreciseSeeking) {
+        "absolute+exact"
+      } else {
+        "absolute+keyframes"
+      }
       MPVLib.command("seek", clampedPosition.toString(), seekMode)
     }
   }

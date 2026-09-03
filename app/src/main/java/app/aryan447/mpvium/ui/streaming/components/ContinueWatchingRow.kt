@@ -164,6 +164,7 @@ fun ContinueWatchingCard(
       color = MaterialTheme.colorScheme.onSurface,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(horizontal = 6.dp),
     )
 
     // Subtitle / Episode & Duration remaining
@@ -173,6 +174,9 @@ fun ContinueWatchingCard(
       color = MaterialTheme.colorScheme.onSurfaceVariant,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
+      modifier = Modifier
+        .padding(horizontal = 6.dp)
+        .padding(bottom = 6.dp),
     )
   }
 }
