@@ -7,16 +7,12 @@ on:
   push:
     tags:
       - 'v*'
-    tags-ignore:
-      - 'v*-preview*'
-      - 'v*.preview*'
-      - '*-preview*'
-      - '*.preview*'
 
 jobs:
   release-for-github:
     name: "Release for GitHub"
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref, 'preview') }}
 
     steps:
       - name: Checkout repo
