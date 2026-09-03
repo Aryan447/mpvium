@@ -201,6 +201,8 @@ private fun ThemeTransitionContent(content: @Composable () -> Unit) {
     }
 }
 
+val LocalAppTheme = staticCompositionLocalOf { AppTheme.Default }
+
 // ============================================================================
 // Main Theme
 // ============================================================================
@@ -250,6 +252,7 @@ fun MpviumTheme(content: @Composable () -> Unit) {
     CompositionLocalProvider(
         LocalSpacing provides Spacing(),
         LocalThemeTransitionState provides rememberThemeTransitionState(),
+        LocalAppTheme provides appTheme,
     ) {
         ThemeTransitionContent {
             MaterialTheme(

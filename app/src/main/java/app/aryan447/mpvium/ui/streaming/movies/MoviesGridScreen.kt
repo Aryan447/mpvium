@@ -142,8 +142,16 @@ object MoviesGridScreen : Screen {
               )
             },
             navigationIcon = {
-              IconButton(onClick = { backstack.removeLastOrNull() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+              if (backstack.size > 1) {
+                IconButton(
+                  onClick = {
+                    if (backstack.size > 1) {
+                      backstack.removeLastOrNull()
+                    }
+                  }
+                ) {
+                  Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
               }
             },
             actions = {
@@ -191,7 +199,7 @@ object MoviesGridScreen : Screen {
           items(filteredMovies, key = { "grid_movie_${it.video.id}" }) { movie ->
             MoviePosterCard(
               movie = movie,
-              onClick = { MediaUtils.playFile(movie.video, context, "movie_grid_play") },
+              onClick = { backstack.add(MovieDetailScreen(movie.video.id, movie.title)) },
               onLongClick = { moviePendingDeletion = movie },
               cardWidth = 180.dp,
             )

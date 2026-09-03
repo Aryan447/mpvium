@@ -50,9 +50,9 @@ jobs:
         run: |
           set -e
           PREVIEW_DIR="app/build/outputs/apk/standard/preview"
-          
+
           echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > release.keystore
-          
+
           APK_COUNT=$(find "$PREVIEW_DIR" -name "app-standard-*-preview-unsigned.apk" -type f | wc -l)
           if [ "$APK_COUNT" -eq 0 ]; then
             echo "No unsigned preview APK files found"
@@ -60,10 +60,10 @@ jobs:
             rm release.keystore
             exit 1
           fi
-          
+
           find "$PREVIEW_DIR" -name "app-standard-*-preview-unsigned.apk" -type f | while read -r apk; do
             signed_apk="${apk/-unsigned/}"
-          
+
             $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
               --ks release.keystore \
               --ks-key-alias "${{ secrets.SIGNING_KEY_ALIAS }}" \
@@ -71,11 +71,11 @@ jobs:
               --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
               --out "$signed_apk" \
               "$apk"
-          
+
             $ANDROID_HOME/build-tools/34.0.0/apksigner verify "$signed_apk"
             rm "$apk"
           done
-          
+
           rm release.keystore
           ls -lh "$PREVIEW_DIR"/app-standard-*-preview.apk
 
@@ -83,7 +83,8 @@ jobs:
         run: |
           set -e
           mkdir -p preview
-          declare -a apks=("universal" "arm64-v8a" "armeabi-v7a" "x86" "x86_64")
+          #declare -a apks=("universal" "arm64-v8a" "armeabi-v7a" "x86" "x86_64")
+          declare -a apks=("universal" "arm64-v8a" "x86_64")
 
           for abi in "${apks[@]}"; do
             src="app/build/outputs/apk/standard/preview/app-standard-${abi}-preview.apk"
@@ -102,20 +103,16 @@ jobs:
           tag_name: ${{ env.VERSION_TAG }}
           name: "mpvium ${{ env.VERSION_TAG }}"
           body: |
-            
+
             ### Checksums
             | Variant | SHA-256 |
             | ------- | ------- |
             | arm64-v8a | ${{ env.apk_arm64_v8a_sha256 }} |
-            | armeabi-v7a | ${{ env.apk_armeabi_v7a_sha256 }} |
             | Universal | ${{ env.apk_universal_sha256 }} |
-            | x86 | ${{ env.apk_x86_sha256 }} |
             | x86_64 | ${{ env.apk_x86_64_sha256 }} |
           files: |
             preview/mpvium-preview-universal-${{ env.VERSION_TAG }}.apk
             preview/mpvium-preview-arm64-v8a-${{ env.VERSION_TAG }}.apk
-            preview/mpvium-preview-armeabi-v7a-${{ env.VERSION_TAG }}.apk
-            preview/mpvium-preview-x86-${{ env.VERSION_TAG }}.apk
             preview/mpvium-preview-x86_64-${{ env.VERSION_TAG }}.apk
           draft: false
           prerelease: true

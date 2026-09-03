@@ -24,6 +24,17 @@ enum class AppTheme(
   val backgroundDark: Color,
   val isDynamic: Boolean = false,
 ) {
+  Cinema(
+    titleRes = R.string.theme_cinema,
+    primaryLight = Color(0xFFC59B27),
+    primaryDark = Color(0xFFE5C158),
+    secondaryLight = Color(0xFF8B0000),
+    secondaryDark = Color(0xFFE53935),
+    tertiaryLight = Color(0xFFD4AF37),
+    tertiaryDark = Color(0xFFFFD700),
+    backgroundLight = Color(0xFFFFFBF0),
+    backgroundDark = Color(0xFF140D0F),
+  ),
   Default(
     titleRes = R.string.theme_default,
     primaryLight = Color(0xFF794F81),

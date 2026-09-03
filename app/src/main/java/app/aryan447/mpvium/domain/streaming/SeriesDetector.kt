@@ -143,11 +143,15 @@ class SeriesDetector(
 
           // Continue Watching for in-progress series episode
           if (positionMs > 10_000L && !isWatched && progress < WATCHED_PERCENTAGE_THRESHOLD) {
+            val remainingMins = (durationMs - positionMs) / (1000 * 60)
+            val episodeTag = episode.formattedEpisodeTag
+            val subtitleText = if (remainingMins > 0) "$episodeTag • ${remainingMins}m remaining" else episodeTag
+
             continueWatchingList.add(
               ContinueWatchingItem(
                 video = video,
                 title = seriesTitle,
-                subtitle = "${episode.formattedEpisodeTag} • ${episode.displayTitle}",
+                subtitle = subtitleText,
                 playbackPositionMs = positionMs,
                 totalDurationMs = durationMs,
                 progressPercentage = progress,

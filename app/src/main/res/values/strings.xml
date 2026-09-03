@@ -38,6 +38,7 @@
   <string name="video_label_new">NEW</string>
   <!-- Theme names -->
   <string name="theme_default">Default</string>
+  <string name="theme_cinema">Cinema</string>
   <string name="theme_dynamic">Dynamic</string>
   <string name="theme_cloudflare">Cloudflare</string>
   <string name="theme_cotton_candy">Cotton Candy</string>

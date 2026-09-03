@@ -199,7 +199,13 @@ class MainActivity : ComponentActivity() {
     ) {
       NavDisplay(
         backStack = typedBackstack,
-        onBack = { typedBackstack.removeLastOrNull() },
+        onBack = {
+          if (typedBackstack.size > 1) {
+            typedBackstack.removeLastOrNull()
+          } else {
+            finish()
+          }
+        },
         entryProvider = { route -> NavEntry(route) { route.Content() } },
         popTransitionSpec = {
           (
