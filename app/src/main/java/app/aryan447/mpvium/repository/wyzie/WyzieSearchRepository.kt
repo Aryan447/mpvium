@@ -830,12 +830,12 @@ class WyzieSearchRepository(
         }
     }
 
-    suspend fun getSeasonEpisodes(id: Int, season: Int): Result<List<WyzieEpisode>> = withContext(Dispatchers.IO) {
+    suspend fun getSeasonEpisodes(id: Int, season: Int, imdbId: String? = null): Result<List<WyzieEpisode>> = withContext(Dispatchers.IO) {
         try {
-            val ttId = findTtIdForNumericId(id, "series")
-            if (ttId != null) {
-                val cinemetaEps = runCatching { cinemetaGetEpisodes(ttId, season) }.getOrNull()
-                if (cinemetaEps != null) return@withContext Result.success(cinemetaEps)
+            val targetTtId = imdbId ?: findTtIdForNumericId(id, "series")
+            if (targetTtId != null) {
+                val cinemetaEps = runCatching { cinemetaGetEpisodes(targetTtId, season) }.getOrNull()
+                if (!cinemetaEps.isNullOrEmpty()) return@withContext Result.success(cinemetaEps)
             }
             val url = "$wyzieBase/api/tmdb/tv/$id/$season"
             val request = Request.Builder().url(url).build()
