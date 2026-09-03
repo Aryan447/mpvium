@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -127,6 +128,8 @@ fun GestureHandler(
   val volumeBoostingCap = audioPreferences.volumeBoostCap.get()
   val haptics = LocalHapticFeedback.current
   val coroutineScope = rememberCoroutineScope()
+  val configuration = LocalConfiguration.current
+  val isTablet = remember(configuration) { configuration.smallestScreenWidthDp >= 600 }
 
   // Isolated double-tap state tracking
   var tapCount by remember { mutableStateOf(0) }
@@ -807,6 +810,7 @@ fun GestureHandler(
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
           val startPosition = down.position
+          val startTime = System.currentTimeMillis()
 
           var gestureType: String? = null
           var hasStartedSeeking = false
@@ -826,11 +830,17 @@ fun GestureHandler(
                   val currentPosition = change.position
                   val deltaX = currentPosition.x - startPosition.x
                   val deltaY = currentPosition.y - startPosition.y
+                  val timeSinceStart = System.currentTimeMillis() - startTime
 
-                  // Activate horizontally responsive gesture immediately upon swipe threshold
+                  // Tablet-specific responsive swipe gesture vs standard phone gesture
+                  val isGestureTriggered = if (isTablet) {
+                    abs(deltaX) > 18f && abs(deltaX) > abs(deltaY) * 1.25f
+                  } else {
+                    abs(deltaX) > 30f && abs(deltaX) > abs(deltaY) * 2f && timeSinceStart > 100L
+                  }
+
                   if (gestureType == null &&
-                      abs(deltaX) > 18f &&
-                      abs(deltaX) > abs(deltaY) * 1.25f && // Must be horizontal
+                      isGestureTriggered &&
                       !isLongPressing && // Don't conflict with long press
                       !isDynamicSpeedControlActive && // Don't conflict with speed control
                       panelShown == Panels.None) { // Only when no panels are shown
