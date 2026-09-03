@@ -61,7 +61,7 @@ object MediaInfoParser {
 
     private val AUDIO_CODECS = setOf(
         "aac", "flac", "mp3", "opus", "ac3", "dts", "eac3", "truehd",
-        "atmos", "lpcm", "pcm", "vorbis", "ogg"
+        "atmos", "lpcm", "pcm", "vorbis", "ogg", "ch", "channels", "6ch", "2ch", "8ch"
     )
 
     private val SOURCE_TAGS = setOf(
@@ -139,8 +139,8 @@ object MediaInfoParser {
     // Bitrate: 4500kbps
     private val BITRATE_REGEX = Regex("""\b\d+\s*[KkMm]bps\b""")
 
-    // Audio channels: 5.1, 7.1, 2.0 — also DDP5.1, DD5.1, AAC2.0
-    private val AUDIO_CHANNEL_REGEX = Regex("""\b(?:DDP?|AAC|DD\+?)?\.?([257])\.([01])\b""", RegexOption.IGNORE_CASE)
+    // Audio channels: 5.1, 7.1, 2.0 — also DDP5.1, DD5.1, AAC2.0, 5 1
+    private val AUDIO_CHANNEL_REGEX = Regex("""\b(?:DDP?|AAC|DD\+?)?[ ._]?([257])[ ._]([01])\b""", RegexOption.IGNORE_CASE)
 
     // Resolution number: 1080p, 720p
     private val RESOLUTION_NUM_REGEX = Regex("""\b\d{3,4}[pPiI]\b""")
@@ -429,6 +429,14 @@ object MediaInfoParser {
             .replace(Regex("""（.*?）"""), " ")
             // Remove file extension
             .replace(Regex("""\.(${FILE_EXTENSIONS.joinToString("|")})$""", RegexOption.IGNORE_CASE), "")
+            // Remove audio channel patterns (5.1, 7.1, DDP5.1, DD5.1) before delimiter replacement
+            .replace(AUDIO_CHANNEL_REGEX, " ")
+            // Remove compound audio tags (DTS-HD MA, TrueHD, DD+, DDP)
+            .replace(COMPOUND_AUDIO_REGEX, " ")
+            // Remove H.264 / H.265 with dot
+            .replace(H_CODEC_REGEX, " ")
+            // Remove WEB-DL pattern
+            .replace(WEB_DL_REGEX, " ")
             // Replace delimiters (dots & underscores → spaces, preserve hyphens for now)
             .replace(Regex("""[._]"""), " ")
             // Remove version suffixes (v2, v3, etc.)
@@ -437,14 +445,8 @@ object MediaInfoParser {
             .replace(FILESIZE_REGEX, " ")
             // Remove bitrate patterns (4500kbps)
             .replace(BITRATE_REGEX, " ")
-            // Remove audio channel patterns (5.1, 7.1, DDP5.1, DD5.1)
+            // Remove audio channel patterns again if spaced (5 1, 7 1)
             .replace(AUDIO_CHANNEL_REGEX, " ")
-            // Remove WEB-DL pattern
-            .replace(WEB_DL_REGEX, " ")
-            // Remove H.264 / H.265 with dot
-            .replace(H_CODEC_REGEX, " ")
-            // Remove compound audio tags (DTS-HD MA, TrueHD, DD+, DDP)
-            .replace(COMPOUND_AUDIO_REGEX, " ")
 
         // Remove all noise tags (with word boundaries)
         ALL_NOISE.forEach { tag ->
