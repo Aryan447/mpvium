@@ -138,8 +138,16 @@ object SeriesGridScreen : Screen {
               )
             },
             navigationIcon = {
-              IconButton(onClick = { backstack.removeLastOrNull() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+              if (backstack.size > 1) {
+                IconButton(
+                  onClick = {
+                    if (backstack.size > 1) {
+                      backstack.removeLastOrNull()
+                    }
+                  }
+                ) {
+                  Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
               }
             },
             actions = {

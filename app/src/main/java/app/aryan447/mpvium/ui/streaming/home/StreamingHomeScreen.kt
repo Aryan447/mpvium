@@ -1,5 +1,12 @@
 package app.aryan447.mpvium.ui.streaming.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,10 +54,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,6 +90,7 @@ import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.StreamingHeroBanner
+import app.aryan447.mpvium.ui.streaming.movies.MovieDetailScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesDetailScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
@@ -142,30 +155,33 @@ object StreamingHomeScreen : Screen {
         } else {
           TopAppBar(
             title = {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                  text = "mpvium",
-                  style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-0.5).sp,
-                  ),
-                  color = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Surface(
-                  color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                  shape = RoundedCornerShape(6.dp)
-                ) {
+              Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                   Text(
-                    text = "CINEMA",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                      fontWeight = FontWeight.Bold,
-                      fontSize = 9.sp,
+                    text = "mpvium",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                      fontWeight = FontWeight.Black,
+                      letterSpacing = (-0.5).sp,
                     ),
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
                   )
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(6.dp)
+                  ) {
+                    Text(
+                      text = "CINEMA",
+                      style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp,
+                      ),
+                      color = MaterialTheme.colorScheme.primary,
+                      modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                    )
+                  }
                 }
+                DynamicGreetingText()
               }
             },
             actions = {
@@ -371,7 +387,7 @@ object StreamingHomeScreen : Screen {
                     items(state.movies, key = { "movie_${it.video.id}" }) { movie ->
                       MoviePosterCard(
                         movie = movie,
-                        onClick = { MediaUtils.playFile(movie.video, context, "movie_play") },
+                        onClick = { backstack.add(MovieDetailScreen(movie.video.id, movie.title)) },
                       )
                     }
                   }
@@ -530,5 +546,53 @@ private fun FolderQuickCard(
         )
       }
     }
+  }
+}
+
+@Composable
+private fun DynamicGreetingText(
+  modifier: Modifier = Modifier,
+) {
+  val greetings = remember {
+    listOf(
+      "What's on the binge today? 🍿",
+      "Feeling bored? Watch something cool!",
+      "Time for a movie night! ✨",
+      "Discover your next obsession...",
+      "Ready for another episode?",
+      "Unwind with your favorite shows!",
+      "Lights, camera, action! 🎬",
+      "Grab some popcorn and relax!"
+    )
+  }
+
+  var currentIndex by remember { mutableIntStateOf(0) }
+
+  LaunchedEffect(Unit) {
+    while (isActive) {
+      delay(4000)
+      currentIndex = (currentIndex + 1) % greetings.size
+    }
+  }
+
+  AnimatedContent(
+    targetState = greetings[currentIndex],
+    transitionSpec = {
+      (fadeIn(animationSpec = tween(400)) + slideInVertically(animationSpec = tween(400)) { height -> height / 2 })
+        .togetherWith(fadeOut(animationSpec = tween(400)) + slideOutVertically(animationSpec = tween(400)) { height -> -height / 2 })
+    },
+    label = "greeting_animation",
+    modifier = modifier,
+  ) { greeting ->
+    Text(
+      text = greeting,
+      style = MaterialTheme.typography.labelSmall.copy(
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+      ),
+      color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+    )
   }
 }

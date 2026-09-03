@@ -320,7 +320,7 @@ fun PlayerSheets(
         onPause = viewModel::pause,
         onUnpause = viewModel::unpause,
         onPauseUnpause = viewModel::pauseUnpause,
-        onSeekTo = { position, _ -> viewModel.seekTo(position) },
+        onSeekTo = { position, isExact -> viewModel.seekTo(position, isScrubbing = !isExact) },
         onDismissRequest = onDismissRequest,
       )
     }

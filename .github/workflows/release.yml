@@ -32,8 +32,8 @@ jobs:
       - name: Build standard release with Gradle
         run: ./gradlew assembleStandardRelease --stacktrace
 
-      - name: Build F-Droid release with Gradle
-        run: ./gradlew assembleFdroidRelease --stacktrace
+      #- name: Build F-Droid release with Gradle
+      #  run: ./gradlew assembleFdroidRelease --stacktrace
 
       - name: Get tag name
         if: startsWith(github.ref, 'refs/tags/')
@@ -50,16 +50,16 @@ jobs:
             exit 1
           fi
 
-          if [ ! -d "$FDROID_RELEASE_DIR" ]; then
-            echo "F-Droid release directory does not exist!"
-            find app/build/outputs -name "*.apk" -type f
-            exit 1
-          fi
+          #if [ ! -d "$FDROID_RELEASE_DIR" ]; then
+          #  echo "F-Droid release directory does not exist!"
+          #  find app/build/outputs -name "*.apk" -type f
+          #  exit 1
+          #fi
 
           echo "Standard release APKs:"
           ls -lah "$STANDARD_RELEASE_DIR"
-          echo "F-Droid release APKs:"
-          ls -lah "$FDROID_RELEASE_DIR"
+          #echo "F-Droid release APKs:"
+          #ls -lah "$FDROID_RELEASE_DIR"
 
       - name: Sign APKs
         run: |
@@ -94,34 +94,34 @@ jobs:
           done
 
           # Sign F-Droid APKs
-          APK_COUNT=$(find "$FDROID_RELEASE_DIR" -name "app-fdroid-*-release-unsigned.apk" -type f | wc -l)
-          if [ "$APK_COUNT" -eq 0 ]; then
-            echo "No unsigned F-Droid APK files found"
-            ls -lah "$FDROID_RELEASE_DIR"
-            rm release.keystore
-            exit 1
-          fi
+          #APK_COUNT=$(find "$FDROID_RELEASE_DIR" -name "app-fdroid-*-release-unsigned.apk" -type f | wc -l)
+          #if [ "$APK_COUNT" -eq 0 ]; then
+          #  echo "No unsigned F-Droid APK files found"
+          #  ls -lah "$FDROID_RELEASE_DIR"
+          #  rm release.keystore
+          #  exit 1
+          #fi
 
-          find "$FDROID_RELEASE_DIR" -name "app-fdroid-*-release-unsigned.apk" -type f | while read -r apk; do
-            signed_apk="${apk/-unsigned/}"
+          #find "$FDROID_RELEASE_DIR" -name "app-fdroid-*-release-unsigned.apk" -type f | while read -r apk; do
+          #  signed_apk="${apk/-unsigned/}"
 
-            $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
-              --ks release.keystore \
-              --ks-key-alias "${{ secrets.SIGNING_KEY_ALIAS }}" \
-              --ks-pass "pass:${{ secrets.SIGNING_STORE_PASSWORD }}" \
-              --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
-              --out "$signed_apk" \
-              "$apk"
+          #  $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+          #    --ks release.keystore \
+          #    --ks-key-alias "${{ secrets.SIGNING_KEY_ALIAS }}" \
+          #    --ks-pass "pass:${{ secrets.SIGNING_STORE_PASSWORD }}" \
+          #    --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
+          #    --out "$signed_apk" \
+          #    "$apk"
 
-            $ANDROID_HOME/build-tools/34.0.0/apksigner verify "$signed_apk"
-            rm "$apk"
-          done
+          #  $ANDROID_HOME/build-tools/34.0.0/apksigner verify "$signed_apk"
+          #  rm "$apk"
+          #done
 
           rm release.keystore
           echo "Standard APKs:"
           ls -lh "$STANDARD_RELEASE_DIR"/app-standard-*-release.apk
-          echo "F-Droid APKs:"
-          ls -lh "$FDROID_RELEASE_DIR"/app-fdroid-*-release.apk
+          #echo "F-Droid APKs:"
+          #ls -lh "$FDROID_RELEASE_DIR"/app-fdroid-*-release.apk
 
       - name: Copy build artifacts
         run: |
@@ -143,15 +143,15 @@ jobs:
           done
 
           # F-Droid flavor APK (only arm64-v8a, same package name)
-          fdroid_src="app/build/outputs/apk/fdroid/release/app-fdroid-arm64-v8a-release.apk"
-          fdroid_dst="mpvium-fdroid-${VERSION_TAG}.apk"
-          if [ ! -f "$fdroid_src" ]; then
-            echo "::error file=$fdroid_src::Signed F-Droid APK was not found"
-            exit 1
-          fi
-          cp "$fdroid_src" "$fdroid_dst"
-          fdroid_checksum=$(sha256sum "$fdroid_dst" | awk '{ print $1 }')
-          echo "apk_fdroid_sha256=$fdroid_checksum" >> "$GITHUB_ENV"
+          #fdroid_src="app/build/outputs/apk/fdroid/release/app-fdroid-arm64-v8a-release.apk"
+          #fdroid_dst="mpvium-fdroid-${VERSION_TAG}.apk"
+          #if [ ! -f "$fdroid_src" ]; then
+          #  echo "::error file=$fdroid_src::Signed F-Droid APK was not found"
+          #  exit 1
+          #fi
+          #cp "$fdroid_src" "$fdroid_dst"
+          #fdroid_checksum=$(sha256sum "$fdroid_dst" | awk '{ print $1 }')
+          #echo "apk_fdroid_sha256=$fdroid_checksum" >> "$GITHUB_ENV"
 
           ls -lah mpvium-*.apk
 
@@ -171,22 +171,22 @@ jobs:
             | Universal | ${{ env.apk_universal_sha256 }} |
             | x86 | ${{ env.apk_x86_sha256 }} |
             | x86_64 | ${{ env.apk_x86_64_sha256 }} |
-            | F-Droid | ${{ env.apk_fdroid_sha256 }} |
+            #| F-Droid | ${{ env.apk_fdroid_sha256 }} |
 
-            ---
+            #---
             ### F-Droid Version
 
-            The F-Droid variant (`mpvium-fdroid-${{ env.VERSION_TAG }}.apk`) is specifically built for F-Droid compatibility:
-            - Removed automatic update feature
-            - Removed install packages permission
-            - ARM64-v8a architecture only
+            #The F-Droid variant (`mpvium-fdroid-${{ env.VERSION_TAG }}.apk`) is specifically built for F-Droid compatibility:
+            #- Removed automatic update feature
+            #- Removed install packages permission
+            #- ARM64-v8a architecture only
           files: |
             mpvium-universal-${{ env.VERSION_TAG }}.apk
             mpvium-arm64-v8a-${{ env.VERSION_TAG }}.apk
             mpvium-armeabi-v7a-${{ env.VERSION_TAG }}.apk
             mpvium-x86-${{ env.VERSION_TAG }}.apk
             mpvium-x86_64-${{ env.VERSION_TAG }}.apk
-            mpvium-fdroid-${{ env.VERSION_TAG }}.apk
+            #mpvium-fdroid-${{ env.VERSION_TAG }}.apk
           draft: true
           prerelease: false
         env:

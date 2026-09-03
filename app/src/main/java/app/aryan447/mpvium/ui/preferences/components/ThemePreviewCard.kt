@@ -32,11 +32,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.ui.theme.AppTheme
-
+import app.aryan447.mpvium.ui.theme.CinemaFilmReelIcon
+import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 
 /**
  * A theme preview card that displays a mini preview of the app UI with the theme's colors.
- * Inspired by Aniyomi's theme picker design.
+ * Inspired by Aniyomi's theme picker design. Enhanced with Cinema Film Reel features for Cinema theme.
  */
 @Composable
 fun ThemePreviewCard(
@@ -52,10 +53,10 @@ fun ThemePreviewCard(
     val selectionColor = MaterialTheme.colorScheme.primary
 
     val borderWidth = if (isSelected) 3.dp else 1.dp
-
     val borderColor = if (isSelected) selectionColor else Color.Transparent
-
     val elevation = if (isSelected) 8.dp else 2.dp
+
+    val isCinemaTheme = theme == AppTheme.Cinema
 
     Column(
         modifier = modifier
@@ -83,6 +84,13 @@ fun ThemePreviewCard(
                     width = borderWidth,
                     color = borderColor,
                     shape = RoundedCornerShape(12.dp)
+                )
+                .then(
+                    if (isCinemaTheme) {
+                        Modifier.cinemaFilmStrip(enabled = true)
+                    } else {
+                        Modifier
+                    }
                 ),
         ) {
             // Inner content
@@ -92,7 +100,7 @@ fun ThemePreviewCard(
                     .padding(if (isSelected) 3.dp else 1.dp)
                     .clip(RoundedCornerShape(if (isSelected) 9.dp else 11.dp))
                     .background(colorScheme.background)
-                    .padding(8.dp),
+                    .padding(horizontal = 8.dp, vertical = if (isCinemaTheme) 12.dp else 8.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 // Top bar simulation
@@ -104,7 +112,7 @@ fun ThemePreviewCard(
                         .background(colorScheme.surfaceVariant)
                 )
 
-                // Middle section - card with toggle
+                // Middle section - card with toggle or cinema film reel
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -112,27 +120,38 @@ fun ThemePreviewCard(
                     color = colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(6.dp),
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        // Toggle representation
+                    if (isCinemaTheme) {
                         Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CinemaFilmReelIcon(
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    } else {
+                        Row(
                             modifier = Modifier
-                                .size(width = 24.dp, height = 12.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(colorScheme.primary)
-                        )
-                        // Accent indicator
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(colorScheme.tertiary)
-                        )
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            // Toggle representation
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 24.dp, height = 12.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(colorScheme.primary)
+                            )
+                            // Accent indicator
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(colorScheme.tertiary)
+                            )
+                        }
                     }
                 }
 

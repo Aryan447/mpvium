@@ -35,6 +35,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
+import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.LocalAppTheme
+import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -45,6 +48,8 @@ fun MoviePosterCard(
   modifier: Modifier = Modifier,
   cardWidth: Dp = 140.dp,
 ) {
+  val isCinema = LocalAppTheme.current == AppTheme.Cinema
+
   Column(
     modifier = modifier
       .width(cardWidth)
@@ -57,7 +62,8 @@ fun MoviePosterCard(
         .fillMaxWidth()
         .aspectRatio(2f / 3f)
         .clip(RoundedCornerShape(14.dp))
-        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier),
     ) {
       StreamingImage(
         url = movie.posterUrl,

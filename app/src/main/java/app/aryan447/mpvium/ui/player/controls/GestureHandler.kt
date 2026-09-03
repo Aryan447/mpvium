@@ -807,11 +807,11 @@ fun GestureHandler(
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
           val startPosition = down.position
-          val startTime = System.currentTimeMillis()
 
           var gestureType: String? = null
           var hasStartedSeeking = false
           var initialVideoPosition = 0f
+          var lastClampedPosition = 0f
           var wasPlayerAlreadyPaused = false
           // Use the sensitivity preference instead of hardcoded value
           val seekSensitivity = horizontalSwipeSensitivity
@@ -826,14 +826,11 @@ fun GestureHandler(
                   val currentPosition = change.position
                   val deltaX = currentPosition.x - startPosition.x
                   val deltaY = currentPosition.y - startPosition.y
-                  val timeSinceStart = System.currentTimeMillis() - startTime
 
-                  // Only activate if this is clearly a horizontal gesture
-                  // and not conflicting with other gestures
+                  // Activate horizontally responsive gesture immediately upon swipe threshold
                   if (gestureType == null &&
-                      abs(deltaX) > 30f &&
-                      abs(deltaX) > abs(deltaY) * 2f && // Must be strongly horizontal
-                      timeSinceStart > 100L && // Avoid conflicts with double-tap
+                      abs(deltaX) > 18f &&
+                      abs(deltaX) > abs(deltaY) * 1.25f && // Must be horizontal
                       !isLongPressing && // Don't conflict with long press
                       !isDynamicSpeedControlActive && // Don't conflict with speed control
                       panelShown == Panels.None) { // Only when no panels are shown
@@ -859,10 +856,10 @@ fun GestureHandler(
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
                     val maxDuration = duration?.toFloat() ?: 0f
                     val clampedPosition = targetPosition.coerceAtMost(maxDuration)
+                    lastClampedPosition = clampedPosition
 
-                    // Use the same seeking mechanism as seekbar scrubbing
-                    // This will update the seekbar position and provide live preview
-                    viewModel.seekTo(clampedPosition.toInt())
+                    // Fast keyframe seek during active drag for fluid 60fps preview updates
+                    viewModel.seekTo(clampedPosition.toInt(), isScrubbing = true)
 
                     // Format and display time position updates
                     val currentPos = clampedPosition.toInt()
@@ -898,8 +895,10 @@ fun GestureHandler(
             }
           } while (event.changes.any { it.pressed })
 
-          // Apply the final seek when gesture ends
+          // Apply the final exact seek when gesture ends
           if (hasStartedSeeking) {
+            viewModel.seekTo(lastClampedPosition.toInt(), isScrubbing = false)
+
             // Unpause if it wasn't paused before seeking
             if (!wasPlayerAlreadyPaused) {
               viewModel.unpause()

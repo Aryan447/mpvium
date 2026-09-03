@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.LocalAppTheme
+import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 
 @Composable
 fun SeriesPosterCard(
@@ -71,6 +74,8 @@ private fun SeriesPosterCard(
   modifier: Modifier = Modifier,
   cardWidth: Dp = 140.dp,
 ) {
+  val isCinema = LocalAppTheme.current == AppTheme.Cinema
+
   Column(
     modifier = modifier
       .width(cardWidth)
@@ -83,7 +88,8 @@ private fun SeriesPosterCard(
         .fillMaxWidth()
         .aspectRatio(2f / 3f)
         .clip(RoundedCornerShape(14.dp))
-        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier),
     ) {
       image()
 
