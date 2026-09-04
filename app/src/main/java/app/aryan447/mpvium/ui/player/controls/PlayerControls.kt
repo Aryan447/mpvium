@@ -87,6 +87,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import kotlin.math.roundToInt
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
@@ -782,7 +783,7 @@ fun PlayerControls(
               }
               isSeeking = true
               resetControlsTimestamp = System.currentTimeMillis()
-              viewModel.seekTo(it.toInt(), isScrubbing = true)
+              viewModel.seekTo(it.roundToInt(), isScrubbing = true)
             },
             onValueChangeFinished = { finalPosition ->
               isSeeking = false
@@ -790,7 +791,9 @@ fun PlayerControls(
               // Seek to the slider's final value, not the polled position:
               // mpv applies scrub seeks asynchronously, so the poll is stale
               // right after a fast drag and would snap playback backwards.
-              viewModel.seekTo(finalPosition.toInt(), isScrubbing = false)
+              // roundToInt (not toInt): truncation biases up to ~1s backwards,
+              // most visible on wide tracks with a coarse pixel-to-time ratio.
+              viewModel.seekTo(finalPosition.roundToInt(), isScrubbing = false)
               // Unpause if it wasn't paused before seeking
               if (!wasPlayerAlreadyPaused) {
                 viewModel.unpause()

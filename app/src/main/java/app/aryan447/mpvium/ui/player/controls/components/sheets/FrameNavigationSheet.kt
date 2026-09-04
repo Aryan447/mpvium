@@ -66,6 +66,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun FrameNavigationSheet(
@@ -286,12 +287,12 @@ private fun FrameNavigationCard(
             if (!isSeeking) isSeeking = true
             userSliderPosition = newValue.coerceIn(0f, 1f)
             // Optional live-seek for responsiveness
-            val newPosition = (userSliderPosition * duration).toInt()
+            val newPosition = (userSliderPosition * duration).roundToInt()
             onSeekTo(newPosition, false)
           },
           onValueChangeFinished = {
             // Commit final seek and return control to player updates
-            val finalPosition = (userSliderPosition * duration).toInt()
+            val finalPosition = (userSliderPosition * duration).roundToInt()
             onSeekTo(finalPosition, true)
             isSeeking = false
           },

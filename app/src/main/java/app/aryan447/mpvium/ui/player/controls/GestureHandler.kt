@@ -996,7 +996,7 @@ fun GestureHandler(
 
           // Apply the final exact seek when gesture ends
           if (hasStartedSeeking) {
-            viewModel.seekTo(lastClampedPosition.toInt(), isScrubbing = false)
+            viewModel.seekTo(lastClampedPosition.roundToInt(), isScrubbing = false)
 
             // Unpause if it wasn't paused before seeking
             if (!wasPlayerAlreadyPaused) {

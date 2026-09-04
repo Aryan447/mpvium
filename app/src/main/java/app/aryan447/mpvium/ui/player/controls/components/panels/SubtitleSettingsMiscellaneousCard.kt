@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import app.aryan447.mpvium.preferences.preference.collectAsState as collectPreferenceAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -101,7 +102,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
             )
           },
         )
-        val persistSubPos by preferences.persistSubPos.collectAsState()
+        val persistSubPos by preferences.persistSubPos.collectPreferenceAsState()
         SliderItem(
           label = stringResource(R.string.player_sheets_sub_position),
           value = subPos ?: preferences.subPos.get(),
