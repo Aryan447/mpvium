@@ -21,12 +21,13 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Colors specifically tailored for the Cinema Theme & Cinema Film Reel aesthetics.
+ * Marquee theater grade: glowing gold, neon marquee red, velvet near-black.
  */
-val CinemaGold = Color(0xFFE5C158)
-val CinemaRed = Color(0xFFE53935)
-val CinemaDarkBackground = Color(0xFF140D0F)
-val FilmStripMarginColor = Color(0xFF0C0708)
-val SprocketHoleColor = Color(0xFF221618)
+val CinemaGold = Color(0xFFFFD27A)
+val CinemaRed = Color(0xFFFF5147)
+val CinemaDarkBackground = Color(0xFF0F0607)
+val FilmStripMarginColor = Color(0xFF080304)
+val SprocketHoleColor = Color(0xFF2A1214)
 
 /**
  * Modifier that draws cinema 35mm film perforations (sprocket holes) along top & bottom edges.
