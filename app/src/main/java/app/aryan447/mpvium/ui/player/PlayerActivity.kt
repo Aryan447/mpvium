@@ -1945,7 +1945,9 @@ class PlayerActivity :
     MPVLib.setPropertyString("sub-use-margins", scaleValue)
 
     MPVLib.setPropertyFloat("sub-scale", subtitlesPreferences.subScale.get())
-    MPVLib.setPropertyInt("sub-pos", subtitlesPreferences.subPos.get())
+    val subPos = subtitlesPreferences.subPos.get()
+    MPVLib.setPropertyInt("sub-pos", subPos)
+    MPVLib.setPropertyInt("secondary-sub-pos", (subPos - 10).coerceIn(0, 110))
 
     Log.d(TAG, "Applied subtitle preferences")
   }

@@ -82,6 +82,17 @@ import kotlin.math.sqrt
  */
 private const val SubtitleBandTopFraction = 0.65f
 
+private fun isSubtitleTouch(
+  y: Float,
+  containerHeight: Float,
+  currentSubPos: Int,
+): Boolean {
+  if (containerHeight <= 0f) return false
+  val yFraction = y / containerHeight
+  val subPosFraction = currentSubPos / 100f
+  return yFraction >= SubtitleBandTopFraction || kotlin.math.abs(yFraction - subPosFraction) <= 0.15f
+}
+
 @Suppress("CyclomaticComplexMethod", "MultipleEmitters")
 @Composable
 fun GestureHandler(
@@ -147,7 +158,7 @@ fun GestureHandler(
   var lastTapRegion by remember { mutableStateOf<String?>(null) }
   var pendingSingleTapRegion by remember { mutableStateOf<String?>(null) }
   var pendingSingleTapPosition by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-  val doubleTapTimeout = 250L
+  val doubleTapTimeout = 300L
   val multiTapContinueWindow = 650L
 
   // Multi-tap seeking state
@@ -197,7 +208,7 @@ fun GestureHandler(
   Box(
     modifier = modifier
       .fillMaxSize()
-      .padding(horizontal = 48.dp, vertical = 48.dp)
+      .padding(horizontal = 48.dp, vertical = 0.dp)
       .pointerInput(areControlsLocked, doubleTapSeekAreaWidth, gesturePreferences, isVerticalGestureActive) {
         // Isolated double-tap detection that doesn't interfere with other gestures
         if (isVerticalGestureActive) return@pointerInput
@@ -252,11 +263,16 @@ fun GestureHandler(
                   tapCount >= 2 &&
                   isDoubleTapSeeking
 
+                val currentSubPos = MPVLib.getPropertyInt("sub-pos") ?: 100
+                val isSubTap = isSubtitleTouch(downPosition.y, size.height.toFloat(), currentSubPos)
+                val isPrevSubTap = isSubtitleTouch(lastTapPosition.y, size.height.toFloat(), currentSubPos)
+                val isDoubleTapOnSubtitle = isSubTap && isPrevSubTap && positionChange < 150f
+
                 // Check if this is a valid double-tap
                 val isDoubleTap =
                   timeSinceLastTap < doubleTapTimeout &&
-                  lastTapRegion == region &&
-                  positionChange < 100f &&
+                  (lastTapRegion == region || isDoubleTapOnSubtitle) &&
+                  (positionChange < 100f || isDoubleTapOnSubtitle) &&
                   tapCount == 1
 
                 if (isDoubleTap && !areControlsLocked) {
@@ -269,40 +285,40 @@ fun GestureHandler(
                   wasConsumedByTapGesture = true
                   pointer.consume()
 
-                  when (region) {
-                    "right" -> {
-                      val rightGesture = gesturePreferences.rightSingleActionGesture.get()
-                      if (rightGesture == SingleActionGesture.Seek) {
-                        isDoubleTapSeeking = true
-                        lastSeekRegion = "right"
-                        lastSeekTime = System.currentTimeMillis()
-                        if (!isSeekingForwards) viewModel.updateSeekAmount(0)
-                      }
-                      viewModel.handleRightDoubleTap()
+                  if (isSubTap) {
+                    val actualSubPos = 100
+                    MPVLib.setPropertyInt("sub-pos", actualSubPos)
+                    MPVLib.setPropertyInt("secondary-sub-pos", (actualSubPos - 10).coerceIn(0, 110))
+                    if (subtitlesPreferences.persistSubPos.get()) {
+                      subtitlesPreferences.subPos.set(actualSubPos)
                     }
-                    "left" -> {
-                      val leftGesture = gesturePreferences.leftSingleActionGesture.get()
-                      if (leftGesture == SingleActionGesture.Seek) {
-                        isDoubleTapSeeking = true
-                        lastSeekRegion = "left"
-                        lastSeekTime = System.currentTimeMillis()
-                        if (isSeekingForwards) viewModel.updateSeekAmount(0)
-                      }
-                      viewModel.handleLeftDoubleTap()
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.playerUpdate.update {
+                      PlayerUpdates.SubtitlePosition(actualSubPos, isReset = true)
                     }
-                    "center" -> {
-                      // Double-tap on a moved subtitle snaps it back to the
-                      // saved position; otherwise keep the normal behavior.
-                      val defaultSubPos = subtitlesPreferences.subPos.get()
-                      val currentSubPos = MPVLib.getPropertyInt("sub-pos") ?: defaultSubPos
-                      if (downPosition.y > size.height * SubtitleBandTopFraction &&
-                        currentSubPos != defaultSubPos
-                      ) {
-                        MPVLib.setPropertyInt("sub-pos", defaultSubPos)
-                        MPVLib.setPropertyInt("secondary-sub-pos", (defaultSubPos - 10).coerceIn(0, 100))
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.playerUpdate.update { PlayerUpdates.ShowText("Subtitles: $defaultSubPos") }
-                      } else {
+                  } else {
+                    when (region) {
+                      "right" -> {
+                        val rightGesture = gesturePreferences.rightSingleActionGesture.get()
+                        if (rightGesture == SingleActionGesture.Seek) {
+                          isDoubleTapSeeking = true
+                          lastSeekRegion = "right"
+                          lastSeekTime = System.currentTimeMillis()
+                          if (!isSeekingForwards) viewModel.updateSeekAmount(0)
+                        }
+                        viewModel.handleRightDoubleTap()
+                      }
+                      "left" -> {
+                        val leftGesture = gesturePreferences.leftSingleActionGesture.get()
+                        if (leftGesture == SingleActionGesture.Seek) {
+                          isDoubleTapSeeking = true
+                          lastSeekRegion = "left"
+                          lastSeekTime = System.currentTimeMillis()
+                          if (isSeekingForwards) viewModel.updateSeekAmount(0)
+                        }
+                        viewModel.handleLeftDoubleTap()
+                      }
+                      "center" -> {
                         viewModel.handleCenterDoubleTap()
                       }
                     }
@@ -397,16 +413,17 @@ fun GestureHandler(
               (down.position.x - startPosition.x) * (down.position.x - startPosition.x) +
               (down.position.y - startPosition.y) * (down.position.y - startPosition.y)
             )
+            val currentSubPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
             // Hold without moving in the subtitle band starts subtitle drag mode
-            if (distance < 10f && startPosition.y > gestureAreaHeight * SubtitleBandTopFraction) {
+            if (distance < 10f && isSubtitleTouch(startPosition.y, gestureAreaHeight, currentSubPos)) {
               longPressTriggered = true
               isLongPressing = true
               longPressTriggeredDuringTouch = true
               subtitleDragActive = true
               haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-              subtitleDragStartSubPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+              subtitleDragStartSubPos = currentSubPos
               lastSubtitlePos = subtitleDragStartSubPos
-              viewModel.playerUpdate.update { PlayerUpdates.ShowText("Subtitles: $lastSubtitlePos") }
+              viewModel.playerUpdate.update { PlayerUpdates.SubtitlePosition(lastSubtitlePos) }
             } else if (distance < 10f && paused == false && multipleSpeedGesture > 0f) {
                 longPressTriggered = true
                 speedHoldActive = true
@@ -453,12 +470,12 @@ fun GestureHandler(
                   // them up). Horizontal drift is ignored.
                   if (subtitleDragActive) {
                     val dragOffset = (change.position.y - startPosition.y) / gestureAreaHeight * 100f
-                    val newPos = (subtitleDragStartSubPos + dragOffset).roundToInt().coerceIn(0, 100)
+                    val newPos = (subtitleDragStartSubPos + dragOffset).roundToInt().coerceIn(0, 110)
                     if (newPos != lastSubtitlePos) {
                       lastSubtitlePos = newPos
                       MPVLib.setPropertyInt("sub-pos", newPos)
-                      MPVLib.setPropertyInt("secondary-sub-pos", (newPos - 10).coerceIn(0, 100))
-                      viewModel.playerUpdate.update { PlayerUpdates.ShowText("Subtitles: $newPos") }
+                      MPVLib.setPropertyInt("secondary-sub-pos", (newPos - 10).coerceIn(0, 110))
+                      viewModel.playerUpdate.update { PlayerUpdates.SubtitlePosition(newPos) }
                     }
                     change.consume()
                     return@forEach
@@ -637,6 +654,9 @@ fun GestureHandler(
             } else if (pointerCount > 1) {
               // Multi-finger gesture detected
               longPressJob.cancel()
+              if (subtitleDragActive && subtitlesPreferences.persistSubPos.get()) {
+                subtitlesPreferences.subPos.set(lastSubtitlePos)
+              }
               subtitleDragActive = false
               if (gestureType != null) {
                 when (gestureType) {
@@ -660,6 +680,9 @@ fun GestureHandler(
           longPressJob.cancel()
 
           // Subtitle drag ended: the new position sticks, the pill auto-clears
+          if (subtitleDragActive && subtitlesPreferences.persistSubPos.get()) {
+            subtitlesPreferences.subPos.set(lastSubtitlePos)
+          }
           subtitleDragActive = false
 
           if (isLongPressing) {
