@@ -332,6 +332,8 @@ fun PlayerControls(
         val mpvVolume by MPVLib.propInt["volume"].collectAsState()
         val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
         val reduceMotion by playerPreferences.reduceMotion.collectAsState()
+        // Volume/brightness bars mirror the seekbar style
+        val sliderStyle by appearancePreferences.seekbarStyle.collectAsState()
 
         val activity = LocalActivity.current as PlayerActivity
         val aspect by viewModel.videoAspect.collectAsState()
@@ -396,7 +398,7 @@ fun PlayerControls(
               top.linkTo(parent.top, spacing.larger)
               bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
             },
-        ) { BrightnessSlider(brightness, 0f..1f) }
+        ) { BrightnessSlider(brightness, 0f..1f, seekbarStyle = sliderStyle) }
 
         AnimatedVisibility(
           isVolumeSliderShown,
@@ -441,6 +443,7 @@ fun PlayerControls(
             range = 0..viewModel.maxVolume,
             boostRange = if (showBoost) 0..effBoostCap else null,
             displayAsPercentage = displayVolumeAsPercentage,
+            seekbarStyle = sliderStyle,
           )
         }
 
