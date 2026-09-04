@@ -29,7 +29,6 @@ import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
-import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.TextFieldPreference
 import org.koin.compose.koinInject
 
@@ -92,7 +91,7 @@ object AudioPreferencesScreen : Screen {
 
           PreferenceDivider()
           val audioPitchCorrection by preferences.audioPitchCorrection.collectAsState()
-          SwitchPreference(
+          HapticSwitchPreference(
             value = audioPitchCorrection,
             onValueChange = { preferences.audioPitchCorrection.set(it) },
             title = { Text(stringResource(R.string.pref_audio_pitch_correction_title)) },
@@ -106,7 +105,7 @@ object AudioPreferencesScreen : Screen {
 
           PreferenceDivider()
           val volumeNormalization by preferences.volumeNormalization.collectAsState()
-          SwitchPreference(
+          HapticSwitchPreference(
             value = volumeNormalization,
             onValueChange = { preferences.volumeNormalization.set(it) },
             title = { Text(stringResource(R.string.pref_audio_volume_normalization_title)) },
@@ -120,7 +119,7 @@ object AudioPreferencesScreen : Screen {
 
           PreferenceDivider()
           val automaticBackgroundPlayback by preferences.automaticBackgroundPlayback.collectAsState()
-          SwitchPreference(
+          HapticSwitchPreference(
             value = automaticBackgroundPlayback,
             onValueChange = { preferences.automaticBackgroundPlayback.set(it) },
             title = { Text(stringResource(R.string.background_playback_title)) },

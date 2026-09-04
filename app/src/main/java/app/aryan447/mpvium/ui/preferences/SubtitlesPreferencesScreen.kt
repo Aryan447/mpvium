@@ -65,7 +65,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.TextFieldPreference
 import org.koin.compose.koinInject
 
@@ -195,7 +194,7 @@ object SubtitlesPreferencesScreen : Screen {
               PreferenceDivider()
 
               val autoload by preferences.autoloadMatchingSubtitles.collectAsState()
-              SwitchPreference(
+              HapticSwitchPreference(
                 value = autoload,
                 onValueChange = { preferences.autoloadMatchingSubtitles.set(it) },
                 title = { Text(stringResource(R.string.pref_subtitles_autoload_title)) },
@@ -210,7 +209,7 @@ object SubtitlesPreferencesScreen : Screen {
               PreferenceDivider()
 
               val overrideAss by preferences.overrideAssSubs.collectAsState()
-              SwitchPreference(
+              HapticSwitchPreference(
                 value = overrideAss,
                 onValueChange = { preferences.overrideAssSubs.set(it) },
                 title = { Text(stringResource(R.string.player_sheets_sub_override_ass)) },
@@ -225,7 +224,7 @@ object SubtitlesPreferencesScreen : Screen {
               PreferenceDivider()
 
               val scaleByWindow by preferences.scaleByWindow.collectAsState()
-              SwitchPreference(
+              HapticSwitchPreference(
                 value = scaleByWindow,
                 onValueChange = { preferences.scaleByWindow.set(it) },
                 title = { Text(stringResource(R.string.player_sheets_sub_scale_by_window)) },
@@ -437,7 +436,7 @@ object SubtitlesPreferencesScreen : Screen {
 
                 if (showAdvanced) {
                   Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SwitchPreference(
+                    HapticSwitchPreference(
                       value = wyzieHearingImpaired,
                       onValueChange = { preferences.wyzieHearingImpaired.set(it) },
                       title = { Text("Hearing-impaired friendly") },
