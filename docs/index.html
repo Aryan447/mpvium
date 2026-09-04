@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cinema">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mpvium — Sane defaults, pro-level control</title>
+<meta name="description" content="mpvium — sane defaults, pro-level control. Opinionated for everyday watching, fully customizable for pros. Android video player powered by mpv.">
+<link rel="icon" type="image/png" href="icon.png">
+<style>
+  :root, html[data-theme="cinema"] {
+    --bg: #0F0607; --surface: #1A0E10; --surface2: #241114;
+    --primary: #FFD27A; --secondary: #FF5147; --tertiary: #FFB64D;
+    --text: #F5EBDD; --muted: #B9A493; --border: #3A2428;
+  }
+  html[data-theme="default"] {
+    --bg: #161217; --surface: #221C24; --surface2: #2C2430;
+    --primary: #E8B5EF; --secondary: #D6C0D6; --tertiary: #F5B7B0;
+    --text: #F2ECF3; --muted: #B4A8B8; --border: #3D3342;
+  }
+  html[data-theme="dynamic"] {
+    --bg: #1C1B1F; --surface: #26242B; --surface2: #2F2C37;
+    --primary: #D0BCFF; --secondary: #CCC2DC; --tertiary: #EFB8C8;
+    --text: #EFEAF4; --muted: #B3AEBD; --border: #3E3A48;
+  }
+  html[data-theme="noir"] {
+    --bg: #0A0B0D; --surface: #131518; --surface2: #1B1E23;
+    --primary: #E6E1D5; --secondary: #9AA3AB; --tertiary: #D9A940;
+    --text: #ECE8DE; --muted: #9B978C; --border: #2A2D33;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.6; transition: background .4s, color .4s;
+  }
+  .wrap { max-width: 1024px; margin: 0 auto; padding: 0 20px; }
+  header.hero {
+    text-align: center; padding: 72px 20px 40px; position: relative; overflow: hidden;
+    background: radial-gradient(700px 320px at 50% -60px, var(--primary) 0%, transparent 60%);
+  }
+  header.hero::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 14px;
+    background:
+      repeating-linear-gradient(90deg, var(--bg) 0 10px, transparent 10px 20px),
+      var(--surface2);
+    border-bottom: 1px solid var(--tertiary);
+    opacity: .9;
+  }
+  .badge {
+    display: inline-block; font-size: 13px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 999px; padding: 4px 14px; margin-bottom: 18px;
+    background: var(--surface);
+  }
+  h1 { font-size: clamp(44px, 8vw, 84px); letter-spacing: -2px; line-height: 1; }
+  h1 span { color: var(--primary); }
+  .tagline { font-size: clamp(19px, 3.4vw, 27px); font-weight: 700; margin-top: 14px; color: var(--primary); }
+  .sub { color: var(--muted); max-width: 620px; margin: 12px auto 0; font-size: 16px; }
+  .dl-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+  .btn {
+    display: inline-block; text-decoration: none; font-weight: 700; font-size: 16px;
+    padding: 14px 28px; border-radius: 999px; border: 1px solid transparent; cursor: pointer;
+  }
+  .btn-primary { background: var(--primary); color: #1A1206; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover { border-color: var(--primary); }
+  .ver { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .hero img {
+    margin-top: 32px; max-width: 720px; width: 100%; border-radius: 12px;
+    border: 1px solid var(--border); box-shadow: 0 24px 80px -20px rgba(0,0,0,.7);
+  }
+  .strip {
+    height: 14px; margin: 40px 0 0;
+    background: repeating-linear-gradient(90deg, var(--bg) 0 10px, transparent 10px 20px), var(--surface2);
+    border-top: 1px solid var(--tertiary); border-bottom: 1px solid var(--tertiary);
+  }
+  section { padding: 56px 0 8px; }
+  h2 { font-size: 28px; letter-spacing: -.5px; margin-bottom: 6px; }
+  h2 span { color: var(--primary); }
+  .sec-sub { color: var(--muted); margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+  }
+  .card h3 { font-size: 16px; margin: 10px 0 4px; color: var(--primary); }
+  .card p { font-size: 14px; color: var(--muted); }
+  .card svg { width: 26px; height: 26px; stroke: var(--tertiary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .themes { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .theme-btn {
+    font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 999px; padding: 8px 18px;
+  }
+  .theme-btn[aria-pressed="true"] { background: var(--primary); color: #1A1206; border-color: var(--primary); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .sw { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+  .sw-top { height: 86px; }
+  .sw-body { background: var(--surface); padding: 12px 14px; }
+  .sw-body b { font-size: 15px; }
+  .sw-body code { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  footer { text-align: center; color: var(--muted); font-size: 14px; padding: 48px 20px 56px; }
+  footer a { color: var(--primary); }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="badge">Free &amp; open source &middot; Apache-2.0 &middot; powered by mpv</div>
+    <h1>mpv<span>ium</span></h1>
+    <p class="tagline">Sane defaults, pro-level control.</p>
+    <p class="sub">Opinionated for everyday watching, fully customizable for pros — mpv power without the config-file homework. Material 3 interface, background playback, picture-in-picture.</p>
+    <div class="dl-row">
+      <a class="btn btn-primary" id="dl-stable" href="https://github.com/aryan447/mpvium/releases/latest">Download Stable (arm64-v8a)</a>
+      <a class="btn btn-ghost" id="dl-preview" href="https://github.com/aryan447/mpvium/releases">Download Preview (arm64-v8a)</a>
+    </div>
+    <p class="ver" id="dl-meta">Resolving latest versions…</p>
+    <img src="player.png" alt="mpvium player screenshot">
+  </div>
+</header>
+<div class="strip"></div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Features<span>.</span></h2>
+    <p class="sec-sub">Everything you need up front, nothing in your way.</p>
+    <div class="grid">
+      <div class="card"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg><h3>Modern Material 3 UI</h3><p>Expressive light &amp; dark themes, intuitive browsing.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2"/><circle cx="15" cy="16" r="2"/></svg><h3>Advanced Config</h3><p>Full mpv.conf, input.conf and Lua script support.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><rect x="13" y="16" width="8" height="5" rx="1"/></svg><h3>Picture-in-Picture</h3><p>Keep watching while you multitask.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M6 10v9h12v-9"/></svg><h3>Background Playback</h3><p>Audio-only mode for music and podcasts.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.5 5.5a9 9 0 000 13M18.5 5.5a9 9 0 010 13"/></svg><h3>Network Streaming</h3><p>Open URLs plus SMB, FTP and WebDAV.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 12h4M7 15h7"/></svg><h3>Subtitles &amp; Audio</h3><p>External tracks, online search, fine-tuned delay.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><h3>File Management</h3><p>Folder &amp; tree views, playlists, history, resume.</p></div>
+      <div class="card"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><h3>Private &amp; Ad-Free</h3><p>No trackers, no ads, no unnecessary permissions.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="themes">
+  <div class="wrap">
+    <h2>Themes<span>.</span></h2>
+    <p class="sec-sub">Four grades. Tap one — this whole page re-skins like the app.</p>
+    <div class="themes" role="group" aria-label="Theme switcher">
+      <button class="theme-btn" data-set-theme="default" aria-pressed="false">Default</button>
+      <button class="theme-btn" data-set-theme="dynamic" aria-pressed="false">Dynamic</button>
+      <button class="theme-btn" data-set-theme="cinema" aria-pressed="true">Cinema</button>
+      <button class="theme-btn" data-set-theme="noir" aria-pressed="false">Noir Cinema</button>
+    </div>
+    <div class="swatches">
+      <div class="sw"><div class="sw-top" style="background:#161217"></div><div class="sw-body"><b>Default</b><code>primary #E8B5EF · bg #161217</code></div></div>
+      <div class="sw"><div class="sw-top" style="background:#1C1B1F"></div><div class="sw-body"><b>Dynamic</b><code>primary #D0BCFF · bg #1C1B1F</code></div></div>
+      <div class="sw"><div class="sw-top" style="background:#0F0607"></div><div class="sw-body"><b>Cinema</b><code>primary #FFD27A · bg #0F0607</code></div></div>
+      <div class="sw"><div class="sw-top" style="background:#0A0B0D"></div><div class="sw-body"><b>Noir Cinema</b><code>primary #E6E1D5 · bg #0A0B0D</code></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>mpvium · <a href="https://github.com/aryan447/mpvium">GitHub</a> · <a href="https://github.com/aryan447/mpvium/releases">Releases</a> · Apache-2.0</p>
+    <p>Stable and preview APKs are arm64-v8a. Other ABIs on the releases page.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var repo = "aryan447/mpvium";
+  var stableBtn = document.getElementById("dl-stable");
+  var previewBtn = document.getElementById("dl-preview");
+  var meta = document.getElementById("dl-meta");
+
+  function arm64Apk(assets) {
+    if (!assets) return null;
+    for (var i = 0; i < assets.length; i++) {
+      var n = assets[i].name || "";
+      if (n.indexOf("arm64-v8a") !== -1 && n.slice(-4) === ".apk") return assets[i];
+    }
+    return null;
+  }
+
+  function setBtn(btn, asset, fallbackLabel) {
+    if (asset) {
+      btn.href = asset.browser_download_url;
+      btn.setAttribute("download", asset.name);
+      return asset.name;
+    }
+    btn.textContent = fallbackLabel;
+    return null;
+  }
+
+  Promise.all([
+    fetch("https://api.github.com/repos/" + repo + "/releases/latest").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+    fetch("https://api.github.com/repos/" + repo + "/releases?per_page=20").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+  ]).then(function (res) {
+    var stable = res[0], list = res[1], sName = null, pName = null;
+    if (stable) {
+      var a = arm64Apk(stable.assets);
+      sName = setBtn(stableBtn, a, "Download Stable (releases page)");
+      if (a) stableBtn.textContent = "Download Stable " + stable.tag_name + " (arm64-v8a)";
+    }
+    if (list) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].prerelease) {
+          var pa = arm64Apk(list[i].assets);
+          if (pa) {
+            pName = setBtn(previewBtn, pa, "Download Preview (releases page)");
+            previewBtn.textContent = "Download Preview " + list[i].tag_name + " (arm64-v8a)";
+            break;
+          }
+        }
+      }
+    }
+    meta.textContent = (sName ? "Stable: " + sName : "Stable: see releases page") + " · " + (pName ? "Preview: " + pName : "Preview: see pre-releases");
+  }).catch(function () {
+    meta.textContent = "See the releases page for all APKs and checksums.";
+  });
+
+  var btns = document.querySelectorAll("[data-set-theme]");
+  btns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.documentElement.setAttribute("data-theme", b.getAttribute("data-set-theme"));
+      btns.forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    });
+  });
+})();
+</script>
+</body>
+</html>
