@@ -38,6 +38,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +80,7 @@ fun PlaybackSpeedSheet(
   modifier: Modifier = Modifier,
 ) {
   PlayerSheet(onDismissRequest = onDismissRequest) {
+    val haptic = LocalHapticFeedback.current
     Column(
       modifier
         .verticalScroll(rememberScrollState())
@@ -191,7 +194,10 @@ fun PlaybackSpeedSheet(
 
               FilterChip(
                 selected = kotlin.math.abs(presetSpeed - speed) < 0.01f,
-                onClick = { onSpeedChange(presetSpeed) },
+                onClick = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  onSpeedChange(presetSpeed)
+                },
                 label = { Text("${presetSpeed.toFixed(2)}") },
                 leadingIcon = null,
                 colors = if (!isDefault) {
