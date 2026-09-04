@@ -1,11 +1,16 @@
 package app.aryan447.mpvium.ui.player.controls.components.sheets
 
+import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -13,12 +18,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.presentation.components.PlayerSheet
 import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.utils.media.MediaInfoParser
@@ -55,8 +63,70 @@ fun OnlineSubtitleSearchSheet(
   isFetchingEpisodes: Boolean = false,
   selectedEpisode: app.aryan447.mpvium.repository.wyzie.WyzieEpisode? = null,
   onSelectEpisode: (app.aryan447.mpvium.repository.wyzie.WyzieEpisode) -> Unit = {},
-  onClearMediaSelection: () -> Unit = {}
+   onClearMediaSelection: () -> Unit = {}
 ) {
+  // Two panes side by side on wide (landscape) screens: series/movie titles
+  // on the left, downloadable subtitle results on the right. Narrow screens
+  // keep the existing stacked layout below.
+  val configuration = LocalConfiguration.current
+  val twoPane = configuration.orientation == ORIENTATION_LANDSCAPE &&
+    configuration.screenWidthDp >= 700
+
+  val keyboardController = LocalSoftwareKeyboardController.current
+  val mediaInfo = remember(mediaTitle) { MediaInfoParser.parse(mediaTitle) }
+  var searchQuery by remember { mutableStateOf(mediaInfo.title) }
+
+  // Build the detected info string for display
+  val detectedInfo = remember(mediaInfo) {
+    buildString {
+      append(mediaInfo.title)
+      if (mediaInfo.season != null || mediaInfo.episode != null) {
+        append(" • ")
+        if (mediaInfo.season != null) append("S${String.format("%02d", mediaInfo.season)}")
+        if (mediaInfo.episode != null) append("E${String.format("%02d", mediaInfo.episode)}")
+      }
+      mediaInfo.year?.let { append(" ($it)") }
+    }
+  }
+
+  // Auto-trigger search on open
+  LaunchedEffect(mediaInfo) {
+    if (mediaInfo.title.isNotBlank()) {
+      onSearchMedia(mediaInfo.title)
+    }
+  }
+
+  if (twoPane) {
+    TwoPaneSubtitleSearch(
+      detectedInfo = detectedInfo,
+      searchQuery = searchQuery,
+      onSearchQueryChange = { searchQuery = it },
+      mediaInfoTitle = mediaInfo.title,
+      isSearching = isSearching,
+      isDownloading = isDownloading,
+      isSearchingMedia = isSearchingMedia,
+      searchResults = searchResults,
+      isOnlineSectionExpanded = isOnlineSectionExpanded,
+      onToggleOnlineSection = onToggleOnlineSection,
+      onDownloadOnline = onDownloadOnline,
+      mediaSearchResults = mediaSearchResults,
+      selectedTvShow = selectedTvShow,
+      isFetchingTvDetails = isFetchingTvDetails,
+      selectedSeason = selectedSeason,
+      onSelectSeason = onSelectSeason,
+      seasonEpisodes = seasonEpisodes,
+      isFetchingEpisodes = isFetchingEpisodes,
+      selectedEpisode = selectedEpisode,
+      onSelectEpisode = onSelectEpisode,
+      onClearMediaSelection = onClearMediaSelection,
+      onSearchMedia = onSearchMedia,
+      onSelectMedia = onSelectMedia,
+      onDismissRequest = onDismissRequest,
+      modifier = modifier,
+    )
+    return
+  }
+
   val items = remember(searchResults, isSearching, isOnlineSectionExpanded) {
     val list = mutableListOf<OnlineSubtitleItem>()
 
@@ -75,114 +145,24 @@ fun OnlineSubtitleSearchSheet(
     tracks = items,
     onDismissRequest = onDismissRequest,
     header = {
-      val keyboardController = LocalSoftwareKeyboardController.current
-      val mediaInfo = remember(mediaTitle) { MediaInfoParser.parse(mediaTitle) }
-      var searchQuery by remember { mutableStateOf(mediaInfo.title) }
-
-      // Build the detected info string for display
-      val detectedInfo = remember(mediaInfo) {
-        buildString {
-          append(mediaInfo.title)
-          if (mediaInfo.season != null || mediaInfo.episode != null) {
-            append(" • ")
-            if (mediaInfo.season != null) append("S${String.format("%02d", mediaInfo.season)}")
-            if (mediaInfo.episode != null) append("E${String.format("%02d", mediaInfo.episode)}")
-          }
-          mediaInfo.year?.let { append(" ($it)") }
-        }
-      }
-
-      // Auto-trigger search on open
-      LaunchedEffect(mediaInfo) {
-        if (mediaInfo.title.isNotBlank()) {
-          onSearchMedia(mediaInfo.title)
-        }
-      }
-
       Column(
         modifier = Modifier.padding(top = MaterialTheme.spacing.medium)
       ) {
         // Detected info chip
-        if (detectedInfo.isNotBlank() && mediaInfo.title.isNotBlank()) {
-          Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(horizontal = MaterialTheme.spacing.medium)
-              .padding(bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Icon(
-              Icons.Default.AutoFixHigh,
-              contentDescription = null,
-              modifier = Modifier.size(14.dp),
-              tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(
-              text = detectedInfo,
-              style = MaterialTheme.typography.labelSmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-              maxLines = 1,
-              modifier = Modifier.basicMarquee()
-            )
-          }
-        }
-        OutlinedTextField(
-          value = searchQuery,
-          onValueChange = {
-            searchQuery = it
-          },
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
-          placeholder = { Text(stringResource(R.string.pref_subtitles_search_online)) },
-          leadingIcon = {
-            IconButton(onClick = {
-              searchQuery = mediaInfo.title
-              onSearchMedia(mediaInfo.title)
-            }) {
-              Icon(Icons.Default.AutoFixHigh, null, tint = MaterialTheme.colorScheme.primary)
-            }
-          },
-          trailingIcon = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              if (searchQuery.isNotEmpty()) {
-                IconButton(onClick = {
-                  searchQuery = ""
-                  onClearMediaSelection()
-                }) {
-                  Icon(Icons.Default.Close, null)
-                }
-              }
-              if (isSearching || isDownloading || isSearchingMedia) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                Spacer(Modifier.width(8.dp))
-              }
-              IconButton(onClick = {
-                val q = if (searchQuery.isNotBlank()) searchQuery else mediaInfo.title
-                searchQuery = q
-                onSearchMedia(q)
-                keyboardController?.hide()
-              }) {
-                Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary)
-              }
-            }
-          },
-          singleLine = true,
-          keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-          keyboardActions = KeyboardActions(onSearch = {
-            val q = if (searchQuery.isNotBlank()) searchQuery else mediaInfo.title
+        DetectedInfoRow(detectedInfo)
+        SubtitleSearchField(
+          query = searchQuery,
+          onQueryChange = { searchQuery = it },
+          detectedTitle = mediaInfo.title,
+          isBusy = isSearching || isDownloading || isSearchingMedia,
+          onSubmit = { q ->
             searchQuery = q
             onSearchMedia(q)
-            keyboardController?.hide()
-          }),
-          shape = RoundedCornerShape(12.dp),
-          colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-          )
+          },
+          onClear = {
+            searchQuery = ""
+            onClearMediaSelection()
+          },
         )
 
         // Autocomplete Results
@@ -280,6 +260,296 @@ fun OnlineSubtitleSearchSheet(
       }
     },
     modifier = modifier,
+  )
+}
+
+/**
+ * Wide (landscape) layout: series/movie titles on the left, downloadable
+ * subtitle results on the right, so results are visible without scrolling
+ * past the title matches.
+ */
+@Composable
+private fun TwoPaneSubtitleSearch(
+  detectedInfo: String,
+  searchQuery: String,
+  onSearchQueryChange: (String) -> Unit,
+  mediaInfoTitle: String,
+  isSearching: Boolean,
+  isDownloading: Boolean,
+  isSearchingMedia: Boolean,
+  searchResults: ImmutableList<WyzieSubtitle>,
+  isOnlineSectionExpanded: Boolean,
+  onToggleOnlineSection: () -> Unit,
+  onDownloadOnline: (WyzieSubtitle) -> Unit,
+  mediaSearchResults: ImmutableList<app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult>,
+  selectedTvShow: app.aryan447.mpvium.repository.wyzie.WyzieTvShowDetails?,
+  isFetchingTvDetails: Boolean,
+  selectedSeason: app.aryan447.mpvium.repository.wyzie.WyzieSeason?,
+  onSelectSeason: (app.aryan447.mpvium.repository.wyzie.WyzieSeason) -> Unit,
+  seasonEpisodes: ImmutableList<app.aryan447.mpvium.repository.wyzie.WyzieEpisode>,
+  isFetchingEpisodes: Boolean,
+  selectedEpisode: app.aryan447.mpvium.repository.wyzie.WyzieEpisode?,
+  onSelectEpisode: (app.aryan447.mpvium.repository.wyzie.WyzieEpisode) -> Unit,
+  onClearMediaSelection: () -> Unit,
+  onSearchMedia: (String) -> Unit,
+  onSelectMedia: (app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult) -> Unit,
+  onDismissRequest: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val configuration = LocalConfiguration.current
+  val keyboardController = LocalSoftwareKeyboardController.current
+  val paneMaxHeight = ((configuration.screenHeightDp * 0.55f).dp).coerceIn(240.dp, 520.dp)
+
+  PlayerSheet(onDismissRequest, customMaxWidth = 920.dp) {
+    Column(modifier) {
+      DetectedInfoRow(detectedInfo)
+      if (isSearching) {
+        LinearProgressIndicator(
+          modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.medium).height(2.dp),
+          color = MaterialTheme.colorScheme.primary
+        )
+      }
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(
+            horizontal = MaterialTheme.spacing.small,
+            vertical = MaterialTheme.spacing.extraSmall
+          ),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+      ) {
+        // LEFT: series/movie titles + season/episode pickers
+        Column(
+          modifier = Modifier
+            .weight(0.42f)
+            .heightIn(max = paneMaxHeight)
+            .verticalScroll(rememberScrollState()),
+        ) {
+          SubtitleSearchField(
+            query = searchQuery,
+            onQueryChange = onSearchQueryChange,
+            detectedTitle = mediaInfoTitle,
+            isBusy = isSearchingMedia || isDownloading,
+            onSubmit = { q ->
+              onSearchQueryChange(q)
+              onSearchMedia(q)
+            },
+            onClear = {
+              onSearchQueryChange("")
+              onClearMediaSelection()
+            },
+          )
+          if (mediaSearchResults.isNotEmpty()) {
+            Card(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = MaterialTheme.spacing.medium)
+                .padding(bottom = MaterialTheme.spacing.extraSmall),
+              shape = RoundedCornerShape(12.dp),
+              colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+            ) {
+              Column {
+                mediaSearchResults.forEachIndexed { index, result ->
+                  TmdbResultRow(
+                    result = result,
+                    onClick = {
+                      onSearchQueryChange(result.title)
+                      onSelectMedia(result)
+                      keyboardController?.hide()
+                    }
+                  )
+                  if (index < mediaSearchResults.size - 1) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                  }
+                }
+              }
+            }
+          } else if (isSearchingMedia) {
+            Row(
+              modifier = Modifier.fillMaxWidth().padding(16.dp),
+              horizontalArrangement = Arrangement.Center,
+            ) {
+              CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            }
+          }
+          if (selectedTvShow != null) {
+            SeriesDetailsSection(
+              tvShow = selectedTvShow,
+              isFetchingSeasons = isFetchingTvDetails,
+              selectedSeason = selectedSeason,
+              onSelectSeason = onSelectSeason,
+              isFetchingEpisodes = isFetchingEpisodes,
+              episodes = seasonEpisodes,
+              selectedEpisode = selectedEpisode,
+              onSelectEpisode = onSelectEpisode,
+              onClose = onClearMediaSelection
+            )
+          }
+        }
+
+        VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+        // RIGHT: subtitle results with download buttons
+        Column(modifier = Modifier.weight(0.58f)) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { onToggleOnlineSection() }
+              .padding(
+                horizontal = MaterialTheme.spacing.small,
+                vertical = MaterialTheme.spacing.extraSmall
+              ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            Text(
+              text = "Online Results (${searchResults.size})",
+              style = MaterialTheme.typography.labelLarge,
+              color = MaterialTheme.colorScheme.primary,
+              fontWeight = FontWeight.Bold,
+            )
+            Icon(
+              imageVector = if (isOnlineSectionExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.primary,
+              modifier = Modifier.size(20.dp)
+            )
+          }
+          if (isOnlineSectionExpanded) {
+            when {
+              searchResults.isNotEmpty() -> {
+                LazyColumn(modifier = Modifier.heightIn(max = paneMaxHeight)) {
+                  items(searchResults) { subtitle ->
+                    WyzieSubtitleRow(
+                      subtitle = subtitle,
+                      onDownload = { onDownloadOnline(subtitle) },
+                      modifier = Modifier.padding(
+                        horizontal = MaterialTheme.spacing.small,
+                        vertical = 2.dp
+                      )
+                    )
+                  }
+                }
+              }
+              isSearching || isDownloading -> {
+                Box(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 120.dp, max = paneMaxHeight),
+                  contentAlignment = Alignment.Center,
+                ) {
+                  CircularProgressIndicator()
+                }
+              }
+              else -> {
+                Text(
+                  text = "Pick a title on the left to load subtitles",
+                  style = MaterialTheme.typography.bodyMedium,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.fillMaxWidth().padding(24.dp),
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun DetectedInfoRow(
+  detectedInfo: String,
+  modifier: Modifier = Modifier,
+) {
+  if (detectedInfo.isBlank()) return
+  Row(
+    modifier = modifier
+      .fillMaxWidth()
+      .padding(horizontal = MaterialTheme.spacing.medium)
+      .padding(bottom = 4.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Default.AutoFixHigh,
+      contentDescription = null,
+      modifier = Modifier.size(14.dp),
+      tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+    )
+    Spacer(Modifier.width(4.dp))
+    Text(
+      text = detectedInfo,
+      style = MaterialTheme.typography.labelSmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+      maxLines = 1,
+      modifier = Modifier.basicMarquee()
+    )
+  }
+}
+
+@Composable
+private fun SubtitleSearchField(
+  query: String,
+  onQueryChange: (String) -> Unit,
+  detectedTitle: String,
+  isBusy: Boolean,
+  onSubmit: (String) -> Unit,
+  onClear: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val keyboardController = LocalSoftwareKeyboardController.current
+  OutlinedTextField(
+    value = query,
+    onValueChange = onQueryChange,
+    modifier = modifier
+      .fillMaxWidth()
+      .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
+    placeholder = { Text(stringResource(R.string.pref_subtitles_search_online)) },
+    leadingIcon = {
+      IconButton(onClick = {
+        onQueryChange(detectedTitle)
+        onSubmit(detectedTitle)
+      }) {
+        Icon(Icons.Default.AutoFixHigh, null, tint = MaterialTheme.colorScheme.primary)
+      }
+    },
+    trailingIcon = {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (query.isNotEmpty()) {
+          IconButton(onClick = onClear) {
+            Icon(Icons.Default.Close, null)
+          }
+        }
+        if (isBusy) {
+          CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+          Spacer(Modifier.width(8.dp))
+        }
+        IconButton(onClick = {
+          val q = if (query.isNotBlank()) query else detectedTitle
+          onQueryChange(q)
+          onSubmit(q)
+          keyboardController?.hide()
+        }) {
+          Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary)
+        }
+      }
+    },
+    singleLine = true,
+    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+    keyboardActions = KeyboardActions(onSearch = {
+      val q = if (query.isNotBlank()) query else detectedTitle
+      onQueryChange(q)
+      onSubmit(q)
+      keyboardController?.hide()
+    }),
+    shape = RoundedCornerShape(12.dp),
+    colors = TextFieldDefaults.colors(
+      focusedContainerColor = Color.Transparent,
+      unfocusedContainerColor = Color.Transparent,
+      focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+      unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+    )
   )
 }
 
