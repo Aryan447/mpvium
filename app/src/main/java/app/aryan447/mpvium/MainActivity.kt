@@ -213,6 +213,15 @@ class MainActivity : ComponentActivity() {
                 slideOut(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
           )
         },
+        predictivePopTransitionSpec = {
+          (
+            fadeIn(animationSpec = tween(220)) +
+              slideIn(animationSpec = tween(220)) { IntOffset(-it.width / 2, 0) }
+          ) togetherWith (
+              fadeOut(animationSpec = tween(220)) +
+                slideOut(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
+          )
+        },
         transitionSpec = {
           (
             fadeIn(animationSpec = tween(220)) +
