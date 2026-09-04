@@ -50,7 +50,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -284,6 +286,7 @@ fun PlaylistSheet(
   }
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+  val haptic = LocalHapticFeedback.current
   val sheetWidth = if (isListMode) {
     if (LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
       640.dp
@@ -381,7 +384,10 @@ fun PlaylistSheet(
                 item = item,
                 context = context,
                 thumbnailCache = thumbnailCache,
-                onClick = { onItemClick(item) },
+                onClick = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  onItemClick(item)
+                },
                 skipThumbnail = isM3UPlaylist,
                 accentColor = accentColor
               )
@@ -403,6 +409,7 @@ fun PlaylistSheet(
                 context = context,
                 thumbnailCache = thumbnailCache as LRUBitmapCache,
                 onClick = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                   onItemClick(item)
                 },
                 skipThumbnail = isM3UPlaylist,

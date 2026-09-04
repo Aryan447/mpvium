@@ -22,6 +22,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
@@ -65,11 +67,15 @@ fun AddTrackRow(
   modifier: Modifier = Modifier,
   actions: @Composable RowScope.() -> Unit = {},
 ) {
+  val haptic = LocalHapticFeedback.current
   Row(
     modifier =
       modifier
         .fillMaxWidth()
-        .clickable(onClick = onClick)
+        .clickable(onClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+          onClick()
+        })
         .height(56.dp)
         .padding(horizontal = MaterialTheme.spacing.medium),
     verticalAlignment = Alignment.CenterVertically,
