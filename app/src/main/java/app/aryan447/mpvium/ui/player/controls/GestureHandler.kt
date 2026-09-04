@@ -72,6 +72,7 @@ import org.koin.compose.koinInject
 import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 @Suppress("CyclomaticComplexMethod", "MultipleEmitters")
@@ -868,13 +869,18 @@ fun GestureHandler(
                     val clampedPosition = targetPosition.coerceAtMost(maxDuration)
                     lastClampedPosition = clampedPosition
 
+                    // Quantize to whole seconds with rounding (not truncation) so tiny
+                    // finger jitter around a second boundary doesn't flip the display
+                    // back and forth. This single value drives the mpv seek, the
+                    // center pill and the seekbar preview so they can't disagree.
+                    val previewSecond = clampedPosition.roundToInt()
+                    val currentPos = previewSecond
+                    val seekDelta = previewSecond - initialVideoPosition.roundToInt()
+
                     // Fast keyframe seek during active drag for fluid 60fps preview updates
-                    viewModel.seekTo(clampedPosition.toInt(), isScrubbing = true)
+                    viewModel.seekTo(previewSecond, isScrubbing = true)
 
                     // Format and display time position updates
-                    val currentPos = clampedPosition.toInt()
-                    val seekDelta = (clampedPosition - initialVideoPosition).toInt()
-
                     val currentTimeStr = formatSeekTime(currentPos)
 
                     // Format seek delta with +/- prefix
@@ -886,7 +892,7 @@ fun GestureHandler(
 
                     // Use PlayerUpdates system like zoom updates
                     viewModel.playerUpdate.update {
-                      PlayerUpdates.HorizontalSeek(currentTimeStr, deltaStr)
+                      PlayerUpdates.HorizontalSeek(currentTimeStr, deltaStr, previewSecond.toFloat())
                     }
 
                     change.consume()
