@@ -29,6 +29,8 @@ class AppearancePreferences(
   val unplayedOldVideoDays = preferenceStore.getInt("unplayed_old_video_days", 7)
   val showNetworkThumbnails = preferenceStore.getBoolean("show_network_thumbnails", false)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Thick)
+  val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Thick)
+  val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Thick)
 
   val topLeftControls =
     preferenceStore.getString(
