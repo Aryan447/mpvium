@@ -84,6 +84,7 @@ import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
 import app.aryan447.mpvium.ui.player.controls.components.CurrentChapter
+import app.aryan447.mpvium.ui.player.controls.components.PlayerPillButton
 import app.aryan447.mpvium.ui.theme.controlColor
 import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
@@ -122,40 +123,15 @@ fun RenderPlayerButton(
     PlayerButton.VIDEO_TITLE -> {
       val playlistModeEnabled = viewModel.hasPlaylistSupport()
 
-      Surface(
-        modifier =
-          Modifier
-            .height(buttonSize)
-            .widthIn(max = 220.dp)
-            .clip(RoundedCornerShape(50))
-            .clickable(
-              enabled = playlistModeEnabled,
-              onClick = {
-                clickEvent()
-                onOpenSheet(Sheets.Playlist)
-              },
-            ),
-        shape = RoundedCornerShape(50),
-        color =
-          if (hideBackground) {
-            Color.Transparent
-          } else {
-            MaterialTheme.colorScheme.surfaceContainer.copy(
-              alpha = 0.55f,
-            )
-          },
-        contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-        border =
-          if (hideBackground) {
-            null
-          } else {
-            BorderStroke(
-              1.dp,
-              MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-            )
-          },
+      PlayerPillButton(
+        onClick = {
+          clickEvent()
+          onOpenSheet(Sheets.Playlist)
+        },
+        enabled = playlistModeEnabled,
+        hideBackground = hideBackground,
+        height = buttonSize,
+        modifier = Modifier.widthIn(max = 220.dp),
       ) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
@@ -211,27 +187,13 @@ fun RenderPlayerButton(
 
     PlayerButton.PLAYBACK_SPEED -> {
       if (isSpeedNonOne) {
-        Surface(
-          shape = CircleShape,
-          color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-          contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
-          tonalElevation = 0.dp,
-          shadowElevation = 0.dp,
-          border = if (hideBackground) null else BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-          ),
-          modifier = Modifier
-            .height(buttonSize)
-            .clip(CircleShape)
-            .clickable(
-              interactionSource = remember { MutableInteractionSource() },
-              indication = ripple(bounded = true),
-              onClick = {
-                clickEvent()
-                onOpenSheet(Sheets.PlaybackSpeed)
-              },
-            ),
+        PlayerPillButton(
+          onClick = {
+            clickEvent()
+            onOpenSheet(Sheets.PlaybackSpeed)
+          },
+          hideBackground = hideBackground,
+          height = buttonSize,
         ) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -266,39 +228,13 @@ fun RenderPlayerButton(
     }
 
     PlayerButton.DECODER -> {
-      Surface(
-        shape = CircleShape,
-        color =
-          if (hideBackground) {
-            Color.Transparent
-          } else {
-            MaterialTheme.colorScheme.surfaceContainer.copy(
-              alpha = 0.55f,
-            )
-          },
-        contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-        border =
-          if (hideBackground) {
-            null
-          } else {
-            BorderStroke(
-              1.dp,
-              MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-            )
-          },
-        modifier = Modifier
-          .height(buttonSize)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(bounded = true),
-            onClick = {
-              clickEvent()
-              onOpenSheet(Sheets.Decoders)
-            },
-          ),
+      PlayerPillButton(
+        onClick = {
+          clickEvent()
+          onOpenSheet(Sheets.Decoders)
+        },
+        hideBackground = hideBackground,
+        height = buttonSize,
       ) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
@@ -459,32 +395,17 @@ fun RenderPlayerButton(
 
     PlayerButton.VIDEO_ZOOM -> {
       if (kotlin.math.abs(currentZoom) >= 0.005f) {
-        @OptIn(ExperimentalFoundationApi::class)
-        Surface(
-          shape = CircleShape,
-          color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-          contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
-          tonalElevation = 0.dp,
-          shadowElevation = 0.dp,
-          border = if (hideBackground) null else BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-          ),
-          modifier = Modifier
-            .height(buttonSize)
-            .clip(CircleShape)
-            .combinedClickable(
-              interactionSource = remember { MutableInteractionSource() },
-              indication = ripple(bounded = true),
-              onClick = {
-                clickEvent()
-                onOpenSheet(Sheets.VideoZoom)
-              },
-              onLongClick = {
-                clickEvent()
-                viewModel.resetVideoZoom()
-              },
-            ),
+        PlayerPillButton(
+          onClick = {
+            clickEvent()
+            onOpenSheet(Sheets.VideoZoom)
+          },
+          onLongClick = {
+            clickEvent()
+            viewModel.resetVideoZoom()
+          },
+          hideBackground = hideBackground,
+          height = buttonSize,
         ) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
