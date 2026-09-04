@@ -113,6 +113,8 @@ import app.aryan447.mpvium.ui.player.controls.components.MultipleSpeedPlayerUpda
 import app.aryan447.mpvium.ui.player.controls.components.SeekPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.SeekbarWithTimers
 import app.aryan447.mpvium.ui.player.controls.components.SlideToUnlock
+import app.aryan447.mpvium.ui.player.controls.components.PlayerPlayPauseButton
+import app.aryan447.mpvium.ui.player.controls.components.PlayerTransportButton
 import app.aryan447.mpvium.ui.player.controls.components.SpeedControlSlider
 import app.aryan447.mpvium.ui.player.controls.components.TextPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.VolumeSlider
@@ -651,8 +653,6 @@ fun PlayerControls(
             },
         ) {
           val showLoadingCircle by playerPreferences.showLoadingCircle.collectAsState()
-          val icon = AnimatedImageVector.animatedVectorResource(R.drawable.anim_play_to_pause)
-          val interaction = remember { MutableInteractionSource() }
 
           when {
             pausedForCache == true && showLoadingCircle -> {
@@ -662,214 +662,51 @@ fun PlayerControls(
             }
 
             else -> {
-              val buttonShadow =
-                Brush.radialGradient(
-                  0.0f to Color.Black.copy(alpha = 0.3f),
-                  0.7f to Color.Transparent,
-                  1.0f to Color.Transparent,
-                )
-
               if (playlistMode && viewModel.hasPlaylistSupport()) {
                 androidx.compose.foundation.layout.Row(
                   horizontalArrangement = Arrangement.spacedBy(24.dp),
                   verticalAlignment = Alignment.CenterVertically,
                 ) {
-                  Surface(
-                    modifier =
-                      Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                          enabled = viewModel.hasPrevious(),
-                          onClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            if (viewModel.hasPrevious()) viewModel.playPrevious()
-                          },
-                        )
-                        .then(
-                          if (hideBackground) {
-                            Modifier.background(brush = buttonShadow, shape = CircleShape)
-                          } else {
-                            Modifier
-                          },
-                        ),
-                    shape = CircleShape,
-                    color =
-                      if (!hideBackground) {
-                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                      } else {
-                        Color.Transparent
-                      },
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp,
-                    border =
-                      if (!hideBackground) {
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                      } else {
-                        null
-                      },
-                  ) {
-                    Icon(
-                      imageVector = Icons.Default.SkipPrevious,
-                      contentDescription = "Previous",
-                      tint =
-                        if (viewModel.hasPrevious()) {
-                          if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
-                        } else {
-                          if (hideBackground) {
-                            controlColor.copy(alpha = 0.38f)
-                          } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                          }
-                        },
-                      modifier = Modifier
-                        .fillMaxSize()
-                        .padding(MaterialTheme.spacing.small),
-                    )
-                  }
-
-                  Surface(
-                    modifier =
-                      Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .clickable(interaction, ripple(), onClick = {
-                          resetControlsTimestamp = System.currentTimeMillis()
-                          viewModel.pauseUnpause()
-                        })
-                        .then(
-                          if (hideBackground) {
-                            Modifier.background(brush = buttonShadow, shape = CircleShape)
-                          } else {
-                            Modifier
-                          },
-                        ),
-                    shape = CircleShape,
-                    color =
-                      if (!hideBackground) {
-                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                      } else {
-                        Color.Transparent
-                      },
-                    contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp,
-                    border =
-                      if (!hideBackground) {
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                      } else {
-                        null
-                      },
-                  ) {
-                    Image(
-                      painter = rememberAnimatedVectorPainter(icon, paused == false),
-                      modifier = Modifier
-                        .fillMaxSize()
-                        .padding(MaterialTheme.spacing.medium),
-                      contentDescription = null,
-                      colorFilter = ColorFilter.tint(LocalContentColor.current),
-                    )
-                  }
-
-                  Surface(
-                    modifier =
-                      Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                          enabled = viewModel.hasNext(),
-                          onClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            if (viewModel.hasNext()) viewModel.playNext()
-                          },
-                        )
-                        .then(
-                          if (hideBackground) {
-                            Modifier.background(brush = buttonShadow, shape = CircleShape)
-                          } else {
-                            Modifier
-                          },
-                        ),
-                    shape = CircleShape,
-                    color =
-                      if (!hideBackground) {
-                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                      } else {
-                        Color.Transparent
-                      },
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp,
-                    border =
-                      if (!hideBackground) {
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                      } else {
-                        null
-                      },
-                  ) {
-                    Icon(
-                      imageVector = Icons.Default.SkipNext,
-                      contentDescription = "Next",
-                      tint =
-                        if (viewModel.hasNext()) {
-                          if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
-                        } else {
-                          if (hideBackground) {
-                            controlColor.copy(alpha = 0.38f)
-                          } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                          }
-                        },
-                      modifier = Modifier
-                        .fillMaxSize()
-                        .padding(MaterialTheme.spacing.small),
-                    )
-                  }
-                }
-              } else {
-                Surface(
-                  modifier =
-                    Modifier
-                      .size(64.dp)
-                      .clip(CircleShape)
-                      .clickable(interaction, ripple(), onClick = {
-                        resetControlsTimestamp = System.currentTimeMillis()
-                        viewModel.pauseUnpause()
-                      })
-                      .then(
-                        if (hideBackground) {
-                          Modifier.background(brush = buttonShadow, shape = CircleShape)
-                        } else {
-                          Modifier
-                        },
-                      ),
-                  shape = CircleShape,
-                  color =
-                    if (!hideBackground) {
-                      MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                    } else {
-                      Color.Transparent
+                  PlayerTransportButton(
+                    icon = Icons.Default.SkipPrevious,
+                    contentDescription = "Previous",
+                    enabled = viewModel.hasPrevious(),
+                    onClick = {
+                      resetControlsTimestamp = System.currentTimeMillis()
+                      if (viewModel.hasPrevious()) viewModel.playPrevious()
                     },
-                  contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
-                  tonalElevation = 0.dp,
-                  shadowElevation = 0.dp,
-                  border =
-                    if (!hideBackground) {
-                      BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    } else {
-                      null
+                    hideBackground = hideBackground,
+                  )
+
+                  PlayerPlayPauseButton(
+                    paused = paused == true,
+                    onClick = {
+                      resetControlsTimestamp = System.currentTimeMillis()
+                      viewModel.pauseUnpause()
                     },
-                ) {
-                  Image(
-                    painter = rememberAnimatedVectorPainter(icon, paused == false),
-                    modifier = Modifier
-                      .fillMaxSize()
-                      .padding(MaterialTheme.spacing.medium),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(LocalContentColor.current),
+                    hideBackground = hideBackground,
+                  )
+
+                  PlayerTransportButton(
+                    icon = Icons.Default.SkipNext,
+                    contentDescription = "Next",
+                    enabled = viewModel.hasNext(),
+                    onClick = {
+                      resetControlsTimestamp = System.currentTimeMillis()
+                      if (viewModel.hasNext()) viewModel.playNext()
+                    },
+                    hideBackground = hideBackground,
                   )
                 }
+              } else {
+                PlayerPlayPauseButton(
+                  paused = paused == true,
+                  onClick = {
+                    resetControlsTimestamp = System.currentTimeMillis()
+                    viewModel.pauseUnpause()
+                  },
+                  hideBackground = hideBackground,
+                )
               }
             }
           }
