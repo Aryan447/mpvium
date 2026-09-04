@@ -15,6 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
@@ -32,6 +34,7 @@ fun ThemePicker(
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
+    val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(Unit) {
         val index = AppTheme.entries.indexOf(currentTheme)
@@ -61,7 +64,12 @@ fun ThemePicker(
                     theme = theme,
                     isSelected = theme == currentTheme,
                     isDarkMode = isDarkMode,
-                    onClick = { onThemeSelected(theme) },
+                    onClick = {
+                        if (theme != currentTheme) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onThemeSelected(theme)
+                        }
+                    },
                 )
             }
         }
