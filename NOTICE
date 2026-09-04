@@ -1,0 +1,53 @@
+mpvium — Notices and Attribution
+====================================
+
+mpvium as a whole is distributed under the GNU General Public License
+version 3 or later (see LICENSE). Individual components below remain
+under their own licenses.
+
+1. mpv (https://mpv.io)
+   Copyright (c) the mpv contributors.
+   License: GNU General Public License version 2 or later.
+   The mpv playback engine is linked into this app via libmpv.
+
+2. mpv-android (https://github.com/mpv-android/mpv-android)
+   Copyright (c) the mpv-android contributors.
+   License: GNU General Public License version 3 or later.
+   The Android player bridge (is.xyz.mpv.MPVLib / MPVNode) and native
+   glue bundled in this app derive from mpv-android.
+
+3. FFmpeg (https://ffmpeg.org)
+   Copyright (c) the FFmpeg developers.
+   The bundled libavcodec, libavformat, libavutil, libavfilter,
+   libavdevice, libswscale and libswresample libraries are part of
+   FFmpeg, licensed under the GNU Lesser General Public License
+   version 2.1 or later, or the GNU General Public License version 2
+   or later, depending on the enabled components. Source code for the
+   exact FFmpeg build is available on request from the maintainer.
+
+4. MediaInfo (https://mediaarea.net/MediaInfo)
+   Copyright (c) MediaArea.net SARL.
+   License: BSD 2-Clause "Simplified" License.
+   Used through the mediainfoAndroid library for media analysis.
+
+5. Anime4K shaders (https://github.com/bloc97/Anime4K)
+   Copyright (c) 2019-2021 bloc97. All rights reserved.
+   License: MIT License (see app/src/main/assets/shaders/ for the
+   full copyright and permission notice shipped with each shader).
+
+6. Fossify File Manager (https://github.com/FossifyOrg/File-Manager)
+   Copyright (c) the Fossify contributors.
+   License: GNU General Public License version 3 or later.
+   Parts of the file-browser sorting, browsing and file-operation
+   logic in this app were adapted from Fossify's file manager.
+
+7. Android and Jetpack libraries
+   Copyright (c) Google LLC and the Android Open Source Project.
+   Licensed under the Apache License, Version 2.0.
+
+8. Third-party Kotlin/Java libraries (Koin, Room, OkHttp, Coil-era
+   image loading, Compose preferences, SMB/SFTP/WebDAV clients and
+   others declared in gradle/libs.versions.toml) remain under their
+   respective licenses (Apache-2.0, MIT, BSD and similar). The full
+   list with licenses is shown in the app under
+   Settings > About > Libraries.
