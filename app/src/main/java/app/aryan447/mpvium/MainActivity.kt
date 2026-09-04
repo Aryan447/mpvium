@@ -14,8 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
 import androidx.compose.animation.togetherWith
@@ -27,7 +25,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
@@ -223,23 +220,6 @@ class MainActivity : ComponentActivity() {
           ) togetherWith (
               fadeOut(animationSpec = tween(220)) +
                 slideOut(animationSpec = tween(220)) { IntOffset(-it.width / 2, 0) }
-          )
-        },
-        predictivePopTransitionSpec = {
-          (
-            fadeIn(animationSpec = tween(220)) +
-              scaleIn(
-                animationSpec = tween(220, delayMillis = 30),
-                initialScale = .9f,
-                TransformOrigin(-1f, .5f),
-              )
-          ) togetherWith (
-              fadeOut(animationSpec = tween(220)) +
-                scaleOut(
-                  animationSpec = tween(220, delayMillis = 30),
-                  targetScale = .9f,
-                  TransformOrigin(-1f, .5f),
-                )
           )
         },
       )
