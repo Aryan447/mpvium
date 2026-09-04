@@ -94,6 +94,8 @@ import app.aryan447.mpvium.ui.streaming.movies.MovieDetailScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesDetailScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
+import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.LocalAppTheme
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.serialization.Serializable
@@ -166,19 +168,22 @@ object StreamingHomeScreen : Screen {
                     color = MaterialTheme.colorScheme.primary,
                   )
                   Spacer(modifier = Modifier.width(6.dp))
-                  Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(6.dp)
-                  ) {
-                    Text(
-                      text = "CINEMA",
-                      style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 9.sp,
-                      ),
-                      color = MaterialTheme.colorScheme.primary,
-                      modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                    )
+                  val themeBadge = themeBadgeLabel()
+                  if (themeBadge != null) {
+                    Surface(
+                      color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                      shape = RoundedCornerShape(6.dp)
+                    ) {
+                      Text(
+                        text = themeBadge,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                          fontWeight = FontWeight.Bold,
+                          fontSize = 9.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                      )
+                    }
                   }
                 }
                 DynamicGreetingText()
@@ -594,5 +599,14 @@ private fun DynamicGreetingText(
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
     )
+  }
+}
+
+@Composable
+private fun themeBadgeLabel(): String? {
+  return when (LocalAppTheme.current) {
+    AppTheme.Cinema -> "CINEMA"
+    AppTheme.NoirCinema -> "NOIR"
+    else -> null
   }
 }

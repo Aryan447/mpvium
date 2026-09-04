@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.Screen
@@ -62,7 +63,7 @@ object PreferencesScreen : Screen {
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .clickable { backstack.add(SettingsSearchScreen) },
               shape = RoundedCornerShape(28.dp),
-              color = MaterialTheme.colorScheme.surfaceContainerHigh,
+              color = MaterialTheme.colorScheme.primaryContainer,
               tonalElevation = 2.dp,
             ) {
               Row(
@@ -74,13 +75,14 @@ object PreferencesScreen : Screen {
                 Icon(
                   imageVector = Icons.Outlined.Search,
                   contentDescription = null,
-                  tint = MaterialTheme.colorScheme.outline,
+                  tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                   text = stringResource(R.string.settings_search_hint),
                   style = MaterialTheme.typography.bodyLarge,
-                  color = MaterialTheme.colorScheme.outline,
+                  fontWeight = FontWeight.SemiBold,
+                  color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
               }
             }
