@@ -5,13 +5,19 @@ import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -105,6 +111,53 @@ fun PlayerTransportButton(
           .padding(MaterialTheme.spacing.small),
     )
   }
+}
+
+/**
+ * Shared glass pill container for top-bar player buttons with text content
+ * (video title, active speed, decoder, active zoom).
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun PlayerPillButton(
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  onLongClick: () -> Unit = {},
+  hideBackground: Boolean = false,
+  height: Dp = 40.dp,
+  content: @Composable RowScope.() -> Unit,
+) {
+  Surface(
+    shape = RoundedCornerShape(50),
+    color =
+      if (hideBackground) {
+        Color.Transparent
+      } else {
+        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+      },
+    contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+    tonalElevation = 0.dp,
+    shadowElevation = 0.dp,
+    border =
+      if (hideBackground) {
+        null
+      } else {
+        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+      },
+    modifier =
+      modifier
+        .height(height)
+        .clip(RoundedCornerShape(50))
+        .combinedClickable(
+          enabled = enabled,
+          onClick = onClick,
+          onLongClick = onLongClick,
+        ),
+    content = {
+      Row(content = content)
+    },
+  )
 }
 
 /**
