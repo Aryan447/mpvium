@@ -28,6 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -86,12 +88,16 @@ fun ContinueWatchingCard(
   modifier: Modifier = Modifier,
 ) {
   val cardWidth = 220.dp
+  val haptic = LocalHapticFeedback.current
 
   Column(
     modifier = modifier
       .width(cardWidth)
       .clip(RoundedCornerShape(14.dp))
-      .clickable(onClick = onClick),
+      .clickable(onClick = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        onClick()
+      }),
   ) {
     // Thumbnail with Progress Bar
     Box(
