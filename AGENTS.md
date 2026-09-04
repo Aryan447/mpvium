@@ -24,7 +24,7 @@ production-perfect without running the relevant tests and build checks.
 - `gradle/libs.versions.toml` — dependency and plugin versions.
 - `.github/workflows/` — CI, preview, release, and deployment workflows.
 - `fastlane/metadata/` — store metadata and screenshots.
-- `website/` — project website; it is separate from the Android build.
+- `docs/` — static single-page site for GitHub Pages (`index.html` only, no build).
 
 ## MediaInfo dependency
 
