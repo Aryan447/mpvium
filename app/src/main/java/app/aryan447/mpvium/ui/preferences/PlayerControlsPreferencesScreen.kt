@@ -170,30 +170,36 @@ object PlayerControlsPreferencesScreen : Screen {
 
           item {
             val seekbarStyle by appearancePrefs.seekbarStyle.collectAsState()
+            SliderStylePicker(
+              selected = seekbarStyle,
+              onSelect = { appearancePrefs.seekbarStyle.set(it) },
+            )
+          }
 
-            PreferenceCard {
-              SeekbarStyle.entries.forEachIndexed { index, style ->
-                ListItem(
-                  headlineContent = {
-                    Text(text = style.name)
-                  },
-                  trailingContent = {
-                    RadioButton(
-                      selected = seekbarStyle == style,
-                      onClick = null
-                    )
-                  },
-                  colors = androidx.compose.material3.ListItemDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                  ),
-                  modifier = Modifier
-                    .clickable { appearancePrefs.seekbarStyle.set(style) }
-                )
-                if (index < SeekbarStyle.entries.size - 1) {
-                  PreferenceDivider()
-                }
-              }
-            }
+          // Volume Slider Style Section
+          item {
+            PreferenceSectionHeader(title = "Volume Slider Style")
+          }
+
+          item {
+            val volumeSliderStyle by appearancePrefs.volumeSliderStyle.collectAsState()
+            SliderStylePicker(
+              selected = volumeSliderStyle,
+              onSelect = { appearancePrefs.volumeSliderStyle.set(it) },
+            )
+          }
+
+          // Brightness Slider Style Section
+          item {
+            PreferenceSectionHeader(title = "Brightness Slider Style")
+          }
+
+          item {
+            val brightnessSliderStyle by appearancePrefs.brightnessSliderStyle.collectAsState()
+            SliderStylePicker(
+              selected = brightnessSliderStyle,
+              onSelect = { appearancePrefs.brightnessSliderStyle.set(it) },
+            )
           }
 
           // Appearance Section
@@ -337,6 +343,40 @@ object PlayerControlsPreferencesScreen : Screen {
           contentDescription = "Edit $title",
           tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+      }
+    }
+  }
+
+  /**
+   * Radio group for picking a [SeekbarStyle], shared by the seekbar,
+   * volume slider and brightness slider sections.
+   */
+  @Composable
+  private fun SliderStylePicker(
+    selected: SeekbarStyle,
+    onSelect: (SeekbarStyle) -> Unit,
+  ) {
+    PreferenceCard {
+      SeekbarStyle.entries.forEachIndexed { index, style ->
+        ListItem(
+          headlineContent = {
+            Text(text = style.name)
+          },
+          trailingContent = {
+            RadioButton(
+              selected = selected == style,
+              onClick = null
+            )
+          },
+          colors = androidx.compose.material3.ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+          ),
+          modifier = Modifier
+            .clickable { onSelect(style) }
+        )
+        if (index < SeekbarStyle.entries.size - 1) {
+          PreferenceDivider()
+        }
       }
     }
   }
