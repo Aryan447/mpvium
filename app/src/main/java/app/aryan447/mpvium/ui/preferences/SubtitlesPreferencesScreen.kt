@@ -238,6 +238,21 @@ object SubtitlesPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              val persistSubPos by preferences.persistSubPos.collectAsState()
+              HapticSwitchPreference(
+                value = persistSubPos,
+                onValueChange = { preferences.persistSubPos.set(it) },
+                title = { Text(stringResource(R.string.pref_subtitles_persist_pos_title)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_subtitles_persist_pos_summary),
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
               // Directory picker preference with reload and clear icons on the right
               Box(
                 modifier =

@@ -114,6 +114,7 @@ import app.aryan447.mpvium.ui.player.controls.components.SlideToUnlock
 import app.aryan447.mpvium.ui.player.controls.components.PlayerPlayPauseButton
 import app.aryan447.mpvium.ui.player.controls.components.PlayerTransportButton
 import app.aryan447.mpvium.ui.player.controls.components.SpeedControlSlider
+import app.aryan447.mpvium.ui.player.controls.components.SubtitlePositionPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.TextPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.VolumeSlider
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
@@ -558,6 +559,15 @@ fun PlayerControls(
                 (currentPlayerUpdate as PlayerUpdates.ShowText).value,
                 modifier = Modifier.widthIn(min = 120.dp),
               )
+
+            is PlayerUpdates.SubtitlePosition -> {
+              val subUpdate = currentPlayerUpdate as PlayerUpdates.SubtitlePosition
+              SubtitlePositionPlayerUpdate(
+                position = subUpdate.position,
+                isReset = subUpdate.isReset,
+                modifier = Modifier.widthIn(min = 120.dp),
+              )
+            }
 
             is PlayerUpdates.VideoZoom -> {
               val zoomPercentage = (videoZoom * 100).toInt()

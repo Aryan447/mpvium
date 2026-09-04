@@ -136,6 +136,11 @@ sealed class PlayerUpdates {
     val value: String,
   ) : PlayerUpdates()
 
+  data class SubtitlePosition(
+    val position: Int,
+    val isReset: Boolean = false,
+  ) : PlayerUpdates()
+
   data class RepeatMode(
     val mode: app.aryan447.mpvium.ui.player.RepeatMode,
   ) : PlayerUpdates()

@@ -27,16 +27,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.ui.graphics.Shape
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.theme.spacing
 
 @Composable
 fun PlayerUpdate(
   modifier: Modifier = Modifier,
+  shape: Shape = CircleShape,
   content: @Composable () -> Unit = {},
 ) {
   Surface(
-    shape = CircleShape,
+    shape = shape,
     color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
     contentColor = MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,
@@ -46,7 +53,7 @@ fun PlayerUpdate(
       MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
     ),
     modifier = modifier
-      .height(45.dp)
+      .heightIn(min = 45.dp)
       .animateContentSize(),
   ) {
     Box(
@@ -57,6 +64,56 @@ fun PlayerUpdate(
       contentAlignment = Alignment.Center,
     ) {
       content()
+    }
+  }
+}
+
+@Composable
+fun SubtitlePositionPlayerUpdate(
+  position: Int,
+  isReset: Boolean = false,
+  modifier: Modifier = Modifier,
+) {
+  PlayerUpdate(
+    shape = RoundedCornerShape(20.dp),
+    modifier = modifier,
+  ) {
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(2.dp),
+      modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+      ) {
+        Icon(
+          Icons.Default.Subtitles,
+          contentDescription = null,
+          modifier = Modifier.size(16.dp),
+          tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+          text = if (isReset) {
+            stringResource(R.string.subtitle_position_reset, position)
+          } else {
+            stringResource(R.string.subtitle_position_format, position)
+          },
+          fontFamily = FontFamily.Monospace,
+          fontWeight = FontWeight.Bold,
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colorScheme.onSurface,
+          style = MaterialTheme.typography.bodyMedium,
+        )
+      }
+      if (!isReset) {
+        Text(
+          text = stringResource(R.string.subtitle_double_tap_to_reset),
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          style = MaterialTheme.typography.labelSmall,
+          textAlign = TextAlign.Center,
+        )
+      }
     }
   }
 }
