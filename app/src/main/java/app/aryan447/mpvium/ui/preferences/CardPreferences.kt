@@ -116,7 +116,7 @@ fun SettingsTopBar(
       )
     },
     navigationIcon = {
-      IconButton(onClick = onBack ?: backstack::removeLastOrNull) {
+      IconButton(onClick = { onBack?.invoke() ?: backstack.removeLastOrNull() }) {
         Icon(
           Icons.AutoMirrored.Outlined.ArrowBack,
           contentDescription = null,
