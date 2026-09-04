@@ -18,11 +18,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -31,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,7 +55,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -92,6 +99,7 @@ data class MovieDetailScreen(
     var showMatchPicker by remember { mutableStateOf(false) }
     var matchOptions by remember { mutableStateOf<List<WyzieTmdbResult>>(emptyList()) }
     var isSearchingMatches by remember { mutableStateOf(false) }
+    var matchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(videoId, reloadKey) {
       withContext(Dispatchers.IO) {
@@ -109,14 +117,23 @@ data class MovieDetailScreen(
       }
     }
 
+    // Search candidates for the match picker; re-runnable with a typed query
+    fun searchMatches(query: String) {
+      if (query.isBlank()) return
+      coroutineScope.launch {
+        isSearchingMatches = true
+        matchOptions = withContext(Dispatchers.IO) {
+          metadataRepository.searchMovieMatches(query)
+        }
+        isSearchingMatches = false
+      }
+    }
+
     LaunchedEffect(showMatchPicker) {
       val target = movie
       if (showMatchPicker && target != null) {
-        isSearchingMatches = true
-        matchOptions = withContext(Dispatchers.IO) {
-          metadataRepository.searchMovieMatches(target.title)
-        }
-        isSearchingMatches = false
+        matchQuery = target.title
+        searchMatches(target.title)
       }
     }
 
@@ -376,7 +393,6 @@ data class MovieDetailScreen(
     }
 
     if (showMatchPicker) {
-      val target = movie
       AlertDialog(
         onDismissRequest = { showMatchPicker = false },
         title = {
@@ -387,12 +403,43 @@ data class MovieDetailScreen(
           )
         },
         text = {
+          val keyboardController = LocalSoftwareKeyboardController.current
           Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
           ) {
+            OutlinedTextField(
+              value = matchQuery,
+              onValueChange = { matchQuery = it },
+              modifier = Modifier.fillMaxWidth(),
+              placeholder = { Text("Type movie name…") },
+              singleLine = true,
+              trailingIcon = {
+                Row {
+                  if (matchQuery.isNotEmpty()) {
+                    IconButton(onClick = { matchQuery = "" }) {
+                      Icon(Icons.Filled.Close, contentDescription = "Clear")
+                    }
+                  }
+                  IconButton(
+                    onClick = {
+                      searchMatches(matchQuery)
+                      keyboardController?.hide()
+                    },
+                    enabled = matchQuery.isNotBlank() && !isSearchingMatches,
+                  ) {
+                    Icon(Icons.Filled.Search, contentDescription = "Search")
+                  }
+                }
+              },
+              keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+              keyboardActions = KeyboardActions(onSearch = {
+                searchMatches(matchQuery)
+                keyboardController?.hide()
+              }),
+            )
             Text(
-              text = if (target != null) "Search results for \"${target.title}\" — pick the one that matches your movie." else "Searching...",
+              text = if (matchQuery.isNotBlank()) "Search results for \"$matchQuery\" — pick the one that matches your movie." else "Type a name above and search.",
               style = MaterialTheme.typography.bodyMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
