@@ -51,6 +51,7 @@ import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import androidx.documentfile.provider.DocumentFile
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import kotlin.properties.ReadOnlyProperty
@@ -952,11 +953,17 @@ class PlayerViewModel(
 
   // ==================== Seeking ====================
 
+  // Monotonic guard so rapid taps/drags can't apply out of order:
+  // seekTo runs on the IO pool, so an older request may otherwise
+  // execute after a newer one and yank playback backwards.
+  private val seekSequence = AtomicInteger(0)
+
   fun seekBy(offset: Int) {
     coalesceSeek(offset)
   }
 
   fun seekTo(position: Int, isScrubbing: Boolean = false) {
+    val sequence = seekSequence.incrementAndGet()
     viewModelScope.launch(Dispatchers.IO) {
       val maxDuration = MPVLib.getPropertyInt("duration") ?: 0
       var clampedPosition = position.coerceIn(0, maxDuration)
@@ -987,6 +994,9 @@ class PlayerViewModel(
       } else {
         "absolute+keyframes"
       }
+      // Drop superseded requests: only the latest tap/drag position
+      // is allowed to reach mpv.
+      if (sequence != seekSequence.get()) return@launch
       MPVLib.command("seek", clampedPosition.toString(), seekMode)
     }
   }

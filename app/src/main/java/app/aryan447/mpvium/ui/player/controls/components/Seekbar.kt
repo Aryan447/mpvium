@@ -71,7 +71,7 @@ fun SeekbarWithTimers(
   position: Float,
   duration: Float,
   onValueChange: (Float) -> Unit,
-  onValueChangeFinished: () -> Unit,
+  onValueChangeFinished: (Float) -> Unit,
   timersInverted: Pair<Boolean, Boolean>,
   positionTimerOnClick: () -> Unit,
   durationTimerOnCLick: () -> Unit,
@@ -146,7 +146,7 @@ fun SeekbarWithTimers(
                   // Snap to user position immediately to prevent jumping
                   animatedPosition.snapTo(userPosition)
                   isUserInteracting = false
-                  onValueChangeFinished()
+                  onValueChangeFinished(userPosition)
                 }
               }
             )
@@ -162,7 +162,7 @@ fun SeekbarWithTimers(
                   delay(50)
                   animatedPosition.snapTo(userPosition)
                   isUserInteracting = false
-                  onValueChangeFinished()
+                  onValueChangeFinished(userPosition)
                 }
               },
               onDragCancel = {
@@ -170,7 +170,7 @@ fun SeekbarWithTimers(
                   delay(50)
                   animatedPosition.snapTo(userPosition)
                   isUserInteracting = false
-                  onValueChangeFinished()
+                  onValueChangeFinished(userPosition)
                 }
               },
             ) { change, _ ->
@@ -206,7 +206,7 @@ fun SeekbarWithTimers(
             onSeekFinished = {
               scope.launch { animatedPosition.snapTo(userPosition) }
               isUserInteracting = false
-              onValueChangeFinished()
+              onValueChangeFinished(userPosition)
             },
             loopStart = loopStart,
             loopEnd = loopEnd,
@@ -243,7 +243,7 @@ fun SeekbarWithTimers(
             onSeekFinished = {
               scope.launch { animatedPosition.snapTo(userPosition) }
               isUserInteracting = false
-              onValueChangeFinished()
+              onValueChangeFinished(userPosition)
             },
             loopStart = loopStart,
             loopEnd = loopEnd,
