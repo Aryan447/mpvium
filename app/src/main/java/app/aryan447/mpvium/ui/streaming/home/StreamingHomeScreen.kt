@@ -68,6 +68,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -437,6 +439,7 @@ private fun CategoryChipsRow(
   onCategorySelect: (StreamingCategory) -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  val haptic = LocalHapticFeedback.current
   LazyRow(
     modifier = modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -445,7 +448,10 @@ private fun CategoryChipsRow(
       val selected = category == selectedCategory
       FilterChip(
         selected = selected,
-        onClick = { onCategorySelect(category) },
+        onClick = {
+          if (!selected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+          onCategorySelect(category)
+        },
         label = {
           Text(
             text = category.displayName,
@@ -480,8 +486,8 @@ private fun SectionHeader(
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text = title,
-        style = MaterialTheme.typography.titleLarge.copy(
-          fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.headlineSmall.copy(
+          fontWeight = FontWeight.ExtraBold,
           letterSpacing = (-0.3).sp,
         ),
         color = MaterialTheme.colorScheme.onBackground,
@@ -489,13 +495,13 @@ private fun SectionHeader(
       if (badge != null) {
         Spacer(modifier = Modifier.width(8.dp))
         Surface(
-          color = MaterialTheme.colorScheme.surfaceContainerHighest,
+          color = MaterialTheme.colorScheme.primaryContainer,
           shape = CircleShape,
         ) {
           Text(
             text = badge,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
           )
         }
@@ -517,11 +523,15 @@ private fun FolderQuickCard(
   folder: VideoFolder,
   onClick: () -> Unit,
 ) {
+  val haptic = LocalHapticFeedback.current
   Surface(
     modifier = Modifier
       .width(160.dp)
       .clip(RoundedCornerShape(12.dp))
-      .clickable(onClick = onClick),
+      .clickable(onClick = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        onClick()
+      }),
     color = MaterialTheme.colorScheme.surfaceContainerHigh,
     shape = RoundedCornerShape(12.dp),
   ) {
