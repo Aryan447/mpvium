@@ -174,7 +174,8 @@ fun PlayerPillButton(
 }
 
 /**
- * Hero play/pause button: larger tonal circle with animated play<->pause vector.
+ * Hero play/pause button: larger circle with animated play<->pause vector,
+ * styled like other transport buttons.
  */
 @OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
@@ -212,11 +213,11 @@ fun PlayerPlayPauseButton(
     shape = CircleShape,
     color =
       if (!hideBackground) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
       } else {
         Color.Transparent
       },
-    contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onPrimaryContainer,
+    contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
