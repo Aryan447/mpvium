@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.controlColor
 import app.aryan447.mpvium.ui.theme.spacing
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -28,8 +30,12 @@ fun IntroSkipChip(
   modifier: Modifier = Modifier,
   onClick: () -> Unit = {},
 ) {
+  val haptic = LocalHapticFeedback.current
   Surface(
-    onClick = onClick,
+    onClick = {
+      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+      onClick()
+    },
     modifier = modifier.clip(RoundedCornerShape(50)),
     shape = RoundedCornerShape(50),
     color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),

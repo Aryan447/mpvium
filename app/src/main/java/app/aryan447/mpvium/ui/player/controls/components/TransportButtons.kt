@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
@@ -59,6 +61,7 @@ fun PlayerTransportButton(
   size: Dp = 56.dp,
   hideBackground: Boolean = false,
 ) {
+  val haptic = LocalHapticFeedback.current
   Surface(
     modifier =
       modifier
@@ -66,7 +69,10 @@ fun PlayerTransportButton(
         .clip(CircleShape)
         .clickable(
           enabled = enabled,
-          onClick = onClick,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+          },
         )
         .then(
           if (hideBackground) {
@@ -128,6 +134,7 @@ fun PlayerPillButton(
   height: Dp = 40.dp,
   content: @Composable RowScope.() -> Unit,
 ) {
+  val haptic = LocalHapticFeedback.current
   Surface(
     shape = RoundedCornerShape(50),
     color =
@@ -151,8 +158,14 @@ fun PlayerPillButton(
         .clip(RoundedCornerShape(50))
         .combinedClickable(
           enabled = enabled,
-          onClick = onClick,
-          onLongClick = onLongClick,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+          },
+          onLongClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onLongClick()
+          },
         ),
     content = {
       Row(content = content)
@@ -174,13 +187,21 @@ fun PlayerPlayPauseButton(
 ) {
   val icon = AnimatedImageVector.animatedVectorResource(R.drawable.anim_play_to_pause)
   val interaction = remember { MutableInteractionSource() }
+  val haptic = LocalHapticFeedback.current
 
   Surface(
     modifier =
       modifier
         .size(size)
         .clip(CircleShape)
-        .clickable(interaction, ripple(), onClick = onClick)
+        .clickable(
+          interaction,
+          ripple(),
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+          },
+        )
         .then(
           if (hideBackground) {
             Modifier.background(brush = transportShadow, shape = CircleShape)

@@ -80,8 +80,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
@@ -202,7 +200,6 @@ fun PlayerControls(
   }
   val playerTimeToDisappear by playerPreferences.playerTimeToDisappear.collectAsState()
   val playlistMode by playerPreferences.playlistMode.collectAsState()
-    val haptic = LocalHapticFeedback.current
 
   val abLoopA by viewModel.abLoopA.collectAsState()
   val abLoopB by viewModel.abLoopB.collectAsState()
