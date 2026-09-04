@@ -1,8 +1,14 @@
 package app.aryan447.mpvium.ui.player.controls.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -14,11 +20,13 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -48,9 +57,14 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
@@ -65,6 +79,76 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+
+/**
+ * Vertical drag distance (dp) per scrub-rate tier while seekbar-scrubbing.
+ * Dragging up through tiers selects 1x, 2x, 4x, 8x horizontal scrub speed.
+ */
+private const val SCRUB_RATE_TIER_STEP_DP = 48f
+private const val MAX_SCRUB_TIER = 3
+
+private fun scrubRateForTier(tier: Int): Int = 1 shl tier.coerceIn(0, MAX_SCRUB_TIER)
+
+/**
+ * Pill showing the active scrub-rate multiplier, positioned above the thumb.
+ * A [BoxScope] extension so the scoped [AnimatedVisibility] overload and
+ * [BoxScope.align] resolve against the seekbar container unambiguously.
+ */
+@Composable
+private fun BoxScope.ScrubRatePopup(
+  visible: Boolean,
+  rateText: String,
+  positionFraction: Float,
+  trackWidthPx: Int,
+) {
+  var popupWidthPx by remember { mutableIntStateOf(0) }
+  AnimatedVisibility(
+    visible = visible,
+    enter = fadeIn() + scaleIn(),
+    exit = fadeOut() + scaleOut(),
+    modifier = Modifier
+      .align(Alignment.TopCenter)
+      .offset {
+        // Travel range keeps the pill inside the track bounds.
+        val travelPx = (trackWidthPx - popupWidthPx).coerceAtLeast(0)
+        IntOffset(x = ((positionFraction - 0.5f) * travelPx).roundToInt(), y = 0)
+      },
+  ) {
+    Box(
+      modifier = Modifier
+        .background(
+          MaterialTheme.colorScheme.inverseSurface,
+          RoundedCornerShape(8.dp),
+        )
+        .padding(horizontal = 8.dp, vertical = 4.dp)
+        .onSizeChanged { popupWidthPx = it.width },
+    ) {
+      Text(
+        text = rateText,
+        color = MaterialTheme.colorScheme.inverseOnSurface,
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp,
+      )
+    }
+  }
+}
+
+/**
+ * Maps a horizontal touch coordinate to a seek position in seconds.
+ *
+ * Evaluated strictly within the track's drawn bounds: [0, trackWidthPx].
+ * Uses Double precision for the pixel-to-time ratio so wide tracks (thousands
+ * of px) don't lose sub-second precision, and clamps the coordinate itself —
+ * not just the result — so overshoot, insets and density scaling can't skew
+ * the fraction. Returns 0 when the track hasn't been measured yet.
+ */
+private fun xToSeekPosition(x: Float, trackWidthPx: Int, duration: Float): Float {
+  if (trackWidthPx <= 0 || duration <= 0f) return 0f
+  val clampedX = x.coerceIn(0f, trackWidthPx.toFloat()).toDouble()
+  val fraction = clampedX / trackWidthPx.toDouble()
+  return (fraction * duration.toDouble()).toFloat().coerceIn(0f, duration)
+}
 
 @Composable
 fun SeekbarWithTimers(
@@ -85,6 +169,21 @@ fun SeekbarWithTimers(
   val clickEvent = LocalPlayerButtonsClickEvent.current
   var isUserInteracting by remember { mutableStateOf(false) }
   var userPosition by remember { mutableFloatStateOf(position) }
+
+  // Variable scrub rate: dragging upward while scrubbing steps through
+  // 1x/2x/4x/8x tiers. Horizontal deltas are scaled by the active rate and
+  // accumulated relative to the grab anchor (not re-mapped absolutely), so a
+  // mid-drag rate change never teleports the preview.
+  var scrubTier by remember { mutableIntStateOf(0) }
+  var dragAnchor by remember { mutableFloatStateOf(0f) }
+  var scaledDragDxPx by remember { mutableFloatStateOf(0f) }
+  var verticalDragPx by remember { mutableFloatStateOf(0f) }
+  val scrubRate = scrubRateForTier(scrubTier)
+
+  // Measured track width for the thumb-following rate popup.
+  var trackWidthPx by remember { mutableIntStateOf(0) }
+  val density = LocalDensity.current
+  val scrubTierStepPx = with(density) { SCRUB_RATE_TIER_STEP_DP.dp.toPx() }
 
   // Animated position for smooth transitions
   val animatedPosition = remember { Animatable(position) }
@@ -127,62 +226,15 @@ fun SeekbarWithTimers(
         Modifier
           .weight(1f)
           .height(48.dp)
-          .padding(vertical = 8.dp), // Add vertical padding for larger touch area
+          .padding(vertical = 8.dp) // Add vertical padding for larger touch area
+          .onSizeChanged { trackWidthPx = it.width },
       contentAlignment = Alignment.Center,
     ) {
-      // Invisible expanded touch area
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(64.dp) // Larger touch area
-          .pointerInput(Unit) {
-            detectTapGestures(
-              onTap = { offset ->
-                val newPosition = (offset.x / size.width) * duration
-                if (!isUserInteracting) isUserInteracting = true
-                userPosition = newPosition.coerceIn(0f, duration)
-                onValueChange(userPosition)
-                scope.launch {
-                  // Snap to user position immediately to prevent jumping
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
-                  onValueChangeFinished(userPosition)
-                }
-              }
-            )
-          }
-          .pointerInput(Unit) {
-            detectDragGestures(
-              onDragStart = {
-                isUserInteracting = true
-              },
-              onDragEnd = {
-                scope.launch {
-                  // Allow a tiny window for mpv/viewModel to sync back before releasing control
-                  delay(50)
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
-                  onValueChangeFinished(userPosition)
-                }
-              },
-              onDragCancel = {
-                scope.launch {
-                  delay(50)
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
-                  onValueChangeFinished(userPosition)
-                }
-              },
-            ) { change, _ ->
-              change.consume()
-              val newPosition = (change.position.x / size.width) * duration
-              userPosition = newPosition.coerceIn(0f, duration)
-              onValueChange(userPosition)
-            }
-          }
-      )
-
-      // Visual seekbar (smaller, centered)
+      // Visual seekbar (smaller, centered) — declared first so the touch
+      // overlay below stays on top and remains the single gesture handler.
+      // This keeps touch coordinates mapped against one set of track bounds
+      // (no thumb-inset mismatch vs the inner Slider) and prevents the
+      // release value from being clobbered by a second handler.
       Box(
         modifier = Modifier
           .fillMaxWidth()
@@ -250,7 +302,96 @@ fun SeekbarWithTimers(
           )
         }
       }
-    }
+      }
+
+      // Transparent touch overlay, drawn last so it is hit-tested first and
+      // remains the single gesture handler for every seekbar style.
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(64.dp) // Larger touch area
+          .pointerInput(duration) {
+            detectTapGestures(
+              onTap = { offset ->
+                if (!isUserInteracting) isUserInteracting = true
+                scrubTier = 0
+                userPosition = xToSeekPosition(offset.x, size.width, duration)
+                onValueChange(userPosition)
+                scope.launch {
+                  // Snap to user position immediately to prevent jumping
+                  animatedPosition.snapTo(userPosition)
+                  isUserInteracting = false
+                  onValueChangeFinished(userPosition)
+                }
+              }
+            )
+          }
+          .pointerInput(duration, scrubTierStepPx) {
+            detectDragGestures(
+              onDragStart = { offset ->
+                isUserInteracting = true
+                // Anchor to the grab point immediately: the first onDrag
+                // callback only fires after touch slop, otherwise the
+                // preview would jump from the stale position on wide tracks.
+                dragAnchor = xToSeekPosition(offset.x, size.width, duration)
+                scaledDragDxPx = 0f
+                verticalDragPx = 0f
+                scrubTier = 0
+                userPosition = dragAnchor
+                onValueChange(userPosition)
+              },
+              onDragEnd = {
+                // Release uses the last settled drag value — never re-sample
+                // here, so lift-off micro-jitter can't clobber the target.
+                scope.launch {
+                  // Allow a tiny window for mpv/viewModel to sync back before releasing control
+                  delay(50)
+                  animatedPosition.snapTo(userPosition)
+                  isUserInteracting = false
+                  scrubTier = 0
+                  onValueChangeFinished(userPosition)
+                }
+              },
+              onDragCancel = {
+                scope.launch {
+                  delay(50)
+                  animatedPosition.snapTo(userPosition)
+                  isUserInteracting = false
+                  scrubTier = 0
+                  onValueChangeFinished(userPosition)
+                }
+              },
+            ) { change, dragAmount ->
+              change.consume()
+              // Upward displacement selects the rate tier; dragging back down
+              // lowers it again. Horizontal deltas are scaled by the active
+              // rate and accumulated from the grab anchor.
+              verticalDragPx += dragAmount.y
+              val newTier =
+                ((-verticalDragPx) / scrubTierStepPx).toInt()
+                  .coerceIn(0, MAX_SCRUB_TIER)
+              if (newTier != scrubTier) scrubTier = newTier
+              if (size.width > 0 && duration > 0f) {
+                scaledDragDxPx += dragAmount.x * scrubRateForTier(scrubTier)
+                val anchorFraction = dragAnchor.toDouble() / duration.toDouble()
+                val deltaFraction = scaledDragDxPx.toDouble() / size.width.toDouble()
+                userPosition =
+                  ((anchorFraction + deltaFraction) * duration.toDouble())
+                    .toFloat().coerceIn(0f, duration)
+                onValueChange(userPosition)
+              }
+            }
+          }
+      )
+
+      // Scrub-rate popup: follows the thumb while a boosted rate is active.
+      ScrubRatePopup(
+        visible = isUserInteracting && scrubTier > 0,
+        rateText = "${scrubRate}×",
+        positionFraction =
+          if (duration > 0f) (userPosition / duration).coerceIn(0f, 1f) else 0f,
+        trackWidthPx = trackWidthPx,
+      )
   }
 
     VideoTimer(
@@ -347,13 +488,20 @@ private fun SquigglySeekbar(
     }
   }
 
+  // Thicken the stroke while scrubbing so the finger's target stays visible.
+  val scrubThickness by animateFloatAsState(
+    targetValue = if (isScrubbing) 1.8f else 1f,
+    animationSpec = tween(durationMillis = 150, easing = LinearEasing),
+    label = "scrubThickness",
+  )
+
   Canvas(
     modifier =
       modifier
         .fillMaxWidth()
         .height(48.dp),
   ) {
-    val strokeWidth = 5.dp.toPx()
+    val strokeWidth = 5.dp.toPx() * scrubThickness
     val progress = if (duration > 0f) (position / duration).coerceIn(0f, 1f) else 0f
     val totalWidth = size.width
     val totalProgressPx = totalWidth * progress
@@ -497,7 +645,7 @@ private fun SquigglySeekbar(
 
     // Vertical Bar Thumb
     val barHalfHeight = (lineAmplitude + strokeWidth)
-    val barWidth = 5.dp.toPx()
+    val barWidth = 5.dp.toPx() * scrubThickness
 
     if (barHalfHeight > 0.5f) {
         drawLine(
@@ -616,11 +764,18 @@ fun StandardSeekbar(
         }
     }
 
+    // Thicken the track while scrubbing so the finger's target stays visible.
+    val scrubThickness by animateFloatAsState(
+        targetValue = if (isScrubbing) 1.75f else 1f,
+        animationSpec = tween(durationMillis = 150, easing = LinearEasing),
+        label = "scrubThickness",
+    )
+
     val isThick = seekbarStyle == SeekbarStyle.Thick
     val baseTrackHeight = if (isThick) 16.dp else 4.dp
-    val trackHeightDp = if (isThick) baseTrackHeight * heightFraction else baseTrackHeight
+    val trackHeightDp = (if (isThick) baseTrackHeight * heightFraction else baseTrackHeight) * scrubThickness
     val thumbWidth = if (isThick) 6.dp else 14.dp
-    val thumbHeight = if (isThick) 16.dp else 14.dp
+    val thumbHeight = if (isThick) 16.dp * scrubThickness else 14.dp
     val thumbShape = if (isThick) RoundedCornerShape(3.dp) else CircleShape
 
     Slider(
