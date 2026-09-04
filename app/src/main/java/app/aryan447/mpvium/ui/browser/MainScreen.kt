@@ -38,8 +38,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
@@ -122,6 +124,14 @@ object MainScreen : Screen {
 
     val context = LocalContext.current
     val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+
+    fun selectTab(index: Int) {
+      if (selectedTab != index) {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        selectedTab = index
+      }
+    }
 
     // Shared state (across the app)
     val isInSelectionMode = remember { mutableStateOf(isInSelectionModeShared) }
@@ -184,31 +194,31 @@ object MainScreen : Screen {
               icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
               label = { Text("Home") },
               selected = selectedTab == 0,
-              onClick = { selectedTab = 0 }
+              onClick = { selectTab(0) }
             )
             NavigationBarItem(
               icon = { Icon(Icons.Filled.Tv, contentDescription = "TV Shows") },
               label = { Text("Series") },
               selected = selectedTab == 1,
-              onClick = { selectedTab = 1 }
+              onClick = { selectTab(1) }
             )
             NavigationBarItem(
               icon = { Icon(Icons.Filled.Movie, contentDescription = "Movies") },
               label = { Text("Movies") },
               selected = selectedTab == 2,
-              onClick = { selectedTab = 2 }
+              onClick = { selectTab(2) }
             )
             NavigationBarItem(
               icon = { Icon(Icons.Filled.Folder, contentDescription = "Folders") },
               label = { Text("Folders") },
               selected = selectedTab == 3,
-              onClick = { selectedTab = 3 }
+              onClick = { selectTab(3) }
             )
             NavigationBarItem(
               icon = { Icon(Icons.Filled.VideoLibrary, contentDescription = "Library") },
               label = { Text("Library") },
               selected = selectedTab == 4,
-              onClick = { selectedTab = 4 }
+              onClick = { selectTab(4) }
             )
           }
         }

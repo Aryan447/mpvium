@@ -34,7 +34,7 @@ import app.aryan447.mpvium.ui.player.controls.panelCardsColors
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-import me.zhanghai.compose.preference.SwitchPreference
+import app.aryan447.mpvium.ui.preferences.HapticSwitchPreference
 import org.koin.compose.koinInject
 
 @Composable
@@ -58,7 +58,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
         var overrideAssSubs by remember {
           mutableStateOf(MPVLib.getPropertyString("sub-ass-override") == "force")
         }
-        SwitchPreference(
+        HapticSwitchPreference(
           overrideAssSubs,
           onValueChange = {
             overrideAssSubs = it
@@ -71,7 +71,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
         var scaleByWindow by remember {
           mutableStateOf(MPVLib.getPropertyString("sub-scale-by-window") == "yes")
         }
-        SwitchPreference(
+        HapticSwitchPreference(
           scaleByWindow,
           onValueChange = {
             scaleByWindow = it

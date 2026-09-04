@@ -53,7 +53,6 @@ import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-import me.zhanghai.compose.preference.SwitchPreference
 import org.koin.compose.koinInject
 
 // Enum to identify which region we are editing
@@ -212,7 +211,7 @@ object PlayerControlsPreferencesScreen : Screen {
             var customTimeValue by remember { mutableStateOf("") }
 
             PreferenceCard {
-              SwitchPreference(
+              HapticSwitchPreference(
                 value = hidePlayerButtonsBackground,
                 onValueChange = { appearancePrefs.hidePlayerButtonsBackground.set(it) },
                 title = {

@@ -41,7 +41,6 @@ import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.FooterPreference
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-import me.zhanghai.compose.preference.SwitchPreference
 import org.koin.compose.koinInject
 
 @Serializable
@@ -229,7 +228,7 @@ object GesturePreferencesScreen : Screen {
           PreferenceDivider()
 
           val useSingleTapForCenter by preferences.useSingleTapForCenter.collectAsState()
-          SwitchPreference(
+          HapticSwitchPreference(
             value = useSingleTapForCenter,
             onValueChange = { preferences.useSingleTapForCenter.set(it) },
             title = {
