@@ -169,6 +169,7 @@ class PlayerViewModel(
   val introSkipShown: StateFlow<Boolean> = _introSkipShown.asStateFlow()
 
   private var introSkipTitle = ""
+  private val dismissedWindows = mutableSetOf<app.aryan447.mpvium.repository.intro.IntroWindow>()
 
   // Media title for subtitle association (must be declared before init blocks that reference it)
   var currentMediaTitle: String = ""
@@ -209,13 +210,16 @@ class PlayerViewModel(
           val pos = MPVLib.getPropertyDouble("time-pos")?.toInt()
             ?: MPVLib.getPropertyInt("time-pos")
             ?: 0
-          val active = windows.firstOrNull { it.contains(pos) }
-          _introSkipWindow.value = active
-          val shouldShow = active != null
-          if (_introSkipShown.value != shouldShow) {
-            _introSkipShown.value = shouldShow
+
+          // Un-dismiss windows if user seeks backward before their start
+          dismissedWindows.removeAll { it.startSeconds > pos }
+
+          val active = windows.firstOrNull { it.contains(pos) && !dismissedWindows.contains(it) }
+          if (_introSkipWindow.value != active) {
+            _introSkipWindow.value = active
+            _introSkipShown.value = (active != null)
           }
-        } else if (_introSkipShown.value) {
+        } else if (_introSkipShown.value || _introSkipWindow.value != null) {
           _introSkipWindow.value = null
           _introSkipShown.value = false
         }
@@ -647,6 +651,7 @@ class PlayerViewModel(
 
   private fun loadIntroSkip(mediaTitle: String) {
     introSkipTitle = mediaTitle
+    dismissedWindows.clear()
     _introSkipShown.value = false
     _introSkipWindows.value = emptyList()
     _introSkipWindow.value = null
@@ -659,8 +664,10 @@ class PlayerViewModel(
   }
 
   fun skipIntro() {
-    _introSkipShown.value = false
     val window = _introSkipWindow.value ?: return
+    dismissedWindows.add(window)
+    _introSkipShown.value = false
+    _introSkipWindow.value = null
     val target = window.endSeconds.coerceIn(0, duration ?: 0)
     seekTo(target)
   }
