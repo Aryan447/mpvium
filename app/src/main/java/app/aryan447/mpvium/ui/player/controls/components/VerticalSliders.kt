@@ -2,14 +2,9 @@ package app.aryan447.mpvium.ui.player.controls.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -30,11 +25,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.SeekbarStyle
 import app.aryan447.mpvium.ui.theme.spacing
 import kotlin.math.roundToInt
 
@@ -55,42 +57,19 @@ fun VerticalSlider(
   modifier: Modifier = Modifier,
   overflowValue: Float? = null,
   overflowRange: ClosedFloatingPointRange<Float>? = null,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
 ) {
-  val coercedValue = value.coerceIn(range)
-  Box(
-    modifier =
-      modifier
-        .height(120.dp)
-        .aspectRatio(0.2f)
-        .clip(RoundedCornerShape(16.dp))
-        .background(MaterialTheme.colorScheme.background)
-        .border(
-          width = 1.dp,
-          color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-          shape = RoundedCornerShape(16.dp),
-        ),
-    contentAlignment = Alignment.BottomCenter,
-  ) {
-    val targetHeight by animateFloatAsState(percentage(coercedValue, range), label = "vsliderheight")
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .fillMaxHeight(targetHeight)
-        .background(MaterialTheme.colorScheme.tertiary),
-    )
-    if (overflowRange != null && overflowValue != null) {
-      val overflowHeight by animateFloatAsState(
-        percentage(overflowValue, overflowRange),
-        label = "vslideroverflowheight",
-      )
-      Box(
-        Modifier
-          .fillMaxWidth()
-          .fillMaxHeight(overflowHeight)
-          .background(MaterialTheme.colorScheme.errorContainer),
-      )
-    }
-  }
+  VerticalBar(
+    fraction = percentage(value.coerceIn(range), range),
+    overflowFraction =
+      if (overflowRange != null && overflowValue != null) {
+        percentage(overflowValue, overflowRange)
+      } else {
+        null
+      },
+    seekbarStyle = seekbarStyle,
+    modifier = modifier,
+  )
 }
 
 @Composable
@@ -100,41 +79,198 @@ fun VerticalSlider(
   modifier: Modifier = Modifier,
   overflowValue: Int? = null,
   overflowRange: ClosedRange<Int>? = null,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
 ) {
-  val coercedValue = value.coerceIn(range)
-  Box(
-    modifier =
-      modifier
-        .height(120.dp)
-        .aspectRatio(0.2f)
-        .clip(RoundedCornerShape(16.dp))
-        .background(MaterialTheme.colorScheme.background)
-        .border(
-          width = 1.dp,
-          color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-          shape = RoundedCornerShape(16.dp),
-        ),
-    contentAlignment = Alignment.BottomCenter,
-  ) {
-    val targetHeight by animateFloatAsState(percentage(coercedValue, range), label = "vsliderheight")
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .fillMaxHeight(targetHeight)
-        .background(MaterialTheme.colorScheme.tertiary),
+  VerticalBar(
+    fraction = percentage(value.coerceIn(range), range),
+    overflowFraction =
+      if (overflowRange != null && overflowValue != null) {
+        percentage(overflowValue, overflowRange)
+      } else {
+        null
+      },
+    seekbarStyle = seekbarStyle,
+    modifier = modifier,
+  )
+}
+
+/**
+ * Vertical counterpart of the seekbar tracks: same [SeekbarStyle] options,
+ * primary fill like the seekbar, level rising from the bottom.
+ */
+@Composable
+private fun VerticalBar(
+  fraction: Float,
+  overflowFraction: Float?,
+  seekbarStyle: SeekbarStyle,
+  modifier: Modifier = Modifier,
+) {
+  val animatedFraction by animateFloatAsState(fraction.coerceIn(0f, 1f), label = "vsliderlevel")
+  val animatedOverflow by animateFloatAsState(
+    (overflowFraction ?: 0f).coerceIn(0f, 1f),
+    label = "vslideroverflow",
+  )
+  when (seekbarStyle) {
+    SeekbarStyle.Standard -> StandardVerticalBar(animatedFraction, animatedOverflow, modifier)
+    SeekbarStyle.Wavy -> WavyVerticalBar(animatedFraction, animatedOverflow, modifier)
+    SeekbarStyle.Thick -> ThickVerticalBar(animatedFraction, animatedOverflow, modifier)
+  }
+}
+
+@Composable
+private fun StandardVerticalBar(
+  fraction: Float,
+  overflowFraction: Float,
+  modifier: Modifier = Modifier,
+) {
+  val primary = MaterialTheme.colorScheme.primary
+  val overflowColor = MaterialTheme.colorScheme.errorContainer
+  Canvas(modifier = modifier.height(120.dp).width(24.dp)) {
+    val trackWidth = 4.dp.toPx()
+    val centerX = size.width / 2f
+    val levelY = size.height * (1f - fraction)
+    // Unplayed track
+    drawRoundRect(
+      color = primary.copy(alpha = 0.3f),
+      topLeft = Offset(centerX - trackWidth / 2f, 0f),
+      size = Size(trackWidth, size.height),
+      cornerRadius = androidx.compose.ui.geometry.CornerRadius(trackWidth / 2f),
     )
-    if (overflowRange != null && overflowValue != null) {
-      val overflowHeight by animateFloatAsState(
-        percentage(overflowValue, overflowRange),
-        label = "vslideroverflowheight",
-      )
-      Box(
-        Modifier
-          .fillMaxWidth()
-          .fillMaxHeight(overflowHeight)
-          .background(MaterialTheme.colorScheme.errorContainer),
+    // Played portion
+    val playedHeight = size.height - levelY
+    if (playedHeight > 0.5f) {
+      drawRoundRect(
+        color = primary,
+        topLeft = Offset(centerX - trackWidth / 2f, levelY),
+        size = Size(trackWidth, playedHeight),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(trackWidth / 2f),
       )
     }
+    // Volume-boost overflow, stacked from the bottom
+    val overflowHeight = size.height * overflowFraction
+    if (overflowFraction > 0f && overflowHeight > 0.5f) {
+      drawRoundRect(
+        color = overflowColor,
+        topLeft = Offset(centerX - trackWidth / 2f, size.height - overflowHeight),
+        size = Size(trackWidth, overflowHeight),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(trackWidth / 2f),
+      )
+    }
+    // Thumb
+    drawCircle(
+      color = primary,
+      radius = 7.dp.toPx(),
+      center = Offset(centerX, levelY.coerceIn(0f, size.height)),
+    )
+  }
+}
+
+@Composable
+private fun ThickVerticalBar(
+  fraction: Float,
+  overflowFraction: Float,
+  modifier: Modifier = Modifier,
+) {
+  val primary = MaterialTheme.colorScheme.primary
+  val overflowColor = MaterialTheme.colorScheme.errorContainer
+  Canvas(modifier = modifier.height(120.dp).width(24.dp)) {
+    val trackWidth = 16.dp.toPx()
+    val thumbHeight = 6.dp.toPx()
+    val gapHalf = 7.dp.toPx()
+    val outerRadius = trackWidth / 2f
+    val innerRadius = 3.dp.toPx()
+    val centerX = size.width / 2f
+    val levelY = (size.height * (1f - fraction)).coerceIn(0f, size.height)
+
+    fun drawSegment(topY: Float, bottomY: Float, color: Color, topRadius: Float, bottomRadius: Float) {
+      if (bottomY - topY < 0.5f) return
+      val path = Path()
+      path.addRoundRect(
+        androidx.compose.ui.geometry.RoundRect(
+          left = centerX - trackWidth / 2f,
+          top = topY,
+          right = centerX + trackWidth / 2f,
+          bottom = bottomY,
+          topLeftCornerRadius = androidx.compose.ui.geometry.CornerRadius(topRadius),
+          bottomLeftCornerRadius = androidx.compose.ui.geometry.CornerRadius(bottomRadius),
+          topRightCornerRadius = androidx.compose.ui.geometry.CornerRadius(topRadius),
+          bottomRightCornerRadius = androidx.compose.ui.geometry.CornerRadius(bottomRadius),
+        ),
+      )
+      drawPath(path, color)
+    }
+
+    // Unplayed (top) and played (bottom) with a thumb gap like the horizontal thick bar
+    drawSegment(0f, levelY - gapHalf, primary.copy(alpha = 0.3f), outerRadius, innerRadius)
+    drawSegment(levelY + gapHalf, size.height, primary, innerRadius, outerRadius)
+    // Boost overflow from the bottom
+    if (overflowFraction > 0f) {
+      drawSegment(size.height * (1f - overflowFraction), size.height, overflowColor, innerRadius, outerRadius)
+    }
+    // Thumb
+    drawSegment(levelY - thumbHeight / 2f, levelY + thumbHeight / 2f, primary, innerRadius, innerRadius)
+  }
+}
+
+@Composable
+private fun WavyVerticalBar(
+  fraction: Float,
+  overflowFraction: Float,
+  modifier: Modifier = Modifier,
+) {
+  val primary = MaterialTheme.colorScheme.primary
+  val overflowColor = MaterialTheme.colorScheme.errorContainer
+  Canvas(modifier = modifier.height(120.dp).width(24.dp)) {
+    val strokeWidth = 5.dp.toPx()
+    val waveLength = 80f
+    val amplitude = 6f
+    val centerX = size.width / 2f
+    val levelY = size.height * (1f - fraction)
+
+    val path = Path()
+    val yStart = size.height + waveLength / 2f
+    val yEnd = -waveLength / 2f
+    path.moveTo(centerX, yStart)
+    var currentY = yStart
+    var waveSign = 1f
+    var currentAmp = waveSign * amplitude
+    val dist = waveLength / 2f
+    while (currentY > yEnd) {
+      waveSign = -waveSign
+      val nextY = currentY - dist
+      val midY = currentY - dist / 2f
+      val nextAmp = waveSign * amplitude
+      path.cubicTo(centerX + currentAmp, midY, centerX + nextAmp, midY, centerX + nextAmp, nextY)
+      currentAmp = nextAmp
+      currentY = nextY
+    }
+
+    val waveStyle = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+    // Unplayed wave above the level
+    clipRect(left = 0f, top = -strokeWidth, right = size.width, bottom = levelY) {
+      drawPath(path, primary.copy(alpha = 0.3f), style = waveStyle)
+    }
+    // Played wave below the level
+    clipRect(left = 0f, top = levelY, right = size.width, bottom = size.height + strokeWidth) {
+      drawPath(path, primary, style = waveStyle)
+    }
+    // Boost overflow from the bottom
+    if (overflowFraction > 0f) {
+      val overflowTop = size.height * (1f - overflowFraction)
+      clipRect(left = 0f, top = overflowTop, right = size.width, bottom = size.height + strokeWidth) {
+        drawPath(path, overflowColor, style = waveStyle)
+      }
+    }
+    // Thumb tick
+    val barHalf = amplitude + strokeWidth
+    val thumbY = levelY.coerceIn(0f, size.height)
+    drawLine(
+      color = primary,
+      start = Offset(centerX - barHalf, thumbY),
+      end = Offset(centerX + barHalf, thumbY),
+      strokeWidth = strokeWidth,
+      cap = StrokeCap.Round,
+    )
   }
 }
 
@@ -143,6 +279,7 @@ fun BrightnessSlider(
   brightness: Float,
   range: ClosedFloatingPointRange<Float>,
   modifier: Modifier = Modifier,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
 ) {
   val coercedBrightness = brightness.coerceIn(range)
   Surface(
@@ -166,6 +303,7 @@ fun BrightnessSlider(
       VerticalSlider(
         coercedBrightness,
         range,
+        seekbarStyle = seekbarStyle,
       )
       Icon(
         when (percentage(coercedBrightness, range)) {
@@ -188,6 +326,7 @@ fun VolumeSlider(
   boostRange: ClosedRange<Int>?,
   modifier: Modifier = Modifier,
   displayAsPercentage: Boolean = false,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
 ) {
   val percentage = (percentage(volume, range) * 100).roundToInt()
   Surface(
@@ -215,6 +354,7 @@ fun VolumeSlider(
         if (displayAsPercentage) 0..100 else range,
         overflowValue = boostVolume,
         overflowRange = boostRange,
+        seekbarStyle = seekbarStyle,
       )
       Icon(
         when (percentage) {
