@@ -18,9 +18,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.ui.draw.rotate
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.outlined.Restore
@@ -30,7 +28,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
@@ -48,7 +46,6 @@ import app.aryan447.mpvium.preferences.preference.Preference
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.ConfirmDialog
 import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
-import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.PreferenceCategory
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -63,7 +60,6 @@ data class ControlLayoutEditorScreen(
   @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
   @Composable
   override fun Content() {
-    val backstack = LocalBackStack.current
     val preferences = koinInject<AppearancePreferences>()
 
     // Get all 4 preferences as a List
@@ -183,13 +179,8 @@ data class ControlLayoutEditorScreen(
 
     Scaffold(
       topBar = {
-        TopAppBar(
-          title = { Text(text = title) },
-          navigationIcon = {
-            IconButton(onClick = backstack::removeLastOrNull) {
-              Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
-            }
-          },
+        SettingsTopBar(
+          title = title,
           actions = {
             IconButton(onClick = { showResetDialog = true }) {
               Icon(Icons.Outlined.Restore, contentDescription = "Reset to default")
