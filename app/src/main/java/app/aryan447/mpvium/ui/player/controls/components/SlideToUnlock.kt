@@ -32,8 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -48,6 +50,7 @@ fun SlideToUnlock(
   onDraggingChanged: (Boolean) -> Unit = {},
 ) {
   val coroutineScope = rememberCoroutineScope()
+  val haptic = LocalHapticFeedback.current
 
   var containerWidthPx by remember { mutableFloatStateOf(0f) }
   val sliderSize = 56.dp
@@ -109,6 +112,7 @@ fun SlideToUnlock(
               onDraggingChanged(false)
               if (offsetX.value >= unlockThreshold) {
                 // Unlock triggered - instantly unlock without animation
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onUnlock()
               } else {
                 // Snap back
