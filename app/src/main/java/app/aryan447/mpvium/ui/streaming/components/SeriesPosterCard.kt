@@ -27,7 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -75,12 +77,16 @@ private fun SeriesPosterCard(
   cardWidth: Dp = 140.dp,
 ) {
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
+  val haptic = LocalHapticFeedback.current
 
   Column(
     modifier = modifier
       .width(cardWidth)
       .clip(RoundedCornerShape(14.dp))
-      .clickable(onClick = onClick),
+      .clickable(onClick = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        onClick()
+      }),
   ) {
     // Poster (2:3 Aspect Ratio)
     Box(

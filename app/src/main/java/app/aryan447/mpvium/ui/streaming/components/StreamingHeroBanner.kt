@@ -30,12 +30,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.LocalAppTheme
+import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 
 @Composable
 fun StreamingHeroBanner(
@@ -46,11 +51,14 @@ fun StreamingHeroBanner(
 ) {
   val fallbackVideo = series.nextEpisodeToWatch?.video ?: series.seasons.values.firstOrNull()?.firstOrNull()?.video
   val backdropUrl = series.backdropUrl ?: series.posterUrl
+  val haptic = LocalHapticFeedback.current
+  val isCinema = LocalAppTheme.current == AppTheme.Cinema
 
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .height(340.dp)
+      .height(360.dp)
+      .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier)
   ) {
     // Backdrop Image
     StreamingImage(
@@ -61,7 +69,7 @@ fun StreamingHeroBanner(
       modifier = Modifier.fillMaxSize(),
     )
 
-    // Gradient Scrim overlays (top subtle, bottom heavy)
+    // Gradient Scrim overlays (top subtle, bottom heavy) + side vignette
     Box(
       modifier = Modifier
         .fillMaxSize()
@@ -74,6 +82,18 @@ fun StreamingHeroBanner(
           )
         )
     )
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(
+          Brush.horizontalGradient(
+            0.0f to Color.Black.copy(alpha = 0.35f),
+            0.15f to Color.Transparent,
+            0.85f to Color.Transparent,
+            1.0f to Color.Black.copy(alpha = 0.35f),
+          )
+        )
+    )
 
     // Content Overlay
     Column(
@@ -82,6 +102,18 @@ fun StreamingHeroBanner(
         .fillMaxWidth()
         .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
+      // Featured kicker
+      Text(
+        text = "FEATURED SERIES",
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontWeight = FontWeight.Bold,
+          letterSpacing = 3.sp,
+        ),
+        color = MaterialTheme.colorScheme.primary,
+      )
+
+      Spacer(modifier = Modifier.height(6.dp))
+
       // Badges Row
       Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -195,8 +227,41 @@ fun StreamingHeroBanner(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+        modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
       )
+
+      // Series progress (streaming-style resume bar)
+      val seriesProgress = series.progressPercentage
+      if (seriesProgress > 0f && seriesProgress < 1f) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp),
+        ) {
+          Box(
+            modifier = Modifier
+              .weight(1f)
+              .height(4.dp)
+              .clip(RoundedCornerShape(50))
+              .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+          ) {
+            Box(
+              modifier = Modifier
+                .fillMaxWidth(seriesProgress)
+                .height(4.dp)
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.primary),
+            )
+          }
+          Text(
+            text = "${series.watchedEpisodesCount}/${series.totalEpisodes}",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+      }
 
       // Action Buttons
       Row(
@@ -215,7 +280,10 @@ fun StreamingHeroBanner(
         }
 
         Button(
-          onClick = onPlayClick,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onPlayClick()
+          },
           modifier = Modifier.weight(1f).height(44.dp),
           colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -234,7 +302,10 @@ fun StreamingHeroBanner(
         }
 
         FilledTonalButton(
-          onClick = onDetailsClick,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onDetailsClick()
+          },
           modifier = Modifier.height(44.dp),
           shape = RoundedCornerShape(12.dp),
         ) {
