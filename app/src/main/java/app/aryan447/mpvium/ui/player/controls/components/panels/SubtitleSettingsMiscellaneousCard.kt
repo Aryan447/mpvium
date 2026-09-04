@@ -101,13 +101,17 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
             )
           },
         )
+        val persistSubPos by preferences.persistSubPos.collectAsState()
         SliderItem(
           label = stringResource(R.string.player_sheets_sub_position),
           value = subPos ?: preferences.subPos.get(),
           valueText = (subPos ?: preferences.subPos.get()).toString(),
           onChange = {
-            preferences.subPos.set(it)
+            if (persistSubPos) {
+              preferences.subPos.set(it)
+            }
             MPVLib.setPropertyInt("sub-pos", it)
+            MPVLib.setPropertyInt("secondary-sub-pos", (it - 10).coerceIn(0, 110))
           },
           max = 150,
           icon = {
@@ -116,6 +120,12 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
               null,
             )
           },
+        )
+        HapticSwitchPreference(
+          value = persistSubPos,
+          onValueChange = { preferences.persistSubPos.set(it) },
+          title = { Text(stringResource(R.string.pref_subtitles_persist_pos_title)) },
+          summary = { Text(stringResource(R.string.pref_subtitles_persist_pos_summary)) },
         )
         Row(
           modifier =
@@ -128,6 +138,7 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
             onClick = {
               preferences.subPos.deleteAndGet().let {
                 MPVLib.setPropertyInt("sub-pos", it)
+                MPVLib.setPropertyInt("secondary-sub-pos", (it - 10).coerceIn(0, 110))
               }
               preferences.subScale.deleteAndGet().let {
                 MPVLib.setPropertyFloat("sub-scale", it)

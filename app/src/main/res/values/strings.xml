@@ -255,6 +255,11 @@
   <string name="player_sheets_sub_scale_by_window_summary">Scale subtitles by window size and use video margins</string>
   <string name="player_sheets_sub_scale">Scale</string>
   <string name="player_sheets_sub_position">Position</string>
+  <string name="pref_subtitles_persist_pos_title">Persist subtitle position</string>
+  <string name="pref_subtitles_persist_pos_summary">Save moved subtitle position across all videos</string>
+  <string name="subtitle_double_tap_to_reset">Double-tap subtitle to reset position</string>
+  <string name="subtitle_position_format">Subtitles: %d</string>
+  <string name="subtitle_position_reset">Subtitles reset (%d)</string>
   <string name="player_sheets_sub_typography_card_title">Typography</string>
   <string name="player_sheets_sub_typography_font">Font</string>
   <string name="player_sheets_sub_typography_font_size">Font size</string>
