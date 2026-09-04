@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ViewQuilt
 import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.Code
@@ -22,54 +21,29 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Subtitles
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
-import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 
 @Serializable
 object PreferencesScreen : Screen {
-  @OptIn(ExperimentalMaterial3Api::class)
   @Composable
   override fun Content() {
     val backstack = LocalBackStack.current
     Scaffold(
       topBar = {
-        TopAppBar(
-          title = {
-            Text(
-              text = stringResource(R.string.pref_preferences),
-              style = MaterialTheme.typography.headlineSmall,
-              fontWeight = FontWeight.ExtraBold,
-              color = MaterialTheme.colorScheme.primary,
-            )
-          },
-          navigationIcon = {
-            IconButton(onClick = backstack::removeLastOrNull) {
-              Icon(
-                Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-              )
-            }
-          },
-        )
+        SettingsTopBar(title = stringResource(R.string.pref_preferences))
       },
     ) { padding ->
       ProvidePreferenceLocals {
@@ -118,42 +92,19 @@ object PreferencesScreen : Screen {
 
           item {
             PreferenceCard {
-              Preference(
-                title = { Text(text = stringResource(id = R.string.pref_appearance_title)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_appearance_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Palette,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_appearance_title),
+                summary = stringResource(id = R.string.pref_appearance_summary),
+                icon = Icons.Outlined.Palette,
                 onClick = { backstack.add(AppearancePreferencesScreen) },
               )
 
               PreferenceDivider()
 
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_layout_title)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_layout_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.AutoMirrored.Outlined.ViewQuilt,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_layout_title),
+                summary = stringResource(id = R.string.pref_layout_summary),
+                icon = Icons.AutoMirrored.Outlined.ViewQuilt,
                 onClick = { backstack.add(PlayerControlsPreferencesScreen) },
               )
             }
@@ -166,43 +117,19 @@ object PreferencesScreen : Screen {
 
           item {
             PreferenceCard {
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_player)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_player_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.PlayCircle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_player),
+                summary = stringResource(id = R.string.pref_player_summary),
+                icon = Icons.Outlined.PlayCircle,
                 onClick = { backstack.add(PlayerPreferencesScreen) },
               )
 
               PreferenceDivider()
 
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_gesture)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_gesture_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Gesture,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_gesture),
+                summary = stringResource(id = R.string.pref_gesture_summary),
+                icon = Icons.Outlined.Gesture,
                 onClick = { backstack.add(GesturePreferencesScreen) },
               )
             }
@@ -215,22 +142,10 @@ object PreferencesScreen : Screen {
 
           item {
             PreferenceCard {
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_folders_title)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_folders_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Folder,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_folders_title),
+                summary = stringResource(id = R.string.pref_folders_summary),
+                icon = Icons.Outlined.Folder,
                 onClick = { backstack.add(FoldersPreferencesScreen) },
               )
             }
@@ -243,64 +158,28 @@ object PreferencesScreen : Screen {
 
           item {
             PreferenceCard {
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_decoder)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_decoder_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Memory,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_decoder),
+                summary = stringResource(id = R.string.pref_decoder_summary),
+                icon = Icons.Outlined.Memory,
                 onClick = { backstack.add(DecoderPreferencesScreen) },
               )
 
               PreferenceDivider()
 
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_subtitles)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_subtitles_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Subtitles,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_subtitles),
+                summary = stringResource(id = R.string.pref_subtitles_summary),
+                icon = Icons.Outlined.Subtitles,
                 onClick = { backstack.add(SubtitlesPreferencesScreen) },
               )
 
               PreferenceDivider()
 
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_audio)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_audio_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Audiotrack,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_audio),
+                summary = stringResource(id = R.string.pref_audio_summary),
+                icon = Icons.Outlined.Audiotrack,
                 onClick = { backstack.add(AudioPreferencesScreen) },
               )
             }
@@ -313,43 +192,19 @@ object PreferencesScreen : Screen {
 
           item {
             PreferenceCard {
-              Preference(
-
-                title = { Text(text = stringResource(R.string.pref_advanced)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_advanced_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Code,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(R.string.pref_advanced),
+                summary = stringResource(id = R.string.pref_advanced_summary),
+                icon = Icons.Outlined.Code,
                 onClick = { backstack.add(AdvancedPreferencesScreen) },
               )
 
               PreferenceDivider()
 
-              Preference(
-
-                title = { Text(text = stringResource(id = R.string.pref_about_title)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = R.string.pref_about_summary),
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                icon = {
-                  Icon(
-                    Icons.Outlined.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
-                },
+              SettingsPreferenceRow(
+                title = stringResource(id = R.string.pref_about_title),
+                summary = stringResource(id = R.string.pref_about_summary),
+                icon = Icons.Outlined.Info,
                 onClick = { backstack.add(AboutScreen) },
               )
             }

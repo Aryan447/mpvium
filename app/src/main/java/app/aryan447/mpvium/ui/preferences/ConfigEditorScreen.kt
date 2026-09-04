@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.preferences
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -44,16 +45,16 @@ import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import org.koin.compose.koinInject
 import java.io.File
 import kotlin.io.path.createTempFile
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.outputStream
 import kotlin.io.path.readLines
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import org.koin.compose.koinInject
 
 @Serializable
 data class ConfigEditorScreen(
@@ -175,7 +176,12 @@ data class ConfigEditorScreen(
             Icon(
               Icons.AutoMirrored.Default.ArrowBack,
               contentDescription = "Back",
-              tint = MaterialTheme.colorScheme.secondary,
+              tint = MaterialTheme.colorScheme.onPrimaryContainer,
+              modifier =
+                Modifier
+                  .clip(RoundedCornerShape(14.dp))
+                  .background(MaterialTheme.colorScheme.primaryContainer)
+                  .padding(8.dp),
             )
           }
         },

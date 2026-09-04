@@ -1,11 +1,10 @@
 package app.aryan447.mpvium.ui.preferences
 
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.documentfile.provider.DocumentFile
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,14 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import app.aryan447.mpvium.repository.wyzie.WyzieEncodings
-import app.aryan447.mpvium.repository.wyzie.WyzieFormats
-import app.aryan447.mpvium.repository.wyzie.WyzieSources
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,8 +30,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,12 +45,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.documentfile.provider.DocumentFile
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
-import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.repository.wyzie.WyzieEncodings
+import app.aryan447.mpvium.repository.wyzie.WyzieFormats
+import app.aryan447.mpvium.repository.wyzie.WyzieLanguages
+import app.aryan447.mpvium.repository.wyzie.WyzieSources
 import app.aryan447.mpvium.utils.media.CustomFontEntry
+import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import app.aryan447.mpvium.utils.media.copyFontsFromDirectory
 import app.aryan447.mpvium.utils.media.loadCustomFontEntries
 import com.github.k1rakishou.fsaf.FileManager
@@ -65,11 +67,6 @@ import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.TextFieldPreference
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.TextButton
-import android.net.Uri
-import app.aryan447.mpvium.repository.wyzie.WyzieLanguages
 import org.koin.compose.koinInject
 
 @Serializable
@@ -78,33 +75,12 @@ object SubtitlesPreferencesScreen : Screen {
   @Composable
   override fun Content() {
     val context = LocalContext.current
-    val backstack = LocalBackStack.current
     val preferences = koinInject<SubtitlesPreferences>()
     val fileManager = koinInject<FileManager>()
 
     Scaffold(
       topBar = {
-        TopAppBar(
-          title = {
-            Text(
-              text = stringResource(R.string.pref_subtitles),
-              style = MaterialTheme.typography.headlineSmall,
-              fontWeight = FontWeight.ExtraBold,
-              color = MaterialTheme.colorScheme.primary,
-            )
-          },
-          navigationIcon = {
-            IconButton(
-              onClick = backstack::removeLastOrNull,
-            ) {
-              Icon(
-                Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-              )
-            }
-          },
-        )
+        SettingsTopBar(title = stringResource(R.string.pref_subtitles))
       },
     ) { padding ->
       ProvidePreferenceLocals {

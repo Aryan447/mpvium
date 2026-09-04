@@ -24,7 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.Info
@@ -38,7 +37,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -99,25 +97,7 @@ object AboutScreen : Screen {
 
     Scaffold(
       topBar = {
-        TopAppBar(
-          title = {
-            Text(
-              text = stringResource(id = R.string.pref_about_title),
-              style = MaterialTheme.typography.headlineSmall,
-              fontWeight = FontWeight.ExtraBold,
-              color = MaterialTheme.colorScheme.primary,
-            )
-          },
-          navigationIcon = {
-            IconButton(onClick = backstack::removeLastOrNull) {
-              Icon(
-                imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-              )
-            }
-          },
-        )
+        SettingsTopBar(title = stringResource(id = R.string.pref_about_title))
       },
     ) { paddingValues ->
       val cs = MaterialTheme.colorScheme
@@ -424,25 +404,7 @@ object LibrariesScreen : Screen {
     val context = LocalContext.current
     Scaffold(
       topBar = {
-        TopAppBar(
-          title = {
-            Text(
-              text = stringResource(id = R.string.pref_about_oss_libraries),
-              style = MaterialTheme.typography.headlineSmall,
-              fontWeight = FontWeight.ExtraBold,
-              color = MaterialTheme.colorScheme.primary,
-            )
-          },
-          navigationIcon = {
-            IconButton(onClick = backstack::removeLastOrNull) {
-              Icon(
-                imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-              )
-            }
-          },
-        )
+        SettingsTopBar(title = stringResource(id = R.string.pref_about_oss_libraries))
       },
     ) { paddingValues ->
       Column(

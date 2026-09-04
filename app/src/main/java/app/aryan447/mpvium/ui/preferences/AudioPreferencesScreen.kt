@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -14,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,7 +25,6 @@ import app.aryan447.mpvium.preferences.AudioChannels
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
-import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -42,30 +39,11 @@ object AudioPreferencesScreen : Screen {
   @Composable
   override fun Content() {
     val context = LocalContext.current
-    val backstack = LocalBackStack.current
     val preferences = koinInject<AudioPreferences>()
 
     Scaffold(
       topBar = {
-        TopAppBar(
-          title = {
-            Text(
-              text = stringResource(R.string.pref_audio),
-              style = MaterialTheme.typography.headlineSmall,
-              fontWeight = FontWeight.ExtraBold,
-              color = MaterialTheme.colorScheme.primary,
-            )
-          },
-          navigationIcon = {
-            IconButton(onClick = backstack::removeLastOrNull) {
-              Icon(
-                Icons.AutoMirrored.Default.ArrowBack,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-              )
-            }
-          },
-        )
+        SettingsTopBar(title = stringResource(R.string.pref_audio))
       },
     ) { padding ->
       ProvidePreferenceLocals {

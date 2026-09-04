@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -17,7 +16,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +36,6 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.player.CustomKeyCodes
 import app.aryan447.mpvium.ui.player.SingleActionGesture
-import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.FooterPreference
@@ -54,7 +51,6 @@ object GesturePreferencesScreen : Screen {
   override fun Content() {
     val preferences = koinInject<GesturePreferences>()
     val context = LocalContext.current
-    val backstack = LocalBackStack.current
     val useSingleTapForCenter by preferences.useSingleTapForCenter.collectAsState()
 
     var showCustomSeekDialog by remember { mutableStateOf(false) }
@@ -62,25 +58,7 @@ object GesturePreferencesScreen : Screen {
 
     Scaffold(
       topBar = {
-        TopAppBar(
-          title = {
-            Text(
-              text = stringResource(R.string.pref_gesture),
-              style = MaterialTheme.typography.headlineSmall,
-              fontWeight = FontWeight.ExtraBold,
-              color = MaterialTheme.colorScheme.primary,
-            )
-          },
-          navigationIcon = {
-            IconButton(onClick = backstack::removeLastOrNull) {
-              Icon(
-                Icons.AutoMirrored.Default.ArrowBack,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-              )
-            }
-          },
-        )
+        SettingsTopBar(title = stringResource(R.string.pref_gesture))
       },
     ) { padding ->
       ProvidePreferenceLocals {

@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -23,8 +23,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +40,6 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.player.Debanding
 import app.aryan447.mpvium.ui.player.MPVProfile
-import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.preferences.VulkanUtils
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
@@ -56,31 +53,12 @@ object DecoderPreferencesScreen : Screen {
   @Composable
   override fun Content() {
     val preferences = koinInject<DecoderPreferences>()
-    val backstack = LocalBackStack.current
     val context = LocalContext.current
     val isVulkanSupported = remember { VulkanUtils.isVulkanSupported(context) }
     var showGpuNextWarning by remember { mutableStateOf(false) }
     Scaffold(
       topBar = {
-        TopAppBar(
-          title = {
-            Text(
-              text = stringResource(R.string.pref_decoder),
-              style = MaterialTheme.typography.headlineSmall,
-              fontWeight = FontWeight.ExtraBold,
-              color = MaterialTheme.colorScheme.primary,
-            )
-          },
-          navigationIcon = {
-            IconButton(onClick = backstack::removeLastOrNull) {
-              Icon(
-                Icons.AutoMirrored.Default.ArrowBack,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-              )
-            }
-          },
-        )
+        SettingsTopBar(title = stringResource(R.string.pref_decoder))
       },
     ) { padding ->
       ProvidePreferenceLocals {
