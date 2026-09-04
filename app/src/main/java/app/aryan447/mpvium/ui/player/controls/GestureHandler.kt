@@ -57,6 +57,7 @@ import `is`.xyz.mpv.MPVLib
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
 import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.components.LeftSideOvalShape
 import app.aryan447.mpvium.presentation.components.RightSideOvalShape
@@ -75,6 +76,12 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
+/**
+ * Touches starting below this vertical fraction of the player are treated as
+ * subtitle touches: hold to drag subtitles up/down, double-tap to reset them.
+ */
+private const val SubtitleBandTopFraction = 0.65f
+
 @Suppress("CyclomaticComplexMethod", "MultipleEmitters")
 @Composable
 fun GestureHandler(
@@ -85,6 +92,7 @@ fun GestureHandler(
   val playerPreferences = koinInject<PlayerPreferences>()
   val audioPreferences = koinInject<AudioPreferences>()
   val gesturePreferences = koinInject<GesturePreferences>()
+  val subtitlesPreferences = koinInject<SubtitlesPreferences>()
   val panelShown by viewModel.panelShown.collectAsState()
   val allowGesturesInPanels by playerPreferences.allowGesturesInPanels.collectAsState()
   val paused by MPVLib.propBoolean["pause"].collectAsState()
@@ -283,7 +291,20 @@ fun GestureHandler(
                       viewModel.handleLeftDoubleTap()
                     }
                     "center" -> {
-                      viewModel.handleCenterDoubleTap()
+                      // Double-tap on a moved subtitle snaps it back to the
+                      // saved position; otherwise keep the normal behavior.
+                      val defaultSubPos = subtitlesPreferences.subPos.get()
+                      val currentSubPos = MPVLib.getPropertyInt("sub-pos") ?: defaultSubPos
+                      if (downPosition.y > size.height * SubtitleBandTopFraction &&
+                        currentSubPos != defaultSubPos
+                      ) {
+                        MPVLib.setPropertyInt("sub-pos", defaultSubPos)
+                        MPVLib.setPropertyInt("secondary-sub-pos", (defaultSubPos - 10).coerceIn(0, 100))
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.playerUpdate.update { PlayerUpdates.ShowText("Subtitles: $defaultSubPos") }
+                      } else {
+                        viewModel.handleCenterDoubleTap()
+                      }
                     }
                   }
                 } else if (isMultiTapContinuation && isDoubleTapSeeking) {
@@ -333,7 +354,7 @@ fun GestureHandler(
         }
       }
       .pointerInput(areControlsLocked, multipleSpeedGesture, brightnessGesture, volumeGesture) {
-        if ((!brightnessGesture && !volumeGesture && multipleSpeedGesture <= 0f) || areControlsLocked) return@pointerInput
+        if (areControlsLocked) return@pointerInput
 
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
@@ -360,17 +381,35 @@ fun GestureHandler(
 
           // Track long press separately
           var longPressTriggered = false
+          // Subtitle drag: press-and-hold in the subtitle band, then move up/down.
+          // Tracks whether the hold started the speed boost (vs subtitle drag),
+          // so gesture-end cleanup only undoes what was actually started.
+          var subtitleDragActive = false
+          var speedHoldActive = false
+          var subtitleDragStartSubPos = subtitlesPreferences.subPos.get()
+          var lastSubtitlePos = subtitleDragStartSubPos
+          val gestureAreaHeight = size.height.toFloat()
           val longPressDelay = 500L
           var longPressJob = coroutineScope.launch {
             delay(longPressDelay)
-            if (!longPressTriggered && paused == false) {
-              val distance = sqrt(
-                (down.position.x - startPosition.x) * (down.position.x - startPosition.x) +
-                (down.position.y - startPosition.y) * (down.position.y - startPosition.y)
-              )
-              // Only trigger if still within tap threshold
-              if (distance < 10f && multipleSpeedGesture > 0f) {
+            if (longPressTriggered) return@launch
+            val distance = sqrt(
+              (down.position.x - startPosition.x) * (down.position.x - startPosition.x) +
+              (down.position.y - startPosition.y) * (down.position.y - startPosition.y)
+            )
+            // Hold without moving in the subtitle band starts subtitle drag mode
+            if (distance < 10f && startPosition.y > gestureAreaHeight * SubtitleBandTopFraction) {
+              longPressTriggered = true
+              isLongPressing = true
+              longPressTriggeredDuringTouch = true
+              subtitleDragActive = true
+              haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+              subtitleDragStartSubPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+              lastSubtitlePos = subtitleDragStartSubPos
+              viewModel.playerUpdate.update { PlayerUpdates.ShowText("Subtitles: $lastSubtitlePos") }
+            } else if (distance < 10f && paused == false && multipleSpeedGesture > 0f) {
                 longPressTriggered = true
+                speedHoldActive = true
                 isLongPressing = true
                 longPressTriggeredDuringTouch = true
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -397,7 +436,6 @@ fun GestureHandler(
                 } else {
                   viewModel.playerUpdate.update { PlayerUpdates.MultipleSpeed }
                 }
-              }
             }
           }
 
@@ -410,6 +448,22 @@ fun GestureHandler(
             if (pointerCount == 1) {
               event.changes.forEach { change ->
                 if (change.pressed) {
+                  // Subtitle drag: the hold started in the subtitle band, so
+                  // vertical movement repositions subtitles (drag up moves
+                  // them up). Horizontal drift is ignored.
+                  if (subtitleDragActive) {
+                    val dragOffset = (change.position.y - startPosition.y) / gestureAreaHeight * 100f
+                    val newPos = (subtitleDragStartSubPos + dragOffset).roundToInt().coerceIn(0, 100)
+                    if (newPos != lastSubtitlePos) {
+                      lastSubtitlePos = newPos
+                      MPVLib.setPropertyInt("sub-pos", newPos)
+                      MPVLib.setPropertyInt("secondary-sub-pos", (newPos - 10).coerceIn(0, 100))
+                      viewModel.playerUpdate.update { PlayerUpdates.ShowText("Subtitles: $newPos") }
+                    }
+                    change.consume()
+                    return@forEach
+                  }
+
                   val currentPosition = change.position
                   val deltaX = currentPosition.x - startPosition.x
                   val deltaY = currentPosition.y - startPosition.y
@@ -583,6 +637,7 @@ fun GestureHandler(
             } else if (pointerCount > 1) {
               // Multi-finger gesture detected
               longPressJob.cancel()
+              subtitleDragActive = false
               if (gestureType != null) {
                 when (gestureType) {
                   "vertical" -> {
@@ -604,10 +659,15 @@ fun GestureHandler(
           // Handle gesture end
           longPressJob.cancel()
 
+          // Subtitle drag ended: the new position sticks, the pill auto-clears
+          subtitleDragActive = false
+
           if (isLongPressing) {
             isLongPressing = false
             isDynamicSpeedControlActive = false
             hasSwipedEnough = false
+            if (!speedHoldActive) return@awaitEachGesture
+            speedHoldActive = false
             // Ramp speed back down incrementally to avoid audio filter stutter
             val currentSpeed = MPVLib.getPropertyFloat("speed") ?: multipleSpeedGesture
             val targetSpeed = originalSpeed
