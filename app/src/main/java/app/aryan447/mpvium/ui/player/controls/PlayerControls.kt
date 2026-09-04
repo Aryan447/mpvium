@@ -767,10 +767,13 @@ fun PlayerControls(
               resetControlsTimestamp = System.currentTimeMillis()
               viewModel.seekTo(it.toInt(), isScrubbing = true)
             },
-            onValueChangeFinished = {
+            onValueChangeFinished = { finalPosition ->
               isSeeking = false
               resetControlsTimestamp = System.currentTimeMillis()
-              viewModel.seekTo(precisePosition.toInt(), isScrubbing = false)
+              // Seek to the slider's final value, not the polled position:
+              // mpv applies scrub seeks asynchronously, so the poll is stale
+              // right after a fast drag and would snap playback backwards.
+              viewModel.seekTo(finalPosition.toInt(), isScrubbing = false)
               // Unpause if it wasn't paused before seeking
               if (!wasPlayerAlreadyPaused) {
                 viewModel.unpause()
