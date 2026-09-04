@@ -9,7 +9,7 @@ An Android video player powered by [mpv](https://mpv.io/) and
 
 [![Latest release](https://img.shields.io/github/v/release/aryan447/mpvium?logo=github)](https://github.com/aryan447/mpvium/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/aryan447/mpvium/total?logo=github)](https://github.com/aryan447/mpvium/releases)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 
 </div>
 
@@ -102,4 +102,5 @@ Android version, app version, and relevant logs when possible.
 
 ## License
 
-mpvium is distributed under the [Apache License 2.0](LICENSE).
+mpvium as a whole is distributed under the [GNU General Public License v3.0 or later](LICENSE).
+It links GPL components (mpv, mpv-android, FFmpeg); see [NOTICE](NOTICE) for full attribution.

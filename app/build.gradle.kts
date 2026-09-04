@@ -115,10 +115,13 @@ android {
 
   packaging {
     resources {
-      excludes += "/META-INF/{AL2.0,LGPL2.1}"
+      // Keep (don't exclude) META-INF LICENSE/NOTICE files: several
+      // bundled dependencies require their notices to ship with the app.
+      // pickFirsts avoids duplicate-file build failures.
+      pickFirsts += "/META-INF/{AL2.0,LGPL2.1}"
+      pickFirsts += "META-INF/LICENSE*"
+      pickFirsts += "META-INF/NOTICE*"
       excludes += "META-INF/DEPENDENCIES"
-      excludes += "META-INF/LICENSE*"
-      excludes += "META-INF/NOTICE*"
       excludes += "META-INF/*.kotlin_module"
       excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
     }

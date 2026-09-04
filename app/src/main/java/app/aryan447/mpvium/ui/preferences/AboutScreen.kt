@@ -365,10 +365,63 @@ object AboutScreen : Screen {
 @Suppress("DEPRECATION")
 @Serializable
 object LibrariesScreen : Screen {
+  private data class LibraryInfo(
+    val name: String,
+    val copyright: String,
+    val license: String,
+    val url: String,
+  )
+
+  private val libraries = listOf(
+    LibraryInfo(
+      name = "mpv",
+      copyright = "Copyright (c) the mpv contributors",
+      license = "GPL-2.0-or-later — playback engine (libmpv)",
+      url = "https://mpv.io",
+    ),
+    LibraryInfo(
+      name = "mpv-android",
+      copyright = "Copyright (c) the mpv-android contributors",
+      license = "GPL-3.0-or-later — Android player bridge",
+      url = "https://github.com/mpv-android/mpv-android",
+    ),
+    LibraryInfo(
+      name = "FFmpeg",
+      copyright = "Copyright (c) the FFmpeg developers",
+      license = "LGPL-2.1-or-later / GPL-2.0-or-later — bundled codecs",
+      url = "https://ffmpeg.org",
+    ),
+    LibraryInfo(
+      name = "MediaInfo",
+      copyright = "Copyright (c) MediaArea.net SARL",
+      license = "BSD-2-Clause — media analysis",
+      url = "https://mediaarea.net/MediaInfo",
+    ),
+    LibraryInfo(
+      name = "Anime4K shaders",
+      copyright = "Copyright (c) 2019-2021 bloc97",
+      license = "MIT — upscaling shaders",
+      url = "https://github.com/bloc97/Anime4K",
+    ),
+    LibraryInfo(
+      name = "Fossify File Manager",
+      copyright = "Copyright (c) the Fossify contributors",
+      license = "GPL-3.0-or-later — file-browser logic adapted",
+      url = "https://github.com/FossifyOrg/File-Manager",
+    ),
+    LibraryInfo(
+      name = "Android Jetpack & Compose",
+      copyright = "Copyright (c) Google LLC / AOSP",
+      license = "Apache-2.0",
+      url = "https://source.android.com",
+    ),
+  )
+
   @OptIn(ExperimentalMaterial3Api::class)
   @Composable
   override fun Content() {
     val backstack = LocalBackStack.current
+    val context = LocalContext.current
     Scaffold(
       topBar = {
         TopAppBar(
@@ -392,6 +445,55 @@ object LibrariesScreen : Screen {
         )
       },
     ) { paddingValues ->
+      Column(
+        modifier =
+          Modifier
+            .padding(paddingValues)
+            .verticalScroll(rememberScrollState()),
+      ) {
+        PreferenceSectionHeader(title = "This app (GPL-3.0-or-later)")
+        PreferenceCard {
+          Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(
+              text = "mpvium as a whole is distributed under the GNU General Public License v3 or later. See LICENSE in the source repository. Individual components below keep their own licenses.",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+        }
+        PreferenceSectionHeader(title = "Open-source components")
+        PreferenceCard {
+          libraries.forEachIndexed { index, lib ->
+            if (index > 0) PreferenceDivider()
+            Column(
+              modifier =
+                Modifier
+                  .fillMaxWidth()
+                  .clickable {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, lib.url.toUri()))
+                  }
+                  .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+              Text(
+                text = lib.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+              )
+              Text(
+                text = lib.copyright,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+              Text(
+                text = lib.license,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+              )
+            }
+          }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+      }
     }
   }
 }
