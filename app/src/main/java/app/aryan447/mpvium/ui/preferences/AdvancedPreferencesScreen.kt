@@ -63,7 +63,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.TwoTargetIconButtonPreference
 import org.koin.compose.koinInject
 
@@ -428,7 +427,7 @@ object AdvancedPreferencesScreen : Screen {
               val mpviumDatabase = koinInject<MpviumDatabase>()
               val enableRecentlyPlayed by preferences.enableRecentlyPlayed.collectAsState()
 
-              SwitchPreference(
+              HapticSwitchPreference(
                 value = enableRecentlyPlayed,
                 onValueChange = preferences.enableRecentlyPlayed::set,
                 title = { Text(stringResource(R.string.pref_advanced_enable_recently_played_title)) },
@@ -611,7 +610,7 @@ object AdvancedPreferencesScreen : Screen {
               val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
               val verboseLogging by preferences.verboseLogging.collectAsState()
 
-              SwitchPreference(
+              HapticSwitchPreference(
                 value = verboseLogging,
                 onValueChange = preferences.verboseLogging::set,
                 title = { Text(stringResource(R.string.pref_advanced_verbose_logging_title)) },

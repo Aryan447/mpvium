@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,7 +36,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
-import me.zhanghai.compose.preference.SwitchPreference
 import org.koin.compose.koinInject
 
 @Serializable
@@ -49,6 +50,7 @@ object AppearancePreferencesScreen : Screen {
 
         val darkMode by preferences.darkMode.collectAsState()
         val appTheme by preferences.appTheme.collectAsState()
+        val haptic = LocalHapticFeedback.current
 
         // Determine if we're in dark mode for theme preview
         val isDarkMode = when (darkMode) {
@@ -80,7 +82,10 @@ object AppearancePreferencesScreen : Screen {
                                 MultiChoiceSegmentedButton(
                                     choices = DarkMode.entries.map { stringResource(it.titleRes) }.toImmutableList(),
                                     selectedIndices = persistentListOf(DarkMode.entries.indexOf(darkMode)),
-                                    onClick = { preferences.darkMode.set(DarkMode.entries[it]) },
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        preferences.darkMode.set(DarkMode.entries[it])
+                                    },
                                 )
                             }
 
@@ -100,7 +105,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             // AMOLED mode toggle
-                            SwitchPreference(
+                            HapticSwitchPreference(
                                 value = amoledMode,
                                 onValueChange = { newValue ->
                                     preferences.amoledMode.set(newValue)
@@ -124,7 +129,7 @@ object AppearancePreferencesScreen : Screen {
                     item {
                         PreferenceCard {
                             val unlimitedNameLines by preferences.unlimitedNameLines.collectAsState()
-                            SwitchPreference(
+                            HapticSwitchPreference(
                                 value = unlimitedNameLines,
                                 onValueChange = { preferences.unlimitedNameLines.set(it) },
                                 title = {
@@ -143,7 +148,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val showUnplayedOldVideoLabel by preferences.showUnplayedOldVideoLabel.collectAsState()
-                            SwitchPreference(
+                            HapticSwitchPreference(
                                 value = showUnplayedOldVideoLabel,
                                 onValueChange = { preferences.showUnplayedOldVideoLabel.set(it) },
                                 title = {
@@ -184,7 +189,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
-                            SwitchPreference(
+                            HapticSwitchPreference(
                                 value = autoScrollToLastPlayed,
                                 onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
                                 title = {
@@ -223,7 +228,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
-                            SwitchPreference(
+                            HapticSwitchPreference(
                                 value = tapThumbnailToSelect,
                                 onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
                                 title = {
@@ -242,7 +247,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val showNetworkThumbnails by preferences.showNetworkThumbnails.collectAsState()
-                            SwitchPreference(
+                            HapticSwitchPreference(
                                 value = showNetworkThumbnails,
                                 onValueChange = { preferences.showNetworkThumbnails.set(it) },
                                 title = {

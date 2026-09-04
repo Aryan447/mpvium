@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.utils.LocalBackStack
@@ -158,6 +160,35 @@ fun PreferenceIconBox(
       modifier = Modifier.size(24.dp),
     )
   }
+}
+
+/**
+ * A switch preference row that plays a haptic tick on toggle.
+ * Same API as the underlying library switch.
+ */
+@Composable
+fun HapticSwitchPreference(
+  value: Boolean,
+  onValueChange: (Boolean) -> Unit,
+  title: @Composable () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  summary: @Composable (() -> Unit)? = null,
+  icon: @Composable (() -> Unit)? = null,
+) {
+  val haptic = LocalHapticFeedback.current
+  me.zhanghai.compose.preference.SwitchPreference(
+    value = value,
+    onValueChange = {
+      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+      onValueChange(it)
+    },
+    title = title,
+    modifier = modifier,
+    enabled = enabled,
+    summary = summary,
+    icon = icon,
+  )
 }
 
 /**
