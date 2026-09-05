@@ -83,8 +83,8 @@ jobs:
         run: |
           set -e
           mkdir -p preview
-          #declare -a apks=("universal" "arm64-v8a" "armeabi-v7a" "x86" "x86_64")
-          declare -a apks=("universal" "arm64-v8a" "x86_64")
+          # Must match abi splits in app/build.gradle.kts
+          declare -a apks=("universal" "arm64-v8a" "armeabi-v7a")
 
           for abi in "${apks[@]}"; do
             src="app/build/outputs/apk/standard/preview/app-standard-${abi}-preview.apk"
@@ -108,12 +108,12 @@ jobs:
             | Variant | SHA-256 |
             | ------- | ------- |
             | arm64-v8a | ${{ env.apk_arm64_v8a_sha256 }} |
+            | armeabi-v7a | ${{ env.apk_armeabi_v7a_sha256 }} |
             | Universal | ${{ env.apk_universal_sha256 }} |
-            | x86_64 | ${{ env.apk_x86_64_sha256 }} |
           files: |
             preview/mpvium-preview-universal-${{ env.VERSION_TAG }}.apk
             preview/mpvium-preview-arm64-v8a-${{ env.VERSION_TAG }}.apk
-            preview/mpvium-preview-x86_64-${{ env.VERSION_TAG }}.apk
+            preview/mpvium-preview-armeabi-v7a-${{ env.VERSION_TAG }}.apk
           draft: false
           prerelease: true
         env:

@@ -15,8 +15,6 @@ jobs:
       universal_size: ${{ steps.set_commit.outputs.universal_size }}
       arm64-v8a_size: ${{ steps.set_commit.outputs.arm64-v8a_size }}
       armeabi-v7a_size: ${{ steps.set_commit.outputs.armeabi-v7a_size }}
-      x86_size: ${{ steps.set_commit.outputs.x86_size }}
-      x86_64_size: ${{ steps.set_commit.outputs.x86_64_size }}
 
     steps:
       - name: Checkout repo
@@ -79,7 +77,8 @@ jobs:
           echo "commit_count=$commit_count" >> $GITHUB_OUTPUT
           echo "build_time=$build_time" >> $GITHUB_OUTPUT
 
-          declare -a apks=("universal" "arm64-v8a" "armeabi-v7a" "x86" "x86_64")
+          # Must match abi splits in app/build.gradle.kts
+          declare -a apks=("universal" "arm64-v8a" "armeabi-v7a")
           mkdir -p output
           # Initialize empty array for file sizes
           declare -a file_sizes=()
