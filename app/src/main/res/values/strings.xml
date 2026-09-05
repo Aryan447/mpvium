@@ -48,6 +48,8 @@
   <string name="player_shader_peek_off">Upscaling off</string>
   <!-- More sheet pro menu -->
   <string name="player_sheets_pro_controls">Pro controls</string>
+  <string name="pref_decoder_shader_peek_title">Suggest upscaling</string>
+  <string name="pref_decoder_shader_peek_summary">Show an Upscale button for low-resolution videos</string>
   <string name="onboarding_page1_title">Welcome to mpvium</string>
   <string name="onboarding_page1_message">Sane defaults, pro-level control. A free and open-source player powered by mpv — high-quality playback with no ads and no unnecessary permissions.</string>
   <string name="onboarding_page2_title">Your library, your way</string>

@@ -30,4 +30,6 @@ class DecoderPreferences(
   val enableAnime4K = preferenceStore.getBoolean("enable_anime4k", false)
   val anime4kMode = preferenceStore.getString("anime4k_mode", "OFF")
   val anime4kQuality = preferenceStore.getString("anime4k_quality", "FAST")
+  // Shader Peek: suggest Upscale chip for low-res videos. Off by default.
+  val shaderPeekSuggest = preferenceStore.getBoolean("shader_peek_suggest", false)
 }
