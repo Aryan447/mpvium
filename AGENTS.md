@@ -107,6 +107,12 @@ keystores, passwords, tokens, or other credentials to the repository.
    resolution through JitPack or CI.
 7. Do not claim that the app is perfect. Report exactly which checks passed,
    failed, or could not run.
+8. Attention to details is must. Match existing spacing, padding, corner
+   radii, elevation, colors, typography, and iconography instead of
+   introducing near-duplicate values. Reuse shared components, dimens,
+   shapes, and string resources; verify alignment, insets (status,
+   navigation, gesture areas), RTL mirroring, and light/dark themes
+   before finishing any UI change.
 
 ## Development without local installation
 
