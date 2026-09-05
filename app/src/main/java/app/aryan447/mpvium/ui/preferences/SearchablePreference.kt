@@ -504,6 +504,27 @@ object SearchablePreferences {
                 category = "Audio",
                 screen = AudioPreferencesScreen,
             ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_audio_volume_step_title,
+                summaryRes = R.string.pref_audio_volume_step_summary,
+                keywords = listOf("volume", "step", "button", "keys", "increment"),
+                category = "Audio",
+                screen = AudioPreferencesScreen,
+            ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_audio_volume_min_limit_title,
+                summaryRes = R.string.pref_audio_volume_min_limit_summary,
+                keywords = listOf("volume", "minimum", "limit", "floor", "quiet"),
+                category = "Audio",
+                screen = AudioPreferencesScreen,
+            ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_audio_volume_max_limit_title,
+                summaryRes = R.string.pref_audio_volume_max_limit_summary,
+                keywords = listOf("volume", "maximum", "limit", "ceiling", "loud", "cap"),
+                category = "Audio",
+                screen = AudioPreferencesScreen,
+            ))
 
             // Advanced preferences
             add(SearchablePreference(

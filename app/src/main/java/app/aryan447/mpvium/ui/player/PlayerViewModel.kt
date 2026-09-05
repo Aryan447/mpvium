@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.roundToInt
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -1364,9 +1365,28 @@ class PlayerViewModel(
   }
 
   fun changeVolumeTo(volume: Int) {
-    val newVolume = volume.coerceIn(0..maxVolume)
+    val newVolume = volume.coerceIn(volumeRangeSteps())
     host.audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
     currentVolume.value = newVolume
+  }
+
+  /**
+   * Allowed system-volume range from the user's min/max limits (percent),
+   * mapped onto device steps. Covers keys, gestures and slider drags since
+   * they all funnel through [changeVolumeTo].
+   */
+  fun volumeRangeSteps(): IntRange =
+    volumeRangeSteps(
+      audioPreferences.volumeMinLimit.get(),
+      audioPreferences.volumeMaxLimit.get(),
+    )
+
+  fun volumeRangeSteps(minPercent: Int, maxPercent: Int): IntRange {
+    val loPct = minOf(minPercent, maxPercent).coerceIn(0, 100)
+    val hiPct = maxOf(minPercent, maxPercent).coerceIn(0, 100)
+    val lo = (maxVolume * (loPct / 100f)).roundToInt().coerceIn(0, maxVolume)
+    val hi = (maxVolume * (hiPct / 100f)).roundToInt().coerceIn(0, maxVolume)
+    return lo..maxOf(lo, hi)
   }
 
   fun changeMPVVolumeTo(volume: Int) {

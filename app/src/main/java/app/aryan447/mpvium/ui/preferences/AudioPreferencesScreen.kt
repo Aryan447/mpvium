@@ -161,6 +161,58 @@ object AudioPreferencesScreen : Screen {
             onSliderValueChange = { preferences.volumeBoostCap.set(it.toInt()) },
             sliderValue = volumeBoostCap.toFloat(),
           )
+
+          PreferenceDivider()
+          val volumeStep by preferences.volumeStep.collectAsState()
+          SliderPreference(
+            value = volumeStep.toFloat(),
+            onValueChange = { preferences.volumeStep.set(it.toInt()) },
+            title = { Text(stringResource(R.string.pref_audio_volume_step_title)) },
+            valueRange = 1f..5f,
+            valueSteps = 3,
+            summary = {
+              Text(
+                stringResource(R.string.pref_audio_volume_step_summary, volumeStep),
+                color = MaterialTheme.colorScheme.outline,
+              )
+            },
+            onSliderValueChange = { preferences.volumeStep.set(it.toInt()) },
+            sliderValue = volumeStep.toFloat(),
+          )
+
+          PreferenceDivider()
+          val volumeMinLimit by preferences.volumeMinLimit.collectAsState()
+          SliderPreference(
+            value = volumeMinLimit.toFloat(),
+            onValueChange = { preferences.volumeMinLimit.set(it.toInt()) },
+            title = { Text(stringResource(R.string.pref_audio_volume_min_limit_title)) },
+            valueRange = 0f..100f,
+            summary = {
+              Text(
+                stringResource(R.string.pref_audio_volume_min_limit_summary, volumeMinLimit),
+                color = MaterialTheme.colorScheme.outline,
+              )
+            },
+            onSliderValueChange = { preferences.volumeMinLimit.set(it.toInt()) },
+            sliderValue = volumeMinLimit.toFloat(),
+          )
+
+          PreferenceDivider()
+          val volumeMaxLimit by preferences.volumeMaxLimit.collectAsState()
+          SliderPreference(
+            value = volumeMaxLimit.toFloat(),
+            onValueChange = { preferences.volumeMaxLimit.set(it.toInt()) },
+            title = { Text(stringResource(R.string.pref_audio_volume_max_limit_title)) },
+            valueRange = 0f..100f,
+            summary = {
+              Text(
+                stringResource(R.string.pref_audio_volume_max_limit_summary, volumeMaxLimit),
+                color = MaterialTheme.colorScheme.outline,
+              )
+            },
+            onSliderValueChange = { preferences.volumeMaxLimit.set(it.toInt()) },
+            sliderValue = volumeMaxLimit.toFloat(),
+          )
             }
           }
         }
