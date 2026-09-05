@@ -730,9 +730,12 @@ class PlayerViewModel(
     val gpuCompatible = !(decoderPreferences.gpuNext.get() && !decoderPreferences.useVulkan.get())
     val enabled = decoderPreferences.enableAnime4K.get()
     val mode = decoderPreferences.anime4kMode.get()
+    // Suggestions are strictly opt-in; the compare toggle only exists
+    // while the user keeps Anime4K enabled themselves.
+    val suggestAllowed = decoderPreferences.shaderPeekSuggest.get()
     val peek: ShaderPeekState = when {
       !gpuCompatible || videoHeight <= 0 || videoHeight >= SHADER_PEAK_MAX_HEIGHT -> ShaderPeekState.Hidden
-      !enabled && videoHeight <= SHADER_PEAK_SUGGEST_MAX_HEIGHT -> ShaderPeekState.Suggest
+      !enabled && suggestAllowed && videoHeight <= SHADER_PEAK_SUGGEST_MAX_HEIGHT -> ShaderPeekState.Suggest
       enabled && mode != "OFF" -> ShaderPeekState.Active(bypassed = shadersBypassed)
       else -> ShaderPeekState.Hidden
     }
