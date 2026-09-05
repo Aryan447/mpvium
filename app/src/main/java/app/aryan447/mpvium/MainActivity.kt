@@ -40,6 +40,7 @@ import app.aryan447.mpvium.repository.NetworkRepository
 import app.aryan447.mpvium.utils.update.UpdateDialog
 import app.aryan447.mpvium.utils.update.UpdateViewModel
 import app.aryan447.mpvium.ui.browser.MainScreen
+import app.aryan447.mpvium.ui.onboarding.OnboardingScreen
 import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.MpviumTheme
 import app.aryan447.mpvium.ui.utils.LocalBackStack
@@ -194,7 +195,8 @@ class MainActivity : ComponentActivity() {
    */
   @Composable
   fun Navigator() {
-    val backstack = rememberNavBackStack(MainScreen)
+    val onboardingCompleted by appearancePreferences.onboardingCompleted.collectAsState()
+    val backstack = rememberNavBackStack(if (onboardingCompleted) MainScreen else OnboardingScreen)
 
     @Suppress("UNCHECKED_CAST")
     val typedBackstack = backstack as NavBackStack<Screen>
