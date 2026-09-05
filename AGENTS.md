@@ -72,7 +72,6 @@ Useful variants:
 ```bash
 bash ./gradlew assembleStandardRelease
 bash ./gradlew assemblePlaystoreRelease
-bash ./gradlew assembleFdroidRelease
 bash ./gradlew assembleStandardPreview
 ```
 
