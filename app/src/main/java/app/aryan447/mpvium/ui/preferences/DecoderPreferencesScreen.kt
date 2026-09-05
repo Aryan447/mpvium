@@ -264,6 +264,21 @@ object DecoderPreferencesScreen : Screen {
                   }
                 },
               )
+
+              PreferenceDivider()
+
+              val shaderPeekSuggest by preferences.shaderPeekSuggest.collectAsState()
+              HapticSwitchPreference(
+                value = shaderPeekSuggest,
+                onValueChange = { preferences.shaderPeekSuggest.set(it) },
+                title = { Text(stringResource(R.string.pref_decoder_shader_peek_title)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_decoder_shader_peek_summary),
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
             }
           }
         }

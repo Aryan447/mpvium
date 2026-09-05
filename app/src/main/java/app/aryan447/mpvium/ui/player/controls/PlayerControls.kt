@@ -963,7 +963,7 @@ fun PlayerControls(
                 }
               )
               .constrainAs(introSkipButton) {
-                top.linkTo(parent.top, if (isPortrait) 96.dp else 56.dp)
+                top.linkTo(parent.top, if (isPortrait) 96.dp else 88.dp)
                 end.linkTo(parent.end, spacing.large)
               },
         ) {
@@ -981,8 +981,21 @@ fun PlayerControls(
           }
         }
 
+        // The peek chip only lives while controls are shown and hides
+        // again 2s after appearing, so it never sits on the top bar.
+        var peekAutoHidden by remember { mutableStateOf(true) }
+        LaunchedEffect(shaderPeek, controlsShown) {
+          if (shaderPeek != ShaderPeekState.Hidden && controlsShown) {
+            peekAutoHidden = false
+            delay(2000)
+            peekAutoHidden = true
+          } else {
+            peekAutoHidden = true
+          }
+        }
+
         AnimatedVisibility(
-          visible = shaderPeek != ShaderPeekState.Hidden,
+          visible = shaderPeek != ShaderPeekState.Hidden && controlsShown && !peekAutoHidden,
           enter = slideInVertically { it } + fadeIn(),
           exit = slideOutVertically { it } + fadeOut(),
           modifier =
