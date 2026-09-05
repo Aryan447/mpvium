@@ -13,7 +13,10 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
@@ -24,6 +27,8 @@ import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -78,6 +83,19 @@ object MainScreen : Screen {
   // Track when permission denied screen is showing to hide FAB
   @Volatile
   private var isPermissionDenied: Boolean = false
+
+  @Volatile
+  private var pendingTabRequest: Int? = null
+
+  /**
+   * Request a tab switch from outside composition (e.g. launcher shortcuts).
+   * Persisted so it survives process recreation, and consumed by [Content].
+   */
+  fun requestTab(index: Int) {
+    val clamped = index.coerceIn(0, 4)
+    persistentSelectedTab = clamped
+    pendingTabRequest = clamped
+  }
 
   /**
    * Update selection state and navigation bar visibility
@@ -140,6 +158,13 @@ object MainScreen : Screen {
 
     // Check for state changes to ensure UI updates
     LaunchedEffect(Unit) {
+      // Consume any pending external tab request (e.g. launcher shortcut)
+      pendingTabRequest?.let { requested ->
+        pendingTabRequest = null
+        if (selectedTab != requested) {
+          selectedTab = requested
+        }
+      }
       while (true) {
         if (isInSelectionMode.value != isInSelectionModeShared) {
           isInSelectionMode.value = isInSelectionModeShared
@@ -147,6 +172,13 @@ object MainScreen : Screen {
 
         if (hideNavigationBar.value != shouldHideNavigationBar) {
           hideNavigationBar.value = shouldHideNavigationBar
+        }
+
+        pendingTabRequest?.let { requested ->
+          pendingTabRequest = null
+          if (selectedTab != requested) {
+            selectedTab = requested
+          }
         }
 
         val currentManager = sharedVideoSelectionManager as? SelectionManager<*, *>
@@ -163,69 +195,76 @@ object MainScreen : Screen {
       persistentSelectedTab = selectedTab
     }
 
-    // Scaffold with bottom navigation bar
-    Scaffold(
-      modifier = Modifier.fillMaxSize(),
-      bottomBar = {
-        AnimatedVisibility(
-          visible = !hideNavigationBar.value,
-          enter = slideInVertically(
-            animationSpec = tween(durationMillis = 300),
-            initialOffsetY = { fullHeight -> fullHeight }
-          ),
-          exit = slideOutVertically(
-            animationSpec = tween(durationMillis = 300),
-            targetOffsetY = { fullHeight -> fullHeight }
-          )
-        ) {
-          NavigationBar(
-            modifier = Modifier
-              .clip(
-                RoundedCornerShape(
-                  topStart = 20.dp,
-                  topEnd = 20.dp,
-                  bottomStart = 0.dp,
-                  bottomEnd = 0.dp
-                )
+    val navItems =
+      listOf(
+        Triple(Icons.Filled.Home, "Home", "Home"),
+        Triple(Icons.Filled.Tv, "Series", "TV Shows"),
+        Triple(Icons.Filled.Movie, "Movies", "Movies"),
+        Triple(Icons.Filled.Folder, "Folders", "Folders"),
+        Triple(Icons.Filled.VideoLibrary, "Library", "Library"),
+      )
+
+    // Adaptive navigation: rail on tablets / wide screens, bar on phones.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+      val isWide = maxWidth >= 600.dp
+
+      Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+          if (!isWide) {
+            AnimatedVisibility(
+              visible = !hideNavigationBar.value,
+              enter = slideInVertically(
+                animationSpec = tween(durationMillis = 300),
+                initialOffsetY = { fullHeight -> fullHeight }
               ),
-            tonalElevation = 3.dp
-          ) {
-            NavigationBarItem(
-              icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-              label = { Text("Home") },
-              selected = selectedTab == 0,
-              onClick = { selectTab(0) }
-            )
-            NavigationBarItem(
-              icon = { Icon(Icons.Filled.Tv, contentDescription = "TV Shows") },
-              label = { Text("Series") },
-              selected = selectedTab == 1,
-              onClick = { selectTab(1) }
-            )
-            NavigationBarItem(
-              icon = { Icon(Icons.Filled.Movie, contentDescription = "Movies") },
-              label = { Text("Movies") },
-              selected = selectedTab == 2,
-              onClick = { selectTab(2) }
-            )
-            NavigationBarItem(
-              icon = { Icon(Icons.Filled.Folder, contentDescription = "Folders") },
-              label = { Text("Folders") },
-              selected = selectedTab == 3,
-              onClick = { selectTab(3) }
-            )
-            NavigationBarItem(
-              icon = { Icon(Icons.Filled.VideoLibrary, contentDescription = "Library") },
-              label = { Text("Library") },
-              selected = selectedTab == 4,
-              onClick = { selectTab(4) }
-            )
+              exit = slideOutVertically(
+                animationSpec = tween(durationMillis = 300),
+                targetOffsetY = { fullHeight -> fullHeight }
+              )
+            ) {
+              NavigationBar(
+                modifier = Modifier
+                  .clip(
+                    RoundedCornerShape(
+                      topStart = 20.dp,
+                      topEnd = 20.dp,
+                      bottomStart = 0.dp,
+                      bottomEnd = 0.dp
+                    )
+                  ),
+                tonalElevation = 3.dp
+              ) {
+                navItems.forEachIndexed { index, (icon, label, desc) ->
+                  NavigationBarItem(
+                    icon = { Icon(icon, contentDescription = desc) },
+                    label = { Text(label) },
+                    selected = selectedTab == index,
+                    onClick = { selectTab(index) }
+                  )
+                }
+              }
+            }
           }
         }
-      }
-    ) { paddingValues ->
-      Box(modifier = Modifier.fillMaxSize()) {
-        val fabBottomPadding = 80.dp
+      ) { paddingValues ->
+        Row(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+          if (isWide) {
+            AnimatedVisibility(visible = !hideNavigationBar.value) {
+              NavigationRail {
+                navItems.forEachIndexed { index, (icon, label, desc) ->
+                  NavigationRailItem(
+                    icon = { Icon(icon, contentDescription = desc) },
+                    label = { Text(label) },
+                    selected = selectedTab == index,
+                    onClick = { selectTab(index) }
+                  )
+                }
+              }
+            }
+          }
+          Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+            val fabBottomPadding = if (isWide) 24.dp else 80.dp
 
         AnimatedContent(
           targetState = selectedTab,
@@ -297,9 +336,11 @@ object MainScreen : Screen {
             }
           }
         }
+          }
       }
     }
   }
+}
 }
 
 // CompositionLocal for navigation bar height

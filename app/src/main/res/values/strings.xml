@@ -453,6 +453,10 @@
   <string name="choose_local_m3u_file">Choose local M3U file</string>
   <string name="add_from_url">Add from URL</string>
   <string name="home">Home</string>
+  <string name="shortcut_movies">Movies</string>
+  <string name="shortcut_series">Series</string>
+  <string name="shortcut_tv_series">TV Series</string>
+  <string name="shortcut_folders">Folders</string>
   <string name="recents">Recents</string>
   <string name="playlists">Playlists</string>
   <string name="network">Network</string>
