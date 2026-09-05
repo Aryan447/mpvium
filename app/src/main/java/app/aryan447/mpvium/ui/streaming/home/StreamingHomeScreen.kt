@@ -95,6 +95,7 @@ import app.aryan447.mpvium.ui.streaming.components.StreamingHeroBanner
 import app.aryan447.mpvium.ui.streaming.movies.MovieDetailScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesDetailScreen
+import app.aryan447.mpvium.ui.browser.recentlyplayed.RecentlyPlayedScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.LocalAppTheme
@@ -352,6 +353,7 @@ object StreamingHomeScreen : Screen {
                     onItemClick = { item ->
                       MediaUtils.playFile(item.video, context, "continue_watching")
                     },
+                    onSeeAllClick = { backstack.add(RecentlyPlayedScreen) },
                   )
                   Spacer(modifier = Modifier.height(24.dp))
                 }

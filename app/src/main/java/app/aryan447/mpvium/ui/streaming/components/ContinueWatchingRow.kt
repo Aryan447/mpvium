@@ -21,10 +21,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,7 @@ fun ContinueWatchingRow(
   items: List<ContinueWatchingItem>,
   onItemClick: (ContinueWatchingItem) -> Unit,
   modifier: Modifier = Modifier,
+  onSeeAllClick: (() -> Unit)? = null,
 ) {
   if (items.isEmpty()) return
 
@@ -65,6 +68,13 @@ fun ContinueWatchingRow(
         ),
         color = MaterialTheme.colorScheme.onBackground,
       )
+      if (onSeeAllClick != null) {
+        TextButton(onClick = onSeeAllClick) {
+          Text("See all", style = MaterialTheme.typography.labelLarge)
+          Spacer(modifier = Modifier.width(2.dp))
+          Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
+        }
+      }
     }
 
     LazyRow(
