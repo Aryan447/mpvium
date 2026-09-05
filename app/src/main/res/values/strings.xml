@@ -220,6 +220,12 @@
   <string name="pref_audio_channels_stereo_reversed">Reversed Stereo</string>
   <string name="pref_audio_preferred_language">Audio language(s) to be selected by default on a video with multiple audio streams, Two- or three-letter languages codes work. Multiple values can be delimited by comma.</string>
   <string name="pref_audio_volume_boost_cap">Volume boost cap</string>
+  <string name="pref_audio_volume_step_title">Volume button step</string>
+  <string name="pref_audio_volume_step_summary">Volume keys change the volume by %d steps at a time</string>
+  <string name="pref_audio_volume_min_limit_title">Minimum volume limit</string>
+  <string name="pref_audio_volume_min_limit_summary">Volume cannot go below %d%%</string>
+  <string name="pref_audio_volume_max_limit_title">Maximum volume limit</string>
+  <string name="pref_audio_volume_max_limit_summary">Volume cannot go above %d%%</string>
   <string name="pref_advanced">Advanced</string>
   <string name="pref_advanced_summary">Configuration location, mpv.conf</string>
   <string name="pref_advanced_mpv_conf_storage_location">Pick configuration storage location</string>

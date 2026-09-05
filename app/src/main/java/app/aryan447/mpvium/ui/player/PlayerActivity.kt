@@ -2484,6 +2484,11 @@ class PlayerActivity :
    * @param event The key event
    * @return true if event was handled, false otherwise
    */
+  /**
+   * System-volume steps per hardware key press (Settings > Audio).
+   */
+  private fun volumeStep(): Int = audioPreferences.volumeStep.get().coerceAtLeast(1)
+
   @Suppress("ReturnCount", "CyclomaticComplexMethod", "LongMethod")
   override fun onKeyDown(
     keyCode: Int,
@@ -2536,13 +2541,13 @@ class PlayerActivity :
       }
 
       KeyEvent.KEYCODE_VOLUME_UP -> {
-        viewModel.changeVolumeBy(1)
+        viewModel.changeVolumeBy(volumeStep())
         viewModel.displayVolumeSlider()
         return true
       }
 
       KeyEvent.KEYCODE_VOLUME_DOWN -> {
-        viewModel.changeVolumeBy(-1)
+        viewModel.changeVolumeBy(-volumeStep())
         viewModel.displayVolumeSlider()
         return true
       }
