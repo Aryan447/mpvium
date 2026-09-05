@@ -77,10 +77,12 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 /**
- * Touches starting below this vertical fraction of the player are treated as
- * subtitle touches: hold to drag subtitles up/down, double-tap to reset them.
+ * Touches starting within this vertical distance of the current subtitle
+ * position are treated as subtitle touches: hold to drag subtitles up/down,
+ * double-tap to reset them. Kept deliberately tight so holds and double-taps
+ * elsewhere don't get hijacked.
  */
-private const val SubtitleBandTopFraction = 0.65f
+private const val SubtitleTouchToleranceFraction = 0.075f
 
 private fun isSubtitleTouch(
   y: Float,
@@ -89,8 +91,8 @@ private fun isSubtitleTouch(
 ): Boolean {
   if (containerHeight <= 0f) return false
   val yFraction = y / containerHeight
-  val subPosFraction = currentSubPos / 100f
-  return yFraction >= SubtitleBandTopFraction || kotlin.math.abs(yFraction - subPosFraction) <= 0.15f
+  val subPosFraction = currentSubPos.coerceIn(0, 100) / 100f
+  return kotlin.math.abs(yFraction - subPosFraction) <= SubtitleTouchToleranceFraction
 }
 
 @Suppress("CyclomaticComplexMethod", "MultipleEmitters")
