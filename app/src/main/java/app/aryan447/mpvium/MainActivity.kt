@@ -72,6 +72,8 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
+    handleShortcutIntent(intent)
+
     PermissionUtils.setMediaAccessLauncher(mediaAccessLauncher)
 
     // Register proxy lifecycle observer for network streaming
@@ -115,6 +117,26 @@ class MainActivity : ComponentActivity() {
     } catch (e: Exception) {
       Log.e("MainActivity", "Error during onDestroy", e)
     }
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    handleShortcutIntent(intent)
+  }
+
+  private fun handleShortcutIntent(intent: Intent?) {
+    if (intent?.hasExtra(EXTRA_TAB) == true) {
+      val tab = intent.getStringExtra(EXTRA_TAB)?.toIntOrNull()
+        ?: intent.getIntExtra(EXTRA_TAB, -1).takeIf { it >= 0 }
+      if (tab != null) {
+        app.aryan447.mpvium.ui.browser.MainScreen.requestTab(tab)
+      }
+    }
+  }
+
+  companion object {
+    const val EXTRA_TAB = "extra_tab"
   }
 
   private fun requestStoragePermission(requestRuntimePermission: () -> Unit) {
