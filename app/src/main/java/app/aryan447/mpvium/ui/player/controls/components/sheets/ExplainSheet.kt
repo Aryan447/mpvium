@@ -60,6 +60,7 @@ fun ExplainSheet(
   val liveLine by viewModel.subtitleLine.collectAsState()
   val wordState by viewModel.wordState.collectAsState()
   val refsState by viewModel.refsState.collectAsState()
+  val imageSubs by viewModel.subtitleIsImageBased.collectAsState()
 
   // The line being explained. Captured when the sheet opens so results
   // stay stable while subtitles keep changing; Refresh re-captures.
@@ -111,7 +112,13 @@ fun ExplainSheet(
         }
       }
 
-      if (activeLine.isBlank()) {
+      if (imageSubs) {
+        Text(
+          text = stringResource(id = R.string.player_explain_image_subs),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      } else if (activeLine.isBlank()) {
         Text(
           text = stringResource(id = R.string.player_explain_empty_line),
           style = MaterialTheme.typography.bodyMedium,
@@ -165,6 +172,7 @@ fun ExplainSheet(
               partOfSpeech = state.result.partOfSpeech,
               definition = state.result.definition,
               example = state.result.example,
+              translation = state.result.translation,
             )
           }
           is PlayerViewModel.WordLookupState.NotFound -> {
@@ -263,6 +271,7 @@ private fun WordDefinitionCard(
   partOfSpeech: String?,
   definition: String,
   example: String?,
+  translation: String?,
 ) {
   Card(modifier = Modifier.fillMaxWidth()) {
     Column(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
@@ -307,6 +316,19 @@ private fun WordDefinitionCard(
           text = "“$example”",
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+      if (!translation.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+          text = stringResource(id = R.string.player_explain_translation),
+          style = MaterialTheme.typography.labelLarge,
+          color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+          text = translation,
+          style = MaterialTheme.typography.bodyLarge,
         )
       }
     }

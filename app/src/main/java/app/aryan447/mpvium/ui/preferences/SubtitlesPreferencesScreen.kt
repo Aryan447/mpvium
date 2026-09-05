@@ -63,6 +63,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import androidx.compose.ui.text.AnnotatedString
+import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.TextFieldPreference
@@ -188,6 +190,25 @@ object SubtitlesPreferencesScreen : Screen {
                       placeholder = { Text(stringResource(R.string.language_codes_placeholder)) },
                     )
                   }
+                },
+              )
+
+              PreferenceDivider()
+
+              val explainTranslationLang by preferences.explainTranslationLang.collectAsState()
+              ListPreference(
+                value = explainTranslationLang,
+                onValueChange = { preferences.explainTranslationLang.set(it) },
+                values = explainTranslationLanguages,
+                valueToText = { code ->
+                  AnnotatedString(explainLanguageDisplayName(code))
+                },
+                title = { Text(stringResource(R.string.pref_explain_translation_lang_title)) },
+                summary = {
+                  Text(
+                    explainLanguageDisplayName(explainTranslationLang),
+                    color = MaterialTheme.colorScheme.outline,
+                  )
                 },
               )
 
@@ -714,4 +735,29 @@ fun MultiChoicePreference(
       }
     )
   }
+}
+
+private val explainTranslationLanguages = listOf(
+  "",
+  "en",
+  "hi",
+  "es",
+  "fr",
+  "de",
+  "pt",
+  "ru",
+  "ar",
+  "bn",
+  "ta",
+  "te",
+  "mr",
+  "id",
+  "tr",
+  "it",
+)
+
+@Composable
+private fun explainLanguageDisplayName(code: String): String {
+  if (code.isBlank()) return stringResource(R.string.pref_explain_translation_lang_system)
+  return java.util.Locale(code).displayLanguage.replaceFirstChar { it.uppercase() }
 }
