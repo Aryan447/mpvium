@@ -44,6 +44,7 @@ import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.ui.player.controls.PlayerControls
 import app.aryan447.mpvium.ui.theme.MpviumTheme
+import app.aryan447.mpvium.ui.widget.ContinueWatchingWidgetProvider
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.HttpUtils
 import app.aryan447.mpvium.utils.media.SubtitleOps
@@ -678,6 +679,9 @@ class PlayerActivity :
       if (!isFinishing) {
         saveVideoPlaybackState(fileName)
       }
+
+      // Keep the Continue Watching widget fresh with the just-saved position.
+      ContinueWatchingWidgetProvider.refreshAll(this)
     }.onFailure { e ->
       Log.e(TAG, "Error during onPause", e)
     }
