@@ -78,6 +78,7 @@ import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
@@ -95,6 +96,7 @@ data class SeriesDetailScreen(
   override fun Content() {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
+    val paneBack = LocalDetailPaneBack.current
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val coroutineScope = rememberCoroutineScope()
@@ -210,7 +212,9 @@ data class SeriesDetailScreen(
               // Back Button
               IconButton(
                 onClick = {
-                  if (backstack.size > 1) {
+                  if (paneBack != null) {
+                    paneBack()
+                  } else if (backstack.size > 1) {
                     backstack.removeLastOrNull()
                   } else {
                     (context as? android.app.Activity)?.finish()
@@ -427,15 +431,17 @@ data class SeriesDetailScreen(
         isOpen = true,
         onDismiss = { pendingDeletion = null },
         onConfirm = {
-          coroutineScope.launch {
-            val (deleted, _) = PermissionUtils.StorageOps.deleteVideos(context, videos)
-            if (deleted == videos.size && videos.size == series?.totalEpisodes) {
-              if (backstack.size > 1) {
-                backstack.removeLastOrNull()
+            coroutineScope.launch {
+              val (deleted, _) = PermissionUtils.StorageOps.deleteVideos(context, videos)
+              if (deleted == videos.size && videos.size == series?.totalEpisodes) {
+                if (paneBack != null) {
+                  paneBack()
+                } else if (backstack.size > 1) {
+                  backstack.removeLastOrNull()
+                } else {
+                  (context as? android.app.Activity)?.finish()
+                }
               } else {
-                (context as? android.app.Activity)?.finish()
-              }
-            } else {
               isLoading = true
               reloadKey++
             }
