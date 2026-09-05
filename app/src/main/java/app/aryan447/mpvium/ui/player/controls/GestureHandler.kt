@@ -84,15 +84,67 @@ import kotlin.math.sqrt
  */
 private const val SubtitleTouchToleranceFraction = 0.075f
 
+/** Minimum touch slop for the subtitle band so small videos stay usable. */
+private const val SubtitleTouchMinSlopPx = 48f
+
+/**
+ * Vertical video rect (top offset, height in px) inside the touch
+ * container, assuming aspect-fit scaling (mpv default). mpv positions
+ * subtitles relative to the *video* frame, not the full screen, so on
+ * letterboxed/pillarboxed content the old full-height mapping put the
+ * touch zone way below (or above) the actual subtitles. Falls back to
+ * the full container while the video aspect is still unknown.
+ */
+private fun videoRectTopAndHeight(
+  containerWidth: Float,
+  containerHeight: Float,
+  videoAspect: Double?,
+): Pair<Float, Float> {
+  if (containerWidth <= 0f || containerHeight <= 0f || videoAspect == null || videoAspect <= 0.0) {
+    return 0f to containerHeight
+  }
+  val containerAspect = (containerWidth / containerHeight).toDouble()
+  return if (containerAspect > videoAspect) {
+    // Pillarboxed: video fills the container height.
+    0f to containerHeight
+  } else {
+    // Letterboxed: video height derived from the container width.
+    val videoHeight = (containerWidth / videoAspect).toFloat()
+    ((containerHeight - videoHeight) / 2f) to videoHeight
+  }
+}
+
+/** Current rotation-corrected video aspect (w/h), or null if unknown. */
+private fun currentVideoAspect(): Double? {
+  val aspect = MPVLib.getPropertyDouble("video-params/aspect") ?: return null
+  if (aspect <= 0.0) return null
+  val rotate = MPVLib.getPropertyInt("video-params/rotate") ?: 0
+  return if (rotate % 180 == 90) 1.0 / aspect else aspect
+}
+
+private fun subtitleYInContainer(
+  containerWidth: Float,
+  containerHeight: Float,
+  videoAspect: Double?,
+  currentSubPos: Int,
+): Float {
+  val (top, videoHeight) = videoRectTopAndHeight(containerWidth, containerHeight, videoAspect)
+  return top + (currentSubPos.coerceIn(0, 110) / 100f) * videoHeight
+}
+
 private fun isSubtitleTouch(
   y: Float,
+  containerWidth: Float,
   containerHeight: Float,
+  videoAspect: Double?,
   currentSubPos: Int,
 ): Boolean {
   if (containerHeight <= 0f) return false
-  val yFraction = y / containerHeight
-  val subPosFraction = currentSubPos.coerceIn(0, 100) / 100f
-  return kotlin.math.abs(yFraction - subPosFraction) <= SubtitleTouchToleranceFraction
+  val (_, videoHeight) = videoRectTopAndHeight(containerWidth, containerHeight, videoAspect)
+  val tolerance = (videoHeight * SubtitleTouchToleranceFraction).coerceAtLeast(SubtitleTouchMinSlopPx)
+  return kotlin.math.abs(
+    y - subtitleYInContainer(containerWidth, containerHeight, videoAspect, currentSubPos),
+  ) <= tolerance
 }
 
 @Suppress("CyclomaticComplexMethod", "MultipleEmitters")
@@ -266,8 +318,9 @@ fun GestureHandler(
                   isDoubleTapSeeking
 
                 val currentSubPos = MPVLib.getPropertyInt("sub-pos") ?: 100
-                val isSubTap = isSubtitleTouch(downPosition.y, size.height.toFloat(), currentSubPos)
-                val isPrevSubTap = isSubtitleTouch(lastTapPosition.y, size.height.toFloat(), currentSubPos)
+                val videoAspect = currentVideoAspect()
+                val isSubTap = isSubtitleTouch(downPosition.y, size.width.toFloat(), size.height.toFloat(), videoAspect, currentSubPos)
+                val isPrevSubTap = isSubtitleTouch(lastTapPosition.y, size.width.toFloat(), size.height.toFloat(), videoAspect, currentSubPos)
                 val isDoubleTapOnSubtitle = isSubTap && isPrevSubTap && positionChange < 150f
 
                 // Check if this is a valid double-tap
@@ -407,6 +460,8 @@ fun GestureHandler(
           var subtitleDragStartSubPos = subtitlesPreferences.subPos.get()
           var lastSubtitlePos = subtitleDragStartSubPos
           val gestureAreaHeight = size.height.toFloat()
+          val gestureAreaWidth = size.width.toFloat()
+          val gestureVideoAspect = currentVideoAspect()
           val longPressDelay = 500L
           var longPressJob = coroutineScope.launch {
             delay(longPressDelay)
@@ -417,7 +472,7 @@ fun GestureHandler(
             )
             val currentSubPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
             // Hold without moving in the subtitle band starts subtitle drag mode
-            if (distance < 10f && isSubtitleTouch(startPosition.y, gestureAreaHeight, currentSubPos)) {
+            if (distance < 10f && isSubtitleTouch(startPosition.y, gestureAreaWidth, gestureAreaHeight, gestureVideoAspect, currentSubPos)) {
               longPressTriggered = true
               isLongPressing = true
               longPressTriggeredDuringTouch = true
@@ -471,7 +526,14 @@ fun GestureHandler(
                   // vertical movement repositions subtitles (drag up moves
                   // them up). Horizontal drift is ignored.
                   if (subtitleDragActive) {
-                    val dragOffset = (change.position.y - startPosition.y) / gestureAreaHeight * 100f
+                    // Scale the drag against the video height (not the full
+                    // container) so subtitles track the finger 1:1.
+                    val (_, gestureVideoHeight) = videoRectTopAndHeight(
+                      gestureAreaWidth,
+                      gestureAreaHeight,
+                      gestureVideoAspect,
+                    )
+                    val dragOffset = (change.position.y - startPosition.y) / gestureVideoHeight * 100f
                     val newPos = (subtitleDragStartSubPos + dragOffset).roundToInt().coerceIn(0, 110)
                     if (newPos != lastSubtitlePos) {
                       lastSubtitlePos = newPos
