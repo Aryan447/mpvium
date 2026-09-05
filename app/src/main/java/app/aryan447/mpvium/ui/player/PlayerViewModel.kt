@@ -205,16 +205,16 @@ class PlayerViewModel(
       }
     }
 
-    // Detect when playback enters an intro/recap window so the UI can offer a skip.
-    // The same tick also feeds Smart Skip, Shader Peek and the Explain line.
+    // Detect when playback enters an intro/recap window so the UI can offer a skip
     viewModelScope.launch {
       while (isActive) {
         val windows = _introSkipWindows.value
         val titleKnown = currentMediaTitle.isNotBlank()
-        val pos = MPVLib.getPropertyDouble("time-pos")?.toInt()
-          ?: MPVLib.getPropertyInt("time-pos")
-          ?: 0
         if (windows.isNotEmpty() && titleKnown) {
+          val pos = MPVLib.getPropertyDouble("time-pos")?.toInt()
+            ?: MPVLib.getPropertyInt("time-pos")
+            ?: 0
+
           // Un-dismiss windows if user seeks backward before their start
           dismissedWindows.removeAll { it.startSeconds > pos }
 
@@ -223,42 +223,11 @@ class PlayerViewModel(
             _introSkipWindow.value = active
             _introSkipShown.value = (active != null)
           }
-          } else if (_introSkipShown.value || _introSkipWindow.value != null) {
-            _introSkipWindow.value = null
-            _introSkipShown.value = false
-          }
-
-          // Smart Skip: the API window wins, otherwise fall back to the
-          // chapter-title heuristic (e.g. "Opening", "Recap").
-          val apiActive = _introSkipWindow.value
-          val smart = if (apiActive != null) {
-            SmartSkip(
-              isRecap = apiActive.type == app.aryan447.mpvium.repository.intro.IntroSegmentType.RECAP,
-              targetSeconds = apiActive.endSeconds,
-            )
-          } else {
-            detectChapterSkip(pos)
-          }
-          if (smart != _smartSkip.value) {
-            _smartSkip.value = smart
-          }
-          _smartSkipRemaining.value = smart?.let { (it.targetSeconds - pos).coerceAtLeast(0) } ?: 0
-
-          // Shader Peek availability follows the video height and prefs.
-          updateShaderPeek()
-
-          // Track the latest subtitle line for Explain (keeps the last
-          // non-blank line so the sheet stays useful between lines).
-          runCatching {
-            val rawSub = MPVLib.getPropertyString("sub-text")
-            if (!rawSub.isNullOrBlank()) {
-              val cleaned = cleanSubtitleText(rawSub)
-              if (cleaned.isNotBlank() && cleaned != _subtitleLine.value) {
-                _subtitleLine.value = cleaned
-              }
-            }
-          }
-          delay(250)
+        } else if (_introSkipShown.value || _introSkipWindow.value != null) {
+          _introSkipWindow.value = null
+          _introSkipShown.value = false
+        }
+        delay(250)
       }
     }
   }
@@ -900,6 +869,54 @@ class PlayerViewModel(
       .replace("\\h", " ")
       .replace(Regex("\\s+"), " ")
       .trim()
+
+  /**
+   * Auxiliary 250ms poller for Smart Skip, Shader Peek and the Explain
+   * line. Declared here — after every state property above — because
+   * coroutines launched on Dispatchers.Main.immediate run their first
+   * tick synchronously: touching not-yet-initialized properties from an
+   * init-block launch crashes Player creation with an NPE.
+   */
+  @Suppress("unused")
+  private val auxiliaryPoller = viewModelScope.launch {
+    while (isActive) {
+      val pos = MPVLib.getPropertyDouble("time-pos")?.toInt()
+        ?: MPVLib.getPropertyInt("time-pos")
+        ?: 0
+
+      // Smart Skip: the API window wins, otherwise fall back to the
+      // chapter-title heuristic (e.g. "Opening", "Recap").
+      val apiActive = _introSkipWindow.value
+      val smart = if (apiActive != null) {
+        SmartSkip(
+          isRecap = apiActive.type == app.aryan447.mpvium.repository.intro.IntroSegmentType.RECAP,
+          targetSeconds = apiActive.endSeconds,
+        )
+      } else {
+        detectChapterSkip(pos)
+      }
+      if (smart != _smartSkip.value) {
+        _smartSkip.value = smart
+      }
+      _smartSkipRemaining.value = smart?.let { (it.targetSeconds - pos).coerceAtLeast(0) } ?: 0
+
+      // Shader Peek availability follows the video height and prefs.
+      updateShaderPeek()
+
+      // Track the latest subtitle line for Explain (keeps the last
+      // non-blank line so the sheet stays useful between lines).
+      runCatching {
+        val rawSub = MPVLib.getPropertyString("sub-text")
+        if (!rawSub.isNullOrBlank()) {
+          val cleaned = cleanSubtitleText(rawSub)
+          if (cleaned.isNotBlank() && cleaned != _subtitleLine.value) {
+            _subtitleLine.value = cleaned
+          }
+        }
+      }
+      delay(250)
+    }
+  }
 
 
   fun removeSubtitle(id: Int) {
