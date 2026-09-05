@@ -53,6 +53,8 @@ The repository may provide several APKs for different CPU architectures:
 | `universal` | Most devices; larger download |
 | `arm64-v8a` | Modern 64-bit ARM devices; recommended for most phones |
 | `armeabi-v7a` | Older 32-bit ARM devices |
+| `x86` | 32-bit Intel/AMD devices |
+| `x86_64` | 64-bit Intel/AMD devices |
 
 Preview builds are intended for testing and may be available through the
 project’s [preview releases](https://github.com/aryan447/mpvium/releases).
@@ -81,7 +83,6 @@ Useful build variants include:
 ```bash
 bash ./gradlew assembleStandardRelease
 bash ./gradlew assemblePlaystoreRelease
-bash ./gradlew assembleFdroidRelease
 bash ./gradlew assembleStandardPreview
 ```
 
@@ -91,7 +92,6 @@ The generated APKs are written to `app/build/outputs/apk/`.
 
 - `standard` — full-featured build with update support
 - `playstore` — Google Play-compatible build with restricted storage behavior
-- `fdroid` — F-Droid-compatible build with a limited ABI configuration
 
 ## Contributing
 
