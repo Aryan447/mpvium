@@ -14,7 +14,7 @@ import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * A word meaning from the keyless Free Dictionary API.
+ * A word meaning from the keyless Wiktionary API.
  */
 data class WordDefinition(
   val word: String,
@@ -22,6 +22,7 @@ data class WordDefinition(
   val partOfSpeech: String?,
   val definition: String,
   val example: String?,
+  val translation: String? = null,
 )
 
 /**
@@ -34,28 +35,28 @@ data class ReferenceExplanation(
 )
 
 @Serializable
-private data class DictPhonetic(
-  val text: String? = null,
-)
-
-@Serializable
-private data class DictDefinition(
+private data class WiktDefinition(
   val definition: String? = null,
-  val example: String? = null,
+  val examples: List<String> = emptyList(),
 )
 
 @Serializable
-private data class DictMeaning(
+private data class WiktEntry(
   val partOfSpeech: String? = null,
-  val definitions: List<DictDefinition> = emptyList(),
+  val language: String? = null,
+  val definitions: List<WiktDefinition> = emptyList(),
 )
 
 @Serializable
-private data class DictEntry(
-  val word: String? = null,
-  val phonetic: String? = null,
-  val phonetics: List<DictPhonetic> = emptyList(),
-  val meanings: List<DictMeaning> = emptyList(),
+private data class MyMemoryData(
+  val translatedText: String? = null,
+)
+
+@Serializable
+private data class MyMemoryResponse(
+  val responseData: MyMemoryData? = null,
+  val responseStatus: Int? = null,
+  val quotaFinished: Boolean? = null,
 )
 
 @Serializable
@@ -92,7 +93,8 @@ private data class WikiExtractsResponse(
 
 /**
  * Keyless lookups for the player Explain feature:
- * - word meanings via the Free Dictionary API (no key required)
+ * - word meanings via the Wiktionary REST API (no key required)
+ * - word translations via the MyMemory API (no key required)
  * - dialogue/reference explanations via the Wikipedia API (no key required)
  *
  * Results are cached in memory per query. A missing dictionary entry is
@@ -103,20 +105,21 @@ class ExplainRepository(
   private val json: Json,
 ) {
   companion object {
-    private const val TAG = "ExplainRepository"
-    private const val DICTIONARY_BASE = "https://api.dictionaryapi.dev/api/v2/entries/en/"
+    private const val WIKTIONARY_BASE = "https://en.wiktionary.org/api/rest_v1/page/definition/"
+    private const val MYMEMORY_BASE = "https://api.mymemory.translated.net/get"
     private const val WIKIPEDIA_BASE = "https://en.wikipedia.org/w/api.php"
     private const val USER_AGENT = "mpvium (https://github.com/aryan447/mpvium; Android)"
   }
 
   private val wordCache = ConcurrentHashMap<String, WordDefinition>()
   private val wordMisses = ConcurrentHashMap.newKeySet<String>()
+  private val translationCache = ConcurrentHashMap<String, String>()
   private val refsCache = ConcurrentHashMap<String, List<ReferenceExplanation>>()
 
   /**
-   * Look up a single word. Returns null when the word has no dictionary
-   * entry. Throws [IOException] on network/API failures so callers can
-   * distinguish "not found" from "couldn't load".
+   * Look up a single English word. Returns null when the word has no
+   * dictionary entry. Throws [IOException] on network/API failures so
+   * callers can distinguish "not found" from "couldn't load".
    */
   suspend fun define(rawWord: String): WordDefinition? = withContext(Dispatchers.IO) {
     val word = rawWord.lowercase().trim().trim { !it.isLetterOrDigit() }
@@ -124,7 +127,7 @@ class ExplainRepository(
     wordCache[word]?.let { return@withContext it }
     if (wordMisses.contains(word)) return@withContext null
 
-    val url = DICTIONARY_BASE + URLEncoder.encode(word, "UTF-8")
+    val url = WIKTIONARY_BASE + URLEncoder.encode(word, "UTF-8")
     val response = client.newCall(Request.Builder().url(url).header("User-Agent", USER_AGENT).build()).execute()
     response.use {
       if (it.code == 404) {
@@ -133,17 +136,17 @@ class ExplainRepository(
       }
       if (!it.isSuccessful) throw IOException("Unexpected code $it")
       val body = it.body?.string() ?: throw IOException("Empty body")
-      val entries = runCatching { json.decodeFromString<List<DictEntry>>(body) }.getOrNull().orEmpty()
-      val entry = entries.firstOrNull()
-      val meaning = entry?.meanings?.firstOrNull { m -> m.definitions.any { d -> !d.definition.isNullOrBlank() } }
-      val def = meaning?.definitions?.firstOrNull { d -> !d.definition.isNullOrBlank() }
+      val entries = runCatching { json.decodeFromString<Map<String, List<WiktEntry>>>(body) }.getOrNull()
+        ?.get("en").orEmpty()
+      val entry = entries.firstOrNull { e -> e.definitions.any { d -> !d.definition.isNullOrBlank() } }
+      val def = entry?.definitions?.firstOrNull { d -> !d.definition.isNullOrBlank() }
       val result = if (entry != null && def?.definition != null) {
         WordDefinition(
-          word = entry.word ?: word,
-          phonetic = entry.phonetic ?: entry.phonetics.firstOrNull { p -> !p.text.isNullOrBlank() }?.text,
-          partOfSpeech = meaning?.partOfSpeech,
-          definition = def.definition,
-          example = def.example?.takeIf { e -> e.isNotBlank() },
+          word = word,
+          phonetic = null,
+          partOfSpeech = entry.partOfSpeech,
+          definition = stripHtml(def.definition),
+          example = def.examples.firstOrNull { e -> e.isNotBlank() }?.let(::stripHtml),
         )
       } else {
         null
@@ -156,6 +159,43 @@ class ExplainRepository(
       result
     }
   }
+
+  /**
+   * Translate English [text] into [targetLang] (ISO code, e.g. "hi").
+   * Returns null when translation is unavailable or unnecessary.
+   * Translation is best-effort: failures return null instead of throwing.
+   */
+  suspend fun translate(text: String, targetLang: String): String? = withContext(Dispatchers.IO) {
+    val target = targetLang.lowercase().trim()
+    val clean = text.replace(Regex("\\s+"), " ").trim()
+    if (target.isBlank() || target == "en" || clean.isBlank()) return@withContext null
+    val key = "$clean|$target"
+    translationCache[key]?.let { return@withContext it }
+
+    val url = "$MYMEMORY_BASE?q=${URLEncoder.encode(clean, "UTF-8")}&langpair=en|$target"
+    val translated = client.newCall(Request.Builder().url(url).header("User-Agent", USER_AGENT).build()).execute().use {
+      if (!it.isSuccessful) return@withContext null
+      val body = it.body?.string() ?: return@withContext null
+      val parsed = runCatching { json.decodeFromString<MyMemoryResponse>(body) }.getOrNull()
+      if (parsed?.responseStatus != 200 || parsed.quotaFinished == true) return@withContext null
+      parsed.responseData?.translatedText?.trim()?.takeIf { t ->
+        t.isNotBlank() && !t.startsWith("MYMEMORY WARNING") && !t.startsWith("INVALID") && !t.startsWith("QUERY LENGTH")
+      }
+    } ?: return@withContext null
+    translationCache[key] = translated
+    translated
+  }
+
+  private fun stripHtml(raw: String): String =
+    raw.replace(Regex("<[^>]*>"), " ")
+      .replace("&nbsp;", " ")
+      .replace("&amp;", "&")
+      .replace("&lt;", "<")
+      .replace("&gt;", ">")
+      .replace("&quot;", "\"")
+      .replace("&#39;", "'")
+      .replace(Regex("\\s+"), " ")
+      .trim()
 
   /**
    * Explain the references in a subtitle line via Wikipedia search +

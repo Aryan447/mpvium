@@ -838,11 +838,47 @@ class PlayerViewModel(
       _wordState.value = WordLookupState.Loading
       _wordState.value = try {
         val definition = explainRepository.define(clean)
-        if (definition != null) WordLookupState.Done(definition) else WordLookupState.NotFound
+        if (definition != null) {
+          val target = translationTargetLang()
+          val translation = if (target != null) {
+            runCatching { explainRepository.translate(definition.word, target) }.getOrNull()
+          } else {
+            null
+          }
+          WordLookupState.Done(definition.copy(translation = translation))
+        } else {
+          WordLookupState.NotFound
+        }
       } catch (_: Exception) {
         WordLookupState.Error
       }
     }
+  }
+
+  /**
+   * ISO language code looked-up words are translated into, or null when
+   * no translation is needed (target is English). Empty preference falls
+   * back to the system language.
+   */
+  private fun translationTargetLang(): String? {
+    val code = subtitlesPreferences.explainTranslationLang.get().lowercase().trim()
+      .ifBlank { java.util.Locale.getDefault().language.lowercase() }
+    return code.takeIf { it.isNotBlank() && it != "en" }
+  }
+
+  /**
+   * True when the selected subtitle track is image-based (PGS, DVD, …),
+   * which has no text for Explain to work with.
+   */
+  val subtitleIsImageBased: StateFlow<Boolean> = subtitleTracks
+    .map { tracks ->
+      tracks.firstOrNull { it.isSelected }?.let(::isImageSubtitle) ?: false
+    }
+    .stateIn(viewModelScope, SharingStarted.Lazily, false)
+
+  private fun isImageSubtitle(track: app.aryan447.mpvium.ui.player.TrackNode): Boolean {
+    if (track.image == true) return true
+    return track.codec?.lowercase() in IMAGE_SUBTITLE_CODECS
   }
 
   fun explainReferences(line: String) {
@@ -2261,6 +2297,14 @@ sealed interface ShaderPeekState {
 private const val MAX_SMART_SKIP_CHAPTER_SECONDS = 180
 private const val SHADER_PEAK_MAX_HEIGHT = 2160
 private const val SHADER_PEAK_SUGGEST_MAX_HEIGHT = 720
+
+private val IMAGE_SUBTITLE_CODECS = setOf(
+  "hdmv_pgs_subtitle",
+  "dvd_subtitle",
+  "dvd_sub",
+  "dvb_subtitle",
+  "xsub",
+)
 
 // Extension functions
 fun Float.normalize(
