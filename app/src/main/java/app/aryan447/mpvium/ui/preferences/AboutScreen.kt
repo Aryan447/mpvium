@@ -58,12 +58,15 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.BuildConfig
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.crash.CrashActivity.Companion.collectDeviceInfo
+import app.aryan447.mpvium.ui.onboarding.OnboardingScreen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.update.UpdateViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
+import org.koin.compose.koinInject
 
 @Serializable
 object AboutScreen : Screen {
@@ -74,6 +77,7 @@ object AboutScreen : Screen {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
     val clipboardManager = LocalClipboardManager.current
+    val appearancePreferences = koinInject<AppearancePreferences>()
     val packageManager: PackageManager = context.packageManager
     val packageInfo = packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName?.substringBefore('-') ?: packageInfo.versionName ?: BuildConfig.VERSION_NAME
@@ -234,6 +238,31 @@ object AboutScreen : Screen {
                     fontWeight = FontWeight.SemiBold,
                   )
                 }
+              }
+
+              Spacer(modifier = Modifier.height(20.dp))
+
+              Button(
+                onClick = {
+                  appearancePreferences.onboardingCompleted.set(false)
+                  backstack.add(OnboardingScreen)
+                },
+                modifier =
+                  Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors =
+                  ButtonDefaults.buttonColors(
+                    containerColor = cs.secondaryContainer,
+                    contentColor = cs.onSecondaryContainer,
+                  ),
+              ) {
+                Text(
+                  text = stringResource(id = R.string.onboarding_replay),
+                  style = MaterialTheme.typography.titleMedium,
+                  fontWeight = FontWeight.SemiBold,
+                )
               }
 
               Spacer(modifier = Modifier.height(20.dp))
