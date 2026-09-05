@@ -53,8 +53,6 @@ The repository may provide several APKs for different CPU architectures:
 | `universal` | Most devices; larger download |
 | `arm64-v8a` | Modern 64-bit ARM devices; recommended for most phones |
 | `armeabi-v7a` | Older 32-bit ARM devices |
-| `x86` | 32-bit Intel/AMD devices |
-| `x86_64` | 64-bit Intel/AMD devices |
 
 Preview builds are intended for testing and may be available through the
 project’s [preview releases](https://github.com/aryan447/mpvium/releases).
