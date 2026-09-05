@@ -119,6 +119,24 @@ object AppearancePreferencesScreen : Screen {
                                 },
                                 enabled = darkMode != DarkMode.Light
                             )
+
+                            PreferenceDivider()
+
+                            // Floating pill navigation bar toggle
+                            val pillNavigationBar by preferences.pillNavigationBar.collectAsState()
+                            HapticSwitchPreference(
+                                value = pillNavigationBar,
+                                onValueChange = { newValue ->
+                                    preferences.pillNavigationBar.set(newValue)
+                                },
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_pill_nav_title)) },
+                                summary = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_pill_nav_summary),
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                },
+                            )
                         }
                     }
 

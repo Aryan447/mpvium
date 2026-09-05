@@ -16,6 +16,8 @@
   <string name="pref_appearance_darkmode_dark">Dark</string>
   <string name="pref_appearance_amoled_mode_title">AMOLED Black Mode</string>
   <string name="pref_appearance_amoled_mode_summary">Use pure black background for dark themes</string>
+  <string name="pref_appearance_pill_nav_title">Floating pill navigation bar</string>
+  <string name="pref_appearance_pill_nav_summary">Show the bottom bar as a floating rounded pill</string>
   <string name="pref_appearance_material_you_title">Material You</string>
   <string name="pref_appearance_material_you_summary">Enable dynamic colors</string>
   <string name="pref_appearance_material_you_summary_disabled">Only available on Android 12 and above</string>
