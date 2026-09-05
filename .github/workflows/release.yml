@@ -169,20 +169,11 @@ jobs:
             | arm64-v8a | ${{ env.apk_arm64_v8a_sha256 }} |
             | armeabi-v7a | ${{ env.apk_armeabi_v7a_sha256 }} |
             | Universal | ${{ env.apk_universal_sha256 }} |
-            #| F-Droid | ${{ env.apk_fdroid_sha256 }} |
 
-            #---
-            ### F-Droid Version
-
-            #The F-Droid variant (`mpvium-fdroid-${{ env.VERSION_TAG }}.apk`) is specifically built for F-Droid compatibility:
-            #- Removed automatic update feature
-            #- Removed install packages permission
-            #- ARM64-v8a architecture only
           files: |
             mpvium-universal-${{ env.VERSION_TAG }}.apk
             mpvium-arm64-v8a-${{ env.VERSION_TAG }}.apk
             mpvium-armeabi-v7a-${{ env.VERSION_TAG }}.apk
-            #mpvium-fdroid-${{ env.VERSION_TAG }}.apk
           draft: true
           prerelease: false
         env:
