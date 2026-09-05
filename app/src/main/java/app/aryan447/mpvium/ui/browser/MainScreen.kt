@@ -300,8 +300,12 @@ object MainScreen : Screen {
             }
           }
         }
-      ) { paddingValues ->
-        Row(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+      ) { _ ->
+        // NOTE: Scaffold padding is intentionally ignored here (as before):
+        // screens draw edge-to-edge and handle status/navigation insets
+        // themselves, including the manual bottom offset via
+        // LocalNavigationBarHeight.
+        Row(modifier = Modifier.fillMaxSize()) {
           if (isWide) {
             AnimatedVisibility(visible = !hideNavigationBar.value) {
               NavigationRail {
