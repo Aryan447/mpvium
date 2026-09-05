@@ -54,6 +54,9 @@ class SubtitlesPreferences(
   val wyzieFormats = preferenceStore.getStringSet("wyzie_formats", setOf("srt", "ass"))
   val wyzieEncodings = preferenceStore.getStringSet("wyzie_encodings", setOf("utf-8"))
   val wyzieHearingImpaired = preferenceStore.getBoolean("wyzie_hi", false)
+
+  // Explain feature: also translate looked-up words. Empty = system language.
+  val explainTranslationLang = preferenceStore.getString("explain_translation_lang", "")
 }
 
 enum class SubtitleJustification(

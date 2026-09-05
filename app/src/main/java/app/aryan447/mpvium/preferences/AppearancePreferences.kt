@@ -57,13 +57,13 @@ class AppearancePreferences(
   val bottomLeftControls =
     preferenceStore.getString(
       "bottom_left_controls",
-      "PLAYBACK_SPEED,AB_LOOP",
+      "PLAYBACK_SPEED,AB_LOOP,EXPLAIN",
     )
 
   val portraitBottomControls =
     preferenceStore.getString(
       "portrait_bottom_controls",
-      "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP",
+      "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP,EXPLAIN",
     )
 
   fun parseButtons(

@@ -457,6 +457,13 @@ object SearchablePreferences {
                 category = "Subtitles",
                 screen = SubtitlesPreferencesScreen,
             ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_explain_translation_lang_title,
+                summaryRes = R.string.pref_explain_translation_lang_summary,
+                keywords = listOf("explain", "translation", "language", "dictionary", "word", "meaning"),
+                category = "Subtitles",
+                screen = SubtitlesPreferencesScreen,
+            ))
 
             // Audio preferences
             add(SearchablePreference(
