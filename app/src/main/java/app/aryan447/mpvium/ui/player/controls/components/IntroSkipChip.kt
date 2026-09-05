@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.controlColor
 import app.aryan447.mpvium.ui.theme.spacing
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 fun IntroSkipChip(
   label: String,
   modifier: Modifier = Modifier,
+  detail: String? = null,
+  icon: ImageVector = Icons.Default.FastForward,
   onClick: () -> Unit = {},
 ) {
   val haptic = LocalHapticFeedback.current
@@ -50,13 +53,13 @@ fun IntroSkipChip(
         .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.smaller),
     ) {
       Icon(
-        Icons.Default.FastForward,
+        icon,
         contentDescription = null,
         tint = controlColor,
         modifier = Modifier.padding(end = MaterialTheme.spacing.extraSmall),
       )
       Text(
-        text = label,
+        text = if (detail != null) "$label • $detail" else label,
         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

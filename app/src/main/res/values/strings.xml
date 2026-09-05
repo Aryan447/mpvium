@@ -22,6 +22,27 @@
   <string name="onboarding_skip">Skip</string>
   <string name="onboarding_next">Next</string>
   <string name="onboarding_get_started">Get started</string>
+  <string name="onboarding_replay">Replay welcome tour</string>
+  <!-- Player Explain (dictionary + references) -->
+  <string name="player_explain_title">Explain</string>
+  <string name="player_explain_tap_word">Tap a word to look it up</string>
+  <string name="player_explain_references">References</string>
+  <string name="player_explain_no_definition">No definition found for this word</string>
+  <string name="player_explain_no_references">No references found for this line</string>
+  <string name="player_explain_empty_line">No subtitle on screen — play a scene with subtitles, then refresh</string>
+  <string name="player_explain_refresh">Refresh</string>
+  <string name="player_explain_retry">Retry</string>
+  <string name="player_explain_failed">Couldn\'t load. Check your connection and retry.</string>
+  <!-- Smart Skip -->
+  <string name="player_smart_skip_seconds">%1$ds</string>
+  <!-- Shader Peek (Anime4K compare) -->
+  <string name="player_shader_peek_upscale">Upscale</string>
+  <string name="player_shader_peek_upscaled">Upscaled</string>
+  <string name="player_shader_peek_original">Original</string>
+  <string name="player_shader_peek_on">Upscaling on</string>
+  <string name="player_shader_peek_off">Upscaling off</string>
+  <!-- More sheet pro menu -->
+  <string name="player_sheets_pro_controls">Pro controls</string>
   <string name="onboarding_page1_title">Welcome to mpvium</string>
   <string name="onboarding_page1_message">Sane defaults, pro-level control. A free and open-source player powered by mpv — high-quality playback with no ads and no unnecessary permissions.</string>
   <string name="onboarding_page2_title">Your library, your way</string>
