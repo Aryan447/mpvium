@@ -40,6 +40,13 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                titleRes = R.string.pref_appearance_pill_nav_title,
+                summaryRes = R.string.pref_appearance_pill_nav_summary,
+                keywords = listOf("pill", "floating", "navigation bar", "one ui", "ios", "rounded", "bottom bar"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
+            add(SearchablePreference(
                 titleRes = R.string.pref_appearance_unlimited_name_lines_title,
                 summaryRes = R.string.pref_appearance_unlimited_name_lines_summary,
                 keywords = listOf("name", "full", "truncate", "lines", "display"),

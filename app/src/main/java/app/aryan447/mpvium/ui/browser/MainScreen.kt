@@ -15,7 +15,10 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,13 +44,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
 import app.aryan447.mpvium.ui.browser.selection.SelectionManager
@@ -57,6 +65,7 @@ import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import org.koin.compose.koinInject
 
 @Serializable
 object MainScreen : Screen {
@@ -134,6 +143,22 @@ object MainScreen : Screen {
   }
 
   @Composable
+  private fun RowScope.BottomNavItems(
+    navItems: List<Triple<ImageVector, String, String>>,
+    selectedTab: Int,
+    onSelectTab: (Int) -> Unit,
+  ) {
+    navItems.forEachIndexed { index, (icon, label, desc) ->
+      NavigationBarItem(
+        icon = { Icon(icon, contentDescription = desc) },
+        label = { Text(label) },
+        selected = selectedTab == index,
+        onClick = { onSelectTab(index) }
+      )
+    }
+  }
+
+  @Composable
   @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
   override fun Content() {
     var selectedTab by rememberSaveable {
@@ -143,6 +168,9 @@ object MainScreen : Screen {
     val context = LocalContext.current
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
+
+    val appearancePreferences = koinInject<AppearancePreferences>()
+    val pillNavigationBar by appearancePreferences.pillNavigationBar.collectAsState()
 
     fun selectTab(index: Int) {
       if (selectedTab != index) {
@@ -223,24 +251,49 @@ object MainScreen : Screen {
                 targetOffsetY = { fullHeight -> fullHeight }
               )
             ) {
-              NavigationBar(
-                modifier = Modifier
-                  .clip(
-                    RoundedCornerShape(
-                      topStart = 20.dp,
-                      topEnd = 20.dp,
-                      bottomStart = 0.dp,
-                      bottomEnd = 0.dp
+              if (pillNavigationBar) {
+                // Floating pill bar, One UI / iOS style: detached from screen
+                // edges, fully rounded, with a soft shadow. Window insets are
+                // disabled on the bar itself; the outer padding clears the
+                // gesture navigation area instead.
+                Box(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp),
+                  contentAlignment = Alignment.Center,
+                ) {
+                  NavigationBar(
+                    modifier = Modifier
+                      .shadow(8.dp, RoundedCornerShape(28.dp))
+                      .clip(RoundedCornerShape(28.dp)),
+                    tonalElevation = 6.dp,
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                  ) {
+                    BottomNavItems(
+                      navItems = navItems,
+                      selectedTab = selectedTab,
+                      onSelectTab = ::selectTab,
                     )
-                  ),
-                tonalElevation = 3.dp
-              ) {
-                navItems.forEachIndexed { index, (icon, label, desc) ->
-                  NavigationBarItem(
-                    icon = { Icon(icon, contentDescription = desc) },
-                    label = { Text(label) },
-                    selected = selectedTab == index,
-                    onClick = { selectTab(index) }
+                  }
+                }
+              } else {
+                NavigationBar(
+                  modifier = Modifier
+                    .clip(
+                      RoundedCornerShape(
+                        topStart = 20.dp,
+                        topEnd = 20.dp,
+                        bottomStart = 0.dp,
+                        bottomEnd = 0.dp
+                      )
+                    ),
+                  tonalElevation = 3.dp
+                ) {
+                  BottomNavItems(
+                    navItems = navItems,
+                    selectedTab = selectedTab,
+                    onSelectTab = ::selectTab,
                   )
                 }
               }
