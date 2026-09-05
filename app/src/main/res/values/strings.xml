@@ -38,6 +38,11 @@
   <string name="pref_explain_translation_lang_title">Explain translation language</string>
   <string name="pref_explain_translation_lang_summary">Looked-up words are also translated into this language</string>
   <string name="pref_explain_translation_lang_system">System language</string>
+  <!-- Continue Watching widget -->
+  <string name="widget_continue_watching">Continue watching</string>
+  <string name="widget_continue_watching_desc">Resume your recent videos from the home screen</string>
+  <string name="widget_empty">Nothing to continue — watch something first</string>
+  <string name="widget_refresh">Refresh</string>
   <!-- Smart Skip -->
   <string name="player_smart_skip_seconds">%1$ds</string>
   <!-- Shader Peek (Anime4K compare) -->
