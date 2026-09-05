@@ -34,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -65,7 +66,14 @@ object MoviesGridScreen : Screen {
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val navigationBarHeight = LocalNavigationBarHeight.current
-    // Adaptive grid: auto-fits phones, landscape, tablets and foldables.
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isTablet = configuration.smallestScreenWidthDp >= 600
+    val columns = when {
+      isTablet -> if (isLandscape) 5 else 4
+      isLandscape -> 4
+      else -> 3
+    }
 
     var movieList by remember { mutableStateOf<List<LocalMovie>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -181,7 +189,7 @@ object MoviesGridScreen : Screen {
         )
       } else {
         LazyVerticalGrid(
-          columns = GridCells.Adaptive(minSize = 140.dp),
+          columns = GridCells.Fixed(columns),
           modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding),
