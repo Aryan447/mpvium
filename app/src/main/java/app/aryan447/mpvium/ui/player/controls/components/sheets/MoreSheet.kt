@@ -2,6 +2,7 @@ package app.aryan447.mpvium.ui.player.controls.components.sheets
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -48,9 +49,12 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.anime4k.Anime4KManager
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.DecoderPreferences
+import app.aryan447.mpvium.preferences.PlayerButton
 import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.getPlayerButtonLabel
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.components.PlayerSheet
+import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +69,7 @@ fun MoreSheet(
   onDismissRequest: () -> Unit,
   onEnterFiltersPanel: () -> Unit,
   onAnime4KChanged: () -> Unit = {},
+  onOpenSheet: (Sheets) -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
   val advancedPreferences = koinInject<AdvancedPreferences>()
@@ -285,9 +290,47 @@ val scope = rememberCoroutineScope()
           }
         }
       }
+      // Pro controls: every sheet reachable from one menu, so the
+      // trimmed default bars stay complete for power users.
+      Text(
+        text = stringResource(R.string.player_sheets_pro_controls),
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+      )
+      proControlRows.forEach { (button, sheet) ->
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenSheet(sheet) }
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Icon(
+            imageVector = button.icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+          Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))
+          Text(
+            text = getPlayerButtonLabel(button),
+            style = MaterialTheme.typography.bodyLarge,
+          )
+        }
+      }
     }
   }
 }
+
+private val proControlRows = listOf(
+  PlayerButton.BOOKMARKS_CHAPTERS to Sheets.Chapters,
+  PlayerButton.AUDIO_TRACK to Sheets.AudioTracks,
+  PlayerButton.SUBTITLES to Sheets.SubtitleTracks,
+  PlayerButton.PLAYBACK_SPEED to Sheets.PlaybackSpeed,
+  PlayerButton.VIDEO_ZOOM to Sheets.VideoZoom,
+  PlayerButton.ASPECT_RATIO to Sheets.AspectRatios,
+  PlayerButton.FRAME_NAVIGATION to Sheets.FrameNavigation,
+  PlayerButton.DECODER to Sheets.Decoders,
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable

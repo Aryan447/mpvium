@@ -16,6 +16,7 @@ import app.aryan447.mpvium.ui.player.controls.components.sheets.AspectRatioSheet
 import app.aryan447.mpvium.ui.player.controls.components.sheets.AudioTracksSheet
 import app.aryan447.mpvium.ui.player.controls.components.sheets.ChaptersSheet
 import app.aryan447.mpvium.ui.player.controls.components.sheets.DecodersSheet
+import app.aryan447.mpvium.ui.player.controls.components.sheets.ExplainSheet
 import app.aryan447.mpvium.ui.player.controls.components.sheets.FrameNavigationSheet
 import app.aryan447.mpvium.ui.player.controls.components.sheets.MoreSheet
 import app.aryan447.mpvium.ui.player.controls.components.sheets.PlaybackSpeedSheet
@@ -237,6 +238,7 @@ fun PlayerSheets(
         onDismissRequest = onDismissRequest,
         onEnterFiltersPanel = { onOpenPanel(Panels.VideoFilters) },
         onAnime4KChanged = { },
+        onOpenSheet = onShowSheet,
       )
     }
 
@@ -321,6 +323,13 @@ fun PlayerSheets(
         onUnpause = viewModel::unpause,
         onPauseUnpause = viewModel::pauseUnpause,
         onSeekTo = { position, isExact -> viewModel.seekTo(position, isScrubbing = !isExact) },
+        onDismissRequest = onDismissRequest,
+      )
+    }
+
+    Sheets.Explain -> {
+      ExplainSheet(
+        viewModel = viewModel,
         onDismissRequest = onDismissRequest,
       )
     }

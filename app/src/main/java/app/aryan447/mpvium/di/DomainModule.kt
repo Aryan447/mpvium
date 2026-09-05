@@ -3,6 +3,7 @@ package app.aryan447.mpvium.di
 import app.aryan447.mpvium.domain.anime4k.Anime4KManager
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.repository.explain.ExplainRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import okhttp3.OkHttpClient
@@ -21,6 +22,7 @@ val domainModule = module {
     single { Anime4KManager(androidContext()) }
     single { WyzieSearchRepository(androidContext(), get(), get(), get()) }
     single { IntroSkipRepository(get(), get(), get(), get()) }
+    single { ExplainRepository(get(), get()) }
     single { SeriesDetector(androidContext(), get()) }
     single { StreamingMetadataRepository(androidContext(), get(), get(), get()) }
 }

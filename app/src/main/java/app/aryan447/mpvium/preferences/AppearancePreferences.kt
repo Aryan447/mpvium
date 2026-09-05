@@ -40,28 +40,30 @@ class AppearancePreferences(
       "BACK_ARROW,VIDEO_TITLE",
     )
 
+  // Sane-defaults layout: only everyday controls on the bars. Everything
+  // else stays one tap away in More > Pro controls or the layout editor.
   val topRightControls =
     preferenceStore.getString(
       "top_right_controls",
-      "CURRENT_CHAPTER,DECODER,AUDIO_TRACK,SUBTITLES,MORE_OPTIONS",
+      "AUDIO_TRACK,SUBTITLES,MORE_OPTIONS",
     )
 
   val bottomRightControls =
     preferenceStore.getString(
       "bottom_right_controls",
-      "FRAME_NAVIGATION,VIDEO_ZOOM,PICTURE_IN_PICTURE,ASPECT_RATIO",
+      "PICTURE_IN_PICTURE,ASPECT_RATIO",
     )
 
   val bottomLeftControls =
     preferenceStore.getString(
       "bottom_left_controls",
-      "BACKGROUND_PLAYBACK,LOCK_CONTROLS,SCREEN_ROTATION,PLAYBACK_SPEED,REPEAT_MODE,SHUFFLE,AB_LOOP",
+      "PLAYBACK_SPEED,AB_LOOP",
     )
 
   val portraitBottomControls =
     preferenceStore.getString(
       "portrait_bottom_controls",
-      "SCREEN_ROTATION,DECODER,AUDIO_TRACK,SUBTITLES,BOOKMARKS_CHAPTERS,PLAYBACK_SPEED,BACKGROUND_PLAYBACK,REPEAT_MODE,SHUFFLE,VIDEO_ZOOM,FRAME_NAVIGATION,ASPECT_RATIO,PICTURE_IN_PICTURE,LOCK_CONTROLS,MORE_OPTIONS",
+      "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP",
     )
 
   fun parseButtons(
