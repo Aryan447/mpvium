@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="home"
+        android:shortcutLongLabel="@string/home"
+        android:shortcutShortLabel="@string/home">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="app.aryan447.mpvium.MainActivity">
+            <extra
+                android:name="extra_tab"
+                android:value="0" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="movies"
+        android:shortcutLongLabel="@string/shortcut_movies"
+        android:shortcutShortLabel="@string/shortcut_movies">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="app.aryan447.mpvium.MainActivity">
+            <extra
+                android:name="extra_tab"
+                android:value="2" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="series"
+        android:shortcutLongLabel="@string/shortcut_tv_series"
+        android:shortcutShortLabel="@string/shortcut_series">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="app.aryan447.mpvium.MainActivity">
+            <extra
+                android:name="extra_tab"
+                android:value="1" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="folders"
+        android:shortcutLongLabel="@string/shortcut_folders"
+        android:shortcutShortLabel="@string/shortcut_folders">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="app.aryan447.mpvium.MainActivity">
+            <extra
+                android:name="extra_tab"
+                android:value="3" />
+        </intent>
+    </shortcut>
+</shortcuts>

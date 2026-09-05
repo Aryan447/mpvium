@@ -247,6 +247,11 @@ object StreamingHomeScreen : Screen {
                 title = "No results found",
                 message = "No series or movies match '${state.searchQuery}'",
                 modifier = Modifier.fillMaxSize(),
+                actionLabel = "Clear search",
+                onAction = {
+                  viewModel.setSearchQuery("")
+                  viewModel.setSearching(false)
+                },
               )
             } else {
               LazyColumn(
