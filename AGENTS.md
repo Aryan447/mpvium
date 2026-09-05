@@ -6,6 +6,9 @@
 libmpv. It uses Kotlin, Jetpack Compose, Material 3, Room, Koin, and native
 components for media playback and media analysis.
 
+Tagline/philosophy: **Sane defaults, pro-level control** — opinionated for
+everyday watching, fully customizable for pros.
+
 The application package and namespace are:
 
 - Application ID: `app.aryan447.mpvium`

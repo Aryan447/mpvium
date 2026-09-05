@@ -4,6 +4,8 @@
 
 # mpvium
 
+**Sane defaults, pro-level control.**
+
 An Android video player powered by [mpv](https://mpv.io/) and
 [libmpv](https://github.com/mpv-player/mpv).
 
@@ -18,6 +20,9 @@ An Android video player powered by [mpv](https://mpv.io/) and
 mpvium is a free and open-source Android frontend for mpv. It combines
 mpv’s flexible playback engine with a modern Material 3 interface, convenient
 media browsing, and support for local and network media.
+
+Philosophy: sane defaults, pro-level control — opinionated for everyday
+watching, fully customizable for pros.
 
 The project is actively developed. Preview builds may contain unfinished
 features or bugs.
