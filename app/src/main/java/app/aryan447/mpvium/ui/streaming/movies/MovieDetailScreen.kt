@@ -70,6 +70,7 @@ import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
@@ -88,6 +89,7 @@ data class MovieDetailScreen(
   override fun Content() {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
+    val paneBack = LocalDetailPaneBack.current
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val coroutineScope = rememberCoroutineScope()
@@ -197,7 +199,9 @@ data class MovieDetailScreen(
               // Back Button
               IconButton(
                 onClick = {
-                  if (backstack.size > 1) {
+                  if (paneBack != null) {
+                    paneBack()
+                  } else if (backstack.size > 1) {
                     backstack.removeLastOrNull()
                   } else {
                     (context as? android.app.Activity)?.finish()
@@ -377,14 +381,16 @@ data class MovieDetailScreen(
         isOpen = true,
         onDismiss = { pendingDeletion = null },
         onConfirm = {
-          coroutineScope.launch {
-            PermissionUtils.StorageOps.deleteVideos(context, listOf(video))
-            if (backstack.size > 1) {
-              backstack.removeLastOrNull()
-            } else {
-              (context as? android.app.Activity)?.finish()
+            coroutineScope.launch {
+              PermissionUtils.StorageOps.deleteVideos(context, listOf(video))
+              if (paneBack != null) {
+                paneBack()
+              } else if (backstack.size > 1) {
+                backstack.removeLastOrNull()
+              } else {
+                (context as? android.app.Activity)?.finish()
+              }
             }
-          }
         },
         itemType = "movie",
         itemCount = 1,
