@@ -508,6 +508,11 @@ object FolderListScreen : Screen {
                     title = "No results found",
                     message = "No folders or videos match your search query",
                     modifier = Modifier.fillMaxSize(),
+                    actionLabel = "Clear search",
+                    onAction = {
+                      isSearching = false
+                      searchQuery = ""
+                    },
                   )
                 } else {
                   // Show search results

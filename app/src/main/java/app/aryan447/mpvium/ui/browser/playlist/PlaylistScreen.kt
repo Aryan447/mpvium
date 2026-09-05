@@ -264,6 +264,8 @@ object PlaylistScreen : Screen {
               icon = Icons.Filled.Search,
               title = "No playlists found",
               message = "Try a different search term",
+              actionLabel = "Clear search",
+              onAction = { searchQuery = "" },
             )
           }
         } else if (playlistsWithCount.isEmpty() && hasCompletedInitialLoad) {

@@ -68,6 +68,7 @@ import app.aryan447.mpvium.ui.browser.cards.M3UVideoCard
 import app.aryan447.mpvium.ui.browser.cards.VideoCard
 import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
 import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
+import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaInfoOps
@@ -420,27 +421,13 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
             .padding(padding),
           contentAlignment = Alignment.Center,
         ) {
-          Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-          ) {
-            Icon(
-              imageVector = Icons.Filled.Search,
-              contentDescription = null,
-              modifier = Modifier.size(64.dp),
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-              text = "No videos found",
-              style = MaterialTheme.typography.titleMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-              text = "Try a different search term",
-              style = MaterialTheme.typography.bodyMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
+          EmptyState(
+            icon = Icons.Filled.Search,
+            title = "No videos found",
+            message = "Try a different search term",
+            actionLabel = "Clear search",
+            onAction = { searchQuery = "" },
+          )
         }
       } else {
         val pullToRefreshEnabled =
