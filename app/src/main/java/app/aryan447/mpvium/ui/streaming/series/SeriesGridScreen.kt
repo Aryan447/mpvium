@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,7 +31,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,6 +47,7 @@ import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
@@ -77,8 +81,16 @@ object SeriesGridScreen : Screen {
     var isLoading by remember { mutableStateOf(true) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
+    var refreshKey by remember { mutableIntStateOf(0) }
+    val isRefreshing = remember { mutableStateOf(false) }
+    val gridState = rememberLazyGridState()
+    val atTop by remember {
+      derivedStateOf {
+        gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0
+      }
+    }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
         seriesList = detected.series
@@ -184,26 +196,34 @@ object SeriesGridScreen : Screen {
           },
         )
       } else {
-        LazyVerticalGrid(
-          columns = GridCells.Fixed(columns),
+        PullRefreshBox(
+          isRefreshing = isRefreshing,
+          onRefresh = { refreshKey++ },
+          enabled = atTop && !isLoading,
           modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding),
-          contentPadding = PaddingValues(
-            start = 12.dp,
-            end = 12.dp,
-            top = 8.dp,
-            bottom = navigationBarHeight + 24.dp,
-          ),
-          horizontalArrangement = Arrangement.spacedBy(10.dp),
-          verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-          items(filteredSeries, key = { "grid_series_${it.id}" }) { series ->
-            SeriesPosterCard(
-              series = series,
-              onClick = { backstack.add(SeriesDetailScreen(series.id)) },
-              cardWidth = 180.dp,
-            )
+          LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            state = gridState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+              start = 12.dp,
+              end = 12.dp,
+              top = 8.dp,
+              bottom = navigationBarHeight + 24.dp,
+            ),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+          ) {
+            items(filteredSeries, key = { "grid_series_${it.id}" }) { series ->
+              SeriesPosterCard(
+                series = series,
+                onClick = { backstack.add(SeriesDetailScreen(series.id)) },
+                cardWidth = 180.dp,
+              )
+            }
           }
         }
       }
