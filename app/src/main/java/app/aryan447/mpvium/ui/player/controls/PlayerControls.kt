@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.SkipNext
@@ -96,12 +97,12 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.preferences.preference.deleteAndGet
 import app.aryan447.mpvium.preferences.preference.plusAssign
 import app.aryan447.mpvium.preferences.preference.minusAssign
-import app.aryan447.mpvium.repository.intro.IntroSegmentType
 import app.aryan447.mpvium.ui.player.Decoder.Companion.getDecoderFromValue
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.PlayerUpdates
 import app.aryan447.mpvium.ui.player.PlayerViewModel
+import app.aryan447.mpvium.ui.player.ShaderPeekState
 import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.BrightnessSlider
@@ -326,6 +327,7 @@ fun PlayerControls(
         val seekbar = createRef()
         val (playerUpdates) = createRefs()
         val introSkipButton = createRef()
+        val shaderPeekButton = createRef()
 
         val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
         val isVolumeSliderShown by viewModel.isVolumeSliderShown.collectAsState()
@@ -941,11 +943,12 @@ fun PlayerControls(
           )
         }
 
-        val introSkipShown by viewModel.introSkipShown.collectAsState()
-        val introSkipWindow by viewModel.introSkipWindow.collectAsState()
+        val smartSkip by viewModel.smartSkip.collectAsState()
+        val smartSkipRemaining by viewModel.smartSkipRemaining.collectAsState()
+        val shaderPeek by viewModel.shaderPeek.collectAsState()
 
         AnimatedVisibility(
-          visible = introSkipShown && introSkipWindow != null,
+          visible = smartSkip != null,
           enter = slideInVertically { it } + fadeIn(),
           exit = slideOutVertically { it } + fadeOut(),
           modifier =
@@ -962,16 +965,60 @@ fun PlayerControls(
                 end.linkTo(parent.end, spacing.large)
               },
         ) {
-          val window = introSkipWindow
-          if (window != null) {
+          val skip = smartSkip
+          if (skip != null) {
             IntroSkipChip(
-              label = if (window.type == IntroSegmentType.RECAP) {
+              label = if (skip.isRecap) {
                 stringResource(R.string.player_skip_recap)
               } else {
                 stringResource(R.string.player_skip_intro)
               },
-              onClick = viewModel::skipIntro,
+              detail = stringResource(R.string.player_smart_skip_seconds, smartSkipRemaining),
+              onClick = viewModel::skipSmart,
             )
+          }
+        }
+
+        AnimatedVisibility(
+          visible = shaderPeek != ShaderPeekState.Hidden,
+          enter = slideInVertically { it } + fadeIn(),
+          exit = slideOutVertically { it } + fadeOut(),
+          modifier =
+            Modifier
+              .then(
+                if (showSystemStatusBar) {
+                  Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                } else {
+                  Modifier
+                }
+              )
+              .constrainAs(shaderPeekButton) {
+                top.linkTo(introSkipButton.bottom, 8.dp)
+                end.linkTo(parent.end, spacing.large)
+              },
+        ) {
+          when (val peek = shaderPeek) {
+            is ShaderPeekState.Suggest -> {
+              IntroSkipChip(
+                label = stringResource(R.string.player_shader_peek_upscale),
+                icon = Icons.Filled.AutoAwesome,
+                onClick = viewModel::enableUpscale,
+              )
+            }
+            is ShaderPeekState.Active -> {
+              IntroSkipChip(
+                label = stringResource(
+                  if (peek.bypassed) {
+                    R.string.player_shader_peek_original
+                  } else {
+                    R.string.player_shader_peek_upscaled
+                  },
+                ),
+                icon = Icons.Filled.AutoAwesome,
+                onClick = viewModel::toggleShaderPeek,
+              )
+            }
+            is ShaderPeekState.Hidden -> {}
           }
         }
 

@@ -93,6 +93,9 @@ class PlayerViewModel(
   private val playbackStateDao: app.aryan447.mpvium.database.dao.PlaybackStateDao by inject()
   private val wyzieRepository: WyzieSearchRepository by inject()
   private val introSkipRepository: app.aryan447.mpvium.repository.intro.IntroSkipRepository by inject()
+  private val explainRepository: app.aryan447.mpvium.repository.explain.ExplainRepository by inject()
+  private val decoderPreferences: app.aryan447.mpvium.preferences.DecoderPreferences by inject()
+  private val anime4kManager: app.aryan447.mpvium.domain.anime4k.Anime4KManager by inject()
 
   // Playlist items for the playlist sheet
   private val _playlistItems = kotlinx.coroutines.flow.MutableStateFlow<List<app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem>>(emptyList())
@@ -202,16 +205,16 @@ class PlayerViewModel(
       }
     }
 
-    // Detect when playback enters an intro/recap window so the UI can offer a skip
+    // Detect when playback enters an intro/recap window so the UI can offer a skip.
+    // The same tick also feeds Smart Skip, Shader Peek and the Explain line.
     viewModelScope.launch {
       while (isActive) {
         val windows = _introSkipWindows.value
         val titleKnown = currentMediaTitle.isNotBlank()
+        val pos = MPVLib.getPropertyDouble("time-pos")?.toInt()
+          ?: MPVLib.getPropertyInt("time-pos")
+          ?: 0
         if (windows.isNotEmpty() && titleKnown) {
-          val pos = MPVLib.getPropertyDouble("time-pos")?.toInt()
-            ?: MPVLib.getPropertyInt("time-pos")
-            ?: 0
-
           // Un-dismiss windows if user seeks backward before their start
           dismissedWindows.removeAll { it.startSeconds > pos }
 
@@ -220,11 +223,42 @@ class PlayerViewModel(
             _introSkipWindow.value = active
             _introSkipShown.value = (active != null)
           }
-        } else if (_introSkipShown.value || _introSkipWindow.value != null) {
-          _introSkipWindow.value = null
-          _introSkipShown.value = false
-        }
-        delay(250)
+          } else if (_introSkipShown.value || _introSkipWindow.value != null) {
+            _introSkipWindow.value = null
+            _introSkipShown.value = false
+          }
+
+          // Smart Skip: the API window wins, otherwise fall back to the
+          // chapter-title heuristic (e.g. "Opening", "Recap").
+          val apiActive = _introSkipWindow.value
+          val smart = if (apiActive != null) {
+            SmartSkip(
+              isRecap = apiActive.type == app.aryan447.mpvium.repository.intro.IntroSegmentType.RECAP,
+              targetSeconds = apiActive.endSeconds,
+            )
+          } else {
+            detectChapterSkip(pos)
+          }
+          if (smart != _smartSkip.value) {
+            _smartSkip.value = smart
+          }
+          _smartSkipRemaining.value = smart?.let { (it.targetSeconds - pos).coerceAtLeast(0) } ?: 0
+
+          // Shader Peek availability follows the video height and prefs.
+          updateShaderPeek()
+
+          // Track the latest subtitle line for Explain (keeps the last
+          // non-blank line so the sheet stays useful between lines).
+          runCatching {
+            val rawSub = MPVLib.getPropertyString("sub-text")
+            if (!rawSub.isNullOrBlank()) {
+              val cleaned = cleanSubtitleText(rawSub)
+              if (cleaned.isNotBlank() && cleaned != _subtitleLine.value) {
+                _subtitleLine.value = cleaned
+              }
+            }
+          }
+          delay(250)
       }
     }
   }
@@ -656,6 +690,10 @@ class PlayerViewModel(
     _introSkipShown.value = false
     _introSkipWindows.value = emptyList()
     _introSkipWindow.value = null
+    // New media gets a fresh upscale/compare state as well.
+    shadersBypassed = false
+    activeShaderChain = null
+    _shaderPeek.value = ShaderPeekState.Hidden
     viewModelScope.launch(Dispatchers.IO) {
       val windows = introSkipRepository.getSkipWindows(mediaTitle)
       if (introSkipTitle == mediaTitle) {
@@ -672,6 +710,196 @@ class PlayerViewModel(
     val target = window.endSeconds.coerceIn(0, duration ?: 0)
     seekTo(target)
   }
+
+  // Smart Skip: one contextual skip target backed by the intro/recap API
+  // with a chapter-title heuristic fallback (e.g. "Opening", "Recap").
+  private val _smartSkip = MutableStateFlow<SmartSkip?>(null)
+  val smartSkip: StateFlow<SmartSkip?> = _smartSkip.asStateFlow()
+
+  private val _smartSkipRemaining = MutableStateFlow(0)
+  val smartSkipRemaining: StateFlow<Int> = _smartSkipRemaining.asStateFlow()
+
+  private fun detectChapterSkip(pos: Int): SmartSkip? {
+    val segments = chapters.value
+    if (segments.size < 2) return null
+    val index = segments.indexOfLast { it.start <= pos }
+    if (index < 0) return null
+    val segment = segments[index]
+    val segEnd = segments.getOrNull(index + 1)?.start?.toInt()
+      ?: duration
+      ?: return null
+    if (segEnd - segment.start.toInt() > MAX_SMART_SKIP_CHAPTER_SECONDS) return null
+    if (pos >= segEnd - 2) return null
+    val title = segment.name.lowercase()
+    val isRecap = "recap" in title || "previously" in title
+    val isIntro = "intro" in title || "opening" in title || title == "op" || "prologue" in title
+    if (!isIntro && !isRecap) return null
+    return SmartSkip(isRecap = isRecap, targetSeconds = segEnd)
+  }
+
+  fun skipSmart() {
+    val target = _smartSkip.value?.targetSeconds ?: return
+    _introSkipWindow.value?.let { dismissedWindows.add(it) }
+    _introSkipWindow.value = null
+    _introSkipShown.value = false
+    _smartSkip.value = null
+    seekTo(target.coerceIn(0, duration ?: 0))
+  }
+
+  // Shader Peek: one-tap Anime4K upscale suggestion and original/upscaled
+  // compare. Suggest appears for SD content while upscaling is off; the
+  // compare toggle appears while an upscale chain is active.
+  private val _shaderPeek = MutableStateFlow<ShaderPeekState>(ShaderPeekState.Hidden)
+  val shaderPeek: StateFlow<ShaderPeekState> = _shaderPeek.asStateFlow()
+
+  private var shadersBypassed = false
+  private var activeShaderChain: String? = null
+
+  private fun updateShaderPeek() {
+    val videoHeight = MPVLib.getPropertyInt("video-params/h") ?: 0
+    val gpuCompatible = !(decoderPreferences.gpuNext.get() && !decoderPreferences.useVulkan.get())
+    val enabled = decoderPreferences.enableAnime4K.get()
+    val mode = decoderPreferences.anime4kMode.get()
+    val peek: ShaderPeekState = when {
+      !gpuCompatible || videoHeight <= 0 || videoHeight >= SHADER_PEAK_MAX_HEIGHT -> ShaderPeekState.Hidden
+      !enabled && videoHeight <= SHADER_PEAK_SUGGEST_MAX_HEIGHT -> ShaderPeekState.Suggest
+      enabled && mode != "OFF" -> ShaderPeekState.Active(bypassed = shadersBypassed)
+      else -> ShaderPeekState.Hidden
+    }
+    if (peek != _shaderPeek.value) {
+      _shaderPeek.value = peek
+    }
+  }
+
+  private fun currentAnime4KChain(): String {
+    if (!anime4kManager.initialize()) return ""
+    val mode = runCatching { app.aryan447.mpvium.domain.anime4k.Anime4KManager.Mode.valueOf(decoderPreferences.anime4kMode.get()) }
+      .getOrDefault(app.aryan447.mpvium.domain.anime4k.Anime4KManager.Mode.OFF)
+    val quality = runCatching { app.aryan447.mpvium.domain.anime4k.Anime4KManager.Quality.valueOf(decoderPreferences.anime4kQuality.get()) }
+      .getOrDefault(app.aryan447.mpvium.domain.anime4k.Anime4KManager.Quality.BALANCED)
+    return anime4kManager.getShaderChain(mode, quality)
+  }
+
+  fun toggleShaderPeek() {
+    if (_shaderPeek.value !is ShaderPeekState.Active) return
+    viewModelScope.launch(Dispatchers.IO) {
+      runCatching {
+        if (!shadersBypassed) {
+          if (activeShaderChain.isNullOrEmpty()) {
+            activeShaderChain = currentAnime4KChain()
+          }
+          MPVLib.setPropertyString("glsl-shaders", "")
+          shadersBypassed = true
+          withContext(Dispatchers.Main) {
+            showToast(host.context.getString(R.string.player_shader_peek_off))
+          }
+        } else {
+          val chain = activeShaderChain?.takeIf { it.isNotEmpty() } ?: currentAnime4KChain()
+          if (chain.isNotEmpty()) {
+            activeShaderChain = chain
+            MPVLib.setPropertyString("glsl-shaders", chain)
+          }
+          shadersBypassed = false
+          withContext(Dispatchers.Main) {
+            showToast(host.context.getString(R.string.player_shader_peek_on))
+          }
+        }
+        _shaderPeek.value = ShaderPeekState.Active(bypassed = shadersBypassed)
+      }
+    }
+  }
+
+  fun enableUpscale() {
+    viewModelScope.launch(Dispatchers.IO) {
+      runCatching {
+        decoderPreferences.enableAnime4K.set(true)
+        if (decoderPreferences.anime4kMode.get() == "OFF") {
+          decoderPreferences.anime4kMode.set("A")
+        }
+        shadersBypassed = false
+        val chain = currentAnime4KChain()
+        if (chain.isNotEmpty()) {
+          activeShaderChain = chain
+          MPVLib.setPropertyString("glsl-shaders", chain)
+          withContext(Dispatchers.Main) {
+            showToast(host.context.getString(R.string.player_shader_peek_on))
+          }
+        }
+      }
+    }
+  }
+
+  // Explain (dictionary + dialogue references) state. The subtitle line
+  // remembers the last non-blank line so the sheet stays useful even
+  // when no subtitle is on screen at the moment it is opened.
+  private val _subtitleLine = MutableStateFlow("")
+  val subtitleLine: StateFlow<String> = _subtitleLine.asStateFlow()
+
+  sealed interface WordLookupState {
+    data object Idle : WordLookupState
+    data object Loading : WordLookupState
+    data class Done(val result: app.aryan447.mpvium.repository.explain.WordDefinition) : WordLookupState
+    data object NotFound : WordLookupState
+    data object Error : WordLookupState
+  }
+
+  private val _wordState = MutableStateFlow<WordLookupState>(WordLookupState.Idle)
+  val wordState: StateFlow<WordLookupState> = _wordState.asStateFlow()
+
+  sealed interface RefsState {
+    data object Idle : RefsState
+    data object Loading : RefsState
+    data class Done(val refs: List<app.aryan447.mpvium.repository.explain.ReferenceExplanation>) : RefsState
+    data object Empty : RefsState
+    data object Error : RefsState
+  }
+
+  private val _refsState = MutableStateFlow<RefsState>(RefsState.Idle)
+  val refsState: StateFlow<RefsState> = _refsState.asStateFlow()
+
+  private var lookupJob: kotlinx.coroutines.Job? = null
+  private var refsJob: kotlinx.coroutines.Job? = null
+
+  fun lookupWord(word: String) {
+    val clean = word.trim()
+    if (clean.isBlank()) return
+    lookupJob?.cancel()
+    lookupJob = viewModelScope.launch(Dispatchers.IO) {
+      _wordState.value = WordLookupState.Loading
+      _wordState.value = try {
+        val definition = explainRepository.define(clean)
+        if (definition != null) WordLookupState.Done(definition) else WordLookupState.NotFound
+      } catch (_: Exception) {
+        WordLookupState.Error
+      }
+    }
+  }
+
+  fun explainReferences(line: String) {
+    refsJob?.cancel()
+    _wordState.value = WordLookupState.Idle
+    refsJob = viewModelScope.launch(Dispatchers.IO) {
+      _refsState.value = RefsState.Loading
+      _refsState.value = try {
+        val refs = explainRepository.explain(line)
+        if (refs.isNotEmpty()) RefsState.Done(refs) else RefsState.Empty
+      } catch (_: Exception) {
+        RefsState.Error
+      }
+    }
+  }
+
+  /**
+   * Strip ASS override blocks ({...}) and common control codes so the
+   * Explain sheet works with plain readable text.
+   */
+  private fun cleanSubtitleText(raw: String): String =
+    raw.replace(Regex("\\{[^}]*\\}"), " ")
+      .replace("\\N", " ")
+      .replace("\\n", " ")
+      .replace("\\h", " ")
+      .replace(Regex("\\s+"), " ")
+      .trim()
 
 
   fun removeSubtitle(id: Int) {
@@ -1979,6 +2207,23 @@ class PlayerViewModel(
     super.onCleared()
   }
 }
+
+// Smart Skip target: a contextual intro/recap skip with its end position.
+data class SmartSkip(
+  val isRecap: Boolean,
+  val targetSeconds: Int,
+)
+
+// Shader Peek overlay state for one-tap Anime4K upscale + compare.
+sealed interface ShaderPeekState {
+  data object Hidden : ShaderPeekState
+  data object Suggest : ShaderPeekState
+  data class Active(val bypassed: Boolean) : ShaderPeekState
+}
+
+private const val MAX_SMART_SKIP_CHAPTER_SECONDS = 180
+private const val SHADER_PEAK_MAX_HEIGHT = 2160
+private const val SHADER_PEAK_SUGGEST_MAX_HEIGHT = 720
 
 // Extension functions
 fun Float.normalize(
