@@ -963,7 +963,13 @@ fun PlayerControls(
                 }
               )
               .constrainAs(introSkipButton) {
-                top.linkTo(parent.top, if (isPortrait) 96.dp else 88.dp)
+                // Anchor below the real top bar instead of a fixed offset
+                // so the chips never sit on the title pill or buttons.
+                if (isPortrait) {
+                  top.linkTo(parent.top, 96.dp)
+                } else {
+                  top.linkTo(topRightControls.bottom, 12.dp)
+                }
                 end.linkTo(parent.end, spacing.large)
               },
         ) {
