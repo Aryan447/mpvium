@@ -793,6 +793,10 @@ fun FileSystemBrowserScreen(path: String? = null) {
                   isSearching = false
                   searchQuery = ""
                 },
+                onClearSearch = {
+                  isSearching = false
+                  searchQuery = ""
+                },
                 modifier = Modifier,
               )
             } else {
@@ -1379,6 +1383,7 @@ private fun FileSystemSearchContent(
   isFabVisible: androidx.compose.runtime.MutableState<Boolean>, // Add FAB visibility state
   onVideoClick: (app.aryan447.mpvium.domain.media.model.Video) -> Unit,
   onFolderClick: (FileSystemItem.Folder) -> Unit,
+  onClearSearch: () -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
   val gesturePreferences = koinInject<GesturePreferences>()
@@ -1447,6 +1452,8 @@ private fun FileSystemSearchContent(
             icon = Icons.Filled.Search,
             title = "No results found",
             message = "No files or folders match \"$searchQuery\"",
+            actionLabel = "Clear search",
+            onAction = onClearSearch,
           )
         }
       }
