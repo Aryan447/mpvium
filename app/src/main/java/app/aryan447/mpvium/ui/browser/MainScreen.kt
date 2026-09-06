@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.browser
 
 import android.annotation.SuppressLint
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -43,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -57,6 +59,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
@@ -66,6 +69,7 @@ import app.aryan447.mpvium.ui.streaming.home.StreamingHomeScreen
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
@@ -171,6 +175,7 @@ object MainScreen : Screen {
     val context = LocalContext.current
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
+    val backstack = LocalBackStack.current
 
     val appearancePreferences = koinInject<AppearancePreferences>()
     val pillNavigationBar by appearancePreferences.pillNavigationBar.collectAsState()
@@ -179,6 +184,23 @@ object MainScreen : Screen {
       if (selectedTab != index) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         selectedTab = index
+      }
+    }
+
+    // Double-press back to exit at the tab root. Deeper screens handle
+    // their own back presses with higher-priority BackHandlers.
+    var lastBackPress by remember { mutableLongStateOf(0L) }
+    BackHandler(enabled = backstack.size == 1) {
+      val now = System.currentTimeMillis()
+      if (now - lastBackPress < 2000) {
+        (context as? android.app.Activity)?.finish()
+      } else {
+        lastBackPress = now
+        android.widget.Toast.makeText(
+          context,
+          context.getString(R.string.press_back_again_to_exit),
+          android.widget.Toast.LENGTH_SHORT,
+        ).show()
       }
     }
 
