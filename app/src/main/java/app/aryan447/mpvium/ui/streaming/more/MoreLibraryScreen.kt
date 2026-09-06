@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +42,7 @@ import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.networkstreaming.NetworkStreamingScreen
 import app.aryan447.mpvium.ui.browser.playlist.PlaylistScreen
 import app.aryan447.mpvium.ui.browser.recentlyplayed.RecentlyPlayedScreen
+import app.aryan447.mpvium.ui.library.insights.InsightsScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
@@ -78,6 +80,15 @@ object MoreLibraryScreen : Screen {
         ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
       ) {
+        item {
+          LibraryItemCard(
+            title = "Library Insights",
+            subtitle = "Collection stats and watching habits",
+            icon = Icons.Filled.Insights,
+            onClick = { backstack.add(InsightsScreen) },
+          )
+        }
+
         item {
           LibraryItemCard(
             title = "Playback History",
