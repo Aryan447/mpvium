@@ -25,6 +25,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
+import kotlinx.coroutines.launch
 import my.nanihadesuka.compose.LazyColumnScrollbar
 import my.nanihadesuka.compose.ScrollbarSettings
 
@@ -154,6 +156,7 @@ private fun NetworkBrowserContent(
   // Load connection details
   val dao = org.koin.compose.koinInject<NetworkConnectionDao>()
   var connection by remember { mutableStateOf<NetworkConnection?>(null) }
+  val refreshScope = rememberCoroutineScope()
 
   LaunchedEffect(connectionId) {
     connection = dao.getConnectionById(connectionId)
@@ -183,6 +186,8 @@ private fun NetworkBrowserContent(
           icon = Icons.Filled.Folder,
           title = "Error loading files",
           message = error,
+          actionLabel = "Retry",
+          onAction = { refreshScope.launch { onRefresh() } },
         )
       }
     }
