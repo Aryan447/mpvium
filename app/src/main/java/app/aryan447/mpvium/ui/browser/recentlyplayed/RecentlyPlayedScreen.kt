@@ -75,6 +75,7 @@ import app.aryan447.mpvium.ui.browser.playlist.PlaylistDetailScreen
 import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
 import app.aryan447.mpvium.ui.browser.sheets.PlayLinkSheet
 import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.preferences.AdvancedPreferencesScreen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.launch
@@ -294,6 +295,8 @@ object RecentlyPlayedScreen : Screen {
               icon = Icons.Filled.History,
               title = "Recently Played is disabled",
               message = "Enable it in Advanced Settings to track your playback history",
+              actionLabel = "Open settings",
+              onAction = { backStack.add(AdvancedPreferencesScreen) },
             )
           }
         }
