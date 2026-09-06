@@ -8,7 +8,8 @@
         android:shortcutShortLabel="@string/home">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="app.aryan447.mpvium.MainActivity">
+            android:targetClass="app.aryan447.mpvium.MainActivity"
+            android:targetPackage="${applicationId}">
             <extra
                 android:name="extra_tab"
                 android:value="0" />
@@ -22,7 +23,8 @@
         android:shortcutShortLabel="@string/shortcut_movies">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="app.aryan447.mpvium.MainActivity">
+            android:targetClass="app.aryan447.mpvium.MainActivity"
+            android:targetPackage="${applicationId}">
             <extra
                 android:name="extra_tab"
                 android:value="2" />
@@ -36,7 +38,8 @@
         android:shortcutShortLabel="@string/shortcut_series">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="app.aryan447.mpvium.MainActivity">
+            android:targetClass="app.aryan447.mpvium.MainActivity"
+            android:targetPackage="${applicationId}">
             <extra
                 android:name="extra_tab"
                 android:value="1" />
@@ -50,7 +53,8 @@
         android:shortcutShortLabel="@string/shortcut_folders">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="app.aryan447.mpvium.MainActivity">
+            android:targetClass="app.aryan447.mpvium.MainActivity"
+            android:targetPackage="${applicationId}">
             <extra
                 android:name="extra_tab"
                 android:value="3" />
