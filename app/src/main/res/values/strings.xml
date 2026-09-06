@@ -43,6 +43,7 @@
   <string name="widget_continue_watching_desc">Resume your recent videos from the home screen</string>
   <string name="widget_empty">Nothing to continue — watch something first</string>
   <string name="widget_refresh">Refresh</string>
+  <string name="press_back_again_to_exit">Press back again to exit</string>
   <!-- Smart Skip -->
   <string name="player_smart_skip_seconds">%1$ds</string>
   <!-- Shader Peek (Anime4K compare) -->
