@@ -3,6 +3,7 @@ package app.aryan447.mpvium.ui.browser
 import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -296,6 +297,10 @@ object MainScreen : Screen {
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 6.dp,
                     shadowElevation = 8.dp,
+                    border = BorderStroke(
+                      1.dp,
+                      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    ),
                   ) {
                     NavigationBar(
                       modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
