@@ -17,8 +17,8 @@ android {
     applicationId = "app.aryan447.mpvium"
     minSdk = 26
     targetSdk = 36
-    versionCode = 115
-    versionName = "1.1.5"
+    versionCode = 116
+    versionName = "1.1.6"
 
     vectorDrawables {
       useSupportLibrary = true
@@ -206,7 +206,7 @@ dependencies {
   implementation(libs.truetype.parser)
   implementation(libs.fsaf)
   implementation(libs.mediainfo.lib)
-  implementation(files("libs/mpv-android-lib-v0.0.1.aar"))
+  implementation(files("libs/mpv-android-lib-v0.0.2.aar"))
 
   // Network protocol libraries
   implementation(libs.smbj)
