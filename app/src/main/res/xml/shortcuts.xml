@@ -9,7 +9,7 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:targetClass="app.aryan447.mpvium.MainActivity"
-            android:targetPackage="${applicationId}">
+            android:targetPackage="app.aryan447.mpvium">
             <extra
                 android:name="extra_tab"
                 android:value="0" />
@@ -24,7 +24,7 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:targetClass="app.aryan447.mpvium.MainActivity"
-            android:targetPackage="${applicationId}">
+            android:targetPackage="app.aryan447.mpvium">
             <extra
                 android:name="extra_tab"
                 android:value="2" />
@@ -39,7 +39,7 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:targetClass="app.aryan447.mpvium.MainActivity"
-            android:targetPackage="${applicationId}">
+            android:targetPackage="app.aryan447.mpvium">
             <extra
                 android:name="extra_tab"
                 android:value="1" />
@@ -54,7 +54,7 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:targetClass="app.aryan447.mpvium.MainActivity"
-            android:targetPackage="${applicationId}">
+            android:targetPackage="app.aryan447.mpvium">
             <extra
                 android:name="extra_tab"
                 android:value="3" />
