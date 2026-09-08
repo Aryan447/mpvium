@@ -192,6 +192,7 @@ data class SeriesDetailScreen(
                 fallbackVideo = fallbackVideo,
                 isSeries = true,
                 contentScale = ContentScale.Crop,
+                maxDimensionPx = context.resources.displayMetrics.widthPixels,
                 modifier = Modifier.fillMaxSize(),
               )
 

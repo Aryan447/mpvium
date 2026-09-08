@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +52,7 @@ fun StreamingHeroBanner(
 ) {
   val fallbackVideo = series.nextEpisodeToWatch?.video ?: series.seasons.values.firstOrNull()?.firstOrNull()?.video
   val backdropUrl = series.backdropUrl ?: series.posterUrl
+  val context = LocalContext.current
   val haptic = LocalHapticFeedback.current
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
 
@@ -66,6 +68,7 @@ fun StreamingHeroBanner(
       fallbackVideo = fallbackVideo,
       isSeries = true,
       contentScale = ContentScale.Crop,
+      maxDimensionPx = context.resources.displayMetrics.widthPixels,
       modifier = Modifier.fillMaxSize(),
     )
 

@@ -179,6 +179,7 @@ data class MovieDetailScreen(
                 fallbackVideo = currentMovie.video,
                 isSeries = false,
                 contentScale = ContentScale.Crop,
+                maxDimensionPx = context.resources.displayMetrics.widthPixels,
                 modifier = Modifier.fillMaxSize(),
               )
 
