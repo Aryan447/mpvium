@@ -178,6 +178,7 @@ object FolderListScreen : Screen {
     val folderSortOrder by browserPreferences.folderSortOrder.collectAsState()
     val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
     val enableRecentlyPlayed by advancedPreferences.enableRecentlyPlayed.collectAsState()
+    val isPermissionDenied by app.aryan447.mpvium.ui.browser.MainScreen.isPermissionDeniedFlow.collectAsState()
 
     // UI state - use standalone states to avoid scroll issues with predictive back gesture
     val listState = rememberLazyListState()
@@ -432,7 +433,7 @@ object FolderListScreen : Screen {
             ) {
               ToggleFloatingActionButton(
                 modifier = Modifier.animateFloatingActionButton(
-                  visible = !selectionManager.isInSelectionMode && isFabVisible.value && !app.aryan447.mpvium.ui.browser.MainScreen.getPermissionDeniedState(),
+                  visible = !selectionManager.isInSelectionMode && isFabVisible.value && !isPermissionDenied,
                   alignment = Alignment.BottomEnd,
                 ),
                 checked = isFabExpanded.value,
