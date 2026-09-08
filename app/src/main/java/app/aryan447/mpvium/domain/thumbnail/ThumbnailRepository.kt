@@ -33,7 +33,11 @@ class ThumbnailRepository(
     )
   }
   private val diskCacheDimension = 1024
-  private val diskJpegQuality = 100
+  // Quality 90 is visually identical to 100 at thumbnail sizes while producing
+  // files ~3-5x smaller: less storage, faster reads, cheaper writes (battery).
+  private val diskJpegQuality = 90
+  // Bound for the on-disk thumbnail cache; oldest files evict first.
+  private val maxDiskCacheBytes = 200L * 1024L * 1024L
   private val memoryCache: LruCache<String, Bitmap>
   private val diskDir: File = File(context.filesDir, "thumbnails").apply { mkdirs() }
   private val ongoingOperations = ConcurrentHashMap<String, Deferred<Bitmap?>>()
@@ -277,7 +281,9 @@ class ThumbnailRepository(
         BitmapFactory.Options().apply {
           inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-      BitmapFactory.decodeFile(diskFile.absolutePath, options)
+      BitmapFactory.decodeFile(diskFile.absolutePath, options)?.also {
+        diskFile.setLastModified(System.currentTimeMillis())
+      }
     }.getOrNull()
   }
 
@@ -288,6 +294,18 @@ class ThumbnailRepository(
         bitmap.compress(Bitmap.CompressFormat.JPEG, diskJpegQuality, out)
         out.flush()
       }
+      trimDiskCache()
+    }
+  }
+
+  private fun trimDiskCache() {
+    val files = diskDir.listFiles() ?: return
+    var totalBytes = files.sumOf { it.length() }
+    if (totalBytes <= maxDiskCacheBytes) return
+    files.sortedBy { it.lastModified() }.forEach { file ->
+      if (totalBytes <= maxDiskCacheBytes) return
+      val size = file.length()
+      if (file.delete()) totalBytes -= size
     }
   }
 
