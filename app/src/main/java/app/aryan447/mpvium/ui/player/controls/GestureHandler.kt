@@ -92,6 +92,16 @@ private const val SubtitleTouchToleranceFraction = 0.075f
 private const val SubtitleTouchMinSlopPx = 48f
 
 /**
+ * Reference gesture width (px) that the horizontal swipe-seek sensitivity is
+ * calibrated against: a 1080p phone's swipe area (screen minus the 96dp
+ * gesture padding). Raw pixel deltas would make wide tablet screens
+ * hypersensitive, so deltas are scaled by reference / actual width: the same
+ * swipe fraction always seeks the same amount on every device, while phones
+ * keep their existing feel.
+ */
+private const val HORIZONTAL_SEEK_REFERENCE_WIDTH_PX = 820f
+
+/**
  * Vertical video rect (top offset, height in px) inside the touch
  * container, assuming aspect-fit scaling (mpv default). mpv positions
  * subtitles relative to the *video* frame, not the full screen, so on
@@ -1023,8 +1033,14 @@ fun GestureHandler(
                   }
 
                   if (gestureType == "horizontal_seek" && hasStartedSeeking) {
+                    // Normalize by gesture width so the same swipe fraction seeks
+                    // the same amount on phones and tablets. Raw pixel deltas made
+                    // wide screens hypersensitive, throwing the seekbar preview
+                    // across the track on small finger movements.
+                    val gestureWidthPx = size.width.coerceAtLeast(1f)
+                    val widthScale = HORIZONTAL_SEEK_REFERENCE_WIDTH_PX / gestureWidthPx
                     // Calculate seek amount based on horizontal movement
-                    val seekAmount = deltaX * seekSensitivity
+                    val seekAmount = deltaX * seekSensitivity * widthScale
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
                     val maxDuration = duration?.toFloat() ?: 0f
                     val clampedPosition = targetPosition.coerceAtMost(maxDuration)
