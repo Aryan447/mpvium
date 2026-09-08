@@ -11,7 +11,11 @@ import android.util.Log
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.utils.media.MediaInfoOps
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
@@ -155,61 +159,44 @@ object VideoScanUtils {
     }
 
     /**
-     * Scan videos from filesystem (fallback)
+     * Scan videos from filesystem (fallback).
+     * Metadata extraction is I/O-bound (native MediaInfo parse per file), so
+     * files are processed concurrently with bounded parallelism instead of
+     * sequentially blocking one thread per file.
      */
-    private fun scanVideosFromFileSystem(
+    private suspend fun scanVideosFromFileSystem(
         context: Context,
         folder: File,
         videosMap: MutableMap<String, Video>
     ) {
         try {
-            val files = folder.listFiles() ?: return
-
-            for (file in files) {
-                try {
-                    if (!file.isFile) continue
-
-                    val extension = file.extension.lowercase(Locale.getDefault())
-                    if (!FileTypeUtils.VIDEO_EXTENSIONS.contains(extension)) continue
-
-                    val path = file.absolutePath
-                    if (videosMap.containsKey(path)) continue
-
-                    val uri = Uri.fromFile(file)
-                    val displayName = file.name
-                    val title = file.nameWithoutExtension
-                    val size = file.length()
-                    val dateModified = file.lastModified() / 1000
-
-                    // Extract metadata
-                    val metadata = extractVideoMetadata(context, file)
-
-                    videosMap[path] = Video(
-                        id = path.hashCode().toLong(),
-                        title = title,
-                        displayName = displayName,
-                        path = path,
-                        uri = uri,
-                        duration = metadata.duration,
-                        durationFormatted = formatDuration(metadata.duration),
-                        size = size,
-                        sizeFormatted = formatFileSize(size),
-                        dateModified = dateModified,
-                        dateAdded = dateModified,
-                        mimeType = metadata.mimeType,
-                        bucketId = folder.absolutePath,
-                        bucketDisplayName = folder.name,
-                        width = metadata.width,
-                        height = metadata.height,
-                        fps = 0f,
-                        resolution = formatResolution(metadata.width, metadata.height),
-                        hasEmbeddedSubtitles = false,
-                        subtitleCodec = ""
-                    )
-                } catch (e: Exception) {
-                    Log.w(TAG, "Error processing file: ${file.absolutePath}", e)
-                    continue
+            val files = folder.listFiles()
+                ?.filter { file ->
+                    file.isFile &&
+                        FileTypeUtils.VIDEO_EXTENSIONS.contains(file.extension.lowercase(Locale.getDefault())) &&
+                        !videosMap.containsKey(file.absolutePath)
                 }
+                ?: return
+
+            if (files.isEmpty()) return
+
+            // Bounded parallelism avoids fd exhaustion on huge folders while
+            // loading them much faster than sequential parsing.
+            val permits = Semaphore(4)
+            coroutineScope {
+                files.map { file ->
+                    async {
+                        permits.withPermit {
+                            runCatching { buildVideoFromFile(context, folder, file) }
+                                .onFailure { e ->
+                                    Log.w(TAG, "Error processing file: ${file.absolutePath}", e)
+                                }
+                                .getOrNull()
+                        }
+                    }
+                }.awaitAll()
+                    .filterNotNull()
+                    .forEach { video -> videosMap[video.path] = video }
             }
 
         } catch (e: Exception) {
@@ -218,9 +205,52 @@ object VideoScanUtils {
     }
 
     /**
-     * Extracts video metadata using MediaInfo library
+     * Builds a [Video] for a single file with extracted metadata.
      */
-    fun extractVideoMetadata(
+    private suspend fun buildVideoFromFile(
+        context: Context,
+        folder: File,
+        file: File
+    ): Video {
+        val path = file.absolutePath
+        val uri = Uri.fromFile(file)
+        val displayName = file.name
+        val title = file.nameWithoutExtension
+        val size = file.length()
+        val dateModified = file.lastModified() / 1000
+
+        // Extract metadata without blocking the calling thread
+        val metadata = extractVideoMetadata(context, file)
+
+        return Video(
+            id = path.hashCode().toLong(),
+            title = title,
+            displayName = displayName,
+            path = path,
+            uri = uri,
+            duration = metadata.duration,
+            durationFormatted = formatDuration(metadata.duration),
+            size = size,
+            sizeFormatted = formatFileSize(size),
+            dateModified = dateModified,
+            dateAdded = dateModified,
+            mimeType = metadata.mimeType,
+            bucketId = folder.absolutePath,
+            bucketDisplayName = folder.name,
+            width = metadata.width,
+            height = metadata.height,
+            fps = 0f,
+            resolution = formatResolution(metadata.width, metadata.height),
+            hasEmbeddedSubtitles = false,
+            subtitleCodec = ""
+        )
+    }
+
+    /**
+     * Extracts video metadata using MediaInfo library.
+     * Suspends instead of blocking so callers can run extractions concurrently.
+     */
+    suspend fun extractVideoMetadata(
         context: Context,
         file: File,
     ): VideoMetadata {
@@ -231,9 +261,7 @@ object VideoScanUtils {
 
         try {
             val uri = Uri.fromFile(file)
-            val result = runBlocking {
-                MediaInfoOps.extractBasicMetadata(context, uri, file.name)
-            }
+            val result = MediaInfoOps.extractBasicMetadata(context, uri, file.name)
 
             result.onSuccess { metadata ->
                 duration = metadata.durationMs
