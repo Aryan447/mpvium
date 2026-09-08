@@ -180,6 +180,7 @@ fun FileSystemBrowserScreen(path: String? = null) {
   val playlistMode by playerPreferences.playlistMode.collectAsState()
   val itemsWereDeletedOrMoved by viewModel.itemsWereDeletedOrMoved.collectAsState()
   val showSubtitleIndicator by browserPreferences.showSubtitleIndicator.collectAsState()
+  val isPermissionDenied by app.aryan447.mpvium.ui.browser.MainScreen.isPermissionDeniedFlow.collectAsState()
 
   // Use standalone local states instead of CompositionLocal to avoid scroll issues with predictive back gesture
   val listState = remember { LazyListState() }
@@ -714,7 +715,7 @@ fun FileSystemBrowserScreen(path: String? = null) {
                 ToggleFloatingActionButton(
                   modifier = Modifier
                     .animateFloatingActionButton(
-                      visible = !isInSelectionMode && isFabVisible.value && !app.aryan447.mpvium.ui.browser.MainScreen.getPermissionDeniedState(),
+                      visible = !isInSelectionMode && isFabVisible.value && !isPermissionDenied,
                       alignment = Alignment.BottomEnd,
                     ),
                   checked = isFabExpanded.value,

@@ -42,11 +42,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -65,13 +65,14 @@ import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
-import app.aryan447.mpvium.ui.browser.selection.SelectionManager
 import app.aryan447.mpvium.ui.streaming.home.StreamingHomeScreen
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 
@@ -80,29 +81,16 @@ object MainScreen : Screen {
   // Use a companion object to store state more persistently
   private var persistentSelectedTab: Int = 0
 
-  // Shared state that can be updated by FileSystemBrowserScreen
-  @Volatile
-  private var isInSelectionModeShared: Boolean = false  // Controls FAB visibility
+  // Reactive shared state so observers recompose on change instead of polling.
+  // This avoids a wake-every-frame loop that would keep the CPU awake and
+  // drain battery while MainScreen is composed.
+  private val _hideNavigationBar = MutableStateFlow(false)
+  val hideNavigationBarFlow: StateFlow<Boolean> = _hideNavigationBar.asStateFlow()
 
-  @Volatile
-  private var shouldHideNavigationBar: Boolean = false  // Controls navigation bar visibility
+  private val _isPermissionDenied = MutableStateFlow(false)
+  val isPermissionDeniedFlow: StateFlow<Boolean> = _isPermissionDenied.asStateFlow()
 
-  @Volatile
-  private var isBrowserBottomBarVisible: Boolean = false  // Tracks browser bottom bar visibility
-
-  @Volatile
-  private var sharedVideoSelectionManager: Any? = null
-
-  // Check if the selection contains only videos and update navigation bar visibility accordingly
-  @Volatile
-  private var onlyVideosSelected: Boolean = false
-
-  // Track when permission denied screen is showing to hide FAB
-  @Volatile
-  private var isPermissionDenied: Boolean = false
-
-  @Volatile
-  private var pendingTabRequest: Int? = null
+  private val _tabRequest = MutableStateFlow<Int?>(null)
 
   /**
    * Request a tab switch from outside composition (e.g. launcher shortcuts).
@@ -111,7 +99,7 @@ object MainScreen : Screen {
   fun requestTab(index: Int) {
     val clamped = index.coerceIn(0, 4)
     persistentSelectedTab = clamped
-    pendingTabRequest = clamped
+    _tabRequest.value = clamped
   }
 
   /**
@@ -123,31 +111,29 @@ object MainScreen : Screen {
     isOnlyVideosSelected: Boolean,
     selectionManager: Any?
   ) {
-    this.isInSelectionModeShared = isInSelectionMode
-    this.onlyVideosSelected = isOnlyVideosSelected
-    this.sharedVideoSelectionManager = selectionManager
-
-    // Only hide navigation bar when videos are selected AND in selection mode
-    this.shouldHideNavigationBar = isInSelectionMode && isOnlyVideosSelected
+    // Only hide navigation bar when videos are selected AND in selection mode.
+    // selectionManager is intentionally untracked: MainScreen never reads it,
+    // keeping the parameter only for API compatibility with callers.
+    _hideNavigationBar.value = isInSelectionMode && isOnlyVideosSelected
   }
 
   /**
    * Update permission state to control FAB visibility
    */
   fun updatePermissionState(isDenied: Boolean) {
-    this.isPermissionDenied = isDenied
+    _isPermissionDenied.value = isDenied
   }
 
   /**
    * Get current permission denied state
    */
-  fun getPermissionDeniedState(): Boolean = isPermissionDenied
+  fun getPermissionDeniedState(): Boolean = _isPermissionDenied.value
 
   /**
    * Update bottom navigation bar visibility based on floating bottom bar state
    */
   fun updateBottomBarVisibility(shouldShow: Boolean) {
-    this.shouldHideNavigationBar = !shouldShow
+    _hideNavigationBar.value = !shouldShow
   }
 
   @Composable
@@ -205,42 +191,19 @@ object MainScreen : Screen {
       }
     }
 
-    // Shared state (across the app)
-    val isInSelectionMode = remember { mutableStateOf(isInSelectionModeShared) }
-    val hideNavigationBar = remember { mutableStateOf(shouldHideNavigationBar) }
-    val videoSelectionManager = remember { mutableStateOf<SelectionManager<*, *>?>(sharedVideoSelectionManager as? SelectionManager<*, *>) }
+    // Reactive navigation-bar visibility shared with browser screens.
+    // Previously this was synced via a 16ms polling loop; collecting the
+    // flow suspends until a real change, using zero CPU while idle.
+    val hideNavigationBar by hideNavigationBarFlow.collectAsState()
+    val tabRequest by _tabRequest.collectAsState()
 
-    // Check for state changes to ensure UI updates
-    LaunchedEffect(Unit) {
-      // Consume any pending external tab request (e.g. launcher shortcut)
-      pendingTabRequest?.let { requested ->
-        pendingTabRequest = null
+    // Consume any pending external tab request (e.g. launcher shortcut)
+    LaunchedEffect(tabRequest) {
+      tabRequest?.let { requested ->
+        _tabRequest.value = null
         if (selectedTab != requested) {
           selectedTab = requested
         }
-      }
-      while (true) {
-        if (isInSelectionMode.value != isInSelectionModeShared) {
-          isInSelectionMode.value = isInSelectionModeShared
-        }
-
-        if (hideNavigationBar.value != shouldHideNavigationBar) {
-          hideNavigationBar.value = shouldHideNavigationBar
-        }
-
-        pendingTabRequest?.let { requested ->
-          pendingTabRequest = null
-          if (selectedTab != requested) {
-            selectedTab = requested
-          }
-        }
-
-        val currentManager = sharedVideoSelectionManager as? SelectionManager<*, *>
-        if (videoSelectionManager.value != currentManager) {
-          videoSelectionManager.value = currentManager
-        }
-
-        delay(16)
       }
     }
 
@@ -267,7 +230,7 @@ object MainScreen : Screen {
         bottomBar = {
           if (!isWide) {
             AnimatedVisibility(
-              visible = !hideNavigationBar.value,
+              visible = !hideNavigationBar,
               enter = slideInVertically(
                 animationSpec = tween(durationMillis = 300),
                 initialOffsetY = { fullHeight -> fullHeight }
@@ -346,7 +309,7 @@ object MainScreen : Screen {
         // LocalNavigationBarHeight.
         Row(modifier = Modifier.fillMaxSize()) {
           if (isWide) {
-            AnimatedVisibility(visible = !hideNavigationBar.value) {
+            AnimatedVisibility(visible = !hideNavigationBar) {
               NavigationRail {
                 navItems.forEachIndexed { index, (icon, label, desc) ->
                   NavigationRailItem(
