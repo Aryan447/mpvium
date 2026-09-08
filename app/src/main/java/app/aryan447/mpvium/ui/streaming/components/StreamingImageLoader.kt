@@ -45,9 +45,20 @@ import java.security.MessageDigest
 
 /**
  * Image Cache and Downloader for Streaming artwork.
+ *
+ * Large originals are downsampled at decode time so a 4K poster never becomes
+ * a 33 MB bitmap in memory: less GC churn, cheaper GPU uploads, less battery.
+ * The disk cache is bounded and evicts oldest files first.
  */
 object StreamingImageCache {
   private const val TAG = "StreamingImageCache"
+
+  /** Default decode cap (long edge, px) for cards, rows and episode stills. */
+  const val DEFAULT_MAX_DIMENSION = 1080
+
+  /** Disk cache cap; oldest files are evicted first on overflow. */
+  private const val MAX_DISK_CACHE_BYTES = 100L * 1024L * 1024L
+
   private val memoryCache: LruCache<String, Bitmap>
   private var diskCacheDir: File? = null
 
@@ -66,29 +77,35 @@ object StreamingImageCache {
     return diskCacheDir!!
   }
 
-  private fun hashKey(url: String): String {
+  private fun hashKey(key: String): String {
     val md = MessageDigest.getInstance("MD5")
-    val digest = md.digest(url.toByteArray())
+    val digest = md.digest(key.toByteArray())
     return digest.joinToString("") { "%02x".format(it) } + ".jpg"
   }
 
-  fun getFromMemory(url: String): Bitmap? = memoryCache.get(url)
+  private fun cacheKey(url: String, maxDimension: Int) = "$url|$maxDimension"
 
-  suspend fun loadImage(context: Context, client: OkHttpClient, url: String): Bitmap? = withContext(Dispatchers.IO) {
+  fun getFromMemory(url: String, maxDimension: Int = DEFAULT_MAX_DIMENSION): Bitmap? =
+    memoryCache.get(cacheKey(url, maxDimension))
+
+  suspend fun loadImage(
+    context: Context,
+    client: OkHttpClient,
+    url: String,
+    maxDimension: Int = DEFAULT_MAX_DIMENSION,
+  ): Bitmap? = withContext(Dispatchers.IO) {
     if (url.isBlank()) return@withContext null
 
-    memoryCache.get(url)?.let { return@withContext it }
+    val cappedDimension = maxDimension.coerceAtLeast(1)
+    val key = cacheKey(url, cappedDimension)
+    memoryCache.get(key)?.let { return@withContext it }
 
-    val diskFile = File(getDiskDir(context), hashKey(url))
+    val diskFile = File(getDiskDir(context), hashKey(key))
     if (diskFile.exists() && diskFile.length() > 0) {
-      try {
-        val bitmap = BitmapFactory.decodeFile(diskFile.absolutePath)
-        if (bitmap != null) {
-          memoryCache.put(url, bitmap)
-          return@withContext bitmap
-        }
-      } catch (e: Exception) {
-        Log.w(TAG, "Failed to decode cached disk image for $url", e)
+      decodeSampledFile(diskFile.absolutePath, cappedDimension)?.let { bitmap ->
+        memoryCache.put(key, bitmap)
+        diskFile.setLastModified(System.currentTimeMillis())
+        return@withContext bitmap
       }
     }
 
@@ -98,14 +115,17 @@ object StreamingImageCache {
         if (response.isSuccessful) {
           val bytes = response.body?.bytes()
           if (bytes != null && bytes.isNotEmpty()) {
-            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            // Bounds first so huge originals are downsampled before
+            // allocating the full pixel buffer.
+            val bitmap = decodeSampledBytes(bytes, cappedDimension)
             if (bitmap != null) {
-              memoryCache.put(url, bitmap)
+              memoryCache.put(key, bitmap)
               runCatching {
                 FileOutputStream(diskFile).use { out ->
                   out.write(bytes)
                   out.flush()
                 }
+                trimDiskCache()
               }
               return@withContext bitmap
             }
@@ -117,6 +137,48 @@ object StreamingImageCache {
     }
 
     null
+  }
+
+  private fun calculateInSampleSize(options: BitmapFactory.Options, maxDimension: Int): Int {
+    val longEdge = maxOf(options.outWidth, options.outHeight)
+    if (longEdge <= 0) return 1
+    var sampleSize = 1
+    while (longEdge / sampleSize > maxDimension) sampleSize *= 2
+    return sampleSize
+  }
+
+  private fun decodeSampledBytes(bytes: ByteArray, maxDimension: Int): Bitmap? =
+    runCatching {
+      val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+      BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+      val opts = BitmapFactory.Options().apply {
+        inSampleSize = calculateInSampleSize(bounds, maxDimension)
+        inPreferredConfig = Bitmap.Config.ARGB_8888
+      }
+      BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+    }.getOrNull()
+
+  private fun decodeSampledFile(path: String, maxDimension: Int): Bitmap? =
+    runCatching {
+      val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+      BitmapFactory.decodeFile(path, bounds)
+      val opts = BitmapFactory.Options().apply {
+        inSampleSize = calculateInSampleSize(bounds, maxDimension)
+        inPreferredConfig = Bitmap.Config.ARGB_8888
+      }
+      BitmapFactory.decodeFile(path, opts)
+    }.getOrNull()
+
+  private fun trimDiskCache() {
+    val dir = diskCacheDir ?: return
+    val files = dir.listFiles() ?: return
+    var totalBytes = files.sumOf { it.length() }
+    if (totalBytes <= MAX_DISK_CACHE_BYTES) return
+    files.sortedBy { it.lastModified() }.forEach { file ->
+      if (totalBytes <= MAX_DISK_CACHE_BYTES) return
+      val size = file.length()
+      if (file.delete()) totalBytes -= size
+    }
   }
 }
 
@@ -131,25 +193,27 @@ fun StreamingImage(
   isSeries: Boolean = true,
   contentScale: ContentScale = ContentScale.Crop,
   contentDescription: String? = null,
+  maxDimensionPx: Int = StreamingImageCache.DEFAULT_MAX_DIMENSION,
 ) {
   val context = LocalContext.current
   val okHttpClient = koinInject<OkHttpClient>()
   val thumbnailRepository = koinInject<ThumbnailRepository>()
   val density = LocalDensity.current
+  val cappedDimension = maxDimensionPx.coerceAtLeast(1)
 
-  var bitmap by remember(url) {
-    mutableStateOf(url?.let { StreamingImageCache.getFromMemory(it) })
+  var bitmap by remember(url, cappedDimension) {
+    mutableStateOf(url?.let { StreamingImageCache.getFromMemory(it, cappedDimension) })
   }
-  var isLoading by remember(url) { mutableStateOf(bitmap == null) }
+  var isLoading by remember(url, cappedDimension) { mutableStateOf(bitmap == null) }
 
-  LaunchedEffect(url, fallbackVideo) {
+  LaunchedEffect(url, cappedDimension, fallbackVideo) {
     if (bitmap != null) {
       isLoading = false
       return@LaunchedEffect
     }
 
     if (!url.isNullOrBlank()) {
-      val loaded = StreamingImageCache.loadImage(context, okHttpClient, url)
+      val loaded = StreamingImageCache.loadImage(context, okHttpClient, url, cappedDimension)
       if (loaded != null) {
         bitmap = loaded
         isLoading = false
