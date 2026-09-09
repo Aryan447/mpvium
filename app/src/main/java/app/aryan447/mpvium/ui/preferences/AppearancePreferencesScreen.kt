@@ -283,6 +283,31 @@ object AppearancePreferencesScreen : Screen {
                         }
                     }
 
+                    item {
+                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_home))
+                    }
+
+                    item {
+                        PreferenceCard {
+                            val showFeaturedHero by preferences.showFeaturedHero.collectAsState()
+                            HapticSwitchPreference(
+                                value = showFeaturedHero,
+                                onValueChange = { preferences.showFeaturedHero.set(it) },
+                                title = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_show_featured_hero_title),
+                                    )
+                                },
+                                summary = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_show_featured_hero_summary),
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                            )
+                        }
+                    }
+
                 }
             }
         }

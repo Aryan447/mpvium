@@ -80,6 +80,13 @@ object SearchablePreferences {
                 category = "Appearance",
                 screen = AppearancePreferencesScreen,
             ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_appearance_show_featured_hero_title,
+                summaryRes = R.string.pref_appearance_show_featured_hero_summary,
+                keywords = listOf("featured", "hero", "banner", "home", "spotlight", "hide", "remove"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
 
             // Layout preferences
             add(SearchablePreference(
