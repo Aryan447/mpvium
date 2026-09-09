@@ -139,7 +139,7 @@ object SeriesGridScreen : Screen {
                 onSearch = {},
                 expanded = false,
                 onExpandedChange = {},
-                placeholder = { Text("Search series...") },
+                placeholder = { Text("Search TV shows...") },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
                 trailingIcon = {
                   IconButton(onClick = {
@@ -163,7 +163,7 @@ object SeriesGridScreen : Screen {
           TopAppBar(
             title = {
               Text(
-                text = "TV Series",
+                text = "TV Shows",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
               )
             },
@@ -271,8 +271,8 @@ private fun SeriesGridContent(
   } else if (filteredSeries.isEmpty()) {
     EmptyState(
       icon = Icons.Filled.Tv,
-      title = if (searchQuery.isNotBlank()) "No series found" else "No TV series detected",
-      message = if (searchQuery.isNotBlank()) "No TV series match '$searchQuery'" else "Add series with S01E01 or season folders to see them here",
+      title = if (searchQuery.isNotBlank()) "No TV shows found" else "No TV shows detected",
+      message = if (searchQuery.isNotBlank()) "No TV shows match '$searchQuery'" else "Add TV shows with S01E01 or season folders to see them here",
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding),
@@ -328,7 +328,7 @@ private fun SeriesDetailPane(
     if (selected == null) {
       EmptyState(
         icon = Icons.Filled.Tv,
-        title = "Select a series",
+        title = "Select a TV show",
         message = "Pick a show to see seasons, episodes and actions here",
         modifier = Modifier.fillMaxSize(),
       )

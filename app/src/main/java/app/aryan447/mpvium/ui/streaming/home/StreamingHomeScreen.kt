@@ -140,7 +140,7 @@ object StreamingHomeScreen : Screen {
                 onSearch = {},
                 expanded = false,
                 onExpandedChange = {},
-                placeholder = { Text("Search series, movies, videos...") },
+                placeholder = { Text("Search TV shows, movies, videos...") },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
                 trailingIcon = {
                   IconButton(onClick = { viewModel.setSearching(false) }) {
@@ -228,7 +228,7 @@ object StreamingHomeScreen : Screen {
                 CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                  text = "Scanning library & series...",
+                   text = "Scanning library & TV shows...",
                   style = MaterialTheme.typography.bodyMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -246,7 +246,7 @@ object StreamingHomeScreen : Screen {
               EmptyState(
                 icon = Icons.Filled.Search,
                 title = "No results found",
-                message = "No series or movies match '${state.searchQuery}'",
+                message = "No TV shows or movies match '${state.searchQuery}'",
                 modifier = Modifier.fillMaxSize(),
                 actionLabel = "Clear search",
                 onAction = {
@@ -263,7 +263,7 @@ object StreamingHomeScreen : Screen {
                 if (filteredSeries.isNotEmpty()) {
                   item {
                     Text(
-                      text = "Series (${filteredSeries.size})",
+                      text = "TV Shows (${filteredSeries.size})",
                       style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                       modifier = Modifier.padding(bottom = 8.dp),
                     )
@@ -365,7 +365,7 @@ object StreamingHomeScreen : Screen {
               ) {
                 item {
                   SectionHeader(
-                    title = "TV Series",
+                    title = "TV Shows",
                     badge = "${state.series.size}",
                     onSeeAllClick = { backstack.add(SeriesGridScreen) },
                   )
