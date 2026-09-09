@@ -79,6 +79,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.domain.media.model.VideoFolder
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.streaming.model.StreamingCategory
@@ -102,6 +104,7 @@ import app.aryan447.mpvium.ui.theme.LocalAppTheme
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.serialization.Serializable
+import org.koin.compose.koinInject
 
 @Serializable
 object StreamingHomeScreen : Screen {
@@ -117,6 +120,8 @@ object StreamingHomeScreen : Screen {
       factory = StreamingHomeViewModel.factory(context.applicationContext as android.app.Application)
     )
     val state by viewModel.uiState.collectAsState()
+    val appearancePreferences = koinInject<AppearancePreferences>()
+    val showFeaturedHero by appearancePreferences.showFeaturedHero.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val isRefreshing = remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -321,8 +326,9 @@ object StreamingHomeScreen : Screen {
                 )
               }
 
-              // Featured Hero Spotlight Banner (shown in ALL or SERIES mode)
-              if (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES) {
+              // Featured Hero Spotlight Banner (shown in ALL or SERIES mode;
+              // hideable via Appearance > Home for a denser start screen)
+              if (showFeaturedHero && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)) {
                 state.heroSeries?.let { hero ->
                   item {
                     StreamingHeroBanner(

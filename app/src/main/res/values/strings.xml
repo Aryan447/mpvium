@@ -76,6 +76,9 @@
   <string name="pref_appearance_unplayed_old_video_days_summary">Videos added within the last %d days without playback history will be marked as new</string>
   <string name="pref_appearance_show_network_thumbnails_title">Show network thumbnails (Experimental)</string>
   <string name="pref_appearance_show_network_thumbnails_summary">Generate thumbnails for network streams (May increase data usage on mobile networks)</string>
+  <string name="pref_appearance_category_home">Home</string>
+  <string name="pref_appearance_show_featured_hero_title">Featured banner</string>
+  <string name="pref_appearance_show_featured_hero_summary">Show the featured TV show banner at the top of Home</string>
   <string name="pref_appearance_theme_picker_label">App Theme</string>
   <string name="pref_appearance_auto_scroll_title">Auto-scroll to last played</string>
   <string name="pref_appearance_auto_scroll_summary">Automatically scroll to the last played video when opening video lists</string>
