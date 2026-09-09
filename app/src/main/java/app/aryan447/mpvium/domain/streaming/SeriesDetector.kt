@@ -260,6 +260,32 @@ class SeriesDetector(
         )
       }.sortedByDescending { it.totalEpisodes }
 
+      // Keep a series in Continue Watching while unwatched episodes remain.
+      // Without this, deleting (or finishing) the in-progress episode drops
+      // the whole series even though the next episode is still waiting.
+      val videosAlreadyListed = continueWatchingList.map { it.video.path }.toSet()
+      for (series in detectedSeriesList) {
+        val lastWatched = series.lastWatchedEpisode ?: continue
+        val next = series.nextEpisodeToWatch ?: continue
+        if (next.isWatched) continue
+        if (videosAlreadyListed.contains(next.video.path)) continue
+        val tag = next.formattedEpisodeTag
+        continueWatchingList.add(
+          ContinueWatchingItem(
+            video = next.video,
+            title = series.title,
+            subtitle = if (tag.isNotBlank()) "Up next • $tag" else "Up next",
+            playbackPositionMs = 0L,
+            totalDurationMs = next.video.duration,
+            progressPercentage = 0f,
+            lastPlayedTimestamp = recentTimestampByFileName[lastWatched.video.displayName]
+              ?: lastWatched.video.dateModified * 1000,
+            isSeries = true,
+            seriesId = series.id,
+          )
+        )
+      }
+
       // Sort Continue Watching by most recently played
       val sortedContinueWatching = continueWatchingList.sortedByDescending { it.lastPlayedTimestamp }
 
