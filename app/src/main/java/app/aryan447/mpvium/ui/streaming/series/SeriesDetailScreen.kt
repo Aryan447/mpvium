@@ -167,7 +167,7 @@ data class SeriesDetailScreen(
             .padding(innerPadding),
           contentAlignment = Alignment.Center,
         ) {
-          Text("Series not found", style = MaterialTheme.typography.bodyLarge)
+          Text("TV show not found", style = MaterialTheme.typography.bodyLarge)
         }
       } else {
         val currentSeries = series!!
@@ -260,7 +260,7 @@ data class SeriesDetailScreen(
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.5f)),
                 ) {
-                  Icon(Icons.Filled.Delete, contentDescription = "Delete series", tint = Color.White)
+                  Icon(Icons.Filled.Delete, contentDescription = "Delete TV show", tint = Color.White)
                 }
               }
             }
@@ -474,7 +474,7 @@ data class SeriesDetailScreen(
               value = matchQuery,
               onValueChange = { matchQuery = it },
               modifier = Modifier.fillMaxWidth(),
-              placeholder = { Text("Type series name…") },
+              placeholder = { Text("Type TV show name…") },
               singleLine = true,
               trailingIcon = {
                 Row {
@@ -640,7 +640,7 @@ private fun MatchOptionRow(
         Spacer(modifier = Modifier.height(2.dp))
         Text(
           text = buildString {
-            append(if (isTv) "TV Series" else "Movie")
+            append(if (isTv) "TV Shows" else "Movie")
             option.releaseYear?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
           },
           style = MaterialTheme.typography.bodySmall,

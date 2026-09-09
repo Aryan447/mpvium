@@ -107,7 +107,7 @@ fun StreamingHeroBanner(
     ) {
       // Featured kicker
       Text(
-        text = "FEATURED SERIES",
+        text = "FEATURED TV SHOWS",
         style = MaterialTheme.typography.labelSmall.copy(
           fontWeight = FontWeight.Bold,
           letterSpacing = 3.sp,
@@ -279,7 +279,7 @@ fun StreamingHeroBanner(
           series.nextEpisodeToWatch != null -> {
             "Play ${series.nextEpisodeToWatch.formattedEpisodeTag}"
           }
-          else -> "Play Series"
+          else -> "Play TV Show"
         }
 
         Button(

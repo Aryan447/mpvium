@@ -59,7 +59,7 @@
   <string name="onboarding_page1_title">Welcome to mpvium</string>
   <string name="onboarding_page1_message">Sane defaults, pro-level control. A free and open-source player powered by mpv — high-quality playback with no ads and no unnecessary permissions.</string>
   <string name="onboarding_page2_title">Your library, your way</string>
-  <string name="onboarding_page2_message">Movies and series are detected automatically, with posters, continue watching, playlists, history and folder browsing built in.</string>
+  <string name="onboarding_page2_message">Movies and TV shows are detected automatically, with posters, continue watching, playlists, history and folder browsing built in.</string>
   <string name="onboarding_page3_title">Make it yours</string>
   <string name="onboarding_page3_message">Pick Cinema or Noir themes, pure-black AMOLED, a floating pill bar, gesture controls — and full mpv.conf power when you want it.</string>
   <string name="pref_appearance_material_you_title">Material You</string>
@@ -506,8 +506,8 @@
   <string name="add_from_url">Add from URL</string>
   <string name="home">Home</string>
   <string name="shortcut_movies">Movies</string>
-  <string name="shortcut_series">Series</string>
-  <string name="shortcut_tv_series">TV Series</string>
+  <string name="shortcut_series">TV Shows</string>
+  <string name="shortcut_tv_series">TV Shows</string>
   <string name="shortcut_folders">Folders</string>
   <string name="recents">Recents</string>
   <string name="playlists">Playlists</string>

@@ -1035,7 +1035,7 @@ class PlayerViewModel(
           _seasonEpisodes.value = emptyList()
         }
         .onFailure {
-          showToast("Failed to load series details: ${it.message}")
+          showToast("Failed to load TV show details: ${it.message}")
         }
       _isFetchingTvDetails.value = false
     }
