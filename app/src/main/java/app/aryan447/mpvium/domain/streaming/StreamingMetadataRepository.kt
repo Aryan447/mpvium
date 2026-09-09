@@ -58,8 +58,20 @@ class StreamingMetadataRepository(
     private const val TAG = "StreamingMetadataRepo"
     private const val TMDB_IMAGE_BASE_W500 = "https://image.tmdb.org/t/p/w500"
     private const val TMDB_IMAGE_BASE_W780 = "https://image.tmdb.org/t/p/w780"
-    private const val CACHE_FILE_NAME = "streaming_metadata_cache_v1.json"
+    private const val TMDB_IMAGE_BASE_W1280 = "https://image.tmdb.org/t/p/w1280"
+    private const val CACHE_FILE_NAME = "streaming_metadata_cache_v2.json"
+    private const val LEGACY_CACHE_FILE_NAME = "streaming_metadata_cache_v1.json"
   }
+
+  // Phone-sized artwork (w500 posters, w780 backdrops) upscales ~2.4x on a
+  // landscape tablet hero and looks blurry, so tablets fetch one size up.
+  // Episode stills stay w500: they render at ~110dp everywhere.
+  private val isTablet: Boolean =
+    context.resources.configuration.smallestScreenWidthDp >= 600
+  private val posterBase: String =
+    if (isTablet) TMDB_IMAGE_BASE_W780 else TMDB_IMAGE_BASE_W500
+  private val backdropBase: String =
+    if (isTablet) TMDB_IMAGE_BASE_W1280 else TMDB_IMAGE_BASE_W780
 
   private val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
   private val memoryCache = ConcurrentHashMap<String, CachedMediaMetadata>()
@@ -72,6 +84,8 @@ class StreamingMetadataRepository(
       if (isCacheLoaded) return@withLock
       withContext(Dispatchers.IO) {
         try {
+          // v1 cached phone-sized URLs; drop it so tablets refetch hi-res artwork.
+          runCatching { File(context.filesDir, LEGACY_CACHE_FILE_NAME).takeIf { it.exists() }?.delete() }
           if (cacheFile.exists()) {
             val text = cacheFile.readText()
             if (text.isNotBlank()) {
@@ -131,8 +145,8 @@ class StreamingMetadataRepository(
         }
         if (match == null) return@withContext series
 
-        var poster = match.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-        var backdrop = match.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
+        var poster = match.poster?.let { formatImageUrl(it, posterBase) }
+        var backdrop = match.backdrop?.let { formatImageUrl(it, backdropBase) }
         var overview = match.overview
         var year = match.releaseYear ?: series.year
         var rating: Float? = if (manualOverride) null else extractRatingFromTmdb(match.id, isTv = true)
@@ -308,8 +322,8 @@ class StreamingMetadataRepository(
         }
 
         if (match != null) {
-          val poster = match.poster?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W500) }
-          val backdrop = match.backdrop?.let { formatImageUrl(it, TMDB_IMAGE_BASE_W780) }
+          val poster = match.poster?.let { formatImageUrl(it, posterBase) }
+          val backdrop = match.backdrop?.let { formatImageUrl(it, backdropBase) }
           val overview = match.overview
           val year = match.releaseYear ?: movie.year
           val rating = if (manualOverride) null else extractRatingFromTmdb(match.id, isTv = false)
