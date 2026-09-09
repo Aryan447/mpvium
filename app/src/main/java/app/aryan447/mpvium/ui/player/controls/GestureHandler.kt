@@ -1037,7 +1037,7 @@ fun GestureHandler(
                     // the same amount on phones and tablets. Raw pixel deltas made
                     // wide screens hypersensitive, throwing the seekbar preview
                     // across the track on small finger movements.
-                    val gestureWidthPx = size.width.coerceAtLeast(1f)
+                    val gestureWidthPx = size.width.toFloat().coerceAtLeast(1f)
                     val widthScale = HORIZONTAL_SEEK_REFERENCE_WIDTH_PX / gestureWidthPx
                     // Calculate seek amount based on horizontal movement
                     val seekAmount = deltaX * seekSensitivity * widthScale
