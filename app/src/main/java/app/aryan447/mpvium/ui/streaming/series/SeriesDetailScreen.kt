@@ -640,7 +640,7 @@ private fun MatchOptionRow(
         Spacer(modifier = Modifier.height(2.dp))
         Text(
           text = buildString {
-            append(if (isTv) "TV Shows" else "Movie")
+            append(if (isTv) "Show" else "Movie")
             option.releaseYear?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
           },
           style = MaterialTheme.typography.bodySmall,

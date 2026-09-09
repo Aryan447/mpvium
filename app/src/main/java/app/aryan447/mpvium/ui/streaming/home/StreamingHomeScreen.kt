@@ -268,7 +268,7 @@ object StreamingHomeScreen : Screen {
                 if (filteredSeries.isNotEmpty()) {
                   item {
                     Text(
-                      text = "TV Shows (${filteredSeries.size})",
+                      text = "Shows (${filteredSeries.size})",
                       style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                       modifier = Modifier.padding(bottom = 8.dp),
                     )
@@ -372,7 +372,7 @@ object StreamingHomeScreen : Screen {
               ) {
                 item {
                   SectionHeader(
-                    title = "TV Shows",
+                    title = "Shows",
                     badge = "${state.series.size}",
                     onSeeAllClick = { backstack.add(SeriesGridScreen) },
                   )
