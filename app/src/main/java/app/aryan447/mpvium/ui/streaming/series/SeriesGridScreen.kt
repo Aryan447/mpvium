@@ -163,7 +163,7 @@ object SeriesGridScreen : Screen {
           TopAppBar(
             title = {
               Text(
-                text = "TV Shows",
+                text = "Shows",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
               )
             },

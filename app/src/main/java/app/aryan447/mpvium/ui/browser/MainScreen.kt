@@ -215,7 +215,7 @@ object MainScreen : Screen {
     val navItems =
       listOf(
         Triple(Icons.Filled.Home, "Home", "Home"),
-        Triple(Icons.Filled.Tv, "TV Shows", "TV Shows"),
+        Triple(Icons.Filled.Tv, "Shows", "Shows"),
         Triple(Icons.Filled.Movie, "Movies", "Movies"),
         Triple(Icons.Filled.Folder, "Folders", "Folders"),
         Triple(Icons.Filled.VideoLibrary, "Library", "Library"),
