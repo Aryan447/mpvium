@@ -8,11 +8,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.domain.streaming.ContinueWatchingDismissals
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.streaming.model.StreamingCategory
+import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,10 +48,47 @@ class StreamingHomeViewModel(
 
   init {
     loadLibrary()
+    // Stack behavior: the just-played item jumps to the front instantly,
+    // ahead of the slower full-library rescan that follows on resume.
+    viewModelScope.launch {
+      RecentlyPlayedOps.observeLastPlayedPath().collect { path ->
+        if (path.isNullOrBlank()) return@collect
+        _uiState.update { state ->
+          val index = state.continueWatching.indexOfFirst {
+            it.video.path == path || it.video.uri.toString() == path
+          }
+          if (index <= 0) {
+            state
+          } else {
+            val reordered = state.continueWatching.toMutableList()
+            reordered.add(0, reordered.removeAt(index))
+            state.copy(continueWatching = reordered)
+          }
+        }
+      }
+    }
   }
 
   fun refresh() {
     loadLibrary()
+  }
+
+  /**
+   * Removes a show or movie from Continue Watching immediately and persists
+   * the dismissal across rescans. It reappears on its own if played again.
+   */
+  fun removeFromContinueWatching(item: ContinueWatchingItem) {
+    val key = ContinueWatchingDismissals.keyFor(item)
+    viewModelScope.launch(Dispatchers.IO) {
+      runCatching { ContinueWatchingDismissals.dismiss(item) }
+      _uiState.update { state ->
+        state.copy(
+          continueWatching = state.continueWatching.filterNot {
+            ContinueWatchingDismissals.keyFor(it) == key
+          },
+        )
+      }
+    }
   }
 
   fun setCategory(category: StreamingCategory) {
@@ -66,7 +105,13 @@ class StreamingHomeViewModel(
 
   private fun loadLibrary() {
     viewModelScope.launch(Dispatchers.IO) {
-      _uiState.update { it.copy(isLoading = true) }
+      // Stale-while-revalidate: only show the full-screen loader on first
+      // load. Refreshes (e.g. returning from the player) keep the current
+      // list visible and swap in fresh data when the scan completes.
+      val hasData = _uiState.value.series.isNotEmpty() || _uiState.value.movies.isNotEmpty()
+      if (!hasData) {
+        _uiState.update { it.copy(isLoading = true) }
+      }
 
       try {
         val detected = seriesDetector.detectLibrary()

@@ -286,8 +286,13 @@ class SeriesDetector(
         )
       }
 
+      // Honor "Remove from Continue Watching" dismissals. Entries reappear
+      // on their own once newer playback activity bumps their timestamp.
+      val visibleContinueWatching =
+        continueWatchingList.filterNot { ContinueWatchingDismissals.isDismissed(it) }
+
       // Sort Continue Watching by most recently played
-      val sortedContinueWatching = continueWatchingList.sortedByDescending { it.lastPlayedTimestamp }
+      val sortedContinueWatching = visibleContinueWatching.sortedByDescending { it.lastPlayedTimestamp }
 
       DetectedMediaLibrary(
         series = detectedSeriesList,

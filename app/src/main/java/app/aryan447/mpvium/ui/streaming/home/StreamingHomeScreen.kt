@@ -354,6 +354,7 @@ object StreamingHomeScreen : Screen {
                       MediaUtils.playFile(item.video, context, "continue_watching")
                     },
                     onSeeAllClick = { backstack.add(RecentlyPlayedScreen) },
+                    onItemRemove = { item -> viewModel.removeFromContinueWatching(item) },
                   )
                   Spacer(modifier = Modifier.height(24.dp))
                 }

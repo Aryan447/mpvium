@@ -1,7 +1,8 @@
 package app.aryan447.mpvium.ui.streaming.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,12 +23,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -48,6 +56,7 @@ fun ContinueWatchingRow(
   onItemClick: (ContinueWatchingItem) -> Unit,
   modifier: Modifier = Modifier,
   onSeeAllClick: (() -> Unit)? = null,
+  onItemRemove: ((ContinueWatchingItem) -> Unit)? = null,
 ) {
   if (items.isEmpty()) return
 
@@ -81,34 +90,51 @@ fun ContinueWatchingRow(
       contentPadding = PaddingValues(horizontal = 16.dp),
       horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      items(items, key = { "cw_${it.video.id}_${it.playbackPositionMs}" }) { item ->
+      // Stable keys so progress/position refreshes update cards in place
+      // instead of recreating them (which would flicker artwork).
+      items(items, key = { "cw_${it.seriesId ?: "movie"}_${it.video.id}" }) { item ->
         ContinueWatchingCard(
           item = item,
           onClick = { onItemClick(item) },
+          onRemove = onItemRemove?.let { remove -> { remove(item) } },
         )
       }
     }
   }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ContinueWatchingCard(
   item: ContinueWatchingItem,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  onRemove: (() -> Unit)? = null,
 ) {
   val cardWidth = 220.dp
   val haptic = LocalHapticFeedback.current
+  var showRemoveMenu by remember { mutableStateOf(false) }
 
-  Column(
-    modifier = modifier
-      .width(cardWidth)
-      .clip(RoundedCornerShape(14.dp))
-      .clickable(onClick = {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        onClick()
-      }),
-  ) {
+  Box(modifier = modifier.width(cardWidth)) {
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(14.dp))
+        .combinedClickable(
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+          },
+          onLongClick = if (onRemove != null) {
+            {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+              showRemoveMenu = true
+            }
+          } else {
+            null
+          },
+        ),
+    ) {
     // Thumbnail with Progress Bar
     Box(
       modifier = Modifier
@@ -194,5 +220,25 @@ fun ContinueWatchingCard(
         .padding(horizontal = 6.dp)
         .padding(bottom = 6.dp),
     )
+    }
+
+    DropdownMenu(
+      expanded = showRemoveMenu,
+      onDismissRequest = { showRemoveMenu = false },
+    ) {
+      DropdownMenuItem(
+        text = { Text("Remove from Continue Watching") },
+        leadingIcon = {
+          Icon(
+            Icons.Filled.Close,
+            contentDescription = null,
+          )
+        },
+        onClick = {
+          showRemoveMenu = false
+          onRemove?.invoke()
+        },
+      )
+    }
   }
 }
