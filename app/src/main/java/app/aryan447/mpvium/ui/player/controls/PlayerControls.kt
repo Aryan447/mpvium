@@ -494,13 +494,13 @@ fun PlayerControls(
                 top.linkTo(parent.top, if (isPortrait) 104.dp else 64.dp)
               },
         ) {
-          when (currentPlayerUpdate) {
+          when (val update = currentPlayerUpdate) {
             is PlayerUpdates.MultipleSpeed -> MultipleSpeedPlayerUpdate(currentSpeed = holdForMultipleSpeed)
             is PlayerUpdates.HoldControls -> {
-              HoldControlsPlayerUpdate(selected = currentPlayerUpdate.selected)
+              HoldControlsPlayerUpdate(selected = update.selected)
             }
             is PlayerUpdates.DynamicSpeedControl -> {
-              val speedUpdate = currentPlayerUpdate as PlayerUpdates.DynamicSpeedControl
+              val speedUpdate = update
               val currentSpeed = speedUpdate.speed
               val showDynamicSpeedOverlay by playerPreferences.showDynamicSpeedOverlay.collectAsState()
               val shouldShowFull = speedUpdate.showFullOverlay
@@ -566,12 +566,12 @@ fun PlayerControls(
             }
             is PlayerUpdates.ShowText ->
               TextPlayerUpdate(
-                (currentPlayerUpdate as PlayerUpdates.ShowText).value,
+                update.value,
                 modifier = Modifier.widthIn(min = 120.dp),
               )
 
             is PlayerUpdates.SubtitlePosition -> {
-              val subUpdate = currentPlayerUpdate as PlayerUpdates.SubtitlePosition
+              val subUpdate = update
               SubtitlePositionPlayerUpdate(
                 position = subUpdate.position,
                 isReset = subUpdate.isReset,
@@ -588,7 +588,7 @@ fun PlayerControls(
             }
 
             is PlayerUpdates.HorizontalSeek -> {
-              val seekUpdate = currentPlayerUpdate as PlayerUpdates.HorizontalSeek
+              val seekUpdate = update
               SeekPlayerUpdate(
                 currentTime = seekUpdate.currentTime,
                 seekDelta = "[${seekUpdate.seekDelta}]",
@@ -597,7 +597,7 @@ fun PlayerControls(
             }
 
             is PlayerUpdates.RepeatMode -> {
-              val mode = (currentPlayerUpdate as PlayerUpdates.RepeatMode).mode
+              val mode = update.mode
               val text = when (mode) {
                 app.aryan447.mpvium.ui.player.RepeatMode.OFF -> "Repeat: Off"
                 app.aryan447.mpvium.ui.player.RepeatMode.ONE -> "Repeat: Current file"
@@ -613,7 +613,7 @@ fun PlayerControls(
             }
 
             is PlayerUpdates.Shuffle -> {
-              val enabled = (currentPlayerUpdate as PlayerUpdates.Shuffle).enabled
+              val enabled = update.enabled
               val text = if (enabled) {
                 if (playlistMode && viewModel.hasPlaylistSupport()) {
                   "Shuffle: On"
@@ -627,7 +627,7 @@ fun PlayerControls(
             }
 
             is PlayerUpdates.FrameInfo -> {
-              val frameInfo = (currentPlayerUpdate as PlayerUpdates.FrameInfo)
+              val frameInfo = update
               val text = if (frameInfo.totalFrames > 0) {
                 "Frame: ${frameInfo.currentFrame}/${frameInfo.totalFrames}"
               } else {
