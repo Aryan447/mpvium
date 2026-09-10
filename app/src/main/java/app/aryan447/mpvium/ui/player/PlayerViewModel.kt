@@ -426,10 +426,19 @@ class PlayerViewModel(
   // Seek coalescing for smooth performance
   private var pendingSeekOffset: Int = 0
   private var seekCoalesceJob: Job? = null
+  private var lastScrubSeekUptimeMs = 0L
 
   private companion object {
     const val TAG = "PlayerViewModel"
     const val SEEK_COALESCE_DELAY_MS = 60L
+
+    /**
+     * Minimum gap between intermediate scrub (finger-down) seeks. Drags emit
+     * a seek per motion event; without coalescing the decoder is flooded and
+     * every seek stalls. Dropped intermediates are safe: the scrub preview is
+     * local UI state and the release always issues one final exact seek.
+     */
+    const val SCRUB_SEEK_THROTTLE_MS = 80L
     val VALID_SUBTITLE_EXTENSIONS =
       setOf(
         // Common & modern
@@ -1255,6 +1264,11 @@ class PlayerViewModel(
   }
 
   fun seekTo(position: Int, isScrubbing: Boolean = false) {
+    if (isScrubbing) {
+      val now = android.os.SystemClock.uptimeMillis()
+      if (now - lastScrubSeekUptimeMs < SCRUB_SEEK_THROTTLE_MS) return
+      lastScrubSeekUptimeMs = now
+    }
     val sequence = seekSequence.incrementAndGet()
     viewModelScope.launch(Dispatchers.IO) {
       val maxDuration = MPVLib.getPropertyInt("duration") ?: 0

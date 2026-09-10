@@ -1386,7 +1386,11 @@ fun DoubleTapToSeekOvals(
 }
 
 fun calculateNewVerticalGestureValue(originalValue: Int, startingY: Float, newY: Float, sensitivity: Float): Int {
-  return originalValue + ((startingY - newY) * sensitivity).toInt()
+  // roundToInt, not toInt: truncation biases toward zero, so upward swipes
+  // needed ~1 full extra step of travel per notch while downward swipes fired
+  // early — skipping percentage values asymmetrically. Rounding makes every
+  // step symmetric around whole numbers.
+  return originalValue + ((startingY - newY) * sensitivity).roundToInt()
 }
 
 fun calculateNewVerticalGestureValue(originalValue: Float, startingY: Float, newY: Float, sensitivity: Float): Float {
