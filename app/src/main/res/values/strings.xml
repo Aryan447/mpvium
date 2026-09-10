@@ -249,6 +249,8 @@
   <string name="pref_audio_volume_min_limit_summary">Volume cannot go below %d%%</string>
   <string name="pref_audio_volume_max_limit_title">Maximum volume limit</string>
   <string name="pref_audio_volume_max_limit_summary">Volume cannot go above %d%%</string>
+  <string name="pref_audio_smooth_volume_slider_title">Smooth Volume Slider</string>
+  <string name="pref_audio_smooth_volume_slider_summary">Animate volume changes one step at a time when swiping the volume slider.</string>
   <string name="pref_advanced">Advanced</string>
   <string name="pref_advanced_summary">Configuration location, mpv.conf</string>
   <string name="pref_advanced_mpv_conf_storage_location">Pick configuration storage location</string>

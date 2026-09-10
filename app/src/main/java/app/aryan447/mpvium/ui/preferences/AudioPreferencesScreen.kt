@@ -181,6 +181,20 @@ object AudioPreferencesScreen : Screen {
           )
 
           PreferenceDivider()
+          val smoothVolumeSlider by preferences.smoothVolumeSlider.collectAsState()
+          HapticSwitchPreference(
+            value = smoothVolumeSlider,
+            onValueChange = { preferences.smoothVolumeSlider.set(it) },
+            title = { Text(stringResource(R.string.pref_audio_smooth_volume_slider_title)) },
+            summary = {
+              Text(
+                stringResource(R.string.pref_audio_smooth_volume_slider_summary),
+                color = MaterialTheme.colorScheme.outline,
+              )
+            },
+          )
+
+          PreferenceDivider()
           val volumeMinLimit by preferences.volumeMinLimit.collectAsState()
           SliderPreference(
             value = volumeMinLimit.toFloat(),

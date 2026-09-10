@@ -2550,12 +2550,14 @@ class PlayerActivity :
       }
 
       KeyEvent.KEYCODE_VOLUME_UP -> {
+        viewModel.setVolumeSwipeActive(false)
         viewModel.changeVolumeBy(volumeStep())
         viewModel.displayVolumeSlider()
         return true
       }
 
       KeyEvent.KEYCODE_VOLUME_DOWN -> {
+        viewModel.setVolumeSwipeActive(false)
         viewModel.changeVolumeBy(-volumeStep())
         viewModel.displayVolumeSlider()
         return true

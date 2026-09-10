@@ -276,6 +276,13 @@ class PlayerViewModel(
   val isVolumeSliderShown = MutableStateFlow(false)
   val volumeSliderTimestamp = MutableStateFlow(0L)
   val brightnessSliderTimestamp = MutableStateFlow(0L)
+  /**
+   * True while a vertical swipe/hold gesture is driving the volume slider.
+   * Lets the player volume slider animate swipe changes one step at a time
+   * (display only); hardware volume keys never set this, so button steps
+   * keep jumping as before.
+   */
+  val isVolumeSwipeActive = MutableStateFlow(false)
   val currentBrightness =
     MutableStateFlow(
       runCatching {
@@ -1435,6 +1442,10 @@ class PlayerViewModel(
   fun displayVolumeSlider() {
     isVolumeSliderShown.value = true
     volumeSliderTimestamp.value = System.currentTimeMillis()
+  }
+
+  fun setVolumeSwipeActive(active: Boolean) {
+    isVolumeSwipeActive.value = active
   }
 
   // ==================== Video Aspect ====================

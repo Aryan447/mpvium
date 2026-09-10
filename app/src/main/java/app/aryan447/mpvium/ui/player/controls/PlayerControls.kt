@@ -438,6 +438,8 @@ fun PlayerControls(
           val displayVolumeAsPercentage by playerPreferences.displayVolumeAsPercentage.collectAsState()
           val volumeMinLimit by audioPreferences.volumeMinLimit.collectAsState()
           val volumeMaxLimit by audioPreferences.volumeMaxLimit.collectAsState()
+          val smoothVolumeSlider by audioPreferences.smoothVolumeSlider.collectAsState()
+          val isVolumeSwipeActive by viewModel.isVolumeSwipeActive.collectAsState()
 
           // Show if boost is allowed (boostCap > 0) OR if we are currently boosted (> 100)
           val currentBoost = (mpvVolume ?: 100) - 100
@@ -451,6 +453,8 @@ fun PlayerControls(
             boostRange = if (showBoost) 0..effBoostCap else null,
             displayAsPercentage = displayVolumeAsPercentage,
             seekbarStyle = volumeSliderStyle,
+            smoothAnimationEnabled = smoothVolumeSlider,
+            isSwipeActive = isVolumeSwipeActive,
           )
         }
 

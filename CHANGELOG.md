@@ -14,6 +14,11 @@ Source of truth for GitHub release notes.
 
 ## Unreleased
 
+### Added
+
+- Smooth Volume Slider setting (Audio): swiping the volume slider animates
+  the displayed value one step at a time; volume keys are unchanged.
+
 ### Fixed
 
 - Launcher icon: smaller play-button foreground to match mpvEx proportions.
