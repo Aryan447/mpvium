@@ -48,6 +48,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -68,6 +69,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
@@ -79,6 +83,7 @@ import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
+import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.media.MediaUtils
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
@@ -127,6 +132,51 @@ data class SeriesDetailScreen(
           isLoading = false
         }
       }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Re-read episode progress through the existing detector using cached
+    // metadata only, so the remaining time updates immediately after exiting
+    // the player without extra network calls, loading flicker, or resetting
+    // the selected season.
+    fun refreshPlaybackProgress(preserveSeason: Int) {
+      coroutineScope.launch(Dispatchers.IO) {
+        val detected = seriesDetector.detectLibrary()
+        val found = detected.series.find { it.id == seriesId } ?: return@launch
+        val enriched = metadataRepository.enrichSeries(found, forceRefresh = false)
+        withContext(Dispatchers.Main) {
+          series = enriched
+          selectedSeason =
+            if (enriched.seasons.containsKey(preserveSeason)) {
+              preserveSeason
+            } else {
+              enriched.seasons.keys.firstOrNull() ?: preserveSeason
+            }
+        }
+      }
+    }
+
+    // Returning from PlayerActivity resumes this screen. The player persists
+    // its final position in onStop/onDestroy, which can land after ON_RESUME,
+    // so also refresh on the post-save notification to correct a stale read.
+    DisposableEffect(lifecycleOwner) {
+      var resumedOnce = false
+      val observer = LifecycleEventObserver { _, event ->
+        if (event == Lifecycle.Event.ON_RESUME) {
+          if (resumedOnce) {
+            refreshPlaybackProgress(selectedSeason)
+          } else {
+            resumedOnce = true
+          }
+        }
+      }
+      lifecycleOwner.lifecycle.addObserver(observer)
+      onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(Unit) {
+      MediaLibraryEvents.changes.collect { refreshPlaybackProgress(selectedSeason) }
     }
 
     // Search candidates for the match picker; re-runnable with a typed query

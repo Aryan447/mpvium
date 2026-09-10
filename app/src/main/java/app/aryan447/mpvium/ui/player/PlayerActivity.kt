@@ -47,6 +47,7 @@ import app.aryan447.mpvium.ui.theme.MpviumTheme
 import app.aryan447.mpvium.ui.widget.ContinueWatchingWidgetProvider
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.HttpUtils
+import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.media.SubtitleOps
 import app.aryan447.mpvium.utils.storage.FileTypeUtils
 import app.aryan447.mpvium.utils.storage.FileFilterUtils
@@ -2039,6 +2040,10 @@ class PlayerActivity :
             },
           ),
         )
+        // Notify after the latest position is persisted so episode/detail
+        // screens refresh with the newly saved remaining time instead of
+        // racing ahead with a stale read.
+        MediaLibraryEvents.notifyChanged()
       }.onFailure { e ->
         Log.e(TAG, "Error saving playback state", e)
       }
