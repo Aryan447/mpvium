@@ -1056,7 +1056,10 @@ class PlayerActivity :
   private fun updateVolume() {
     viewModel.currentVolume.update {
       audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).also { volume ->
-        if (volume < viewModel.maxVolume) {
+        // Only reset mpv software volume when the system level actually fell
+        // below the allowed top — never clobber a swipe that pins the system
+        // volume and carries its fine 1%-steps in mpv.
+        if (volume < viewModel.volumeRangeSteps().endInclusive) {
           viewModel.changeMPVVolumeTo(MAX_MPV_VOLUME)
         }
       }

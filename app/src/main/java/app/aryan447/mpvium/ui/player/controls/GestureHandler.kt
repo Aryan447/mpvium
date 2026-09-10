@@ -58,7 +58,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `is`.xyz.mpv.MPVLib
-import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
@@ -171,7 +170,6 @@ fun GestureHandler(
   modifier: Modifier = Modifier,
 ) {
   val playerPreferences = koinInject<PlayerPreferences>()
-  val audioPreferences = koinInject<AudioPreferences>()
   val gesturePreferences = koinInject<GesturePreferences>()
   val subtitlesPreferences = koinInject<SubtitlesPreferences>()
   val panelShown by viewModel.panelShown.collectAsState()
@@ -213,10 +211,7 @@ fun GestureHandler(
   var hasSwipedEnough by remember { mutableStateOf(false) }
   var longPressTriggeredDuringTouch by remember { mutableStateOf(false) }
   var isVerticalGestureActive by remember { mutableStateOf(false) }
-  val currentVolume by viewModel.currentVolume.collectAsState()
-  val currentMPVVolume by MPVLib.propInt["volume"].collectAsState()
   val currentBrightness by viewModel.currentBrightness.collectAsState()
-  val volumeBoostingCap = audioPreferences.volumeBoostCap.get()
   val haptics = LocalHapticFeedback.current
   val coroutineScope = rememberCoroutineScope()
   // Swipes starting in the status-bar zone belong to the system
@@ -461,16 +456,11 @@ fun GestureHandler(
 
           // State for vertical gestures (volume/brightness)
           var startingY = 0f
-          var mpvVolumeStartingY = 0f
-          var originalVolume = currentVolume
-          var originalMPVVolume = currentMPVVolume
+          var originalGestureVolume = viewModel.gestureVolumePercent()
+          var lastGestureVolume = originalGestureVolume
           var originalBrightness = currentBrightness
-          var lastVolumeValue = currentVolume
-          var lastMPVVolumeValue = currentMPVVolume ?: 100
           var lastBrightnessValue = currentBrightness
           val brightnessGestureSens = 0.001f
-          val volumeGestureSens = 0.017f
-          val mpvVolumeGestureSens = 0.017f
 
           // Original speed for long press
           var originalSpeed = playbackSpeed ?: 1f
@@ -757,12 +747,9 @@ fun GestureHandler(
                         if ((brightnessGesture || volumeGesture) && !isLongPressing) {
                           isVerticalGestureActive = true
                           startingY = 0f
-                          mpvVolumeStartingY = 0f
-                          originalVolume = currentVolume
-                          originalMPVVolume = currentMPVVolume
+                          originalGestureVolume = viewModel.gestureVolumePercent()
+                          lastGestureVolume = originalGestureVolume
                           originalBrightness = currentBrightness
-                          lastVolumeValue = currentVolume
-                          lastMPVVolumeValue = currentMPVVolume ?: 100
                           lastBrightnessValue = currentBrightness
                         }
                       }
@@ -811,52 +798,26 @@ fun GestureHandler(
                       if ((brightnessGesture || volumeGesture) && !isLongPressing &&
                         startPosition.y > topSystemGuardPx
                       ) {
-                        val amount = currentPosition.y - startPosition.y
-
                         val changeVolume: () -> Unit = {
-                          val isIncreasingVolumeBoost: (Float) -> Boolean = {
-                            volumeBoostingCap > 0 && currentVolume == viewModel.maxVolume &&
-                              (currentMPVVolume ?: 100) - 100 < volumeBoostingCap && amount < 0
+                          // Fine 1-by-1 percent steps (1, 2, 3 ... 100): a full-height
+                          // swipe spans the whole range. Hardware keys intentionally
+                          // stay on coarse system steps (33 -> 40 -> 47).
+                          if (startingY == 0f) {
+                            startingY = currentPosition.y
+                            originalGestureVolume = viewModel.gestureVolumePercent()
+                            lastGestureVolume = originalGestureVolume
                           }
-                          val isDecreasingVolumeBoost: (Float) -> Boolean = {
-                            volumeBoostingCap > 0 && currentVolume == viewModel.maxVolume &&
-                              (currentMPVVolume ?: 100) - 100 in 1..volumeBoostingCap && amount > 0
-                          }
+                          val gestureHeight = size.height.toFloat().coerceAtLeast(1f)
+                          val volumeGestureSens = 100f / gestureHeight
+                          val newVolume =
+                            (
+                              originalGestureVolume +
+                                ((startingY - currentPosition.y) * volumeGestureSens).roundToInt()
+                            ).coerceIn(viewModel.gestureVolumeRange())
 
-                          if (isIncreasingVolumeBoost(amount) || isDecreasingVolumeBoost(amount)) {
-                            if (mpvVolumeStartingY == 0f) {
-                              startingY = 0f
-                              originalVolume = currentVolume
-                              mpvVolumeStartingY = currentPosition.y
-                            }
-                            val newMPVVolume = calculateNewVerticalGestureValue(
-                              originalMPVVolume ?: 100,
-                              mpvVolumeStartingY,
-                              currentPosition.y,
-                              mpvVolumeGestureSens,
-                            ).coerceIn(100..volumeBoostingCap + 100)
-
-                            if (newMPVVolume != lastMPVVolumeValue) {
-                              viewModel.changeMPVVolumeTo(newMPVVolume)
-                              lastMPVVolumeValue = newMPVVolume
-                            }
-                          } else {
-                            if (startingY == 0f) {
-                              mpvVolumeStartingY = 0f
-                              originalMPVVolume = currentMPVVolume
-                              startingY = currentPosition.y
-                            }
-                            val newVolume = calculateNewVerticalGestureValue(
-                              originalVolume,
-                              startingY,
-                              currentPosition.y,
-                              volumeGestureSens,
-                            )
-
-                            if (newVolume != lastVolumeValue) {
-                              viewModel.changeVolumeTo(newVolume)
-                              lastVolumeValue = newVolume
-                            }
+                          if (newVolume != lastGestureVolume) {
+                            viewModel.changeGestureVolumeTo(newVolume)
+                            lastGestureVolume = newVolume
                           }
 
                           viewModel.displayVolumeSlider()
@@ -920,8 +881,6 @@ fun GestureHandler(
                     if (brightnessGesture || volumeGesture) {
                       isVerticalGestureActive = false
                       startingY = 0f
-                      lastVolumeValue = currentVolume
-                      lastMPVVolumeValue = currentMPVVolume ?: 100
                       lastBrightnessValue = currentBrightness
                     }
                   }
@@ -976,8 +935,6 @@ fun GestureHandler(
               if (brightnessGesture || volumeGesture) {
                 isVerticalGestureActive = false
                 startingY = 0f
-                lastVolumeValue = currentVolume
-                lastMPVVolumeValue = currentMPVVolume ?: 100
                 lastBrightnessValue = currentBrightness
               }
             }
@@ -1377,10 +1334,6 @@ fun DoubleTapToSeekOvals(
       }
     }
   }
-}
-
-fun calculateNewVerticalGestureValue(originalValue: Int, startingY: Float, newY: Float, sensitivity: Float): Int {
-  return originalValue + ((startingY - newY) * sensitivity).toInt()
 }
 
 fun calculateNewVerticalGestureValue(originalValue: Float, startingY: Float, newY: Float, sensitivity: Float): Float {
