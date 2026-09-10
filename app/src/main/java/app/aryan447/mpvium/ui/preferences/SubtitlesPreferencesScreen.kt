@@ -619,7 +619,7 @@ object SubtitlesPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                   )
                   Text(
-                    text = "opensubtitles-v3.strem.io",
+                    text = "opensubtitles-v3.strem.io • subsource.net",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
