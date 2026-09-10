@@ -41,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -61,6 +62,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
@@ -71,6 +75,7 @@ import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
+import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.media.MediaUtils
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
@@ -117,6 +122,46 @@ data class MovieDetailScreen(
           isLoading = false
         }
       }
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Re-read playback progress through the existing detector using cached
+    // metadata only, so the remaining time updates immediately after exiting
+    // the player without extra network calls or loading flicker.
+    fun refreshPlaybackProgress() {
+      coroutineScope.launch(Dispatchers.IO) {
+        val detected = seriesDetector.detectLibrary()
+        val found = detected.movies.find { it.video.id == videoId }
+          ?: detected.movies.find { it.title.equals(movieTitle, ignoreCase = true) }
+          ?: return@launch
+        val enriched = metadataRepository.enrichMovie(found, forceRefresh = false)
+        withContext(Dispatchers.Main) {
+          movie = enriched
+        }
+      }
+    }
+
+    // Returning from PlayerActivity resumes this screen. The player persists
+    // its final position in onStop/onDestroy, which can land after ON_RESUME,
+    // so also refresh on the post-save notification to correct a stale read.
+    DisposableEffect(lifecycleOwner) {
+      var resumedOnce = false
+      val observer = LifecycleEventObserver { _, event ->
+        if (event == Lifecycle.Event.ON_RESUME) {
+          if (resumedOnce) {
+            refreshPlaybackProgress()
+          } else {
+            resumedOnce = true
+          }
+        }
+      }
+      lifecycleOwner.lifecycle.addObserver(observer)
+      onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(Unit) {
+      MediaLibraryEvents.changes.collect { refreshPlaybackProgress() }
     }
 
     // Search candidates for the match picker; re-runnable with a typed query
