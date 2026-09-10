@@ -700,6 +700,7 @@ fun GestureHandler(
                             holdLastVolume = newVolume
                           }
                         }
+                        viewModel.setVolumeSwipeActive(true)
                         viewModel.displayVolumeSlider()
                       }
                       HoldControlTarget.Brightness -> {
@@ -859,6 +860,7 @@ fun GestureHandler(
                             }
                           }
 
+                          viewModel.setVolumeSwipeActive(true)
                           viewModel.displayVolumeSlider()
                         }
                         val changeBrightness: () -> Unit = {
@@ -909,6 +911,7 @@ fun GestureHandler(
                 holdPrevY = 0f
                 holdStartingY = 0f
                 holdMpvStartingY = 0f
+                viewModel.setVolumeSwipeActive(false)
                 if (isLongPressing) {
                   isLongPressing = false
                   viewModel.playerUpdate.update { PlayerUpdates.None }
@@ -919,6 +922,7 @@ fun GestureHandler(
                   "vertical" -> {
                     if (brightnessGesture || volumeGesture) {
                       isVerticalGestureActive = false
+                      viewModel.setVolumeSwipeActive(false)
                       startingY = 0f
                       lastVolumeValue = currentVolume
                       lastMPVVolumeValue = currentMPVVolume ?: 100
@@ -950,6 +954,7 @@ fun GestureHandler(
               holdPrevY = 0f
               holdStartingY = 0f
               holdMpvStartingY = 0f
+              viewModel.setVolumeSwipeActive(false)
               viewModel.playerUpdate.update { PlayerUpdates.None }
               return@awaitEachGesture
             }
@@ -975,6 +980,7 @@ fun GestureHandler(
             "vertical" -> {
               if (brightnessGesture || volumeGesture) {
                 isVerticalGestureActive = false
+                viewModel.setVolumeSwipeActive(false)
                 startingY = 0f
                 lastVolumeValue = currentVolume
                 lastMPVVolumeValue = currentMPVVolume ?: 100

@@ -22,7 +22,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -38,7 +43,16 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.SeekbarStyle
 import app.aryan447.mpvium.ui.theme.spacing
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+
+/**
+ * Delay between consecutive integer steps of the swipe-driven volume number
+ * animation. ~12ms shows every integer (no skips) while keeping a 20-step
+ * swipe under a quarter of a second; only the slider text/bar recomposes,
+ * no audio API is touched.
+ */
+private const val VOLUME_SMOOTH_STEP_DELAY_MS = 12L
 
 fun percentage(
   value: Float,
@@ -327,8 +341,42 @@ fun VolumeSlider(
   modifier: Modifier = Modifier,
   displayAsPercentage: Boolean = false,
   seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  smoothAnimationEnabled: Boolean = true,
+  isSwipeActive: Boolean = false,
 ) {
-  val percentage = (percentage(volume, range) * 100).roundToInt()
+  val systemPercentage = (percentage(volume, range) * 100).roundToInt()
+  // Primary value behind the number/bar/icon: system percentage or system
+  // steps, exactly as before. The animation below only changes *which* of
+  // those integers is currently displayed, never the audio level itself.
+  val targetPrimary = if (displayAsPercentage) systemPercentage else volume
+  var animatedPrimary by remember(range, displayAsPercentage) { mutableIntStateOf(targetPrimary) }
+  // Latched while a swipe session is in flight so the animation keeps
+  // stepping to the exact final value after the finger lifts. Hardware
+  // volume keys never set this, so button steps keep snapping as before.
+  var inSwipeSession by remember { mutableStateOf(false) }
+  LaunchedEffect(targetPrimary, smoothAnimationEnabled, isSwipeActive) {
+    if (!smoothAnimationEnabled) {
+      animatedPrimary = targetPrimary
+      inSwipeSession = false
+      return@LaunchedEffect
+    }
+    if (isSwipeActive) inSwipeSession = true
+    if (!isSwipeActive && !inSwipeSession) {
+      animatedPrimary = targetPrimary
+      return@LaunchedEffect
+    }
+    while (animatedPrimary != targetPrimary) {
+      animatedPrimary += if (targetPrimary > animatedPrimary) 1 else -1
+      delay(VOLUME_SMOOTH_STEP_DELAY_MS)
+    }
+    if (!isSwipeActive) inSwipeSession = false
+  }
+  val shownPercentage =
+    if (displayAsPercentage) {
+      animatedPrimary
+    } else {
+      (percentage(animatedPrimary, range) * 100).roundToInt()
+    }
   Surface(
     modifier = modifier,
     shape = RoundedCornerShape(20.dp),
@@ -345,19 +393,19 @@ fun VolumeSlider(
     ) {
       val boostVolume = mpvVolume - 100
       Text(
-        getVolumeSliderText(volume, mpvVolume, boostVolume, percentage, displayAsPercentage),
+        getVolumeSliderText(animatedPrimary, mpvVolume, boostVolume, shownPercentage, displayAsPercentage),
         style = MaterialTheme.typography.bodySmall,
         textAlign = TextAlign.Center,
       )
       VerticalSlider(
-        if (displayAsPercentage) percentage else volume,
+        animatedPrimary,
         if (displayAsPercentage) 0..100 else range,
         overflowValue = boostVolume,
         overflowRange = boostRange,
         seekbarStyle = seekbarStyle,
       )
       Icon(
-        when (percentage) {
+        when (shownPercentage) {
           0 -> Icons.AutoMirrored.Default.VolumeOff
           in 0..30 -> Icons.AutoMirrored.Default.VolumeMute
           in 30..60 -> Icons.AutoMirrored.Default.VolumeDown

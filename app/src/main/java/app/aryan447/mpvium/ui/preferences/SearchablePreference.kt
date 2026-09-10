@@ -553,6 +553,13 @@ object SearchablePreferences {
                 category = "Audio",
                 screen = AudioPreferencesScreen,
             ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_audio_smooth_volume_slider_title,
+                summaryRes = R.string.pref_audio_smooth_volume_slider_summary,
+                keywords = listOf("volume", "smooth", "slider", "swipe", "animation", "animate"),
+                category = "Audio",
+                screen = AudioPreferencesScreen,
+            ))
 
             // Advanced preferences
             add(SearchablePreference(
