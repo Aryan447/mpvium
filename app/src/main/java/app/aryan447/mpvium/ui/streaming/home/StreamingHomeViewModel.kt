@@ -15,10 +15,12 @@ import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.streaming.model.StreamingCategory
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
+import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
@@ -65,6 +67,14 @@ class StreamingHomeViewModel(
             state.copy(continueWatching = reordered)
           }
         }
+      }
+    }
+    // The player notifies after its final position is persisted, which can
+    // land after ON_RESUME. Reload then so remaining times reflect the
+    // newly saved value instead of a stale pre-save read.
+    viewModelScope.launch(Dispatchers.IO) {
+      MediaLibraryEvents.changes.collectLatest {
+        loadLibrary()
       }
     }
   }
