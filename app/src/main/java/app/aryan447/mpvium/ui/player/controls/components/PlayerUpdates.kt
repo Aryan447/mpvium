@@ -13,10 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DoubleArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,9 +33,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.ui.graphics.Shape
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.ui.player.HoldControlTarget
 import app.aryan447.mpvium.ui.theme.spacing
 
 @Composable
@@ -142,6 +147,96 @@ fun MultipleSpeedPlayerUpdate(
   modifier: Modifier = Modifier,
 ) {
   CompactSpeedIndicator(currentSpeed = currentSpeed, modifier = modifier)
+}
+
+@Composable
+fun HoldControlsPlayerUpdate(
+  selected: HoldControlTarget,
+  modifier: Modifier = Modifier,
+) {
+  PlayerUpdate(
+    shape = RoundedCornerShape(20.dp),
+    modifier = modifier,
+  ) {
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(6.dp),
+      modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        HoldControlChip(
+          label = stringResource(R.string.hold_controls_brightness),
+          icon = {
+            Icon(
+              Icons.Default.BrightnessMedium,
+              contentDescription = null,
+              modifier = Modifier.size(16.dp),
+            )
+          },
+          isSelected = selected == HoldControlTarget.Brightness,
+        )
+        HoldControlChip(
+          label = stringResource(R.string.hold_controls_volume),
+          icon = {
+            Icon(
+              Icons.AutoMirrored.Default.VolumeUp,
+              contentDescription = null,
+              modifier = Modifier.size(16.dp),
+            )
+          },
+          isSelected = selected == HoldControlTarget.Volume,
+        )
+      }
+      Text(
+        text = stringResource(R.string.pref_player_gestures_hold_controls_hint),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.labelSmall,
+        textAlign = TextAlign.Center,
+      )
+    }
+  }
+}
+
+@Composable
+private fun HoldControlChip(
+  label: String,
+  icon: @Composable () -> Unit,
+  isSelected: Boolean,
+  modifier: Modifier = Modifier,
+) {
+  val containerColor = if (isSelected) {
+    MaterialTheme.colorScheme.primary
+  } else {
+    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
+  }
+  val contentColor = if (isSelected) {
+    MaterialTheme.colorScheme.onPrimary
+  } else {
+    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+  }
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(4.dp),
+    modifier = modifier
+      .clip(RoundedCornerShape(100.dp))
+      .background(containerColor)
+      .padding(horizontal = 12.dp, vertical = 6.dp),
+  ) {
+    CompositionLocalProvider(
+      LocalContentColor provides contentColor,
+    ) {
+      icon()
+      Text(
+        text = label,
+        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+        style = MaterialTheme.typography.bodyMedium,
+        color = contentColor,
+      )
+    }
+  }
 }
 
 @Composable

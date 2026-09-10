@@ -108,6 +108,7 @@ import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.BrightnessSlider
 import app.aryan447.mpvium.ui.player.controls.components.CompactSpeedIndicator
 import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
+import app.aryan447.mpvium.ui.player.controls.components.HoldControlsPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.IntroSkipChip
 import app.aryan447.mpvium.ui.player.controls.components.MultipleSpeedPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.SeekPlayerUpdate
@@ -466,6 +467,7 @@ fun PlayerControls(
         LaunchedEffect(currentPlayerUpdate, aspectRatio, videoZoom) {
           if (currentPlayerUpdate is PlayerUpdates.MultipleSpeed ||
             currentPlayerUpdate is PlayerUpdates.DynamicSpeedControl ||
+            currentPlayerUpdate is PlayerUpdates.HoldControls ||
             currentPlayerUpdate is PlayerUpdates.None
           ) {
             return@LaunchedEffect
@@ -494,6 +496,9 @@ fun PlayerControls(
         ) {
           when (currentPlayerUpdate) {
             is PlayerUpdates.MultipleSpeed -> MultipleSpeedPlayerUpdate(currentSpeed = holdForMultipleSpeed)
+            is PlayerUpdates.HoldControls -> {
+              HoldControlsPlayerUpdate(selected = currentPlayerUpdate.selected)
+            }
             is PlayerUpdates.DynamicSpeedControl -> {
               val speedUpdate = currentPlayerUpdate as PlayerUpdates.DynamicSpeedControl
               val currentSpeed = speedUpdate.speed
