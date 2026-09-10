@@ -35,6 +35,18 @@ enum class SingleActionGesture(
   Custom(R.string.pref_gesture_double_tap_custom),
 }
 
+enum class HoldGestureMode(
+  @StringRes val titleRes: Int,
+) {
+  SpeedBoost(R.string.pref_player_gestures_hold_action_speed),
+  BrightnessVolume(R.string.pref_player_gestures_hold_action_controls),
+}
+
+enum class HoldControlTarget {
+  Brightness,
+  Volume,
+}
+
 enum class CustomKeyCodes(
   val keyCode: String,
 ) {
@@ -121,6 +133,10 @@ sealed class PlayerUpdates {
   data class DynamicSpeedControl(
     val speed: Float,
     val showFullOverlay: Boolean = true,
+  ) : PlayerUpdates()
+
+  data class HoldControls(
+    val selected: HoldControlTarget,
   ) : PlayerUpdates()
 
   data object AspectRatio : PlayerUpdates()

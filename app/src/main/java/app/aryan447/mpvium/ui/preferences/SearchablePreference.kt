@@ -237,6 +237,13 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                titleRes = R.string.pref_player_gestures_hold_action,
+                summaryRes = R.string.pref_player_gestures_hold_action_summary,
+                keywords = listOf("hold", "gesture", "action", "speed", "brightness", "volume", "long press"),
+                category = "Player",
+                screen = PlayerPreferencesScreen,
+            ))
+            add(SearchablePreference(
                 titleRes = R.string.pref_player_gestures_hold_for_multiple_speed,
                 keywords = listOf("hold", "speed", "multiple", "playback", "tempo", "rate"),
                 category = "Player",

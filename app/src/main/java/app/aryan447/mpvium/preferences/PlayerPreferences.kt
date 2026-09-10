@@ -3,6 +3,7 @@ package app.aryan447.mpvium.preferences
 
 import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
+import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.RepeatMode
 import app.aryan447.mpvium.ui.player.VideoAspect
@@ -13,6 +14,7 @@ class PlayerPreferences(
   val orientation = preferenceStore.getEnum("player_orientation", PlayerOrientation.Video)
   val invertDuration = preferenceStore.getBoolean("invert_duration")
   val holdForMultipleSpeed = preferenceStore.getFloat("hold_for_multiple_speed", 2f)
+  val holdGestureMode = preferenceStore.getEnum("hold_gesture_mode", HoldGestureMode.BrightnessVolume)
   val showDynamicSpeedOverlay = preferenceStore.getBoolean("show_dynamic_speed_overlay", true)
   val showDoubleTapOvals = preferenceStore.getBoolean("show_double_tap_ovals", true)
   val showSeekTimeWhileSeeking = preferenceStore.getBoolean("show_seek_time_while_seeking", true)

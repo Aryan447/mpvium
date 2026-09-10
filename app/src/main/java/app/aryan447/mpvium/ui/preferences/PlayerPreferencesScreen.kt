@@ -21,10 +21,12 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
+import me.zhanghai.compose.preference.FooterPreference
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
@@ -308,40 +310,70 @@ object PlayerPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              val holdForMultipleSpeed by preferences.holdForMultipleSpeed.collectAsState()
-              SliderPreference(
-                value = holdForMultipleSpeed,
-                onValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
-                title = { Text(stringResource(R.string.pref_player_gestures_hold_for_multiple_speed)) },
-                valueRange = 0f..6f,
+              val holdGestureMode by preferences.holdGestureMode.collectAsState()
+              ListPreference(
+                value = holdGestureMode,
+                onValueChange = preferences.holdGestureMode::set,
+                values = HoldGestureMode.entries,
+                valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                title = { Text(stringResource(R.string.pref_player_gestures_hold_action)) },
                 summary = {
                   Text(
-                    if (holdForMultipleSpeed == 0F) {
-                      stringResource(R.string.generic_disabled)
-                    } else {
-                      "%.2fx".format(holdForMultipleSpeed)
-                    },
+                    text = stringResource(id = holdGestureMode.titleRes),
                     color = MaterialTheme.colorScheme.outline,
                   )
                 },
-                onSliderValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
-                sliderValue = holdForMultipleSpeed,
               )
 
-              PreferenceDivider()
+              if (holdGestureMode == HoldGestureMode.SpeedBoost) {
+                PreferenceDivider()
 
-              val showDynamicSpeedOverlay by preferences.showDynamicSpeedOverlay.collectAsState()
-              HapticSwitchPreference(
-                value = showDynamicSpeedOverlay,
-                onValueChange = preferences.showDynamicSpeedOverlay::set,
-                title = { Text("Dynamic Speed Overlay") },
-                summary = {
-                  Text(
-                    "Show advance overlay for speed control during long press and swipe",
-                    color = MaterialTheme.colorScheme.outline,
-                  )
-                }
-              )
+                val holdForMultipleSpeed by preferences.holdForMultipleSpeed.collectAsState()
+                SliderPreference(
+                  value = holdForMultipleSpeed,
+                  onValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
+                  title = { Text(stringResource(R.string.pref_player_gestures_hold_for_multiple_speed)) },
+                  valueRange = 0f..6f,
+                  summary = {
+                    Text(
+                      if (holdForMultipleSpeed == 0F) {
+                        stringResource(R.string.generic_disabled)
+                      } else {
+                        "%.2fx".format(holdForMultipleSpeed)
+                      },
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                  onSliderValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
+                  sliderValue = holdForMultipleSpeed,
+                )
+
+                PreferenceDivider()
+
+                val showDynamicSpeedOverlay by preferences.showDynamicSpeedOverlay.collectAsState()
+                HapticSwitchPreference(
+                  value = showDynamicSpeedOverlay,
+                  onValueChange = preferences.showDynamicSpeedOverlay::set,
+                  title = { Text("Dynamic Speed Overlay") },
+                  summary = {
+                    Text(
+                      "Show advance overlay for speed control during long press and swipe",
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  }
+                )
+              } else {
+                PreferenceDivider()
+
+                FooterPreference(
+                  summary = {
+                    Text(
+                      text = stringResource(R.string.pref_player_gestures_hold_controls_hint),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                )
+              }
             }
           }
           // Controls Section
