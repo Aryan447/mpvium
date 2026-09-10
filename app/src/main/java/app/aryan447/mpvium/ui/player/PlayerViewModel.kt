@@ -1390,6 +1390,25 @@ class PlayerViewModel(
   fun changeVolumeBy(change: Int) {
     val mpvVolume = MPVLib.getPropertyInt("volume")
     val absoluteMaxVolume = volumeBoostCap ?: (audioPreferences.volumeBoostCap.get() + 100)
+    val range = volumeRangeSteps()
+
+    // Soft-gesture state: a swipe pinned the system volume at the range top
+    // and carries the fine level in mpv (e.g. 33 instead of a coarse 33/40).
+    // Keep hardware keys coarse: move by whole system steps mapped onto
+    // percent so buttons still jump like 33 -> 40 -> 47, never 1-by-1.
+    if (currentVolume.value >= range.endInclusive && (mpvVolume ?: 100) < 100) {
+      val coarse =
+        (change * 100f / maxVolume.coerceAtLeast(1)).roundToInt().let {
+          if (change > 0) it.coerceAtLeast(1) else it.coerceAtMost(-1)
+        }
+      val target = ((mpvVolume ?: 100) + coarse).coerceIn(0, absoluteMaxVolume)
+      if (target <= 0) {
+        // Bottom rail: collapse back to canonical system-step state.
+        changeMPVVolumeTo(100)
+        return changeVolumeTo(range.start)
+      }
+      return changeMPVVolumeTo(target.coerceAtLeast(1))
+    }
 
     if (absoluteMaxVolume > 100 && currentVolume.value == maxVolume) {
       if (mpvVolume == 100 && change < 0) {
@@ -1411,8 +1430,9 @@ class PlayerViewModel(
 
   /**
    * Allowed system-volume range from the user's min/max limits (percent),
-   * mapped onto device steps. Covers keys, gestures and slider drags since
-   * they all funnel through [changeVolumeTo].
+   * mapped onto device steps. Covers keys since they funnel through
+   * [changeVolumeTo]; swipe gestures instead use [changeGestureVolumeTo]
+   * for 1-by-1 percent steps.
    */
   fun volumeRangeSteps(): IntRange =
     volumeRangeSteps(
@@ -1430,6 +1450,49 @@ class PlayerViewModel(
 
   fun changeMPVVolumeTo(volume: Int) {
     MPVLib.setPropertyInt("volume", volume)
+  }
+
+  /**
+   * Effective volume in slider-percent units (0..100, plus boost cap) for the
+   * swipe gesture. Normal state derives it from the system volume; once a
+   * swipe pins the system volume at the range top, mpv carries the fine
+   * level directly so swipes move 1, 2, 3 ... 100.
+   */
+  fun gestureVolumePercent(): Int {
+    val range = volumeRangeSteps()
+    val mpv = MPVLib.getPropertyInt("volume") ?: 100
+    if (currentVolume.value >= range.endInclusive) return mpv.coerceAtLeast(0)
+    val pct =
+      if (range.endInclusive > range.start) {
+        ((currentVolume.value - range.start).toFloat() / (range.endInclusive - range.start) * 100)
+          .roundToInt()
+      } else {
+        100
+      }
+    return (pct + (mpv - 100)).coerceAtLeast(0)
+  }
+
+  /** Clamp range for [changeGestureVolumeTo], in the same percent units. */
+  fun gestureVolumeRange(): IntRange {
+    val range = volumeRangeSteps()
+    val cap = audioPreferences.volumeBoostCap.get()
+    return if (cap > 0 && range.endInclusive >= maxVolume) 0..100 + cap else 0..100
+  }
+
+  /**
+   * Swipe-gesture volume: pins the system volume at the range top and carries
+   * the 1-by-1 level in mpv software volume. Loudness is preserved on entry
+   * because the starting percent comes from [gestureVolumePercent].
+   * Hardware keys keep using [changeVolumeBy] (whole system steps).
+   */
+  fun changeGestureVolumeTo(percent: Int) {
+    val range = volumeRangeSteps()
+    val target = percent.coerceIn(gestureVolumeRange())
+    if (currentVolume.value != range.endInclusive) {
+      host.audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, range.endInclusive, 0)
+      currentVolume.value = range.endInclusive
+    }
+    changeMPVVolumeTo(target.coerceAtLeast(0))
   }
 
   fun displayVolumeSlider() {

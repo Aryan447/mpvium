@@ -329,6 +329,20 @@ fun VolumeSlider(
   seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
 ) {
   val percentage = (percentage(volume, range) * 100).roundToInt()
+  val boostVolume = mpvVolume - 100
+  // Swipe gestures move in fine 1% software steps with the system volume
+  // pinned at the range top, so the bar, number and icon must follow the
+  // effective level — not the pinned system volume. Hardware keys still jump
+  // whole system steps, which the same math renders as 33 -> 40 -> 47.
+  val effectivePercentage = (percentage + boostVolume).coerceIn(0, 100)
+  val isSoftAttenuated = boostVolume < 0 && volume >= range.endInclusive
+  val effectiveAbsolute =
+    if (isSoftAttenuated) {
+      val span = (range.endInclusive - range.start).coerceAtLeast(1)
+      (range.start + (mpvVolume.coerceIn(0, 100) / 100f * span)).roundToInt().coerceIn(range)
+    } else {
+      (volume + boostVolume).coerceIn(range)
+    }
   Surface(
     modifier = modifier,
     shape = RoundedCornerShape(20.dp),
@@ -343,21 +357,30 @@ fun VolumeSlider(
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
     ) {
-      val boostVolume = mpvVolume - 100
       Text(
-        getVolumeSliderText(volume, mpvVolume, boostVolume, percentage, displayAsPercentage),
+        if (!displayAsPercentage && isSoftAttenuated) {
+          "$effectiveAbsolute"
+        } else {
+          getVolumeSliderText(volume, mpvVolume, boostVolume, percentage, displayAsPercentage)
+        },
         style = MaterialTheme.typography.bodySmall,
         textAlign = TextAlign.Center,
       )
       VerticalSlider(
-        if (displayAsPercentage) percentage else volume,
+        if (displayAsPercentage) effectivePercentage else effectiveAbsolute,
         if (displayAsPercentage) 0..100 else range,
         overflowValue = boostVolume,
         overflowRange = boostRange,
         seekbarStyle = seekbarStyle,
       )
       Icon(
-        when (percentage) {
+        when (
+          if (displayAsPercentage) {
+            effectivePercentage
+          } else {
+            (percentage(effectiveAbsolute, range) * 100).roundToInt()
+          }
+        ) {
           0 -> Icons.AutoMirrored.Default.VolumeOff
           in 0..30 -> Icons.AutoMirrored.Default.VolumeMute
           in 30..60 -> Icons.AutoMirrored.Default.VolumeDown
