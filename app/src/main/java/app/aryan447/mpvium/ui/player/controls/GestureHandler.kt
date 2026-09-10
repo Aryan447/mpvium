@@ -67,6 +67,8 @@ import app.aryan447.mpvium.presentation.components.LeftSideOvalShape
 import app.aryan447.mpvium.presentation.components.RightSideOvalShape
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerUpdates
+import app.aryan447.mpvium.ui.player.HoldControlTarget
+import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.SingleActionGesture
 import app.aryan447.mpvium.ui.theme.playerRippleConfiguration
@@ -194,6 +196,7 @@ fun GestureHandler(
     viewModel.hideSeekBar()
   }
   val multipleSpeedGesture by playerPreferences.holdForMultipleSpeed.collectAsState()
+  val holdGestureMode by playerPreferences.holdGestureMode.collectAsState()
   val showDynamicSpeedOverlay by playerPreferences.showDynamicSpeedOverlay.collectAsState()
   val brightnessGesture by playerPreferences.brightnessGesture.collectAsState()
   val volumeGesture by playerPreferences.volumeGesture.collectAsState()
@@ -446,7 +449,7 @@ fun GestureHandler(
           } while (event.changes.any { it.pressed })
         }
       }
-      .pointerInput(areControlsLocked, multipleSpeedGesture, brightnessGesture, volumeGesture) {
+      .pointerInput(areControlsLocked, multipleSpeedGesture, holdGestureMode, brightnessGesture, volumeGesture, swapVolumeAndBrightness) {
         if (areControlsLocked) return@pointerInput
 
         awaitEachGesture {
@@ -479,6 +482,20 @@ fun GestureHandler(
           // so gesture-end cleanup only undoes what was actually started.
           var subtitleDragActive = false
           var speedHoldActive = false
+          // Hold-for-controls mode: press-and-hold shows a
+          // brightness/volume picker, horizontal swipe switches the target,
+          // vertical swipe adjusts the selected target.
+          var holdControlsActive = false
+          var holdSelection = HoldControlTarget.Volume
+          var holdPrevY = 0f
+          var holdStartingY = 0f
+          var holdMpvStartingY = 0f
+          var holdBaseVolume = currentVolume
+          var holdBaseMPVVolume = currentMPVVolume ?: 100
+          var holdBaseBrightness = currentBrightness
+          var holdLastVolume = currentVolume
+          var holdLastMPVVolume = currentMPVVolume ?: 100
+          var holdLastBrightness = currentBrightness
           var subtitleDragStartSubPos = subtitlesPreferences.subPos.get()
           var lastSubtitlePos = subtitleDragStartSubPos
           val gestureAreaHeight = size.height.toFloat()
@@ -503,7 +520,7 @@ fun GestureHandler(
               subtitleDragStartSubPos = currentSubPos
               lastSubtitlePos = subtitleDragStartSubPos
               viewModel.playerUpdate.update { PlayerUpdates.SubtitlePosition(lastSubtitlePos) }
-            } else if (distance < 10f && paused == false && multipleSpeedGesture > 0f) {
+            } else if (distance < 10f && paused == false && multipleSpeedGesture > 0f && holdGestureMode == HoldGestureMode.SpeedBoost) {
                 longPressTriggered = true
                 speedHoldActive = true
                 isLongPressing = true
@@ -531,6 +548,40 @@ fun GestureHandler(
                   viewModel.playerUpdate.update { PlayerUpdates.DynamicSpeedControl(multipleSpeedGesture, false) }
                 } else {
                   viewModel.playerUpdate.update { PlayerUpdates.MultipleSpeed }
+                }
+            } else if (distance < 10f && (brightnessGesture || volumeGesture) && holdGestureMode == HoldGestureMode.BrightnessVolume) {
+                longPressTriggered = true
+                holdControlsActive = true
+                isLongPressing = true
+                longPressTriggeredDuringTouch = true
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                // Default target mirrors the swipe-side convention so an
+                // immediate vertical swipe behaves like the classic gesture
+                // for the side being held. A horizontal swipe overrides it.
+                holdSelection = when {
+                  brightnessGesture && !volumeGesture -> HoldControlTarget.Brightness
+                  volumeGesture && !brightnessGesture -> HoldControlTarget.Volume
+                  swapVolumeAndBrightness -> {
+                    if (startPosition.x > gestureAreaWidth / 2) HoldControlTarget.Brightness else HoldControlTarget.Volume
+                  }
+                  else -> {
+                    if (startPosition.x < gestureAreaWidth / 2) HoldControlTarget.Brightness else HoldControlTarget.Volume
+                  }
+                }
+                holdPrevY = startPosition.y
+                holdStartingY = 0f
+                holdMpvStartingY = 0f
+                holdBaseVolume = viewModel.currentVolume.value
+                holdBaseMPVVolume = MPVLib.getPropertyInt("volume") ?: 100
+                holdBaseBrightness = viewModel.currentBrightness.value
+                holdLastVolume = holdBaseVolume
+                holdLastMPVVolume = holdBaseMPVVolume
+                holdLastBrightness = holdBaseBrightness
+                viewModel.playerUpdate.update { PlayerUpdates.HoldControls(holdSelection) }
+                if (holdSelection == HoldControlTarget.Brightness) {
+                  viewModel.displayBrightnessSlider()
+                } else {
+                  viewModel.displayVolumeSlider()
                 }
             }
           }
@@ -563,6 +614,113 @@ fun GestureHandler(
                       MPVLib.setPropertyInt("secondary-sub-pos", (newPos - 10).coerceIn(0, 110))
                       viewModel.playerUpdate.update { PlayerUpdates.SubtitlePosition(newPos) }
                     }
+                    change.consume()
+                    return@forEach
+                  }
+
+                  // Hold-for-controls: horizontal swipe switches the target
+                  // (left = brightness, right = volume), vertical swipe
+                  // adjusts the selected target.
+                  if (holdControlsActive) {
+                    val currentPosition = change.position
+                    val selectThreshold = (gestureAreaWidth * 0.06f).coerceAtLeast(40f)
+                    val horizontalDelta = currentPosition.x - startPosition.x
+                    val switchedTarget = when {
+                      horizontalDelta <= -selectThreshold && brightnessGesture -> HoldControlTarget.Brightness
+                      horizontalDelta >= selectThreshold && volumeGesture -> HoldControlTarget.Volume
+                      else -> null
+                    }
+                    if (switchedTarget != null && switchedTarget != holdSelection) {
+                      holdSelection = switchedTarget
+                      // Re-anchor the vertical baselines so switching targets
+                      // never jumps the newly selected value.
+                      holdPrevY = currentPosition.y
+                      holdStartingY = 0f
+                      holdMpvStartingY = 0f
+                      holdBaseVolume = viewModel.currentVolume.value
+                      holdBaseMPVVolume = MPVLib.getPropertyInt("volume") ?: holdLastMPVVolume
+                      holdBaseBrightness = viewModel.currentBrightness.value
+                      holdLastVolume = holdBaseVolume
+                      holdLastMPVVolume = holdBaseMPVVolume
+                      holdLastBrightness = holdBaseBrightness
+                      haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                      viewModel.playerUpdate.update { PlayerUpdates.HoldControls(holdSelection) }
+                      if (holdSelection == HoldControlTarget.Brightness) {
+                        viewModel.displayBrightnessSlider()
+                      } else {
+                        viewModel.displayVolumeSlider()
+                      }
+                    }
+                    val movingUp = currentPosition.y < holdPrevY
+                    val movingDown = currentPosition.y > holdPrevY
+                    when (holdSelection) {
+                      HoldControlTarget.Volume -> {
+                        // Mirror the classic vertical volume gesture,
+                        // including the MPV volume-boost range above max
+                        // system volume. Separate anchors per range avoid
+                        // jumps when crossing between them.
+                        val boostingUp = volumeBoostingCap > 0 &&
+                          holdLastVolume == viewModel.maxVolume &&
+                          holdLastMPVVolume - 100 < volumeBoostingCap && movingUp
+                        val boostingDown = volumeBoostingCap > 0 &&
+                          holdLastVolume == viewModel.maxVolume &&
+                          holdLastMPVVolume - 100 in 1..volumeBoostingCap && movingDown
+                        if (boostingUp || boostingDown) {
+                          if (holdMpvStartingY == 0f) {
+                            holdStartingY = 0f
+                            holdBaseVolume = holdLastVolume
+                            holdMpvStartingY = currentPosition.y
+                            holdBaseMPVVolume = MPVLib.getPropertyInt("volume") ?: holdLastMPVVolume
+                          }
+                          val newMPVVolume = calculateNewVerticalGestureValue(
+                            holdBaseMPVVolume,
+                            holdMpvStartingY,
+                            currentPosition.y,
+                            mpvVolumeGestureSens,
+                          ).coerceIn(100..volumeBoostingCap + 100)
+                          if (newMPVVolume != holdLastMPVVolume) {
+                            viewModel.changeMPVVolumeTo(newMPVVolume)
+                            holdLastMPVVolume = newMPVVolume
+                          }
+                        } else {
+                          if (holdStartingY == 0f) {
+                            holdMpvStartingY = 0f
+                            holdBaseMPVVolume = MPVLib.getPropertyInt("volume") ?: holdLastMPVVolume
+                            holdBaseVolume = holdLastVolume
+                            holdStartingY = currentPosition.y
+                          }
+                          val newVolume = calculateNewVerticalGestureValue(
+                            holdBaseVolume,
+                            holdStartingY,
+                            currentPosition.y,
+                            volumeGestureSens,
+                          )
+                          if (newVolume != holdLastVolume) {
+                            viewModel.changeVolumeTo(newVolume)
+                            holdLastVolume = newVolume
+                          }
+                        }
+                        viewModel.displayVolumeSlider()
+                      }
+                      HoldControlTarget.Brightness -> {
+                        if (holdStartingY == 0f) {
+                          holdStartingY = currentPosition.y
+                          holdBaseBrightness = holdLastBrightness
+                        }
+                        val newBrightness = calculateNewVerticalGestureValue(
+                          holdBaseBrightness,
+                          holdStartingY,
+                          currentPosition.y,
+                          brightnessGestureSens,
+                        )
+                        if (abs(newBrightness - holdLastBrightness) > 0.001f) {
+                          viewModel.changeBrightnessTo(newBrightness)
+                          holdLastBrightness = newBrightness
+                        }
+                        viewModel.displayBrightnessSlider()
+                      }
+                    }
+                    holdPrevY = currentPosition.y
                     change.consume()
                     return@forEach
                   }
@@ -746,6 +904,16 @@ fun GestureHandler(
                 subtitlesPreferences.subPos.set(lastSubtitlePos)
               }
               subtitleDragActive = false
+              if (holdControlsActive) {
+                holdControlsActive = false
+                holdPrevY = 0f
+                holdStartingY = 0f
+                holdMpvStartingY = 0f
+                if (isLongPressing) {
+                  isLongPressing = false
+                  viewModel.playerUpdate.update { PlayerUpdates.None }
+                }
+              }
               if (gestureType != null) {
                 when (gestureType) {
                   "vertical" -> {
@@ -777,6 +945,14 @@ fun GestureHandler(
             isLongPressing = false
             isDynamicSpeedControlActive = false
             hasSwipedEnough = false
+            if (holdControlsActive) {
+              holdControlsActive = false
+              holdPrevY = 0f
+              holdStartingY = 0f
+              holdMpvStartingY = 0f
+              viewModel.playerUpdate.update { PlayerUpdates.None }
+              return@awaitEachGesture
+            }
             if (!speedHoldActive) return@awaitEachGesture
             speedHoldActive = false
             // Ramp speed back down incrementally to avoid audio filter stutter

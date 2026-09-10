@@ -159,6 +159,13 @@
   <string name="pref_player_gestures_horizontal_swipe_sensitivity">Horizontal swipe sensitivity</string>
   <string name="pref_player_gestures_horizontal_swipe_sensitivity_summary">Adjust how much distance is covered per swipe</string>
   <string name="pref_player_gestures_hold_for_multiple_speed">Hold for multi - x speed</string>
+  <string name="pref_player_gestures_hold_action">Hold gesture action</string>
+  <string name="pref_player_gestures_hold_action_summary">Choose what happens when you press and hold the video</string>
+  <string name="pref_player_gestures_hold_action_speed">Hold for speed boost</string>
+  <string name="pref_player_gestures_hold_action_controls">Hold for brightness / volume</string>
+  <string name="pref_player_gestures_hold_controls_hint">Hold, swipe ◀ ▶ to pick, swipe ▲ ▼ to adjust</string>
+  <string name="hold_controls_brightness">Brightness</string>
+  <string name="hold_controls_volume">Volume</string>
   <string name="pref_player_controls">Controls</string>
   <string name="pref_player_controls_allow_gestures_in_panels">Allow gestures in panels</string>
   <string name="pref_player_controls_display_volume_as_percentage">Display volume as percentage</string>
