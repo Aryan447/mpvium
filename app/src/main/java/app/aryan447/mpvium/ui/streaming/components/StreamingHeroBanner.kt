@@ -279,7 +279,7 @@ fun StreamingHeroBanner(
           series.nextEpisodeToWatch != null -> {
             "Play ${series.nextEpisodeToWatch.formattedEpisodeTag}"
           }
-          else -> "Play TV Show"
+          else -> "Play Show"
         }
 
         Button(

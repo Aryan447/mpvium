@@ -153,7 +153,7 @@ object InsightsScreen : Screen {
               )
               StatCard(
                 value = "${state.seriesCount}",
-                label = "TV Shows · ${state.episodeCount} eps",
+                label = "Shows · ${state.episodeCount} eps",
                 modifier = Modifier.weight(1f),
               )
             }

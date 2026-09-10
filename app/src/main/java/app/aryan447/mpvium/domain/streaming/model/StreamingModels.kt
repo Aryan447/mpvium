@@ -91,7 +91,7 @@ data class ContinueWatchingItem(
  */
 enum class StreamingCategory(val displayName: String) {
   ALL("All"),
-  SERIES("TV Shows"),
+  SERIES("Shows"),
   MOVIES("Movies"),
   CONTINUE_WATCHING("In Progress"),
 }
