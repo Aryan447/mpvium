@@ -509,8 +509,8 @@
   <string name="add_from_url">Add from URL</string>
   <string name="home">Home</string>
   <string name="shortcut_movies">Movies</string>
-  <string name="shortcut_series">TV Shows</string>
-  <string name="shortcut_tv_series">TV Shows</string>
+  <string name="shortcut_series">Shows</string>
+  <string name="shortcut_tv_series">Shows</string>
   <string name="shortcut_folders">Folders</string>
   <string name="recents">Recents</string>
   <string name="playlists">Playlists</string>
