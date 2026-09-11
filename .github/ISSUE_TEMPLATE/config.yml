@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions / Q&A
+    url: https://github.com/aryan447/mpvium/discussions
+    about: Ask questions, share ideas, or get help building. Use issues for concrete bugs/features.
+  - name: Security reporting
+    url: https://github.com/aryan447/mpvium/security/advisories/new
+    about: Do not open public issues for vulnerabilities. Report privately here. See SECURITY.md.

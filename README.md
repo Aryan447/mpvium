@@ -27,6 +27,19 @@ watching, fully customizable for pros.
 The project is actively developed. Preview builds may contain unfinished
 features or bugs.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/mpvium-dark-default-home.png" width="220" alt="Home library" />
+  <img src="docs/screenshots/mpvium-dark-default-movies.png" width="220" alt="Movies grid" />
+  <img src="docs/screenshots/mpvium-player.jpg" width="220" alt="Player" />
+  <img src="docs/screenshots/mpvium-movie-showcase.png" width="220" alt="Movie details" />
+</p>
+
+<p align="center">
+  <a href="docs/screenshots/">More screenshots</a> · Play Store set in <code>fastlane/metadata/android/en-US/images/phoneScreenshots/</code>
+</p>
+
 ## Features
 
 - Hardware-accelerated, high-quality video playback through libmpv
@@ -95,13 +108,18 @@ The generated APKs are written to `app/build/outputs/apk/`.
 
 ## Contributing
 
-Bug reports, feature requests, and pull requests are welcome. Before opening
-an issue, please check for existing reports and include the device model,
-Android version, app version, and relevant logs when possible.
+Bug reports, feature requests, and pull requests are welcome. Please read
+[CONTRIBUTING.md](CONTRIBUTING.md), our [Code of Conduct](CODE_OF_CONDUCT.md),
+and [SECURITY.md](SECURITY.md) first.
 
-- [Report a bug](https://github.com/aryan447/mpvium/issues/new)
-- [Request a feature](https://github.com/aryan447/mpvium/issues/new)
+- [Contributing guide](CONTRIBUTING.md)
+- [Report a bug](https://github.com/aryan447/mpvium/issues/new?template=bug_report.md)
+- [Request a feature](https://github.com/aryan447/mpvium/issues/new?template=feature_request.md)
 - [Browse the source code](https://github.com/aryan447/mpvium)
+- [Changelog](CHANGELOG.md)
+
+Good first contributions: tablet / large-screen polish, performance +
+battery measurements, player UX fixes, SMB / FTP / WebDAV fixes, docs.
 
 ## License
 
