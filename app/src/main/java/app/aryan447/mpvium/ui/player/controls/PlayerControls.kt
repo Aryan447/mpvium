@@ -70,6 +70,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -128,13 +129,24 @@ import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import kotlin.math.abs
 
 @Suppress("CompositionLocalAllowlist")
 val LocalPlayerButtonsClickEvent = staticCompositionLocalOf { {} }
+
+/**
+ * Stillness (ms) after the last seekbar-drag move before one live-frame
+ * catch-up seek fires. While the finger moves, every move resets the timer
+ * so no mpv seek is issued (preview-only, zero decoder cost). When the
+ * finger holds still, a single keyframe seek lands the frame. No accumulation:
+ * at most one catch-up is ever pending, and release cancels it.
+ */
+private const val SCRUB_CATCHUP_STILL_MS = 400L
 
 fun <T> playerControlsExitAnimationSpec(): FiniteAnimationSpec<T> =
   tween(
@@ -777,23 +789,39 @@ fun PlayerControls(
         ) {
           val invertDuration by playerPreferences.invertDuration.collectAsState()
           val seekbarStyle by appearancePreferences.seekbarStyle.collectAsState()
+          val scrubScope = rememberCoroutineScope()
+          var scrubCatchupJob by remember { mutableStateOf<Job?>(null) }
+          var lastCatchupSecond by remember { mutableStateOf(-1) }
 
           SeekbarWithTimers(
             position = seekPreviewPosition ?: precisePosition,
             duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
-            onValueChange = {
-              // Preview-only while dragging: the seekbar holds the thumb on
-              // the finger position locally (see SeekbarWithTimers settle
-              // guard). Issuing a real mpv seek per motion event floods the
-              // decoder with flushes that queue up behind each other — that
-              // backlog is the 1-2s stall on low-end devices. One commit seek
-              // on release is all mpv needs. No pause/unpause either: mpv
-              // seeks seamlessly while playing, and the pause cycle adds two
-              // blocking property writes plus audio-focus churn per gesture.
+            onValueChange = { preview ->
+              // Preview-only while moving: the seekbar holds the thumb on the
+              // finger position locally (see SeekbarWithTimers settle guard).
+              // Every move resets the catch-up timer, so continuous motion
+              // issues zero mpv seeks. When the finger holds still, one
+              // keyframe seek lands the frame — cheap (no exact decode, no
+              // pause cycle) and ordered by seekTo's latest-wins guard.
               isSeeking = true
               resetControlsTimestamp = System.currentTimeMillis()
+              scrubCatchupJob?.cancel()
+              val targetSecond = preview.roundToInt()
+              if (targetSecond != lastCatchupSecond) {
+                scrubCatchupJob =
+                  scrubScope.launch {
+                    delay(SCRUB_CATCHUP_STILL_MS)
+                    lastCatchupSecond = targetSecond
+                    viewModel.seekTo(targetSecond, isScrubbing = true)
+                  }
+              }
             },
             onValueChangeFinished = { finalPosition ->
+              // Release supersedes any pending catch-up: cancel first so an
+              // older catch-up can never land after the final commit.
+              scrubCatchupJob?.cancel()
+              scrubCatchupJob = null
+              lastCatchupSecond = -1
               // Single commit seek per gesture (tap or drag-release).
               // Taps land here directly without touching isSeeking, so paused
               // playback stays paused and playing playback keeps playing —
