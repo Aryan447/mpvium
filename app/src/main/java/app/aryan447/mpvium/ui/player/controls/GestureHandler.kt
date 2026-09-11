@@ -72,6 +72,7 @@ import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.SingleActionGesture
 import app.aryan447.mpvium.ui.theme.playerRippleConfiguration
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -1164,7 +1165,6 @@ fun GestureHandler(
           var hasStartedSeeking = false
           var initialVideoPosition = 0f
           var lastClampedPosition = 0f
-          var wasPlayerAlreadyPaused = false
           // Use the sensitivity preference instead of hardcoded value
           val seekSensitivity = horizontalSwipeSensitivity
 
@@ -1197,11 +1197,9 @@ fun GestureHandler(
                     hasStartedSeeking = true
                     initialVideoPosition = position?.toFloat() ?: 0f
 
-                    // Pause before seeking to prevent decoder stalls
-                    wasPlayerAlreadyPaused = paused ?: false
-                    if (!wasPlayerAlreadyPaused) {
-                      viewModel.pause()
-                    }
+                    // No pause here: mpv seeks seamlessly while playing, and
+                    // pausing adds blocking property writes plus audio-focus
+                    // churn per swipe. Playback state is left untouched.
 
                     // Show seekbar and start seeking mode (same as seekbar scrubbing)
                     viewModel.showSeekBar()
@@ -1224,14 +1222,14 @@ fun GestureHandler(
 
                     // Quantize to whole seconds with rounding (not truncation) so tiny
                     // finger jitter around a second boundary doesn't flip the display
-                    // back and forth. This single value drives the mpv seek, the
-                    // center pill and the seekbar preview so they can't disagree.
+                    // back and forth. Preview-only while swiping: this value drives
+                    // the center pill and the seekbar preview, and a single commit
+                    // seek fires on release. Seeking per move event floods the
+                    // decoder with flushes that backlog into a 1-2s stall on
+                    // low-end devices.
                     val previewSecond = clampedPosition.roundToInt()
                     val currentPos = previewSecond
                     val seekDelta = previewSecond - initialVideoPosition.roundToInt()
-
-                    // Fast keyframe seek during active drag for fluid 60fps preview updates
-                    viewModel.seekTo(previewSecond, isScrubbing = true)
 
                     // Format and display time position updates
                     val currentTimeStr = formatSeekTime(currentPos)
@@ -1269,16 +1267,14 @@ fun GestureHandler(
             val target = lastClampedPosition.roundToInt()
             viewModel.seekTo(target, isScrubbing = false)
 
-            // Unpause if it wasn't paused before seeking
-            if (!wasPlayerAlreadyPaused) {
-              viewModel.unpause()
-            }
+            // Playback state untouched: no pause was taken, so no unpause.
 
             // Hold the swipe preview until mpv confirms the landing (bounded
             // wait) instead of a fixed delay: clearing too early would expose
             // the stale pre-seek position underneath and snap the seekbar
             // backward, the same race the seekbar settle guard prevents.
-            coroutineScope.launch {
+            // Off Main: getPropertyDouble is a blocking JNI round-trip.
+            coroutineScope.launch(Dispatchers.IO) {
               val deadline = System.currentTimeMillis() + 2000L
               while (System.currentTimeMillis() < deadline) {
                 val live = MPVLib.getPropertyDouble("time-pos")?.toFloat()

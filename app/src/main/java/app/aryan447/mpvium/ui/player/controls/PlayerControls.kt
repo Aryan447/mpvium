@@ -777,41 +777,35 @@ fun PlayerControls(
         ) {
           val invertDuration by playerPreferences.invertDuration.collectAsState()
           val seekbarStyle by appearancePreferences.seekbarStyle.collectAsState()
-          var wasPlayerAlreadyPaused by remember { mutableStateOf(false) }
 
           SeekbarWithTimers(
             position = seekPreviewPosition ?: precisePosition,
             duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
             onValueChange = {
-              if (!isSeeking) {
-                // First drag frame - pause playback
-                wasPlayerAlreadyPaused = paused ?: false
-                if (!wasPlayerAlreadyPaused) {
-                  viewModel.pause()
-                }
-              }
+              // Preview-only while dragging: the seekbar holds the thumb on
+              // the finger position locally (see SeekbarWithTimers settle
+              // guard). Issuing a real mpv seek per motion event floods the
+              // decoder with flushes that queue up behind each other — that
+              // backlog is the 1-2s stall on low-end devices. One commit seek
+              // on release is all mpv needs. No pause/unpause either: mpv
+              // seeks seamlessly while playing, and the pause cycle adds two
+              // blocking property writes plus audio-focus churn per gesture.
               isSeeking = true
               resetControlsTimestamp = System.currentTimeMillis()
-              viewModel.seekTo(it.roundToInt(), isScrubbing = true)
             },
             onValueChangeFinished = { finalPosition ->
-              // Only the scrub path pauses playback (see onValueChange
-              // above); a tap goes straight here, so only unpause when this
-              // gesture actually paused, otherwise a tap while paused would
-              // spuriously resume playback.
-              val wasScrubbing = isSeeking
+              // Single commit seek per gesture (tap or drag-release).
+              // Taps land here directly without touching isSeeking, so paused
+              // playback stays paused and playing playback keeps playing —
+              // nothing here alters pause, volume, speed, tracks, or UI mode.
               isSeeking = false
               resetControlsTimestamp = System.currentTimeMillis()
               // Seek to the slider's final value, not the polled position:
-              // mpv applies scrub seeks asynchronously, so the poll is stale
-              // right after a fast drag and would snap playback backwards.
+              // mpv applies seeks asynchronously, so the poll is stale right
+              // after a fast drag and would snap playback backwards.
               // roundToInt (not toInt): truncation biases up to ~1s backwards,
               // most visible on wide tracks with a coarse pixel-to-time ratio.
               viewModel.seekTo(finalPosition.roundToInt(), isScrubbing = false)
-              // Unpause if it wasn't paused before seeking
-              if (wasScrubbing && !wasPlayerAlreadyPaused) {
-                viewModel.unpause()
-              }
               viewModel.showControls()
             },
             timersInverted = Pair(false, invertDuration),

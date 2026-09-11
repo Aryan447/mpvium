@@ -286,9 +286,9 @@ private fun FrameNavigationCard(
           onValueChange = { newValue ->
             if (!isSeeking) isSeeking = true
             userSliderPosition = newValue.coerceIn(0f, 1f)
-            // Optional live-seek for responsiveness
-            val newPosition = (userSliderPosition * duration).roundToInt()
-            onSeekTo(newPosition, false)
+            // Preview-only while dragging: a live mpv seek per motion event
+            // floods the decoder and backlogs into a multi-second stall on
+            // low-end devices. The single exact commit below is the only seek.
           },
           onValueChangeFinished = {
             // Commit final seek and return control to player updates

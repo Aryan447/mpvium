@@ -185,8 +185,11 @@ class PlayerViewModel(
   private val volumeBoostCap by MPVLib.propInt["volume-max"].collectAsState(viewModelScope)
 
   init {
-    // Poll precise position only when playing
-    viewModelScope.launch {
+    // Poll precise position off the Main thread: getPropertyDouble is a
+    // blocking JNI round-trip into the mpv core lock, which is at its most
+    // contended mid-seek. Running it on Main janks the seekbar on low-end
+    // devices at exactly the wrong moment.
+    viewModelScope.launch(Dispatchers.IO) {
       while (isActive) {
         val time = MPVLib.getPropertyDouble("time-pos")
         if (time != null) {
@@ -197,7 +200,7 @@ class PlayerViewModel(
     }
 
     // Update precise duration when the integer duration changes (avoid polling)
-    viewModelScope.launch {
+    viewModelScope.launch(Dispatchers.IO) {
       MPVLib.propInt["duration"].collect { _ ->
         val dur = MPVLib.getPropertyDouble("duration")
         if (dur != null && dur > 0) {
@@ -207,7 +210,7 @@ class PlayerViewModel(
     }
 
     // Detect when playback enters an intro/recap window so the UI can offer a skip
-    viewModelScope.launch {
+    viewModelScope.launch(Dispatchers.IO) {
       while (isActive) {
         val windows = _introSkipWindows.value
         val titleKnown = currentMediaTitle.isNotBlank()
@@ -925,9 +928,13 @@ class PlayerViewModel(
    * coroutines launched on Dispatchers.Main.immediate run their first
    * tick synchronously: touching not-yet-initialized properties from an
    * init-block launch crashes Player creation with an NPE.
+   * Runs on Dispatchers.IO: the property reads below are blocking JNI
+   * round-trips, and keeping them off Main avoids janking the seekbar
+   * while a seek holds the mpv core lock (plus IO never runs the first
+   * tick synchronously, so the NPE hazard stays gone).
    */
   @Suppress("unused")
-  private val auxiliaryPoller = viewModelScope.launch {
+  private val auxiliaryPoller = viewModelScope.launch(Dispatchers.IO) {
     while (isActive) {
       val pos = MPVLib.getPropertyDouble("time-pos")?.toInt()
         ?: MPVLib.getPropertyInt("time-pos")
