@@ -43,6 +43,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.collectAsState
@@ -79,6 +80,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -87,6 +89,20 @@ import kotlin.math.roundToInt
  */
 private const val SCRUB_RATE_TIER_STEP_DP = 48f
 private const val MAX_SCRUB_TIER = 3
+
+/**
+ * How far (seconds) the reported mpv position may sit from a requested seek
+ * target while still counting as "landed". Covers exact-seek rounding and
+ * small poll jitter.
+ */
+private const val SEEK_SETTLE_TOLERANCE_SEC = 1.5f
+
+/**
+ * Safety net: never leave the thumb parked on a requested target longer than
+ * this if mpv never confirms (rejected seek, EOF, track switch). Only
+ * releases the hold back to the live position; performs no seek.
+ */
+private const val SEEK_SETTLE_TIMEOUT_MS = 2000L
 
 private fun scrubRateForTier(tier: Int): Int = 1 shl tier.coerceIn(0, MAX_SCRUB_TIER)
 
@@ -170,6 +186,15 @@ fun SeekbarWithTimers(
   var isUserInteracting by remember { mutableStateOf(false) }
   var userPosition by remember { mutableFloatStateOf(position) }
 
+  // Seek-settle guard: while a seek is in flight, stale time-pos polls (still
+  // sitting at the pre-seek position) must not move the thumb backward.
+  // dragActive = finger down (preview owns the thumb, never auto-release).
+  // settling = tap or post-release, waiting for mpv's time-pos to confirm.
+  var dragActive by remember { mutableStateOf(false) }
+  var settling by remember { mutableStateOf(false) }
+  var settleTarget by remember { mutableFloatStateOf(Float.NaN) }
+  var settleBase by remember { mutableFloatStateOf(0f) }
+
   // Variable scrub rate: dragging upward while scrubbing steps through
   // 1x/2x/4x/8x tiers. Horizontal deltas are scaled by the active rate and
   // accumulated relative to the grab anchor (not re-mapped absolutely), so a
@@ -185,23 +210,56 @@ fun SeekbarWithTimers(
   val density = LocalDensity.current
   val scrubTierStepPx = with(density) { SCRUB_RATE_TIER_STEP_DP.dp.toPx() }
 
-  // Animated position for smooth transitions
+  // Position follower. The precise-position poll already ticks at ~24fps, so
+  // follow it immediately (snap) instead of a lagging tween: overlapping
+  // 200ms animations kept the thumb perpetually behind and made every tap
+  // visibly stutter, worst on wide tablet tracks. While a seek is settling,
+  // hold the thumb on the user's target until mpv confirms.
   val animatedPosition = remember { Animatable(position) }
   val scope = rememberCoroutineScope()
+  val latestPosition by rememberUpdatedState(position)
 
-  // Only animate position updates when user is not interacting
-  LaunchedEffect(position, isUserInteracting) {
-    if (!isUserInteracting && position != animatedPosition.value) {
-      scope.launch {
-        animatedPosition.animateTo(
-          targetValue = position,
-          animationSpec =
-            tween(
-              durationMillis = 200,
-              easing = LinearEasing,
-            ),
-        )
+  LaunchedEffect(position, dragActive, settling) {
+    if (dragActive) return@LaunchedEffect // finger down: preview owns the thumb
+    if (settling) {
+      val target = settleTarget
+      if (target.isNaN()) {
+        settling = false
+        isUserInteracting = false
+      } else {
+        // Release as soon as mpv lands near the target, or decisively leaves
+        // the pre-seek base (covers inexact keyframe landings). Anything still
+        // sitting at the old position is stale and stays ignored, so the
+        // thumb can neither jump back nor flutter mid-seek.
+        val landed = abs(position - target) <= SEEK_SETTLE_TOLERANCE_SEC
+        val movedOn = abs(position - settleBase) >= SEEK_SETTLE_TOLERANCE_SEC
+        if (landed || movedOn) {
+          settling = false
+          isUserInteracting = false
+          settleTarget = Float.NaN
+          animatedPosition.snapTo(position)
+        } else if (animatedPosition.value != userPosition) {
+          animatedPosition.snapTo(userPosition)
+        }
       }
+      return@LaunchedEffect
+    }
+    if (position != animatedPosition.value) {
+      animatedPosition.snapTo(position)
+    }
+  }
+
+  // Safety net for the settle guard: if mpv never confirms (rejected seek,
+  // EOF, track switch), fall back to the live position instead of parking
+  // the thumb on a stale target forever.
+  LaunchedEffect(settling) {
+    if (!settling) return@LaunchedEffect
+    delay(SEEK_SETTLE_TIMEOUT_MS)
+    if (settling && !dragActive) {
+      settling = false
+      isUserInteracting = false
+      settleTarget = Float.NaN
+      animatedPosition.snapTo(latestPosition)
     }
   }
 
@@ -250,16 +308,9 @@ fun SeekbarWithTimers(
             isPaused = paused,
             isScrubbing = isUserInteracting,
             seekbarStyle = SeekbarStyle.Standard,
-            onSeek = { newPosition ->
-              if (!isUserInteracting) isUserInteracting = true
-              userPosition = newPosition
-              onValueChange(newPosition)
-            },
-            onSeekFinished = {
-              scope.launch { animatedPosition.snapTo(userPosition) }
-              isUserInteracting = false
-              onValueChangeFinished(userPosition)
-            },
+            // Touch handled by parent overlay (single gesture handler).
+            onSeek = { },
+            onSeekFinished = { },
             loopStart = loopStart,
             loopEnd = loopEnd,
           )
@@ -287,16 +338,9 @@ fun SeekbarWithTimers(
             isPaused = paused,
             isScrubbing = isUserInteracting,
             seekbarStyle = SeekbarStyle.Thick,
-            onSeek = { newPosition ->
-              if (!isUserInteracting) isUserInteracting = true
-              userPosition = newPosition
-              onValueChange(newPosition)
-            },
-            onSeekFinished = {
-              scope.launch { animatedPosition.snapTo(userPosition) }
-              isUserInteracting = false
-              onValueChangeFinished(userPosition)
-            },
+            // Touch handled by parent overlay (single gesture handler).
+            onSeek = { },
+            onSeekFinished = { },
             loopStart = loopStart,
             loopEnd = loopEnd,
           )
@@ -313,23 +357,31 @@ fun SeekbarWithTimers(
           .pointerInput(duration) {
             detectTapGestures(
               onTap = { offset ->
-                if (!isUserInteracting) isUserInteracting = true
+                val target = xToSeekPosition(offset.x, size.width, duration)
+                // Single exact seek per tap: park the thumb on the target
+                // immediately and let the settle guard hold it there until
+                // mpv's time-pos confirms. No preview scrub seek first — that
+                // issued two mpv seeks per tap plus a pause/unpause cycle.
+                dragActive = false
+                isUserInteracting = true
+                settling = true
+                settleBase = latestPosition
+                settleTarget = target
                 scrubTier = 0
-                userPosition = xToSeekPosition(offset.x, size.width, duration)
-                onValueChange(userPosition)
-                scope.launch {
-                  // Snap to user position immediately to prevent jumping
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
-                  onValueChangeFinished(userPosition)
-                }
+                userPosition = target
+                scope.launch { animatedPosition.snapTo(target) }
+                onValueChangeFinished(target)
               }
             )
           }
           .pointerInput(duration, scrubTierStepPx) {
             detectDragGestures(
               onDragStart = { offset ->
+                dragActive = true
                 isUserInteracting = true
+                settling = false
+                settleTarget = Float.NaN
+                settleBase = latestPosition
                 // Anchor to the grab point immediately: the first onDrag
                 // callback only fires after touch slop, otherwise the
                 // preview would jump from the stale position on wide tracks.
@@ -338,28 +390,26 @@ fun SeekbarWithTimers(
                 verticalDragPx = 0f
                 scrubTier = 0
                 userPosition = dragAnchor
+                scope.launch { animatedPosition.snapTo(dragAnchor) }
                 onValueChange(userPosition)
               },
               onDragEnd = {
                 // Release uses the last settled drag value — never re-sample
                 // here, so lift-off micro-jitter can't clobber the target.
-                scope.launch {
-                  // Allow a tiny window for mpv/viewModel to sync back before releasing control
-                  delay(50)
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
-                  scrubTier = 0
-                  onValueChangeFinished(userPosition)
-                }
+                // No artificial delay: the settle guard above holds the thumb
+                // on the target until mpv's time-pos confirms the seek.
+                dragActive = false
+                settling = true
+                settleTarget = userPosition
+                scrubTier = 0
+                onValueChangeFinished(userPosition)
               },
               onDragCancel = {
-                scope.launch {
-                  delay(50)
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
-                  scrubTier = 0
-                  onValueChangeFinished(userPosition)
-                }
+                dragActive = false
+                settling = true
+                settleTarget = userPosition
+                scrubTier = 0
+                onValueChangeFinished(userPosition)
               },
             ) { change, dragAmount ->
               change.consume()

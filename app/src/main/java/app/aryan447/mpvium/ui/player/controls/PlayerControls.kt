@@ -795,6 +795,11 @@ fun PlayerControls(
               viewModel.seekTo(it.roundToInt(), isScrubbing = true)
             },
             onValueChangeFinished = { finalPosition ->
+              // Only the scrub path pauses playback (see onValueChange
+              // above); a tap goes straight here, so only unpause when this
+              // gesture actually paused, otherwise a tap while paused would
+              // spuriously resume playback.
+              val wasScrubbing = isSeeking
               isSeeking = false
               resetControlsTimestamp = System.currentTimeMillis()
               // Seek to the slider's final value, not the polled position:
@@ -804,7 +809,7 @@ fun PlayerControls(
               // most visible on wide tracks with a coarse pixel-to-time ratio.
               viewModel.seekTo(finalPosition.roundToInt(), isScrubbing = false)
               // Unpause if it wasn't paused before seeking
-              if (!wasPlayerAlreadyPaused) {
+              if (wasScrubbing && !wasPlayerAlreadyPaused) {
                 viewModel.unpause()
               }
               viewModel.showControls()
