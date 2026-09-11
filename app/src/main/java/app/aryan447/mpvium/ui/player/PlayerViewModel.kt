@@ -1263,8 +1263,11 @@ class PlayerViewModel(
       lastScrubSeekUptimeMs = now
     }
     val sequence = seekSequence.incrementAndGet()
+    // Duration is already observed as a flow; reuse the cached value so the
+    // seek command dispatches without a blocking property round-trip first.
+    val cachedDuration = duration
     viewModelScope.launch(Dispatchers.IO) {
-      val maxDuration = MPVLib.getPropertyInt("duration") ?: 0
+      val maxDuration = cachedDuration ?: MPVLib.getPropertyInt("duration") ?: 0
       var clampedPosition = position.coerceIn(0, maxDuration)
 
       // Clamp within AB loop if active
@@ -1303,6 +1306,10 @@ class PlayerViewModel(
   private fun coalesceSeek(offset: Int) {
     pendingSeekOffset += offset
     seekCoalesceJob?.cancel()
+    // Snapshot the already-observed values so the delayed block below needs
+    // no blocking property round-trips before issuing the seek.
+    val cachedDuration = duration
+    val cachedPos = pos
     seekCoalesceJob =
       viewModelScope.launch(Dispatchers.IO) {
         delay(SEEK_COALESCE_DELAY_MS)
@@ -1310,15 +1317,15 @@ class PlayerViewModel(
         pendingSeekOffset = 0
 
         if (toApply != 0) {
-          val duration = MPVLib.getPropertyInt("duration") ?: 0
-          val currentPos = MPVLib.getPropertyInt("time-pos") ?: 0
+          val totalDuration = cachedDuration ?: MPVLib.getPropertyInt("duration") ?: 0
+          val currentPos = cachedPos ?: MPVLib.getPropertyInt("time-pos") ?: 0
 
-          if (duration > 0 && currentPos + toApply >= duration) {
+          if (totalDuration > 0 && currentPos + toApply >= totalDuration) {
               // If seeking past the end, force seek to 100% absolute to ensure EOF is triggered
               MPVLib.command("seek", "100", "absolute-percent+exact")
           } else {
               // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || duration < 120
+              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || totalDuration < 120
               val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
               MPVLib.command("seek", toApply.toString(), seekMode)
           }
