@@ -202,18 +202,18 @@ class MediaPlaybackService :
 
             override fun onSkipToNext() {
               Log.d(TAG, "onSkipToNext called")
-              // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-              val duration = MPVLib.getPropertyInt("duration") ?: 0
-              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || duration < 120
+              // Fast keyframe seeks by default; exact only with the precise-seek
+              // preference (exact forward-decode stalls low-end decoders).
+              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get()
               val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
               MPVLib.command("seek", "10", seekMode)
             }
 
             override fun onSkipToPrevious() {
               Log.d(TAG, "onSkipToPrevious called")
-              // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-              val duration = MPVLib.getPropertyInt("duration") ?: 0
-              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || duration < 120
+              // Fast keyframe seeks by default; exact only with the precise-seek
+              // preference (exact forward-decode stalls low-end decoders).
+              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get()
               val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
               MPVLib.command("seek", "-10", seekMode)
             }

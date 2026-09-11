@@ -50,9 +50,9 @@ class MPVPipHelper(
           context: Context?,
           intent: Intent?,
         ) {
-          // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-          val duration = MPVLib.getPropertyInt("duration") ?: 0
-          val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || duration < 120
+          // Fast keyframe seeks by default; exact only with the precise-seek
+          // preference (exact forward-decode stalls low-end decoders).
+          val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get()
           val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
           when (intent?.getIntExtra(PIP_INTENT_ACTION, 0)) {
             PIP_PLAY -> MPVLib.setPropertyBoolean("pause", false)

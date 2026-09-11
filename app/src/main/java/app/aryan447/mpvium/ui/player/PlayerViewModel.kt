@@ -388,8 +388,9 @@ class PlayerViewModel(
       }
     }
 
-    // Monitor duration and AB loop changes to automatically enable precise seeking
-    viewModelScope.launch {
+    // Monitor duration and AB loop changes to automatically enable precise seeking.
+    // Off Main: setPropertyString is a blocking JNI round-trip.
+    viewModelScope.launch(Dispatchers.IO) {
       combine(
         MPVLib.propInt["duration"],
         abLoopA,
@@ -401,9 +402,11 @@ class PlayerViewModel(
 
         // Only override hr-seek when duration is actually known and stable
         if (videoDuration > 0) {
-          // Use precise seeking for videos shorter than 2 minutes, or if AB loop is active, or if preference is enabled
+          // Exact seeking only with the user preference or an active AB loop.
+          // (The old "short videos always exact" rule forced slow seeks on
+          // low-end decoders; see seekTo for rationale.)
           val isLoopActive = loopA != null || loopB != null
-          val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || videoDuration < 120 || isLoopActive
+          val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || isLoopActive
 
           // Update hr-seek settings dynamically
           MPVLib.setPropertyString("hr-seek", if (shouldUsePreciseSeeking) "yes" else "no")
@@ -1292,16 +1295,20 @@ class PlayerViewModel(
       seekCoalesceJob?.cancel()
       pendingSeekOffset = 0
 
-      // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-      val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
-      // During active scrubbing (dragging finger), use fast keyframe seeking for butter-smooth preview updates without decoder stalls.
-      // On release or discrete seek, use precise exact seeking if enabled.
-      val seekMode = if (isScrubbing) {
+      // Exact seeks decode forward from the keyframe to the target frame, which
+      // stalls low-end decoders for a second or more (software decode, high-res
+      // HEVC/AV1). Default to fast keyframe seeks; exact only when the user
+      // explicitly opted into precise seeking or an AB loop is active (loop
+      // bounds need frame accuracy). The old "exact for videos under 2 min"
+      // heuristic made every seek slow for an entire class of videos.
+      val abLoopActive = loopA != null || loopB != null
+      val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || abLoopActive
+      // Scrub catch-ups always use fast keyframe seeks; the release commit uses
+      // exact only when precise seeking applies (see above).
+      val seekMode = if (isScrubbing || !shouldUsePreciseSeeking) {
         "absolute+keyframes"
-      } else if (shouldUsePreciseSeeking) {
-        "absolute+exact"
       } else {
-        "absolute+keyframes"
+        "absolute+exact"
       }
       // Drop superseded requests: only the latest tap/drag position
       // is allowed to reach mpv.
@@ -1331,8 +1338,10 @@ class PlayerViewModel(
               // If seeking past the end, force seek to 100% absolute to ensure EOF is triggered
               MPVLib.command("seek", "100", "absolute-percent+exact")
           } else {
-              // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || totalDuration < 120
+              // Fast keyframe seeks by default; exact only with the precise-seek
+              // preference or an active AB loop (see seekTo above for rationale).
+              val abLoopActive = _abLoopA.value != null || _abLoopB.value != null
+              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || abLoopActive
               val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
               MPVLib.command("seek", toApply.toString(), seekMode)
           }
