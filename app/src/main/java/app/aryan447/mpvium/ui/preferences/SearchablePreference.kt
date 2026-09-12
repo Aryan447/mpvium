@@ -47,6 +47,20 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                titleRes = R.string.pref_appearance_show_bottom_nav_labels_title,
+                summaryRes = R.string.pref_appearance_show_bottom_nav_labels_summary,
+                keywords = listOf("bottom", "navigation", "labels", "tabs", "text", "icons", "pill", "hide"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_appearance_category_bottom_nav,
+                summaryRes = R.string.pref_appearance_bottom_nav_tabs_summary,
+                keywords = listOf("bottom", "navigation", "tabs", "home", "shows", "movies", "folders", "library", "hide", "remove", "customize"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
+            add(SearchablePreference(
                 titleRes = R.string.pref_appearance_unlimited_name_lines_title,
                 summaryRes = R.string.pref_appearance_unlimited_name_lines_summary,
                 keywords = listOf("name", "full", "truncate", "lines", "display"),

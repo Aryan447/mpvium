@@ -24,12 +24,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -54,7 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -138,16 +131,18 @@ object MainScreen : Screen {
 
   @Composable
   private fun RowScope.BottomNavItems(
-    navItems: List<Triple<ImageVector, String, String>>,
-    selectedTab: Int,
+    navItems: List<MainTab>,
+    selectedCanonicalIndex: Int,
+    showLabels: Boolean,
     onSelectTab: (Int) -> Unit,
   ) {
-    navItems.forEachIndexed { index, (icon, label, desc) ->
+    navItems.forEach { tab ->
       NavigationBarItem(
-        icon = { Icon(icon, contentDescription = desc) },
-        label = { Text(label) },
-        selected = selectedTab == index,
-        onClick = { onSelectTab(index) }
+        icon = { Icon(tab.icon, contentDescription = tab.label) },
+        label = if (showLabels) ({ Text(tab.label) }) else null,
+        alwaysShowLabel = showLabels,
+        selected = selectedCanonicalIndex == tab.canonicalIndex,
+        onClick = { onSelectTab(tab.canonicalIndex) }
       )
     }
   }
@@ -155,7 +150,9 @@ object MainScreen : Screen {
   @Composable
   @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
   override fun Content() {
-    var selectedTab by rememberSaveable {
+    // Canonical 0..4 tab id (matches launcher shortcuts). The visible list
+    // below may hide tabs, so selection is always stored canonically.
+    var selectedTabId by rememberSaveable {
       mutableIntStateOf(persistentSelectedTab)
     }
 
@@ -166,11 +163,24 @@ object MainScreen : Screen {
 
     val appearancePreferences = koinInject<AppearancePreferences>()
     val pillNavigationBar by appearancePreferences.pillNavigationBar.collectAsState()
+    val showBottomNavLabels by appearancePreferences.showBottomNavLabels.collectAsState()
+    val enabledBottomTabs by appearancePreferences.bottomNavTabs.collectAsState()
+    val navItems = remember(enabledBottomTabs) {
+      MainTab.visibleTabs(enabledBottomTabs)
+    }
 
     fun selectTab(index: Int) {
-      if (selectedTab != index) {
+      if (selectedTabId != index) {
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        selectedTab = index
+        selectedTabId = index
+      }
+    }
+
+    // If the selected tab was hidden in settings, fall back to the first
+    // visible tab so content and the indicator never disagree.
+    LaunchedEffect(navItems, selectedTabId) {
+      if (navItems.none { it.canonicalIndex == selectedTabId }) {
+        selectedTabId = navItems.first().canonicalIndex
       }
     }
 
@@ -197,29 +207,28 @@ object MainScreen : Screen {
     val hideNavigationBar by hideNavigationBarFlow.collectAsState()
     val tabRequest by _tabRequest.collectAsState()
 
-    // Consume any pending external tab request (e.g. launcher shortcut)
-    LaunchedEffect(tabRequest) {
+    // Consume any pending external tab request (e.g. launcher shortcut).
+    // A hidden tab falls back to the first visible tab so the bar always
+    // shows a selected indicator.
+    LaunchedEffect(tabRequest, navItems) {
       tabRequest?.let { requested ->
         _tabRequest.value = null
-        if (selectedTab != requested) {
-          selectedTab = requested
+        val target =
+          if (navItems.any { it.canonicalIndex == requested }) {
+            requested
+          } else {
+            navItems.first().canonicalIndex
+          }
+        if (selectedTabId != target) {
+          selectedTabId = target
         }
       }
     }
 
     // Update persistent state whenever tab changes
-    LaunchedEffect(selectedTab) {
-      persistentSelectedTab = selectedTab
+    LaunchedEffect(selectedTabId) {
+      persistentSelectedTab = selectedTabId
     }
-
-    val navItems =
-      listOf(
-        Triple(Icons.Filled.Home, "Home", "Home"),
-        Triple(Icons.Filled.Tv, "Shows", "Shows"),
-        Triple(Icons.Filled.Movie, "Movies", "Movies"),
-        Triple(Icons.Filled.Folder, "Folders", "Folders"),
-        Triple(Icons.Filled.VideoLibrary, "Library", "Library"),
-      )
 
     // Adaptive navigation: rail on tablets / wide screens, bar on phones.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -273,7 +282,8 @@ object MainScreen : Screen {
                     ) {
                       BottomNavItems(
                         navItems = navItems,
-                        selectedTab = selectedTab,
+                        selectedCanonicalIndex = selectedTabId,
+                        showLabels = showBottomNavLabels,
                         onSelectTab = ::selectTab,
                       )
                     }
@@ -294,7 +304,8 @@ object MainScreen : Screen {
                 ) {
                   BottomNavItems(
                     navItems = navItems,
-                    selectedTab = selectedTab,
+                    selectedCanonicalIndex = selectedTabId,
+                    showLabels = showBottomNavLabels,
                     onSelectTab = ::selectTab,
                   )
                 }
@@ -311,12 +322,13 @@ object MainScreen : Screen {
           if (isWide) {
             AnimatedVisibility(visible = !hideNavigationBar) {
               NavigationRail {
-                navItems.forEachIndexed { index, (icon, label, desc) ->
+                navItems.forEach { tab ->
                   NavigationRailItem(
-                    icon = { Icon(icon, contentDescription = desc) },
-                    label = { Text(label) },
-                    selected = selectedTab == index,
-                    onClick = { selectTab(index) }
+                    icon = { Icon(tab.icon, contentDescription = tab.label) },
+                    label = if (showBottomNavLabels) ({ Text(tab.label) }) else null,
+                    alwaysShowLabel = showBottomNavLabels,
+                    selected = selectedTabId == tab.canonicalIndex,
+                    onClick = { selectTab(tab.canonicalIndex) }
                   )
                 }
               }
@@ -326,7 +338,7 @@ object MainScreen : Screen {
             val fabBottomPadding = if (isWide) 24.dp else 80.dp
 
         AnimatedContent(
-          targetState = selectedTab,
+          targetState = selectedTabId,
           transitionSpec = {
             val slideDistance = with(density) { 48.dp.roundToPx() }
             val animationDuration = 250

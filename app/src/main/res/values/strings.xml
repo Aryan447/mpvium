@@ -18,6 +18,10 @@
   <string name="pref_appearance_amoled_mode_summary">Use pure black background for dark themes</string>
   <string name="pref_appearance_pill_nav_title">Floating pill navigation bar</string>
   <string name="pref_appearance_pill_nav_summary">Show the bottom bar as a floating rounded pill</string>
+  <string name="pref_appearance_category_bottom_nav">Bottom navigation</string>
+  <string name="pref_appearance_show_bottom_nav_labels_title">Show tab labels</string>
+  <string name="pref_appearance_show_bottom_nav_labels_summary">Show text under bottom navigation icons</string>
+  <string name="pref_appearance_bottom_nav_tabs_summary">Choose which tabs appear in the bottom bar</string>
   <!-- Onboarding -->
   <string name="onboarding_skip">Skip</string>
   <string name="onboarding_next">Next</string>

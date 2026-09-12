@@ -24,6 +24,12 @@ class AppearancePreferences(
   val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Dynamic)
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
   val pillNavigationBar = preferenceStore.getBoolean("pill_navigation_bar", true)
+  val showBottomNavLabels = preferenceStore.getBoolean("show_bottom_nav_labels", true)
+  val bottomNavTabs =
+    preferenceStore.getStringSet(
+      "bottom_nav_tabs",
+      setOf("HOME", "SHOWS", "MOVIES", "FOLDERS", "LIBRARY"),
+    )
   val onboardingCompleted = preferenceStore.getBoolean("onboarding_completed", false)
   val unlimitedNameLines = preferenceStore.getBoolean("unlimited_name_lines", false)
   val hidePlayerButtonsBackground = preferenceStore.getBoolean("hide_player_buttons_background", false)
