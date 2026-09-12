@@ -137,6 +137,10 @@ If a bug is flavor-specific, state which flavor you tested.
 
 ## Communication
 
+- Join our [Telegram community](https://t.me/mpvium) for tester discussion,
+  preview builds, help, and feature ideas.
+- Formal bug reports and feature requests still belong on GitHub Issues
+  (see [Issues](#issues)) so they stay tracked.
 - Be kind and constructive per our Code of Conduct.
 - Reviewers may ask for smaller scope or screenshots — this is normal.
 - If your PR goes stale, a gentle ping after 7 days is fine.
