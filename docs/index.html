@@ -51,6 +51,14 @@
     border: 1px solid var(--border); border-radius: 999px; padding: 4px 14px; margin-bottom: 18px;
     background: var(--surface);
   }
+  .brand {
+    display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap;
+  }
+  .logo {
+    width: 84px; height: 84px; border-radius: 22px; flex: none;
+    border: 1px solid var(--border); box-shadow: 0 12px 40px -12px rgba(0,0,0,.7);
+  }
+  .brand h1 { text-align: left; }
   h1 { font-size: clamp(44px, 8vw, 84px); letter-spacing: -2px; line-height: 1; }
   h1 span { color: var(--primary); }
   .tagline { font-size: clamp(19px, 3.4vw, 27px); font-weight: 700; margin-top: 14px; color: var(--primary); }
@@ -65,7 +73,7 @@
   .btn-ghost { background: transparent; color: var(--text); border-color: var(--border); }
   .btn-ghost:hover { border-color: var(--primary); }
   .ver { font-size: 13px; color: var(--muted); margin-top: 10px; }
-  .hero img {
+  .hero img.shot {
     margin-top: 32px; max-width: 720px; width: 100%; border-radius: 12px;
     border: 1px solid var(--border); box-shadow: 0 24px 80px -20px rgba(0,0,0,.7);
   }
@@ -106,7 +114,10 @@
 <header class="hero">
   <div class="wrap">
     <div class="badge">Free &amp; open source &middot; GPL-3.0-or-later &middot; powered by mpv</div>
-    <h1>mpv<span>ium</span></h1>
+    <div class="brand">
+      <img class="logo" src="icon.png" alt="mpvium logo" aria-hidden="true">
+      <h1>mpv<span>ium</span></h1>
+    </div>
     <p class="tagline">Sane defaults, pro-level control.</p>
     <p class="sub">Opinionated for everyday watching, fully customizable for pros — mpv power without the config-file homework. Material 3 interface, background playback, picture-in-picture.</p>
     <div class="dl-row">
@@ -114,7 +125,7 @@
       <a class="btn btn-ghost" id="dl-preview" href="https://github.com/aryan447/mpvium/releases">Download Preview (arm64-v8a)</a>
     </div>
     <p class="ver" id="dl-meta">Resolving latest versions…</p>
-    <img src="screenshots/mpvium-player.jpg" alt="mpvium player screenshot">
+    <img class="shot" src="screenshots/mpvium-player.jpg" alt="mpvium player screenshot">
   </div>
 </header>
 <div class="strip"></div>
@@ -170,7 +181,7 @@
 
 <footer>
   <div class="wrap">
-    <p>mpvium · <a href="https://github.com/aryan447/mpvium">GitHub</a> · <a href="https://github.com/aryan447/mpvium/releases">Releases</a> · GPL-3.0-or-later</p>
+    <p>mpvium · <a href="https://github.com/aryan447/mpvium">GitHub</a> · <a href="https://github.com/aryan447/mpvium/releases">Releases</a> · <a href="https://t.me/mpvium">Telegram</a> · GPL-3.0-or-later</p>
     <p>Stable and preview APKs are arm64-v8a. Other ABIs on the releases page.</p>
   </div>
 </footer>

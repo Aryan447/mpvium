@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/icon.png" width="128" alt="mpvium logo" />
+
 <!-- ![mpvium](fastlane/metadata/android/en-US/images/featureGraphic.png) -->
 
 # mpvium
@@ -11,6 +13,7 @@ An Android video player powered by [mpv](https://mpv.io/) and
 
 [![Latest release](https://img.shields.io/github/v/release/aryan447/mpvium?logo=github)](https://github.com/aryan447/mpvium/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/aryan447/mpvium/total?logo=github)](https://github.com/aryan447/mpvium/releases)
+[![Telegram](https://img.shields.io/badge/telegram-join-blue.svg?logo=telegram)](https://t.me/mpvium)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 
 </div>
@@ -110,7 +113,8 @@ The generated APKs are written to `app/build/outputs/apk/`.
 
 Bug reports, feature requests, and pull requests are welcome. Please read
 [CONTRIBUTING.md](CONTRIBUTING.md), our [Code of Conduct](CODE_OF_CONDUCT.md),
-and [SECURITY.md](SECURITY.md) first.
+and [SECURITY.md](SECURITY.md) first. Join our [Telegram community](https://t.me/mpvium)
+for tester discussion, preview builds, and help.
 
 - [Contributing guide](CONTRIBUTING.md)
 - [Report a bug](https://github.com/aryan447/mpvium/issues/new?template=bug_report.md)
