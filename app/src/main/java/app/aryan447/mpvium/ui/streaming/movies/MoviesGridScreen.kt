@@ -120,6 +120,13 @@ object MoviesGridScreen : Screen {
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
+        // Drop cached TMDB entries for deleted movies.
+        // Remaining movies reuse their cache with no re-scrape.
+        runCatching {
+          metadataRepository.pruneStaleMetadata(
+            presentMovieTitles = detected.movies.map { it.title }.toSet(),
+          )
+        }
         movieList = detected.movies
         isLoading = false
 
@@ -284,6 +291,8 @@ object MoviesGridScreen : Screen {
         onConfirm = {
           coroutineScope.launch {
             PermissionUtils.StorageOps.deleteVideos(context, listOf(movie.video))
+            // Movie file is gone: drop its cached TMDB entry immediately.
+            runCatching { metadataRepository.clearMovieMetadata(movie.title) }
             movieList = movieList.filterNot { it.video.id == movie.video.id }
           }
         },

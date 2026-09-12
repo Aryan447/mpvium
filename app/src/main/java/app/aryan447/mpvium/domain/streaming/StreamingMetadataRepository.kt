@@ -61,6 +61,18 @@ class StreamingMetadataRepository(
     private const val TMDB_IMAGE_BASE_W1280 = "https://image.tmdb.org/t/p/w1280"
     private const val CACHE_FILE_NAME = "streaming_metadata_cache_v2.json"
     private const val LEGACY_CACHE_FILE_NAME = "streaming_metadata_cache_v1.json"
+
+    // Cache keys are indefinite: entries live until the underlying media is
+    // deleted (pruned on rescan or evicted explicitly on delete). No TTL.
+    private const val SERIES_KEY_PREFIX = "series_"
+    private const val MOVIE_KEY_PREFIX = "movie_"
+
+    fun normalizeKey(title: String): String =
+      title.lowercase().replace(Regex("[^a-z0-9]"), "")
+
+    fun seriesKeyFor(seriesId: String): String = "$SERIES_KEY_PREFIX$seriesId"
+
+    fun movieKeyFor(movieTitle: String): String = "$MOVIE_KEY_PREFIX${normalizeKey(movieTitle)}"
   }
 
   // Phone-sized artwork (w500 posters, w780 backdrops) upscales ~2.4x on a
@@ -103,15 +115,17 @@ class StreamingMetadataRepository(
   }
 
   private suspend fun persistCache() {
-    cacheMutex.withLock {
-      withContext(Dispatchers.IO) {
-        try {
-          val map = memoryCache.toMap()
-          val text = json.encodeToString(map)
-          cacheFile.writeText(text)
-        } catch (e: Exception) {
-          Log.w(TAG, "Failed to persist metadata cache file", e)
-        }
+    // Snapshot under lock, write outside it so slow disk IO never blocks
+    // concurrent enrichers waiting on ensureCacheLoaded.
+    val snapshot: Map<String, CachedMediaMetadata> = cacheMutex.withLock {
+      memoryCache.toMap()
+    }
+    withContext(Dispatchers.IO) {
+      try {
+        val text = json.encodeToString(snapshot)
+        cacheFile.writeText(text)
+      } catch (e: Exception) {
+        Log.w(TAG, "Failed to persist metadata cache file", e)
       }
     }
   }
@@ -123,8 +137,11 @@ class StreamingMetadataRepository(
   ) =
     withContext(Dispatchers.IO) {
       ensureCacheLoaded()
-      val cacheKey = "series_${series.id}"
+      val cacheKey = seriesKeyFor(series.id)
       val cached = memoryCache[cacheKey]
+
+      // Cached entries are reused indefinitely (no TTL, no re-scrape on app
+      // open). Only forceRefresh, a manual match pick, or deletion evicts.
 
       if (cached != null && preferred == null && !forceRefresh) {
         return@withContext applyMetadataToSeries(series, cached)
@@ -230,11 +247,54 @@ class StreamingMetadataRepository(
 
   /**
    * Forgets the cached metadata (including any manual match) for a series so the next
-   * enrichment runs automatic detection again.
+   * enrichment runs automatic detection again. Called when every episode of the
+   * show has been deleted.
    */
   suspend fun clearSeriesMetadata(seriesId: String) {
-    memoryCache.remove("series_$seriesId")
-    persistCache()
+    ensureCacheLoaded()
+    if (memoryCache.remove(seriesKeyFor(seriesId)) != null) {
+      persistCache()
+    }
+  }
+
+  /**
+   * Drops cached entries for shows/movies that no longer exist on device.
+   * Per-series entries survive partial episode deletes: only shows with zero
+   * remaining episodes (absent from [presentSeriesIds]) are evicted.
+   * Pass null for a media type to leave it untouched (e.g. series-only rescan).
+   */
+  suspend fun pruneStaleMetadata(
+    presentSeriesIds: Set<String>? = null,
+    presentMovieTitles: Set<String>? = null,
+  ) {
+    ensureCacheLoaded()
+    var changed = false
+    if (presentSeriesIds != null) {
+      val keep = presentSeriesIds.mapTo(HashSet()) { seriesKeyFor(it) }
+      val iterator = memoryCache.keys.iterator()
+      while (iterator.hasNext()) {
+        val key = iterator.next()
+        if (key.startsWith(SERIES_KEY_PREFIX) && !keep.contains(key)) {
+          iterator.remove()
+          changed = true
+        }
+      }
+    }
+    if (presentMovieTitles != null) {
+      val keep = presentMovieTitles.mapTo(HashSet()) { movieKeyFor(it) }
+      val iterator = memoryCache.keys.iterator()
+      while (iterator.hasNext()) {
+        val key = iterator.next()
+        if (key.startsWith(MOVIE_KEY_PREFIX) && !keep.contains(key)) {
+          iterator.remove()
+          changed = true
+        }
+      }
+    }
+    if (changed) {
+      Log.d(TAG, "Pruned stale metadata entries")
+      persistCache()
+    }
   }
 
   /**
@@ -243,7 +303,7 @@ class StreamingMetadataRepository(
    */
   suspend fun getCachedTmdbId(title: String): Int? = withContext(Dispatchers.IO) {
     ensureCacheLoaded()
-    val normalized = title.lowercase().replace(Regex("[^a-z0-9]"), "")
+    val normalized = normalizeKey(title)
     memoryCache["series_$normalized"]?.tmdbId
       ?: memoryCache["movie_$normalized"]?.tmdbId
   }
@@ -280,12 +340,13 @@ class StreamingMetadataRepository(
 
   /**
    * Forgets the cached metadata (including any manual match) for a movie so the next
-   * enrichment runs automatic detection again.
+   * enrichment runs automatic detection again. Called when the movie file is deleted.
    */
   suspend fun clearMovieMetadata(movieTitle: String) {
-    val cacheKey = "movie_${movieTitle.lowercase().replace(Regex("[^a-z0-9]"), "")}"
-    memoryCache.remove(cacheKey)
-    persistCache()
+    ensureCacheLoaded()
+    if (memoryCache.remove(movieKeyFor(movieTitle)) != null) {
+      persistCache()
+    }
   }
 
   suspend fun enrichMovie(
@@ -295,8 +356,11 @@ class StreamingMetadataRepository(
   ): LocalMovie =
     withContext(Dispatchers.IO) {
       ensureCacheLoaded()
-      val cacheKey = "movie_${movie.title.lowercase().replace(Regex("[^a-z0-9]"), "")}"
+      val cacheKey = movieKeyFor(movie.title)
       val cached = memoryCache[cacheKey]
+
+      // Cached entries are reused indefinitely (no TTL, no re-scrape on app
+      // open). Only forceRefresh, a manual match pick, or deletion evicts.
 
       if (cached != null && preferred == null && !forceRefresh) {
         return@withContext movie.copy(

@@ -428,7 +428,12 @@ data class MovieDetailScreen(
         onDismiss = { pendingDeletion = null },
         onConfirm = {
             coroutineScope.launch {
+              val deletedTitle = movie?.title
               PermissionUtils.StorageOps.deleteVideos(context, listOf(video))
+              // Movie file is gone: drop its cached TMDB entry immediately.
+              if (deletedTitle != null) {
+                runCatching { metadataRepository.clearMovieMetadata(deletedTitle) }
+              }
               if (paneBack != null) {
                 paneBack()
               } else if (backstack.size > 1) {
