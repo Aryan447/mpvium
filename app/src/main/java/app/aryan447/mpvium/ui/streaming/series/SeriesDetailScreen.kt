@@ -483,8 +483,15 @@ data class SeriesDetailScreen(
         onDismiss = { pendingDeletion = null },
         onConfirm = {
             coroutineScope.launch {
+              val targetId = series?.id
+              val totalEpisodes = series?.totalEpisodes ?: videos.size
               val (deleted, _) = PermissionUtils.StorageOps.deleteVideos(context, videos)
-              if (deleted == videos.size && videos.size == series?.totalEpisodes) {
+              if (deleted == videos.size && videos.size == totalEpisodes) {
+                // Every episode of the show is gone: drop its cached TMDB entry.
+                // Partial episode deletes keep the cache.
+                if (targetId != null) {
+                  runCatching { metadataRepository.clearSeriesMetadata(targetId) }
+                }
                 if (paneBack != null) {
                   paneBack()
                 } else if (backstack.size > 1) {

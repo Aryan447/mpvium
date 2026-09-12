@@ -126,6 +126,16 @@ class StreamingHomeViewModel(
       try {
         val detected = seriesDetector.detectLibrary()
 
+        // Evict cached TMDB entries for media that no longer exists, so the
+        // disk cache only shrinks when a movie or a whole show is deleted.
+        // Surviving entries are reused as-is with no re-scrape on app open.
+        runCatching {
+          metadataRepository.pruneStaleMetadata(
+            presentSeriesIds = detected.series.map { it.id }.toSet(),
+            presentMovieTitles = detected.movies.map { it.title }.toSet(),
+          )
+        }
+
         // Pick Hero banner: first in-progress series or highest episode count series
         val hero = detected.series.firstOrNull { it.lastWatchedEpisode != null && !it.lastWatchedEpisode.isWatched }
           ?: detected.series.firstOrNull()

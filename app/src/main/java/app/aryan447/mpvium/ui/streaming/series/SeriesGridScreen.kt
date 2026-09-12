@@ -116,6 +116,13 @@ object SeriesGridScreen : Screen {
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
+        // Drop cached TMDB entries for shows with zero episodes left.
+        // Remaining shows reuse their cache with no re-scrape.
+        runCatching {
+          metadataRepository.pruneStaleMetadata(
+            presentSeriesIds = detected.series.map { it.id }.toSet(),
+          )
+        }
         seriesList = detected.series
         isLoading = false
 
