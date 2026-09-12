@@ -383,7 +383,7 @@ object SearchablePreferences {
             add(SearchablePreference(
                 titleRes = R.string.pref_folders_title,
                 summaryRes = R.string.pref_folders_summary,
-                keywords = listOf("folders", "blacklist", "hide", "exclude", "manage"),
+                keywords = listOf("folders", "blacklist", "whitelist", "allow", "only", "hide", "exclude", "manage"),
                 category = "Folders",
                 screen = FoldersPreferencesScreen,
             ))
