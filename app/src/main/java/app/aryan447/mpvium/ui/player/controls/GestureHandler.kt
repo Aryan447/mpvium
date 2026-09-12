@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -224,6 +225,14 @@ fun GestureHandler(
   // volume/brightness gestures.
   val topSystemGuardPx = with(LocalDensity.current) {
     (WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp)
+      .toPx()
+      .coerceAtLeast(48.dp.toPx())
+  }
+  // Swipes starting in the navigation-bar zone belong to the system
+  // (back/home/recents, gesture handle) — never hijack them for
+  // volume/brightness gestures.
+  val bottomSystemGuardPx = with(LocalDensity.current) {
+    (WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 12.dp)
       .toPx()
       .coerceAtLeast(48.dp.toPx())
   }
@@ -809,7 +818,8 @@ fun GestureHandler(
                     }
                     "vertical" -> {
                       if ((brightnessGesture || volumeGesture) && !isLongPressing &&
-                        startPosition.y > topSystemGuardPx
+                        startPosition.y > topSystemGuardPx &&
+                        startPosition.y < size.height - bottomSystemGuardPx
                       ) {
                         val amount = currentPosition.y - startPosition.y
 
