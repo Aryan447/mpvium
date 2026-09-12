@@ -10,12 +10,16 @@ import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.preferences.FolderVisibility
+import app.aryan447.mpvium.preferences.FoldersPreferences
 import app.aryan447.mpvium.repository.MediaFileRepository
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Result of scanning and detecting local media structure.
@@ -34,7 +38,8 @@ data class DetectedMediaLibrary(
 class SeriesDetector(
   private val context: Context,
   private val database: MpviumDatabase,
-) {
+) : KoinComponent {
+  private val foldersPreferences: FoldersPreferences by inject()
   companion object {
     private const val TAG = "SeriesDetector"
     private const val WATCHED_PERCENTAGE_THRESHOLD = 0.95f
@@ -45,12 +50,26 @@ class SeriesDetector(
 
   suspend fun detectLibrary(): DetectedMediaLibrary = withContext(Dispatchers.IO) {
     try {
-      val folders = MediaFileRepository.getAllVideoFolders(context)
+      val whitelist = foldersPreferences.whitelistedFolders.get()
+      val blacklist = foldersPreferences.blacklistedFolders.get()
+      val whitelistOnly = foldersPreferences.whitelistOnlyEnabled.get()
+      val folders = MediaFileRepository.getAllVideoFolders(context).filter { folder ->
+        FolderVisibility.isFolderVisible(folder.path, whitelist, blacklist, whitelistOnly)
+      }
       val allVideos = mutableListOf<Video>()
 
       for (folder in folders) {
         val folderVideos = MediaFileRepository.getVideosInFolder(context, folder.bucketId)
-        allVideos.addAll(folderVideos)
+        allVideos.addAll(
+          folderVideos.filter { video ->
+            val parent = try {
+              File(video.path).parent ?: folder.path
+            } catch (_: Exception) {
+              folder.path
+            }
+            FolderVisibility.isFolderVisible(parent, whitelist, blacklist, whitelistOnly)
+          },
+        )
       }
 
       val playbackStates = try {
