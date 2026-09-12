@@ -108,10 +108,22 @@ class FolderListViewModel(
       }
     }
 
-    // Filter folders based on blacklist
+    // Filter folders based on blacklist / whitelist-only mode
     viewModelScope.launch {
-      combine(_allVideoFolders, foldersPreferences.blacklistedFolders.changes()) { folders, blacklist ->
-        folders.filter { folder -> folder.path !in blacklist }
+      combine(
+        _allVideoFolders,
+        foldersPreferences.blacklistedFolders.changes(),
+        foldersPreferences.whitelistedFolders.changes(),
+        foldersPreferences.whitelistOnlyEnabled.changes(),
+      ) { folders, blacklist, whitelist, whitelistOnly ->
+        folders.filter { folder ->
+          app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
+            folderPath = folder.path,
+            whitelist = whitelist,
+            blacklist = blacklist,
+            whitelistOnly = whitelistOnly,
+          )
+        }
       }.collectLatest { filteredFolders ->
         // Check if folders became empty after having folders
         if (previousFolderCount > 0 && filteredFolders.isEmpty()) {

@@ -158,6 +158,7 @@ fun FileSystemBrowserScreen(path: String? = null) {
   val coroutineScope = rememberCoroutineScope()
   val browserPreferences = koinInject<BrowserPreferences>()
   val playerPreferences = koinInject<app.aryan447.mpvium.preferences.PlayerPreferences>()
+  val foldersPreferences = koinInject<app.aryan447.mpvium.preferences.FoldersPreferences>()
   val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
   // ViewModel - use path parameter if provided, otherwise show roots
@@ -437,13 +438,13 @@ fun FileSystemBrowserScreen(path: String? = null) {
             }
 
             Log.d("FileSystemBrowserScreen", "Total search results after deduplication: ${uniqueResults.size}")
-            uniqueResults
+            filterSearchResults(uniqueResults, foldersPreferences)
           } else if (currentPath != null) {
             // In a specific directory - search from there
             Log.d("FileSystemBrowserScreen", "Searching in directory: $currentPath")
             val results = app.aryan447.mpvium.ui.browser.filesystem.searchRecursively(context, currentPath, searchQuery)
             Log.d("FileSystemBrowserScreen", "Found ${results.size} results in $currentPath")
-            results
+            filterSearchResults(results, foldersPreferences)
           } else {
             emptyList()
           }
@@ -1033,6 +1034,38 @@ fun FileSystemBrowserScreen(path: String? = null) {
         viewModel.refresh()
       },
     )
+  }
+}
+
+/**
+ * Applies blacklist / whitelist-only rules to file-browser search results.
+ */
+private fun filterSearchResults(
+  results: List<app.aryan447.mpvium.domain.browser.FileSystemItem>,
+  foldersPreferences: app.aryan447.mpvium.preferences.FoldersPreferences,
+): List<app.aryan447.mpvium.domain.browser.FileSystemItem> {
+  val whitelist = foldersPreferences.whitelistedFolders.get()
+  val blacklist = foldersPreferences.blacklistedFolders.get()
+  val whitelistOnly = foldersPreferences.whitelistOnlyEnabled.get()
+  if (!whitelistOnly && blacklist.isEmpty()) return results
+  if (whitelistOnly && whitelist.isEmpty()) return results
+  return results.filter { item ->
+    when (item) {
+      is app.aryan447.mpvium.domain.browser.FileSystemItem.Folder ->
+        app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
+          item.path, whitelist, blacklist, whitelistOnly,
+        )
+      is app.aryan447.mpvium.domain.browser.FileSystemItem.VideoFile -> {
+        val parent = try {
+          java.io.File(item.video.path).parent ?: item.path
+        } catch (_: Exception) {
+          item.path
+        }
+        app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
+          parent, whitelist, blacklist, whitelistOnly,
+        )
+      }
+    }
   }
 }
 
