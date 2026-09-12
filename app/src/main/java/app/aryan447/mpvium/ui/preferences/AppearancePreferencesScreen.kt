@@ -137,6 +137,61 @@ object AppearancePreferencesScreen : Screen {
                                     )
                                 },
                             )
+
+                            PreferenceDivider()
+
+                            // Bottom navigation tab labels toggle (issue #17)
+                            val showBottomNavLabels by preferences.showBottomNavLabels.collectAsState()
+                            HapticSwitchPreference(
+                                value = showBottomNavLabels,
+                                onValueChange = { newValue ->
+                                    preferences.showBottomNavLabels.set(newValue)
+                                },
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_title)) },
+                                summary = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_summary),
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                },
+                            )
+                        }
+                    }
+
+                    item {
+                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_bottom_nav))
+                    }
+
+                    item {
+                        PreferenceCard {
+                            val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
+                            Text(
+                                text = stringResource(id = R.string.pref_appearance_bottom_nav_tabs_summary),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                            app.aryan447.mpvium.ui.browser.MainTab.entries.forEachIndexed { tabIndex, tab ->
+                                val isEnabled = tab.key in bottomNavTabs
+                                // Keep at least one tab: disable turning off the last one.
+                                val canToggle = isEnabled && bottomNavTabs.size > 1 || !isEnabled
+                                HapticSwitchPreference(
+                                    value = isEnabled,
+                                    onValueChange = { checked ->
+                                        val updated =
+                                            if (checked) bottomNavTabs + tab.key
+                                            else bottomNavTabs - tab.key
+                                        if (updated.isNotEmpty()) {
+                                            preferences.bottomNavTabs.set(updated)
+                                        }
+                                    },
+                                    title = { Text(text = tab.label) },
+                                    enabled = canToggle,
+                                )
+                                if (tabIndex < app.aryan447.mpvium.ui.browser.MainTab.entries.size - 1) {
+                                    PreferenceDivider()
+                                }
+                            }
                         }
                     }
 
