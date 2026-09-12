@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,13 +76,21 @@ object FoldersPreferencesScreen : Screen {
     val coroutineScope = rememberCoroutineScope()
 
     val blacklistedFolders by preferences.blacklistedFolders.collectAsState()
+    val whitelistedFolders by preferences.whitelistedFolders.collectAsState()
+    val whitelistOnlyEnabled by preferences.whitelistOnlyEnabled.collectAsState()
     var availableFolders by remember { mutableStateOf<List<VideoFolder>>(emptyList()) }
+    var availableWhitelistFolders by remember { mutableStateOf<List<VideoFolder>>(emptyList()) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var showAddWhitelistDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    var isWhitelistLoading by remember { mutableStateOf(false) }
     var selectionState by remember { mutableStateOf(SelectionState<String>()) }
+    var whitelistSelectionState by remember { mutableStateOf(SelectionState<String>()) }
     var showClearAllDialog by remember { mutableStateOf(false) }
+    var showClearWhitelistDialog by remember { mutableStateOf(false) }
 
     val blacklistedFoldersList = remember(blacklistedFolders) { blacklistedFolders.toList() }
+    val whitelistedFoldersList = remember(whitelistedFolders) { whitelistedFolders.toList() }
 
     Scaffold(
       topBar = {
@@ -130,9 +140,10 @@ object FoldersPreferencesScreen : Screen {
         modifier = Modifier
           .fillMaxSize()
           .padding(padding)
+          .verticalScroll(rememberScrollState())
           .padding(16.dp),
       ) {
-        if (!selectionState.isInSelectionMode) {
+        if (!selectionState.isInSelectionMode && !whitelistSelectionState.isInSelectionMode) {
           Text(
             text = stringResource(R.string.pref_folders_summary),
             style = MaterialTheme.typography.bodyMedium,
@@ -140,13 +151,188 @@ object FoldersPreferencesScreen : Screen {
           )
 
           Spacer(modifier = Modifier.height(16.dp))
+
+          // Whitelist-only mode toggle
+          Card(
+            modifier = Modifier.fillMaxWidth(),
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                  preferences.whitelistOnlyEnabled.set(!whitelistOnlyEnabled)
+                }
+                .padding(16.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                  text = stringResource(R.string.pref_folders_whitelist_only_title),
+                  style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                  text = stringResource(R.string.pref_folders_whitelist_only_summary),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+              }
+              androidx.compose.material3.Switch(
+                checked = whitelistOnlyEnabled,
+                onCheckedChange = { preferences.whitelistOnlyEnabled.set(it) },
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.height(16.dp))
+
+          // Whitelist section
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            Text(
+              text = stringResource(R.string.pref_folders_whitelist_title),
+              style = MaterialTheme.typography.titleMedium,
+              fontWeight = FontWeight.Bold,
+            )
+            if (whitelistedFolders.isNotEmpty() && !whitelistSelectionState.isInSelectionMode) {
+              IconButton(onClick = { showClearWhitelistDialog = true }) {
+                Icon(
+                  Icons.Outlined.Restore,
+                  contentDescription = stringResource(R.string.pref_folders_clear_all_whitelist),
+                  modifier = Modifier.size(24.dp),
+                  tint = MaterialTheme.colorScheme.error,
+                )
+              }
+            }
+          }
+
+          if (whitelistedFolders.isEmpty()) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+              Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                  text = stringResource(R.string.pref_folders_whitelist_empty_title),
+                  style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                  text = stringResource(R.string.pref_folders_whitelist_empty_message),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+              }
+            }
+          } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              whitelistedFoldersList.forEach { folderPath ->
+                BlacklistedFolderItem(
+                  folderPath = folderPath,
+                  isSelected = whitelistSelectionState.isSelected(folderPath),
+                  isInSelectionMode = whitelistSelectionState.isInSelectionMode,
+                  onRemove = {
+                    val updated = whitelistedFolders.toMutableSet().apply { remove(folderPath) }
+                    preferences.whitelistedFolders.set(updated)
+                  },
+                  onLongClick = {
+                    whitelistSelectionState = whitelistSelectionState.toggle(folderPath)
+                  },
+                  onClick = {
+                    if (whitelistSelectionState.isInSelectionMode) {
+                      whitelistSelectionState = whitelistSelectionState.toggle(folderPath)
+                    }
+                  },
+                )
+              }
+            }
+            if (whitelistSelectionState.isInSelectionMode) {
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+              ) {
+                TextButton(
+                  onClick = {
+                    val updated = whitelistedFolders.toMutableSet().apply {
+                      removeAll(whitelistSelectionState.selectedIds)
+                    }
+                    preferences.whitelistedFolders.set(updated)
+                    whitelistSelectionState = whitelistSelectionState.clear()
+                  },
+                ) {
+                  Text(stringResource(R.string.delete))
+                }
+                TextButton(onClick = { whitelistSelectionState = whitelistSelectionState.clear() }) {
+                  Text(stringResource(R.string.generic_cancel))
+                }
+              }
+            }
+          }
+
+          Spacer(modifier = Modifier.height(8.dp))
+
+          Card(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable {
+                showAddWhitelistDialog = true
+                isWhitelistLoading = true
+                coroutineScope.launch(Dispatchers.IO) {
+                  try {
+                    availableWhitelistFolders = scanAllVideoFolders(context.applicationContext as Application)
+                  } finally {
+                    isWhitelistLoading = false
+                  }
+                }
+              },
+            colors = CardDefaults.cardColors(
+              containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ),
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+              horizontalArrangement = Arrangement.Center,
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Icon(
+                imageVector = Icons.Default.Folder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+              )
+              Spacer(modifier = Modifier.padding(8.dp))
+              Text(
+                text = stringResource(R.string.pref_folders_add_folder_whitelist),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.height(16.dp))
+
+          Text(
+            text = stringResource(R.string.pref_folders_blacklist),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+          )
+          if (whitelistOnlyEnabled) {
+            Text(
+              text = stringResource(R.string.pref_folders_whitelist_only_ignore_blacklist),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+
+          Spacer(modifier = Modifier.height(8.dp))
         }
 
         if (blacklistedFolders.isEmpty()) {
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .weight(1f),
+              .height(200.dp),
+            contentAlignment = Alignment.Center,
           ) {
             EmptyState(
               icon = Icons.Filled.FolderOff,
@@ -155,11 +341,8 @@ object FoldersPreferencesScreen : Screen {
             )
           }
         } else {
-          LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-          ) {
-            items(blacklistedFoldersList) { folderPath ->
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            blacklistedFoldersList.forEach { folderPath ->
               BlacklistedFolderItem(
                 folderPath = folderPath,
                 isSelected = selectionState.isSelected(folderPath),
@@ -235,6 +418,42 @@ object FoldersPreferencesScreen : Screen {
         onAddFolders = { folderPaths ->
           val updated = blacklistedFolders.toMutableSet().apply { addAll(folderPaths) }
           preferences.blacklistedFolders.set(updated)
+        },
+      )
+    }
+
+    if (showAddWhitelistDialog) {
+      AddFolderDialog(
+        folders = availableWhitelistFolders,
+        blacklistedFolders = whitelistedFolders,
+        isLoading = isWhitelistLoading,
+        onDismiss = { showAddWhitelistDialog = false },
+        onAddFolders = { folderPaths ->
+          val updated = whitelistedFolders.toMutableSet().apply { addAll(folderPaths) }
+          preferences.whitelistedFolders.set(updated)
+        },
+      )
+    }
+
+    if (showClearWhitelistDialog) {
+      AlertDialog(
+        onDismissRequest = { showClearWhitelistDialog = false },
+        title = { Text(stringResource(R.string.pref_folders_clear_all_whitelist_confirm_title)) },
+        text = { Text(stringResource(R.string.pref_folders_clear_all_whitelist_confirm_message)) },
+        confirmButton = {
+          TextButton(
+            onClick = {
+              preferences.whitelistedFolders.set(emptySet())
+              showClearWhitelistDialog = false
+            },
+          ) {
+            Text(stringResource(R.string.generic_confirm))
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = { showClearWhitelistDialog = false }) {
+            Text(stringResource(R.string.generic_cancel))
+          }
         },
       )
     }
