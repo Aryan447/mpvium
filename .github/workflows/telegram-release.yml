@@ -1,0 +1,62 @@
+name: Telegram Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_URL: ${{ github.event.release.url }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          curl -sSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$RELEASE_URL/assets" \
+            -o assets.json
+
+          # Prefer the universal APK so Telegram gets a single installable file.
+          APK_URL=$(jq -r '.[] | select(.name | endswith(".apk")) | "\(.name) \(.browser_download_url)"' assets.json | grep -m1 "universal" | cut -d' ' -f2- || true)
+          if [ -z "$APK_URL" ]; then
+            APK_URL=$(jq -r '.[] | select(.name | endswith(".apk")) | .browser_download_url' assets.json | head -1)
+          fi
+
+          if [ -z "$APK_URL" ] || [ "$APK_URL" = "null" ]; then
+            echo "No .apk asset found on this release"
+            cat assets.json
+            exit 1
+          fi
+
+          APK_NAME=$(basename "$APK_URL")
+          echo "Downloading $APK_NAME"
+          curl -sSL "$APK_URL" -o "release/$APK_NAME"
+          echo "APK_PATH=release/$APK_NAME" >> "$GITHUB_ENV"
+
+      - name: Send APK to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          # Public destination: https://t.me/mpvium/16 (topic/thread 16).
+          CHAT_ID: "@mpvium"
+          THREAD_ID: "16"
+          TAG: ${{ github.event.release.tag_name }}
+          NOTES: ${{ github.event.release.body }}
+        run: |
+          set -euo pipefail
+          # Telegram caption limit is 1024 chars; keep tag + truncated notes.
+          CAPTION=$(printf 'New release: %s\n\n%s' "$TAG" "$NOTES" | cut -c1-1000)
+          curl -sSL -X POST \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument" \
+            -F "chat_id=${CHAT_ID}" \
+            -F "message_thread_id=${THREAD_ID}" \
+            -F "document=@${APK_PATH}" \
+            -F "caption=${CAPTION}"
