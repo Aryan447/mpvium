@@ -203,7 +203,7 @@ object FolderListScreen : Screen {
         isSearchLoading = true
         try {
           val results = searchFoldersAndVideos(context, searchQuery)
-          searchResults = results
+          searchResults = filterSearchResults(results, foldersPreferences)
         } catch (e: Exception) {
           Log.e("FolderListScreen", "Error during search", e)
           searchResults = emptyList()
@@ -1112,6 +1112,38 @@ private fun SearchResultsContent(
             isGridMode = false,
           )
         }
+      }
+    }
+  }
+}
+
+/**
+ * Applies blacklist / whitelist-only rules to album search results.
+ */
+private fun filterSearchResults(
+  results: List<FileSystemItem>,
+  foldersPreferences: FoldersPreferences,
+): List<FileSystemItem> {
+  val whitelist = foldersPreferences.whitelistedFolders.get()
+  val blacklist = foldersPreferences.blacklistedFolders.get()
+  val whitelistOnly = foldersPreferences.whitelistOnlyEnabled.get()
+  if (!whitelistOnly && blacklist.isEmpty()) return results
+  if (whitelistOnly && whitelist.isEmpty()) return results
+  return results.filter { item ->
+    when (item) {
+      is FileSystemItem.Folder ->
+        app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
+          item.path, whitelist, blacklist, whitelistOnly,
+        )
+      is FileSystemItem.VideoFile -> {
+        val parent = try {
+          java.io.File(item.video.path).parent ?: item.path
+        } catch (_: Exception) {
+          item.path
+        }
+        app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
+          parent, whitelist, blacklist, whitelistOnly,
+        )
       }
     }
   }

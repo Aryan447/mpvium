@@ -438,7 +438,7 @@
   <string name="pref_player_use_precise_seeking">Use precise seeking</string>
   <!-- Folders Preferences -->
   <string name="pref_folders_title">Folders</string>
-  <string name="pref_folders_summary">Manage folder blacklist</string>
+  <string name="pref_folders_summary">Manage folder blacklist and whitelist-only mode</string>
   <string name="pref_folders_empty_title">No blacklisted folders</string>
   <string name="pref_folders_empty_message">Tap the button below to add folders you want to hide from the folder list</string>
   <string name="pref_folders_add_folder">Add Folder to Blacklist</string>
@@ -450,6 +450,17 @@
   <string name="pref_folders_clear_all_confirm_message">This will remove all folders from the blacklist. You can add them back later.</string>
   <string name="pref_folders_blacklist">Blacklist</string>
   <string name="pref_folders_blacklisted">Folder(s) blacklisted</string>
+  <string name="pref_folders_whitelist_only_title">Show only whitelisted folders</string>
+  <string name="pref_folders_whitelist_only_summary">When enabled, only whitelisted folders and their subfolders appear in the app</string>
+  <string name="pref_folders_whitelist_only_ignore_blacklist">The blacklist is ignored while this is on</string>
+  <string name="pref_folders_whitelist_title">Whitelisted folders</string>
+  <string name="pref_folders_whitelist_empty_title">No whitelisted folders</string>
+  <string name="pref_folders_whitelist_empty_message">Add folders you want to show. When the switch above is on, only these folders appear in the app</string>
+  <string name="pref_folders_add_folder_whitelist">Add Folder to Whitelist</string>
+  <string name="pref_folders_whitelisted">Folder(s) whitelisted</string>
+  <string name="pref_folders_clear_all_whitelist">Clear all whitelisted folders</string>
+  <string name="pref_folders_clear_all_whitelist_confirm_title">Clear all whitelisted folders?</string>
+  <string name="pref_folders_clear_all_whitelist_confirm_message">This will remove all folders from the whitelist and show every folder again. You can add them back later.</string>
   <!-- M3U Playlist Strings -->
   <string name="pref_subtitles_searching">Searching…</string>
   <string name="pref_subtitles_found">%d subtitles found</string>

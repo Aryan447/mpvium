@@ -10,6 +10,8 @@ import app.aryan447.mpvium.domain.browser.PathComponent
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
 import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.FolderVisibility
+import app.aryan447.mpvium.preferences.FoldersPreferences
 import app.aryan447.mpvium.repository.MediaFileRepository
 import app.aryan447.mpvium.ui.browser.base.BaseBrowserViewModel
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
@@ -41,6 +43,7 @@ class FileSystemBrowserViewModel(
   private val playbackStateRepository: PlaybackStateRepository by inject()
   private val browserPreferences: BrowserPreferences by inject()
   private val appearancePreferences: app.aryan447.mpvium.preferences.AppearancePreferences by inject()
+  private val foldersPreferences: FoldersPreferences by inject()
 
   // Special marker for "show storage volumes" mode
   // Similar to Fossify's root/home folder detection
@@ -147,19 +150,56 @@ class FileSystemBrowserViewModel(
       }
     }
 
-    // Apply sorting whenever items or sort preferences change
+    // Apply sorting + folder visibility (blacklist / whitelist-only) whenever
+    // items, sort, current path, or folder prefs change
     // Based on Fossify's ChangeSortingDialog callback and sorting logic
     viewModelScope.launch {
       combine(
         _unsortedItems,
         browserPreferences.folderSortType.changes(),
         browserPreferences.folderSortOrder.changes(),
-      ) { items, sortType, sortOrder ->
+        foldersPreferences.blacklistedFolders.changes(),
+        foldersPreferences.whitelistedFolders.changes(),
+        foldersPreferences.whitelistOnlyEnabled.changes(),
+        _currentPath,
+      ) { items, sortType, sortOrder, blacklist, whitelist, whitelistOnly, currentPath ->
+        val visible = filterVisibleItems(currentPath, items, whitelist, blacklist, whitelistOnly)
         // Sort using the same logic as Fossify's FileDirItem.sort()
-        SortUtils.sortFileSystemItems(items, sortType, sortOrder)
+        SortUtils.sortFileSystemItems(visible, sortType, sortOrder)
       }.collectLatest { sortedItems ->
         _items.value = sortedItems
         Log.d(TAG, "Items sorted: ${sortedItems.size} items")
+      }
+    }
+  }
+
+  /**
+   * Applies blacklist / whitelist-only rules to a directory listing.
+   * Folders that merely lead to a whitelisted child stay navigable, but videos
+   * in non-visible folders are hidden.
+   */
+  private fun filterVisibleItems(
+    currentPath: String,
+    items: List<FileSystemItem>,
+    whitelist: Set<String>,
+    blacklist: Set<String>,
+    whitelistOnly: Boolean,
+  ): List<FileSystemItem> {
+    if (!whitelistOnly && blacklist.isEmpty()) return items
+    if (whitelistOnly && whitelist.isEmpty()) return items
+    return items.filter { item ->
+      when (item) {
+        is FileSystemItem.Folder ->
+          FolderVisibility.isFolderVisible(item.path, whitelist, blacklist, whitelistOnly) ||
+            FolderVisibility.canContainVisible(item.path, whitelist, blacklist, whitelistOnly)
+        is FileSystemItem.VideoFile -> {
+          val parent = try {
+            File(item.video.path).parent ?: currentPath
+          } catch (_: Exception) {
+            currentPath
+          }
+          FolderVisibility.isFolderVisible(parent, whitelist, blacklist, whitelistOnly)
+        }
       }
     }
   }
