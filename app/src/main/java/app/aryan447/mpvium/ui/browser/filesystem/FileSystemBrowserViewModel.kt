@@ -151,19 +151,25 @@ class FileSystemBrowserViewModel(
     }
 
     // Apply sorting + folder visibility (blacklist / whitelist-only) whenever
-    // items, sort, current path, or folder prefs change
+    // items, sort, or folder prefs change
     // Based on Fossify's ChangeSortingDialog callback and sorting logic
+    // (Nested combines: this coroutines version has no 7-flow combine overload.)
     viewModelScope.launch {
+      val visibilityFlow = combine(
+        foldersPreferences.blacklistedFolders.changes(),
+        foldersPreferences.whitelistedFolders.changes(),
+        foldersPreferences.whitelistOnlyEnabled.changes(),
+      ) { blacklist, whitelist, whitelistOnly ->
+        Triple(blacklist, whitelist, whitelistOnly)
+      }
       combine(
         _unsortedItems,
         browserPreferences.folderSortType.changes(),
         browserPreferences.folderSortOrder.changes(),
-        foldersPreferences.blacklistedFolders.changes(),
-        foldersPreferences.whitelistedFolders.changes(),
-        foldersPreferences.whitelistOnlyEnabled.changes(),
-        _currentPath,
-      ) { items, sortType, sortOrder, blacklist, whitelist, whitelistOnly, currentPath ->
-        val visible = filterVisibleItems(currentPath, items, whitelist, blacklist, whitelistOnly)
+        visibilityFlow,
+      ) { items, sortType, sortOrder, visibility ->
+        val (blacklist, whitelist, whitelistOnly) = visibility
+        val visible = filterVisibleItems(_currentPath.value, items, whitelist, blacklist, whitelistOnly)
         // Sort using the same logic as Fossify's FileDirItem.sort()
         SortUtils.sortFileSystemItems(visible, sortType, sortOrder)
       }.collectLatest { sortedItems ->
