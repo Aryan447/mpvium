@@ -1207,10 +1207,11 @@ fun GestureHandler(
                     hasStartedSeeking = true
                     initialVideoPosition = position?.toFloat() ?: 0f
 
-                    // Pause before seeking to prevent decoder stalls
+                    // Pause before seeking to prevent decoder stalls.
+                    // Transient: keeps audio focus for an instant resume.
                     wasPlayerAlreadyPaused = paused ?: false
                     if (!wasPlayerAlreadyPaused) {
-                      viewModel.pause()
+                      viewModel.pause(transientPause = true)
                     }
 
                     // Show seekbar and start seeking mode (same as seekbar scrubbing)
@@ -1274,14 +1275,15 @@ fun GestureHandler(
             }
           } while (event.changes.any { it.pressed })
 
-          // Apply the final exact seek when gesture ends
+          // Apply the final exact seek when gesture ends, ordered
+          // seek-then-resume so playback can't resume at the pre-seek
+          // position before the seek lands (post-seek stall on slow devices).
           if (hasStartedSeeking) {
             val target = lastClampedPosition.roundToInt()
-            viewModel.seekTo(target, isScrubbing = false)
-
-            // Unpause if it wasn't paused before seeking
             if (!wasPlayerAlreadyPaused) {
-              viewModel.unpause()
+              viewModel.seekToAndResume(target)
+            } else {
+              viewModel.seekTo(target, isScrubbing = false)
             }
 
             // Hold the swipe preview until mpv confirms the landing (bounded
