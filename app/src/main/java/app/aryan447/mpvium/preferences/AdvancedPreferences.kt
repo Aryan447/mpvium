@@ -16,4 +16,7 @@ class AdvancedPreferences(
 
   val enableRecentlyPlayed = preferenceStore.getBoolean("enable_recently_played", true)
 
+  val enableScripts = preferenceStore.getBoolean("enable_scripts", true)
+  val disabledScripts = preferenceStore.getStringSet("disabled_scripts", emptySet())
+  val customScriptButtons = preferenceStore.getString("custom_script_buttons", "[]")
 }
