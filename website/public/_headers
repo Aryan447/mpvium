@@ -1,0 +1,8 @@
+# Long-lived immutable-ish assets: content-hashed filenames aren't used here,
+# but these files only change when screenshots or branding are updated.
+/screenshots/*
+  Cache-Control: public, max-age=31536000, immutable
+/icon.png
+  Cache-Control: public, max-age=31536000, immutable
+/favicon.png
+  Cache-Control: public, max-age=31536000, immutable
