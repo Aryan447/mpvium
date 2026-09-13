@@ -70,7 +70,7 @@ koin = ["koin-core", "koin-android", "koin-compose", "koin-viewmodel"]
 compose-navigation3 = ["androidx-navigation3-runtime", "androidx-navigation3-ui"]
 
 [plugins]
-ksp = { id = "com.google.devtools.ksp", version = "2.3.6" }
+ksp = { id = "com.google.devtools.ksp", version = "2.3.12" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 room = { id = "androidx.room", version.ref = "room" }
