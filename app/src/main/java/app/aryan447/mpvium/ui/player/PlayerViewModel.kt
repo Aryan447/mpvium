@@ -1163,10 +1163,16 @@ class PlayerViewModel(
     }
   }
 
-  fun pause() {
+  /**
+   * @param transientPause true for scrub/swipe holds that resume on release.
+   * Keeps audio focus so resume is instant and other apps don't duck/flap.
+   */
+  fun pause(transientPause: Boolean = false) {
     viewModelScope.launch(Dispatchers.IO) {
       MPVLib.setPropertyBoolean("pause", true)
-      withContext(Dispatchers.Main) { host.abandonAudioFocus() }
+      if (!transientPause) {
+        withContext(Dispatchers.Main) { host.abandonAudioFocus() }
+      }
     }
   }
 
@@ -1267,40 +1273,76 @@ class PlayerViewModel(
     // seek command dispatches without a blocking property round-trip first.
     val cachedDuration = duration
     viewModelScope.launch(Dispatchers.IO) {
-      val maxDuration = cachedDuration ?: MPVLib.getPropertyInt("duration") ?: 0
-      var clampedPosition = position.coerceIn(0, maxDuration)
-
-      // Clamp within AB loop if active
-      val loopA = _abLoopA.value
-      val loopB = _abLoopB.value
-      if (loopA != null && loopB != null) {
-        val min = minOf(loopA.toInt(), loopB.toInt())
-        val max = maxOf(loopA.toInt(), loopB.toInt())
-        clampedPosition = clampedPosition.coerceIn(min, max)
-      }
-
-      if (clampedPosition !in 0..maxDuration) return@launch
-
-      // Cancel pending relative seek before absolute seek
-      seekCoalesceJob?.cancel()
-      pendingSeekOffset = 0
-
-      // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-      val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
-      // During active scrubbing (dragging finger), use fast keyframe seeking for butter-smooth preview updates without decoder stalls.
-      // On release or discrete seek, use precise exact seeking if enabled.
-      val seekMode = if (isScrubbing) {
-        "absolute+keyframes"
-      } else if (shouldUsePreciseSeeking) {
-        "absolute+exact"
-      } else {
-        "absolute+keyframes"
-      }
-      // Drop superseded requests: only the latest tap/drag position
-      // is allowed to reach mpv.
-      if (sequence != seekSequence.get()) return@launch
-      MPVLib.command("seek", clampedPosition.toString(), seekMode)
+      dispatchAbsoluteSeek(position, isScrubbing, sequence, cachedDuration)
     }
+  }
+
+  /**
+   * Ordered seek-then-resume for gesture releases (seekbar scrub, swipe).
+   * The old call pattern — `seekTo()` + `unpause()` as two fire-and-forget
+   * coroutines — let the unpause win the race: playback resumed at the
+   * pre-seek position, then the seek landed, costing a visible hitch plus a
+   * ~1s cache/decoder re-stall on slower devices. Issuing both from one IO
+   * coroutine keeps mpv-side order: seek first, resume after. Resume is
+   * unconditional: in the rare case this seek is superseded mid-flight, a
+   * stuck-paused player (needs a manual play tap) is worse than a resume
+   * the newer seek immediately corrects.
+   */
+  fun seekToAndResume(position: Int) {
+    val sequence = seekSequence.incrementAndGet()
+    val cachedDuration = duration
+    viewModelScope.launch(Dispatchers.IO) {
+      dispatchAbsoluteSeek(position, isScrubbing = false, sequence, cachedDuration)
+      withContext(Dispatchers.Main) { host.requestAudioFocus() }
+      MPVLib.setPropertyBoolean("pause", false)
+    }
+  }
+
+  /**
+   * Shared absolute-seek dispatch. Must run on an IO thread (blocking
+   * property reads). Returns false when the request was dropped or
+   * superseded so callers can skip follow-ups like resume.
+   */
+  private fun dispatchAbsoluteSeek(
+    position: Int,
+    isScrubbing: Boolean,
+    sequence: Int,
+    cachedDuration: Int?,
+  ): Boolean {
+    val maxDuration = cachedDuration ?: MPVLib.getPropertyInt("duration") ?: 0
+    var clampedPosition = position.coerceIn(0, maxDuration)
+
+    // Clamp within AB loop if active
+    val loopA = _abLoopA.value
+    val loopB = _abLoopB.value
+    if (loopA != null && loopB != null) {
+      val min = minOf(loopA.toInt(), loopB.toInt())
+      val max = maxOf(loopA.toInt(), loopB.toInt())
+      clampedPosition = clampedPosition.coerceIn(min, max)
+    }
+
+    if (clampedPosition !in 0..maxDuration) return false
+
+    // Cancel pending relative seek before absolute seek
+    seekCoalesceJob?.cancel()
+    pendingSeekOffset = 0
+
+    // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
+    val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
+    // During active scrubbing (dragging finger), use fast keyframe seeking for butter-smooth preview updates without decoder stalls.
+    // On release or discrete seek, use precise exact seeking if enabled.
+    val seekMode = if (isScrubbing) {
+      "absolute+keyframes"
+    } else if (shouldUsePreciseSeeking) {
+      "absolute+exact"
+    } else {
+      "absolute+keyframes"
+    }
+    // Drop superseded requests: only the latest tap/drag position
+    // is allowed to reach mpv.
+    if (sequence != seekSequence.get()) return false
+    MPVLib.command("seek", clampedPosition.toString(), seekMode)
+    return true
   }
 
   private fun coalesceSeek(offset: Int) {
