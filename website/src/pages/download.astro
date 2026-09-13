@@ -1,0 +1,140 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { links } from "../data/site";
+
+const apks = [
+  { file: "universal", devices: "Most devices; larger download" },
+  { file: "arm64-v8a", devices: "Modern 64-bit ARM devices; recommended for most phones" },
+  { file: "armeabi-v7a", devices: "Older 32-bit ARM devices" },
+  { file: "x86", devices: "32-bit Intel/AMD devices" },
+  { file: "x86_64", devices: "64-bit Intel/AMD devices" },
+];
+---
+
+<BaseLayout
+  active="download"
+  title="Download — mpvium"
+  description="Download mpvium APKs: stable and preview builds for every CPU architecture."
+>
+  <div class="mx-auto max-w-3xl px-5 pb-2 pt-14 text-center">
+    <h1 class="text-4xl font-extrabold tracking-tight">
+      Download<span class="text-[var(--primary)]">.</span>
+    </h1>
+    <p class="mx-auto mb-8 mt-2 max-w-xl text-[var(--muted)]">
+      Free and open source, no ads or trackers. Buttons below resolve to the latest
+      arm64-v8a APKs automatically.
+    </p>
+
+    <div class="flex flex-wrap justify-center gap-3">
+      <a
+        id="dl-stable"
+        href={links.latestRelease}
+        class="inline-block rounded-full bg-[var(--primary)] px-7 py-3.5 text-base font-bold text-[#1A1206] hover:brightness-110"
+      >
+        Download Stable (arm64-v8a)
+      </a>
+      <a
+        id="dl-preview"
+        href={links.releases}
+        class="inline-block rounded-full border border-[var(--border)] px-7 py-3.5 text-base font-bold text-[var(--text)] hover:border-[var(--primary)]"
+      >
+        Download Preview (arm64-v8a)
+      </a>
+    </div>
+    <p id="dl-meta" class="mt-3 text-[13px] text-[var(--muted)]">Resolving latest versions…</p>
+
+    <div class="mt-10 overflow-hidden rounded-2xl border border-[var(--border)] text-left">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-[var(--surface2)] text-left">
+            <th class="px-5 py-3 font-bold">APK</th>
+            <th class="px-5 py-3 font-bold">Devices</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            apks.map((row) => (
+              <tr class="border-t border-[var(--border)] bg-[var(--surface)]">
+                <td class="px-5 py-3 font-mono text-[13px] text-[var(--primary)]">{row.file}</td>
+                <td class="px-5 py-3 text-[var(--muted)]">{row.devices}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-6 text-sm text-[var(--muted)]">
+      Preview builds are intended for testing and may contain unfinished features. Checksums
+      are published on each{" "}
+      <a class="text-[var(--primary)] hover:underline" href={links.releases}>
+        release
+      </a>
+      . Prefer building from source? See the{" "}
+      <a class="text-[var(--primary)] hover:underline" href={links.github}>
+        README
+      </a>
+      .
+    </p>
+  </div>
+  <div class="h-10"></div>
+</BaseLayout>
+
+<script is:inline data-repo="aryan447/mpvium">
+  (function () {
+    var repo = document.currentScript.getAttribute("data-repo");
+    var stableBtn = document.getElementById("dl-stable");
+    var previewBtn = document.getElementById("dl-preview");
+    var meta = document.getElementById("dl-meta");
+    if (!stableBtn || !previewBtn || !meta) return;
+
+    function arm64Apk(assets) {
+      if (!assets) return null;
+      for (var i = 0; i < assets.length; i++) {
+        var n = assets[i].name || "";
+        if (n.indexOf("arm64-v8a") !== -1 && n.slice(-4) === ".apk") return assets[i];
+      }
+      return null;
+    }
+
+    Promise.all([
+      fetch("https://api.github.com/repos/" + repo + "/releases/latest")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; }),
+      fetch("https://api.github.com/repos/" + repo + "/releases?per_page=20")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; }),
+    ])
+      .then(function (res) {
+        var stable = res[0], list = res[1], sName = null, pName = null;
+        if (stable) {
+          var a = arm64Apk(stable.assets);
+          if (a) {
+            stableBtn.href = a.browser_download_url;
+            stableBtn.textContent = "Download Stable " + stable.tag_name + " (arm64-v8a)";
+            sName = a.name;
+          }
+        }
+        if (list) {
+          for (var i = 0; i < list.length; i++) {
+            if (list[i].prerelease) {
+              var pa = arm64Apk(list[i].assets);
+              if (pa) {
+                previewBtn.href = pa.browser_download_url;
+                previewBtn.textContent = "Download Preview " + list[i].tag_name + " (arm64-v8a)";
+                pName = pa.name;
+                break;
+              }
+            }
+          }
+        }
+        meta.textContent =
+          (sName ? "Stable: " + sName : "Stable: see releases page") +
+          " · " +
+          (pName ? "Preview: " + pName : "Preview: see pre-releases");
+      })
+      .catch(function () {
+        meta.textContent = "See the releases page for all APKs and checksums.";
+      });
+  })();
+</script>

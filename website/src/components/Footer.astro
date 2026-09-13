@@ -1,0 +1,17 @@
+---
+import { links } from "../data/site";
+---
+
+<footer class="px-5 pb-14 pt-12 text-center text-sm text-[var(--muted)]">
+  <div class="mx-auto max-w-5xl">
+    <p>
+      mpvium · <a class="text-[var(--primary)] hover:underline" href={links.github}>GitHub</a>
+      {" · "}
+      <a class="text-[var(--primary)] hover:underline" href={links.releases}>Releases</a>
+      {" · "}
+      <a class="text-[var(--primary)] hover:underline" href={links.telegram}>Telegram</a>
+      {" · GPL-3.0-or-later"}
+    </p>
+    <p class="mt-2">Stable and preview APKs are arm64-v8a. Other ABIs on the releases page.</p>
+  </div>
+</footer>

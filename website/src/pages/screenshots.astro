@@ -1,0 +1,53 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { shots } from "../data/screenshots";
+import { links } from "../data/site";
+---
+
+<BaseLayout
+  active="screenshots"
+  title="Screenshots — mpvium"
+  description="mpvium in action: home library, movies grid, details, and the mpv-powered player."
+>
+  <div class="mx-auto max-w-5xl px-5 pb-2 pt-14">
+    <h1 class="text-4xl font-extrabold tracking-tight">
+      Screenshots<span class="text-[var(--primary)]">.</span>
+    </h1>
+    <p class="mb-8 mt-2 text-[var(--muted)]">
+      Library, browsing, playback — dark default theme.
+    </p>
+
+    <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        shots.map((s) => (
+          <figure
+            class:list={[
+              "overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]",
+              s.wide && "sm:col-span-2 lg:col-span-3",
+            ]}
+          >
+            <img
+              src={s.src}
+              alt={s.alt}
+              loading="lazy"
+              class:list={["w-full", s.wide && "aspect-video object-cover"]}
+            />
+            <figcaption class="px-4 py-3">
+              <b class="text-[15px] text-[var(--primary)]">{s.title}</b>
+              <span class="block text-sm text-[var(--muted)]">{s.caption}</span>
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+
+    <p class="mt-6 text-sm text-[var(--muted)]">
+      Looking for every theme and light mode? The full collection lives in{" "}
+      <a class="text-[var(--primary)] hover:underline" href={links.screenshotsDir}>
+        docs/screenshots
+      </a>{" "}
+      in the repo.
+    </p>
+  </div>
+  <div class="h-10"></div>
+</BaseLayout>

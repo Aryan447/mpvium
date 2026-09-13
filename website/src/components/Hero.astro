@@ -1,0 +1,115 @@
+---
+import { links } from "../data/site";
+---
+
+<div class="mx-auto max-w-5xl px-5 pb-10 pt-16 text-center sm:pt-20">
+  <p
+    class="mb-5 inline-block rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-1 text-[13px] text-[var(--muted)]"
+  >
+    Free &amp; open source · GPL-3.0-or-later · powered by mpv
+  </p>
+  <div class="flex flex-wrap items-center justify-center gap-4">
+    <img
+      src="/icon.png"
+      alt="mpvium logo"
+      class="h-[84px] w-[84px] flex-none rounded-[22px] border border-[var(--border)] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.7)]"
+    />
+    <h1 class="text-left text-[clamp(44px,8vw,84px)] font-extrabold leading-none tracking-[-2px]">
+      mpv<span class="text-[var(--primary)]">ium</span>
+    </h1>
+  </div>
+  <p class="mt-4 text-[clamp(19px,3.4vw,27px)] font-bold text-[var(--primary)]">
+    Sane defaults, pro-level control.
+  </p>
+  <p class="mx-auto mt-3 max-w-[620px] text-[var(--muted)]">
+    Opinionated for everyday watching, fully customizable for pros — mpv power without the
+    config-file homework. Material 3 interface, background playback, picture-in-picture.
+  </p>
+  <div class="mt-7 flex flex-wrap justify-center gap-3">
+    <a
+      id="dl-stable"
+      href={links.latestRelease}
+      class="inline-block rounded-full bg-[var(--primary)] px-7 py-3.5 text-base font-bold text-[#1A1206] hover:brightness-110"
+    >
+      Download Stable (arm64-v8a)
+    </a>
+    <a
+      id="dl-preview"
+      href={links.releases}
+      class="inline-block rounded-full border border-[var(--border)] px-7 py-3.5 text-base font-bold text-[var(--text)] hover:border-[var(--primary)]"
+    >
+      Download Preview (arm64-v8a)
+    </a>
+  </div>
+  <p id="dl-meta" class="mt-3 text-[13px] text-[var(--muted)]">Resolving latest versions…</p>
+  <img
+    src="/screenshots/mpvium-player.jpg"
+    alt="mpvium player screenshot"
+    class="mx-auto mt-8 w-full max-w-[720px] rounded-xl border border-[var(--border)] shadow-[0_24px_80px_-20px_rgba(0,0,0,0.7)]"
+    loading="eager"
+  />
+</div>
+
+<script is:inline data-repo="aryan447/mpvium">
+  (function () {
+    var repo = document.currentScript.getAttribute("data-repo");
+    var stableBtn = document.getElementById("dl-stable");
+    var previewBtn = document.getElementById("dl-preview");
+    var meta = document.getElementById("dl-meta");
+    if (!stableBtn || !previewBtn || !meta) return;
+
+    function arm64Apk(assets) {
+      if (!assets) return null;
+      for (var i = 0; i < assets.length; i++) {
+        var n = assets[i].name || "";
+        if (n.indexOf("arm64-v8a") !== -1 && n.slice(-4) === ".apk") return assets[i];
+      }
+      return null;
+    }
+
+    function setBtn(btn, asset) {
+      if (asset) {
+        btn.href = asset.browser_download_url;
+        btn.setAttribute("download", asset.name);
+        return asset.name;
+      }
+      return null;
+    }
+
+    Promise.all([
+      fetch("https://api.github.com/repos/" + repo + "/releases/latest")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; }),
+      fetch("https://api.github.com/repos/" + repo + "/releases?per_page=20")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; }),
+    ])
+      .then(function (res) {
+        var stable = res[0], list = res[1], sName = null, pName = null;
+        if (stable) {
+          var a = arm64Apk(stable.assets);
+          sName = setBtn(stableBtn, a);
+          if (a) stableBtn.textContent = "Download Stable " + stable.tag_name + " (arm64-v8a)";
+        }
+        if (list) {
+          for (var i = 0; i < list.length; i++) {
+            if (list[i].prerelease) {
+              var pa = arm64Apk(list[i].assets);
+              if (pa) {
+                pName = setBtn(previewBtn, pa);
+                previewBtn.textContent = "Download Preview " + list[i].tag_name + " (arm64-v8a)";
+                break;
+              }
+            }
+          }
+        }
+        meta.textContent =
+          (sName ? "Stable: " + sName : "Stable: see releases page") +
+          " · " +
+          (pName ? "Preview: " + pName : "Preview: see pre-releases");
+      })
+      .catch(function () {
+        meta.textContent = "See the releases page for all APKs and checksums.";
+      });
+  })();
+</script>
