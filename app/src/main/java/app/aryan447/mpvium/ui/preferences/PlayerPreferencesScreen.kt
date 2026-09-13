@@ -23,6 +23,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
+import app.aryan447.mpvium.ui.player.PlayerTitleMode
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
@@ -108,6 +109,46 @@ object PlayerPreferencesScreen : Screen {
                   )
                 },
               )
+
+              PreferenceDivider()
+
+              val showEpisodeHeader by preferences.showEpisodeHeader.collectAsState()
+              HapticSwitchPreference(
+                value = showEpisodeHeader,
+                onValueChange = preferences.showEpisodeHeader::set,
+                title = { Text(text = stringResource(R.string.pref_player_episode_header)) },
+                summary = {
+                  Text(
+                    text = stringResource(
+                      if (showEpisodeHeader) {
+                        R.string.pref_player_episode_header_summary_on
+                      } else {
+                        R.string.pref_player_episode_header_summary_off
+                      },
+                    ),
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              if (showEpisodeHeader) {
+                PreferenceDivider()
+
+                val titleMode by preferences.titleMode.collectAsState()
+                ListPreference(
+                  value = titleMode,
+                  onValueChange = preferences.titleMode::set,
+                  values = PlayerTitleMode.entries,
+                  valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                  title = { Text(text = stringResource(R.string.pref_player_title_style)) },
+                  summary = {
+                    Text(
+                      text = stringResource(id = titleMode.titleRes),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                )
+              }
 
               PreferenceDivider()
 

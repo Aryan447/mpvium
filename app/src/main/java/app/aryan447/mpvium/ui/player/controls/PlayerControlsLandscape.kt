@@ -5,9 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,6 +44,7 @@ import dev.vivvvek.seeker.Segment
 @Composable
 fun TopLeftPlayerControlsLandscape(
   mediaTitle: String?,
+  mediaSubtitle: String?,
   hideBackground: Boolean,
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
@@ -68,7 +70,7 @@ fun TopLeftPlayerControlsLandscape(
     Box(
       modifier =
         Modifier
-          .height(45.dp)
+          .heightIn(min = 45.dp)
           .clip(RoundedCornerShape(50))
           .clickable(
             enabled = playlistModeEnabled,
@@ -129,15 +131,38 @@ fun TopLeftPlayerControlsLandscape(
               overflow = TextOverflow.Clip,
             )
           }
-          Text(
-            text = mediaTitle ?: "",
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
-            fontFamily = FontFamily.Monospace,
-            color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+          Column(
             modifier = Modifier.weight(1f, fill = false),
-          )
+          ) {
+            if (mediaSubtitle != null) {
+              Text(
+                text = mediaTitle ?: "",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = (if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface)
+                  .copy(alpha = 0.7f),
+              )
+              Text(
+                text = mediaSubtitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = FontFamily.Monospace,
+                color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+              )
+            } else {
+              Text(
+                text = mediaTitle ?: "",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = FontFamily.Monospace,
+                color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+              )
+            }
+          }
         }
       }
     }

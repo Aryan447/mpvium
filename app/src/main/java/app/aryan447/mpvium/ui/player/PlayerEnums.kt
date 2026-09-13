@@ -42,6 +42,14 @@ enum class HoldGestureMode(
   BrightnessVolume(R.string.pref_player_gestures_hold_action_controls),
 }
 
+enum class PlayerTitleMode(
+  @StringRes val titleRes: Int,
+) {
+  SingleLine(R.string.pref_player_title_mode_single),
+  TwoLine(R.string.pref_player_title_mode_two),
+  EpisodeOnly(R.string.pref_player_title_mode_episode),
+}
+
 enum class HoldControlTarget {
   Brightness,
   Volume,
