@@ -30,6 +30,18 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
+import androidx.compose.runtime.Immutable
+
+/**
+ * Watch status of a single video file, backing the watched dimming,
+ * progress bar, and NEW badge in the file browser.
+ */
+@Immutable
+data class VideoFileWatchInfo(
+  val progress: Float? = null, // 0.0 to 1.0, null when no resume point
+  val isWatched: Boolean = false,
+  val isUnplayed: Boolean = false, // true when there is no playback history
+)
 
 /**
  * ViewModel for FileSystem Browser - based on Fossify's ItemsFragment logic
@@ -70,6 +82,10 @@ class FileSystemBrowserViewModel(
   // Video playback progress map - similar to Fossify's playback tracking
   private val _videoFilesWithPlayback = MutableStateFlow<Map<Long, Float>>(emptyMap())
   val videoFilesWithPlayback: StateFlow<Map<Long, Float>> = _videoFilesWithPlayback.asStateFlow()
+
+  // Watch status per video (watched dimming + NEW badge), incl. manual "Mark as" overrides
+  private val _videoWatchStatus = MutableStateFlow<Map<Long, VideoFileWatchInfo>>(emptyMap())
+  val videoWatchStatus: StateFlow<Map<Long, VideoFileWatchInfo>> = _videoWatchStatus.asStateFlow()
 
   // Loading state - similar to Fossify's showProgressBar/hideProgressBar
   private val _isLoading = MutableStateFlow(false)
@@ -475,6 +491,8 @@ class FileSystemBrowserViewModel(
     viewModelScope.launch(Dispatchers.IO) {
       val videoFiles = items.filterIsInstance<FileSystemItem.VideoFile>()
       val playbackMap = mutableMapOf<Long, Float>()
+      val watchStatusMap = mutableMapOf<Long, VideoFileWatchInfo>()
+      val watchedThreshold = browserPreferences.watchedThreshold.get()
 
       Log.d(TAG, "Loading playback info for ${videoFiles.size} videos")
 
@@ -490,13 +508,25 @@ class FileSystemBrowserViewModel(
 
           // Only show progress for videos that are 1-99% complete
           // Similar to how media players show partial progress
-          if (progressValue in 0.01f..0.99f) {
-            playbackMap[video.id] = progressValue
+          val progress = if (progressValue in 0.01f..0.99f) progressValue else null
+          if (progress != null) {
+            playbackMap[video.id] = progress
           }
+          val isWatched =
+            playbackState.hasBeenWatched || progressValue >= (watchedThreshold / 100f)
+          watchStatusMap[video.id] =
+            VideoFileWatchInfo(
+              progress = progress,
+              isWatched = isWatched,
+              isUnplayed = false,
+            )
+        } else {
+          watchStatusMap[video.id] = VideoFileWatchInfo(isUnplayed = playbackState == null)
         }
       }
 
       _videoFilesWithPlayback.value = playbackMap
+      _videoWatchStatus.value = watchStatusMap
       Log.d(TAG, "Loaded playback info for ${playbackMap.size} videos with progress")
     }
   }
