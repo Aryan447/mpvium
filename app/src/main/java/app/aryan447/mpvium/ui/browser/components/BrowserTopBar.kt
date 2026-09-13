@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Info
@@ -94,6 +95,7 @@ fun BrowserTopBar(
   onTitleLongPress: (() -> Unit)? = null,
   useRemoveIcon: Boolean = false,
   onAddToPlaylistClick: (() -> Unit)? = null,
+  onMarkAsClick: (() -> Unit)? = null,
 ) {
   if (isInSelectionMode) {
     SelectionTopBar(
@@ -113,6 +115,7 @@ fun BrowserTopBar(
       modifier = modifier,
       useRemoveIcon = useRemoveIcon,
       onAddToPlaylist = onAddToPlaylistClick,
+      onMarkAs = onMarkAsClick,
     )
   } else {
     NormalTopBar(
@@ -311,6 +314,7 @@ private fun SelectionTopBar(
   modifier: Modifier = Modifier,
   useRemoveIcon: Boolean = false,
   onAddToPlaylist: (() -> Unit)? = null,
+  onMarkAs: (() -> Unit)? = null,
 ) {
   var showDropdown by remember { mutableStateOf(false) }
 
@@ -414,6 +418,21 @@ private fun SelectionTopBar(
             Icons.AutoMirrored.Filled.PlaylistAdd,
             contentDescription = "Add to Playlist",
             modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.secondary,
+          )
+        }
+      }
+
+      // Mark as (manual watch status) icon
+      if (onMarkAs != null) {
+        IconButton(
+          onClick = onMarkAs,
+          modifier = Modifier.padding(horizontal = 2.dp),
+        ) {
+          Icon(
+            Icons.Filled.CheckCircle,
+            contentDescription = stringResource(R.string.mark_as_action),
+            modifier = Modifier.size(24.dp),
             tint = MaterialTheme.colorScheme.secondary,
           )
         }
