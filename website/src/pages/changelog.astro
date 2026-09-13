@@ -1,0 +1,127 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { links } from "../data/site";
+
+/**
+ * Mirror of the root CHANGELOG.md (user-facing, newest first).
+ * Source of truth for GitHub release notes is the root CHANGELOG.md —
+ * update both when tagging a preview or release.
+ */
+const entries = [
+  {
+    version: "Unreleased",
+    groups: [{ heading: "Fixed", items: ["Launcher icon: smaller play-button foreground to match mpvium proportions."] }],
+  },
+  {
+    version: "v1.1.6-preview.5",
+    groups: [
+      {
+        heading: "Added",
+        items: [
+          "Player hold gestures for brightness/volume controls with speed-boost option.",
+          "1-step volume swipes and coarser hardware-key volume handling.",
+        ],
+      },
+      {
+        heading: "Changed",
+        items: [
+          "Refactored TV Shows label back to Shows.",
+          "Hold-volume gesture now uses the gesture volume API.",
+        ],
+      },
+      { heading: "Fixed", items: ["Player smart-cast crash on delegated `currentPlayer` update."] },
+    ],
+  },
+  {
+    version: "v1.1.6-preview.4",
+    groups: [
+      {
+        heading: "Added",
+        items: ["Home setting to hide the Featured banner.", "Instant Continue Watching updates with remove option."],
+      },
+      {
+        heading: "Changed",
+        items: ["Renamed Series to TV Shows throughout the UI."],
+      },
+      {
+        heading: "Fixed",
+        items: ["Keep series in Continue Watching while episodes remain.", "Fetch hi-res artwork on tablets to fix blurry backdrops."],
+      },
+    ],
+  },
+  {
+    version: "v1.1.6-preview.3",
+    groups: [
+      {
+        heading: "Added",
+        items: [
+          "Library Insights dashboard.",
+          "Continue Watching home-screen widget.",
+          "Explain button, Smart Skip, and Shader Peek in the player.",
+          "First-run onboarding and replayable welcome tour.",
+          "Customizable volume step and limits.",
+        ],
+      },
+      {
+        heading: "Changed",
+        items: [
+          "Tablet master-detail two-pane for Series and Movies.",
+          "Pill navigation bar on by default with matching outline.",
+          "Actionable network-error and history-disabled states.",
+        ],
+      },
+      {
+        heading: "Fixed",
+        items: [
+          "Swipe-seek normalization for tablets (gesture-width based).",
+          "App shortcut / context-menu crash.",
+          "Player overlay startup crash, subtitle touch zones, and chip anchoring.",
+          "Smaller thumbnail/artwork caches with bounded disk eviction.",
+          "Reactive browser state (replaces 60fps polling loop).",
+        ],
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  active="changelog"
+  title="Changelog — mpvium"
+  description="What's new in mpvium: user-facing changes per preview and release build."
+>
+  <div class="mx-auto max-w-3xl px-5 pb-2 pt-14">
+    <h1 class="text-4xl font-extrabold tracking-tight">
+      What&apos;s New<span class="text-[var(--primary)]">.</span>
+    </h1>
+    <p class="mb-8 mt-2 text-[var(--muted)]">
+      User-facing changelog for preview and release builds. Full release notes with checksums
+      are on the{" "}
+      <a class="text-[var(--primary)] hover:underline" href={links.releases}>
+        releases page
+      </a>
+      .
+    </p>
+
+    {
+      entries.map((e) => (
+        <section class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+          <h2 class="text-xl font-extrabold text-[var(--primary)]">## {e.version}</h2>
+          {e.groups.map((g) => (
+            <div class="mt-4">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)]">
+                {g.heading}
+              </h3>
+              <ul class="mt-2 list-disc space-y-1.5 pl-5 text-[15px]">
+                {g.items.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      ))
+    }
+  </div>
+  <div class="h-10"></div>
+</BaseLayout>

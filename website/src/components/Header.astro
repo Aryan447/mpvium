@@ -1,0 +1,51 @@
+---
+import { links } from "../data/site";
+
+interface Props {
+  active?: string;
+}
+
+const { active } = Astro.props;
+
+const nav = [
+  { href: "/features", label: "Features", key: "features" },
+  { href: "/screenshots", label: "Screenshots", key: "screenshots" },
+  { href: "/changelog", label: "Changelog", key: "changelog" },
+  { href: "/download", label: "Download", key: "download" },
+];
+---
+
+<header
+  class="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur"
+>
+  <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3">
+    <a href="/" class="flex items-center gap-2.5 font-extrabold tracking-tight">
+      <img src="/icon.png" alt="" aria-hidden="true" class="h-8 w-8 rounded-lg" />
+      <span class="text-lg">mpv<span class="text-[var(--primary)]">ium</span></span>
+    </a>
+    <nav class="flex flex-wrap items-center gap-1 text-sm font-semibold" aria-label="Primary">
+      {
+        nav.map((item) => (
+          <a
+            href={item.href}
+            aria-current={active === item.key ? "page" : undefined}
+            class:list={[
+              "rounded-full px-3.5 py-1.5 transition-colors",
+              active === item.key
+                ? "bg-[var(--primary)] text-[#1A1206]"
+                : "text-[var(--muted)] hover:text-[var(--text)]",
+            ]}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+      <a
+        href={links.github}
+        class="rounded-full border border-[var(--border)] px-3.5 py-1.5 text-[var(--text)] hover:border-[var(--primary)]"
+      >
+        GitHub
+      </a>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* mpvium app-grade themes, ported from docs/index.html.
+   Tailwind utilities reference these via arbitrary values,
+   e.g. bg-[var(--surface)] text-[var(--muted)]. */
+
+:root,
+html[data-theme="cinema"] {
+  --bg: #0f0607;
+  --surface: #1a0e10;
+  --surface2: #241114;
+  --primary: #ffd27a;
+  --secondary: #ff5147;
+  --tertiary: #ffb64d;
+  --text: #f5ebdd;
+  --muted: #b9a493;
+  --border: #3a2428;
+}
+
+html[data-theme="default"] {
+  --bg: #161217;
+  --surface: #221c24;
+  --surface2: #2c2430;
+  --primary: #e8b5ef;
+  --secondary: #d6c0d6;
+  --tertiary: #f5b7b0;
+  --text: #f2ecf3;
+  --muted: #b4a8b8;
+  --border: #3d3342;
+}
+
+html[data-theme="dynamic"] {
+  --bg: #1c1b1f;
+  --surface: #26242b;
+  --surface2: #2f2c37;
+  --primary: #d0bcff;
+  --secondary: #ccc2dc;
+  --tertiary: #efb8c8;
+  --text: #efeaf4;
+  --muted: #b3aebd;
+  --border: #3e3a48;
+}
+
+html[data-theme="noir"] {
+  --bg: #0a0b0d;
+  --surface: #131518;
+  --surface2: #1b1e23;
+  --primary: #e6e1d5;
+  --secondary: #9aa3ab;
+  --tertiary: #d9a940;
+  --text: #ece8de;
+  --muted: #9b978c;
+  --border: #2a2d33;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  transition:
+    background 0.4s,
+    color 0.4s;
+}
+
+/* Cinema film-strip divider from the original page */
+.film-strip {
+  height: 14px;
+  background:
+    repeating-linear-gradient(90deg, var(--bg) 0 10px, transparent 10px 20px),
+    var(--surface2);
+  border-top: 1px solid var(--tertiary);
+  border-bottom: 1px solid var(--tertiary);
+}

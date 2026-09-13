@@ -1,0 +1,29 @@
+---
+import type { Feature } from "../data/features";
+
+interface Props {
+  features: Feature[];
+}
+
+const { features } = Astro.props;
+---
+
+<div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+  {
+    features.map((f) => (
+      <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-[18px]">
+        <svg
+          viewBox="0 0 24 24"
+          class="h-[26px] w-[26px] fill-none stroke-[var(--tertiary)]"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+          set:html={f.icon}
+        />
+        <h3 class="mb-1 mt-2.5 text-base font-bold text-[var(--primary)]">{f.title}</h3>
+        <p class="text-sm text-[var(--muted)]">{f.description}</p>
+      </div>
+    ))
+  }
+</div>
