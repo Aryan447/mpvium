@@ -74,6 +74,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.media.model.Video
@@ -104,6 +105,7 @@ data class SeriesDetailScreen(
     val paneBack = LocalDetailPaneBack.current
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val introSkipRepository = koinInject<IntroSkipRepository>()
     val coroutineScope = rememberCoroutineScope()
 
     var series by remember { mutableStateOf<LocalSeries?>(null) }
@@ -486,6 +488,9 @@ data class SeriesDetailScreen(
               val targetId = series?.id
               val totalEpisodes = series?.totalEpisodes ?: videos.size
               val (deleted, _) = PermissionUtils.StorageOps.deleteVideos(context, videos)
+              // Drop cached intro/recap windows for the deleted episodes so the
+              // disk cache shrinks per-episode. Survivors keep working offline.
+              runCatching { introSkipRepository.evictAll(videos.map { it.displayName }) }
               if (deleted == videos.size && videos.size == totalEpisodes) {
                 // Every episode of the show is gone: drop its cached TMDB entry.
                 // Partial episode deletes keep the cache.

@@ -10,6 +10,7 @@ import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.ContinueWatchingDismissals
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
@@ -44,6 +45,7 @@ class StreamingHomeViewModel(
 
   private val seriesDetector: SeriesDetector by inject(SeriesDetector::class.java)
   private val metadataRepository: StreamingMetadataRepository by inject(StreamingMetadataRepository::class.java)
+  private val introSkipRepository: IntroSkipRepository by inject(IntroSkipRepository::class.java)
 
   private val _uiState = MutableStateFlow(StreamingHomeUiState())
   val uiState: StateFlow<StreamingHomeUiState> = _uiState.asStateFlow()
@@ -135,6 +137,20 @@ class StreamingHomeViewModel(
             presentMovieTitles = detected.movies.map { it.title }.toSet(),
           )
         }
+        // Drop cached intro/recap windows for deleted episodes/movies so the
+        // intro disk cache only shrinks when its file is gone. Surviving
+        // entries are reused offline with no re-fetch on app open.
+        val presentIntroTitles = buildSet {
+          detected.series.forEach { series ->
+            series.seasons.values.forEach { episodes ->
+              episodes.forEach { add(it.video.displayName) }
+            }
+          }
+          detected.movies.forEach { add(it.video.displayName) }
+        }
+        runCatching {
+          introSkipRepository.pruneStale(presentIntroTitles)
+        }
 
         // Pick Hero banner: first in-progress series or highest episode count series
         val hero = detected.series.firstOrNull { it.lastWatchedEpisode != null && !it.lastWatchedEpisode.isWatched }
@@ -154,6 +170,11 @@ class StreamingHomeViewModel(
 
         // Enrich series with TMDb posters & ratings in background
         enrichSeriesMetadata(detected.series, detected.movies)
+
+        // Warm the intro/recap disk cache on unmetered connections so later
+        // playback works offline. Already-cached titles are skipped with no
+        // network call; misses stay memory-only and retry next app open.
+        prefetchIntroWindows(presentIntroTitles)
       } catch (e: Exception) {
         Log.e("StreamingHomeViewModel", "Error loading library", e)
         _uiState.update { it.copy(isLoading = false) }
@@ -183,6 +204,18 @@ class StreamingHomeViewModel(
           state.copy(movies = updatedMovies)
         }
         enriched
+      }
+    }
+  }
+
+  private fun prefetchIntroWindows(titles: Set<String>) {
+    viewModelScope.launch(Dispatchers.IO) {
+      runCatching {
+        if (!introSkipRepository.canPrefetch()) {
+          Log.d("StreamingHomeViewModel", "Skipping intro prefetch: no unmetered connection")
+          return@launch
+        }
+        introSkipRepository.prefetchAll(titles)
       }
     }
   }
