@@ -2,6 +2,7 @@ package app.aryan447.mpvium.ui.browser.videolist
 
 import android.content.Intent
 import android.os.Environment
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -84,6 +85,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.browser.cards.VideoCard
 import app.aryan447.mpvium.ui.browser.components.BrowserBottomBar
 import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
@@ -93,6 +95,7 @@ import app.aryan447.mpvium.ui.browser.dialogs.FileOperationProgressDialog
 import app.aryan447.mpvium.ui.browser.dialogs.FolderPickerDialog
 import app.aryan447.mpvium.ui.browser.dialogs.GridColumnSelector
 import app.aryan447.mpvium.ui.browser.dialogs.LoadingDialog
+import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.ui.browser.dialogs.RenameDialog
 import app.aryan447.mpvium.ui.browser.dialogs.SortDialog
 import app.aryan447.mpvium.ui.browser.dialogs.ViewModeSelector
@@ -105,8 +108,11 @@ import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.CopyPasteOps
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
 import app.aryan447.mpvium.utils.sort.SortUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
 import my.nanihadesuka.compose.LazyVerticalGridScrollbar
@@ -175,6 +181,7 @@ data class VideoListScreen(
     val deleteDialogOpen = rememberSaveable { mutableStateOf(false) }
     val renameDialogOpen = rememberSaveable { mutableStateOf(false) }
     val addToPlaylistDialogOpen = rememberSaveable { mutableStateOf(false) }
+    val markAsDialogOpen = rememberSaveable { mutableStateOf(false) }
 
     // Copy/Move state
     val folderPickerOpen = rememberSaveable { mutableStateOf(false) }
@@ -294,6 +301,7 @@ data class VideoListScreen(
           onAddToPlaylistClick = if (!BuildConfig.ENABLE_UPDATE_FEATURE) {
             { addToPlaylistDialogOpen.value = true }
           } else null,
+          onMarkAsClick = { markAsDialogOpen.value = true },
         )
       },
       floatingActionButton = {
@@ -536,6 +544,32 @@ data class VideoListScreen(
         onSuccess = {
           selectionManager.clear()
           viewModel.refresh()
+        },
+      )
+
+      // Mark as (manual watch status) Dialog
+      MarkAsDialog(
+        isOpen = markAsDialogOpen.value,
+        selectedCount = selectionManager.selectedCount,
+        onDismiss = { markAsDialogOpen.value = false },
+        onSelect = { status ->
+          markAsDialogOpen.value = false
+          val selected = selectionManager.getSelectedItems()
+          if (selected.isNotEmpty()) {
+            coroutineScope.launch(Dispatchers.IO) {
+              val applied = VideoWatchStatusOps.markVideos(selected, status)
+              withContext(Dispatchers.Main) {
+                Toast.makeText(
+                  context,
+                  context.getString(
+                    if (applied > 0) R.string.mark_as_updated else R.string.mark_as_failed,
+                  ),
+                  Toast.LENGTH_SHORT,
+                ).show()
+                selectionManager.clear()
+              }
+            }
+          }
         },
       )
     }

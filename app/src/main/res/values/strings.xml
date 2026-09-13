@@ -570,4 +570,17 @@
   <string name="playlist_refresh_success">Playlist refreshed successfully</string>
   <string name="playlist_refresh_error">Failed to refresh playlist: %s</string>
   <string name="playlist_m3u_badge">M3U</string>
+  <!-- Manual watch status (Mark as) -->
+  <string name="mark_as_action">Mark as</string>
+  <string name="mark_as_title">Mark %1$d video(s) as</string>
+  <string name="mark_as_last_played">Last played</string>
+  <string name="mark_as_last_played_summary">Highlight as recently played without changing progress</string>
+  <string name="mark_as_new">New</string>
+  <string name="mark_as_new_summary">Clear history so it shows as unplayed</string>
+  <string name="mark_as_finished">Finished</string>
+  <string name="mark_as_finished_summary">Mark as watched and clear the resume position</string>
+  <string name="mark_as_none">None</string>
+  <string name="mark_as_none_summary">Clear any status and show as plain unplayed</string>
+  <string name="mark_as_updated">Watch status updated</string>
+  <string name="mark_as_failed">Failed to update watch status</string>
 </resources>
