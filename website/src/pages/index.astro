@@ -33,7 +33,7 @@ import { links } from "../data/site";
     <p class="mb-6 text-[var(--muted)]">Library, browsing, playback — dark default theme.</p>
     <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
       {
-        shots.slice(0, 4).map((s) => (
+        shots.filter((s) => !s.wide).slice(0, 4).map((s) => (
           <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2">
             <img
               src={s.src}
