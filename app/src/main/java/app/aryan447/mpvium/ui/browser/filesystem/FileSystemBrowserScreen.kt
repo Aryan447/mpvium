@@ -3,6 +3,7 @@ package app.aryan447.mpvium.ui.browser.filesystem
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -84,6 +85,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.BuildConfig
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.browser.FileSystemItem
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
@@ -98,6 +100,7 @@ import app.aryan447.mpvium.ui.browser.dialogs.AddToPlaylistDialog
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.browser.dialogs.FileOperationProgressDialog
 import app.aryan447.mpvium.ui.browser.dialogs.FolderPickerDialog
+import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.ui.browser.dialogs.RenameDialog
 import app.aryan447.mpvium.ui.browser.dialogs.SortDialog
 import app.aryan447.mpvium.ui.browser.dialogs.ViewModeSelector
@@ -109,12 +112,15 @@ import app.aryan447.mpvium.ui.browser.states.PermissionDeniedState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.CopyPasteOps
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
 import my.nanihadesuka.compose.ScrollbarSettings
@@ -174,6 +180,8 @@ fun FileSystemBrowserScreen(path: String? = null) {
   val currentPath by viewModel.currentPath.collectAsState()
   val items by viewModel.items.collectAsState()
   val videoFilesWithPlayback by viewModel.videoFilesWithPlayback.collectAsState()
+  val videoWatchStatus by viewModel.videoWatchStatus.collectAsState()
+  val recentlyPlayedPath by viewModel.recentlyPlayedFilePath.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()
   val error by viewModel.error.collectAsState()
   val isAtRoot by viewModel.isAtRoot.collectAsState()
@@ -193,6 +201,7 @@ fun FileSystemBrowserScreen(path: String? = null) {
   val deleteDialogOpen = rememberSaveable { mutableStateOf(false) }
   val renameDialogOpen = rememberSaveable { mutableStateOf(false) }
   val addToPlaylistDialogOpen = rememberSaveable { mutableStateOf(false) }
+  val markAsDialogOpen = rememberSaveable { mutableStateOf(false) }
 
   // FAB visibility for scroll-based hiding
   val isFabVisible = remember { mutableStateOf(true) }
@@ -693,6 +702,9 @@ fun FileSystemBrowserScreen(path: String? = null) {
             onAddToPlaylistClick = if (!BuildConfig.ENABLE_UPDATE_FEATURE && videoSelectionManager.isInSelectionMode && !folderSelectionManager.isInSelectionMode) {
               { addToPlaylistDialogOpen.value = true }
             } else null,
+            onMarkAsClick = if (videoSelectionManager.isInSelectionMode && !folderSelectionManager.isInSelectionMode) {
+              { markAsDialogOpen.value = true }
+            } else null,
           )
         }
       },
@@ -806,6 +818,8 @@ fun FileSystemBrowserScreen(path: String? = null) {
                 listState = listState,
                 items = items,
                 videoFilesWithPlayback = videoFilesWithPlayback,
+                videoWatchStatus = videoWatchStatus,
+                recentlyPlayedPath = recentlyPlayedPath,
                 isLoading = isLoading && items.isEmpty(),
                 isRefreshing = isRefreshing,
                 error = error,
@@ -1034,6 +1048,32 @@ fun FileSystemBrowserScreen(path: String? = null) {
         viewModel.refresh()
       },
     )
+
+    // Mark as (manual watch status) Dialog
+    MarkAsDialog(
+      isOpen = markAsDialogOpen.value,
+      selectedCount = videoSelectionManager.selectedCount,
+      onDismiss = { markAsDialogOpen.value = false },
+      onSelect = { status ->
+        markAsDialogOpen.value = false
+        val selected = videoSelectionManager.getSelectedItems()
+        if (selected.isNotEmpty()) {
+          coroutineScope.launch(Dispatchers.IO) {
+            val applied = VideoWatchStatusOps.markVideos(selected, status)
+            withContext(Dispatchers.Main) {
+              Toast.makeText(
+                context,
+                context.getString(
+                  if (applied > 0) R.string.mark_as_updated else R.string.mark_as_failed,
+                ),
+                Toast.LENGTH_SHORT,
+              ).show()
+              videoSelectionManager.clear()
+            }
+          }
+        }
+      },
+    )
   }
 }
 
@@ -1182,6 +1222,8 @@ private fun FileSystemBrowserContent(
   listState: LazyListState,
   items: List<FileSystemItem>,
   videoFilesWithPlayback: Map<Long, Float>,
+  videoWatchStatus: Map<Long, VideoFileWatchInfo>,
+  recentlyPlayedPath: String?,
   isLoading: Boolean,
   isRefreshing: androidx.compose.runtime.MutableState<Boolean>,
   error: String?,
@@ -1361,11 +1403,14 @@ private fun FileSystemBrowserContent(
               items = items.filterIsInstance<FileSystemItem.VideoFile>(),
               key = { "${it.video.id}_${it.video.path}" },
             ) { videoFile ->
+              val watchInfo = videoWatchStatus[videoFile.video.id]
               VideoCard(
                 video = videoFile.video,
                 progressPercentage = videoFilesWithPlayback[videoFile.video.id],
-                isRecentlyPlayed = false,
+                isRecentlyPlayed = recentlyPlayedPath?.let { videoFile.video.path == it } ?: false,
                 isSelected = videoSelectionManager.isSelected(videoFile.video),
+                isOldAndUnplayed = watchInfo?.isUnplayed == true,
+                isWatched = watchInfo?.isWatched == true,
                 onClick = { onVideoClick(videoFile.video) },
                 onLongClick = { onVideoLongClick(videoFile.video) },
                 onThumbClick = if (tapThumbnailToSelect) {
