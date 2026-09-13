@@ -45,6 +45,8 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.database.MpviumDatabase
 import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
 import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.CustomScriptButton
+import app.aryan447.mpvium.preferences.ScriptFileHelper
 import app.aryan447.mpvium.preferences.SettingsManager
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
@@ -416,6 +418,88 @@ object AdvancedPreferencesScreen : Screen {
           }
 
           // Scripts Section
+          item {
+            PreferenceSectionHeader(title = "Scripts (Lua / JS)")
+          }
+
+          item {
+            val enableScripts by preferences.enableScripts.collectAsState()
+            val disabledScripts by preferences.disabledScripts.collectAsState()
+            val rawCustomButtons by preferences.customScriptButtons.collectAsState()
+            var internalScriptCount by remember { mutableStateOf<Int?>(null) }
+            LaunchedEffect(mpvConfStorageLocation, disabledScripts) {
+              withContext(Dispatchers.IO) {
+                val dir = File(context.filesDir, "scripts")
+                val count =
+                  if (dir.exists()) {
+                    dir.listFiles()?.count { it.isFile && isScriptFile(it.name) } ?: 0
+                  } else {
+                    0
+                  }
+                withContext(Dispatchers.Main) { internalScriptCount = count }
+              }
+            }
+            val enabledCount =
+              if (!enableScripts) {
+                0
+              } else {
+                val total = internalScriptCount ?: 0
+                (total - disabledScripts.size).coerceAtLeast(0)
+              }
+            val customButtonCount =
+              remember(rawCustomButtons) {
+                CustomScriptButton.decode(rawCustomButtons).size
+              }
+            PreferenceCard {
+              HapticSwitchPreference(
+                value = enableScripts,
+                onValueChange = preferences.enableScripts::set,
+                title = { Text("Enable scripts") },
+                summary = {
+                  Text(
+                    "Load scripts from your MPV configuration directory",
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
+              Preference(
+                title = { Text("Manage scripts") },
+                summary = {
+                  Text(
+                    when {
+                      !enableScripts -> "Scripts disabled"
+                      enabledCount == 1 -> "1 script enabled"
+                      else -> "$enabledCount scripts enabled"
+                    },
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+                onClick = { backStack.add(ManageScriptsScreen) },
+              )
+
+              PreferenceDivider()
+
+              Preference(
+                title = { Text("Custom buttons") },
+                summary = {
+                  Text(
+                    if (customButtonCount == 0) {
+                      "Create and manage script-powered player buttons"
+                    } else if (customButtonCount == 1) {
+                      "1 custom button"
+                    } else {
+                      "$customButtonCount custom buttons"
+                    },
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+                onClick = { backStack.add(CustomButtonsScreen) },
+              )
+            }
+          }
           // History Section
           item {
             PreferenceSectionHeader(title = "History")
@@ -652,3 +736,5 @@ object AdvancedPreferencesScreen : Screen {
 
 fun getSimplifiedPathFromUri(uri: String): String =
   Environment.getExternalStorageDirectory().canonicalPath + "/" + Uri.decode(uri).substringAfterLast(":")
+
+private fun isScriptFile(name: String?): Boolean = ScriptFileHelper.isScriptFile(name)
