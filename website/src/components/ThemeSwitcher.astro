@@ -1,0 +1,56 @@
+---
+import { themes, defaultTheme } from "../data/themes";
+---
+
+<div class="mb-5 flex flex-wrap gap-2.5" role="group" aria-label="Theme switcher">
+  {
+    themes.map((t) => (
+      <button
+        type="button"
+        data-set-theme={t.id}
+        aria-pressed={t.id === defaultTheme ? "true" : "false"}
+        class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-[18px] py-2 text-sm font-bold text-[var(--text)] aria-pressed:bg-[var(--primary)] aria-pressed:text-[#1A1206] aria-pressed:border-[var(--primary)]"
+      >
+        {t.name}
+      </button>
+    ))
+  }
+</div>
+<div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+  {
+    themes.map((t) => (
+      <div class="overflow-hidden rounded-2xl border border-[var(--border)]">
+        <div class="h-[86px]" style={`background:${t.bg}`}></div>
+        <div class="bg-[var(--surface)] px-3.5 py-3">
+          <b class="text-[15px]">{t.name}</b>
+          <code class="mt-1 block text-xs text-[var(--muted)]">
+            primary {t.primary} · bg {t.bg}
+          </code>
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<script is:inline>
+  (function () {
+    var btns = document.querySelectorAll("[data-set-theme]");
+    function current() {
+      return document.documentElement.getAttribute("data-theme");
+    }
+    function paint() {
+      btns.forEach(function (x) {
+        x.setAttribute("aria-pressed", x.getAttribute("data-set-theme") === current() ? "true" : "false");
+      });
+    }
+    btns.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var t = b.getAttribute("data-set-theme");
+        document.documentElement.setAttribute("data-theme", t);
+        try { localStorage.setItem("mpvium-theme", t); } catch (e) {}
+        paint();
+      });
+    });
+    paint();
+  })();
+</script>
