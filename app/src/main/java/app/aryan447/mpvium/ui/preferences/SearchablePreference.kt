@@ -195,6 +195,13 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                titleRes = R.string.pref_player_episode_header,
+                summaryRes = R.string.pref_player_episode_header_summary_on,
+                keywords = listOf("episode", "clean", "title", "season", "filename", "header"),
+                category = "Player",
+                screen = PlayerPreferencesScreen,
+            ))
+            add(SearchablePreference(
                 titleRes = R.string.pref_auto_pip_title,
                 summaryRes = R.string.pref_auto_pip_summary,
                 keywords = listOf("pip", "picture", "auto", "navigation", "home", "back"),
