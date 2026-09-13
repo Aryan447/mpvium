@@ -345,10 +345,46 @@ fun PlayerControls(
         val currentZoom by viewModel.videoZoom.collectAsState()
 
         val rawMediaTitle by MPVLib.propString["media-title"].collectAsState()
-        val mediaTitle by remember(rawMediaTitle, activity) {
+        val showEpisodeHeader by playerPreferences.showEpisodeHeader.collectAsState()
+        val titleMode by playerPreferences.titleMode.collectAsState()
+        val topTitle by remember(rawMediaTitle, activity, showEpisodeHeader, titleMode) {
           derivedStateOf {
-            rawMediaTitle?.takeIf { it.isNotBlank() }
+            val raw = rawMediaTitle?.takeIf { it.isNotBlank() }
               ?: activity.getTitleForControls()
+            if (!showEpisodeHeader) {
+              Pair(raw, null)
+            } else {
+              val clean = app.aryan447.mpvium.utils.media.EpisodeTitleFormatter.resolve(raw)
+              when (titleMode) {
+                app.aryan447.mpvium.ui.player.PlayerTitleMode.SingleLine ->
+                  Pair(clean?.singleLine ?: raw, null)
+                app.aryan447.mpvium.ui.player.PlayerTitleMode.EpisodeOnly ->
+                  Pair(clean?.episodeOnly ?: raw, null)
+                app.aryan447.mpvium.ui.player.PlayerTitleMode.TwoLine ->
+                  if (clean != null) Pair(clean.showName, clean.episodePart) else Pair(raw, null)
+              }
+            }
+          }
+        }
+        val (mediaTitle, mediaSubtitle) = topTitle
+        // Pill buttons (customizable VIDEO_TITLE) stay single-line; two-line falls back
+        // to the single-line form so the pill never grows vertically.
+        val mediaTitleSingleLine by remember(rawMediaTitle, activity, showEpisodeHeader, titleMode) {
+          derivedStateOf {
+            val raw = rawMediaTitle?.takeIf { it.isNotBlank() }
+              ?: activity.getTitleForControls()
+            if (!showEpisodeHeader) {
+              raw
+            } else {
+              val clean = app.aryan447.mpvium.utils.media.EpisodeTitleFormatter.resolve(raw)
+              when (titleMode) {
+                app.aryan447.mpvium.ui.player.PlayerTitleMode.EpisodeOnly ->
+                  clean?.episodeOnly ?: raw
+                app.aryan447.mpvium.ui.player.PlayerTitleMode.SingleLine,
+                app.aryan447.mpvium.ui.player.PlayerTitleMode.TwoLine ->
+                  clean?.singleLine ?: raw
+              }
+            }
           }
         }
 
@@ -879,6 +915,7 @@ fun PlayerControls(
           if (isPortrait) {
             TopPlayerControlsPortrait(
               mediaTitle = mediaTitle,
+              mediaSubtitle = mediaSubtitle,
               hideBackground = hideBackground,
               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
@@ -887,6 +924,7 @@ fun PlayerControls(
           } else {
             TopLeftPlayerControlsLandscape(
               mediaTitle = mediaTitle,
+              mediaSubtitle = mediaSubtitle,
               hideBackground = hideBackground,
               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
@@ -943,7 +981,7 @@ fun PlayerControls(
             isSpeedNonOne = isSpeedNonOne,
             currentZoom = currentZoom,
             aspect = aspect,
-            mediaTitle = mediaTitle,
+            mediaTitle = mediaTitleSingleLine,
             hideBackground = hideBackground,
             decoder = decoder,
             playbackSpeed = playbackSpeed ?: 1f,
@@ -1102,7 +1140,7 @@ fun PlayerControls(
               isSpeedNonOne = isSpeedNonOne,
               currentZoom = currentZoom,
               aspect = aspect,
-              mediaTitle = mediaTitle,
+              mediaTitle = mediaTitleSingleLine,
               hideBackground = hideBackground,
               decoder = decoder,
               playbackSpeed = playbackSpeed ?: 1f,
@@ -1120,7 +1158,7 @@ fun PlayerControls(
               isSpeedNonOne = isSpeedNonOne,
               currentZoom = currentZoom,
               aspect = aspect,
-              mediaTitle = mediaTitle,
+              mediaTitle = mediaTitleSingleLine,
               hideBackground = hideBackground,
               decoder = decoder,
               playbackSpeed = playbackSpeed ?: 1f,
@@ -1176,7 +1214,7 @@ fun PlayerControls(
             isSpeedNonOne = isSpeedNonOne,
             currentZoom = currentZoom,
             aspect = aspect,
-            mediaTitle = mediaTitle,
+            mediaTitle = mediaTitleSingleLine,
             hideBackground = hideBackground,
             decoder = decoder,
             playbackSpeed = playbackSpeed ?: 1f,

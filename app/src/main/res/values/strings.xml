@@ -153,6 +153,13 @@
   <string name="player_skip_recap">Skip recap</string>
   <string name="pref_player_seeking_title">Seeking</string>
   <string name="pref_player_close_after_eof">Close after the end of playback</string>
+  <string name="pref_player_episode_header">Clean titles</string>
+  <string name="pref_player_episode_header_summary_on">Show S1E2 and episode name instead of filename</string>
+  <string name="pref_player_episode_header_summary_off">Show the raw filename</string>
+  <string name="pref_player_title_style">Title style</string>
+  <string name="pref_player_title_mode_single">Single line</string>
+  <string name="pref_player_title_mode_two">Two lines</string>
+  <string name="pref_player_title_mode_episode">Episode only</string>
   <string name="pref_player_remember_brightness">Remember display brightness</string>
   <string name="pref_player_gestures">Gestures</string>
   <string name="pref_player_gestures_brightness">Brightness gestures</string>

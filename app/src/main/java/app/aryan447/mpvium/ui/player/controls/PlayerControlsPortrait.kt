@@ -43,6 +43,7 @@ import dev.vivvvek.seeker.Segment
 @Composable
 fun TopPlayerControlsPortrait(
   mediaTitle: String?,
+  mediaSubtitle: String?,
   hideBackground: Boolean,
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
@@ -128,15 +129,38 @@ fun TopPlayerControlsPortrait(
                   overflow = TextOverflow.Clip,
                 )
               }
-              Text(
-                text = mediaTitle ?: "",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = FontFamily.Monospace,
-                color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+              Column(
                 modifier = Modifier.weight(1f, fill = false),
-              )
+              ) {
+                if (mediaSubtitle != null) {
+                  Text(
+                    text = mediaTitle ?: "",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = (if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface)
+                      .copy(alpha = 0.7f),
+                  )
+                  Text(
+                    text = mediaSubtitle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                  )
+                } else {
+                  Text(
+                    text = mediaTitle ?: "",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                  )
+                }
+              }
             }
           }
         }
