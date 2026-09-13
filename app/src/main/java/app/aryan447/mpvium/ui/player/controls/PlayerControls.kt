@@ -820,10 +820,11 @@ fun PlayerControls(
             duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
             onValueChange = {
               if (!isSeeking) {
-                // First drag frame - pause playback
+                // First drag frame - pause playback. Transient: keeps audio
+                // focus so release resumes instantly without a duck flap.
                 wasPlayerAlreadyPaused = paused ?: false
                 if (!wasPlayerAlreadyPaused) {
-                  viewModel.pause()
+                  viewModel.pause(transientPause = true)
                 }
               }
               isSeeking = true
@@ -843,10 +844,13 @@ fun PlayerControls(
               // right after a fast drag and would snap playback backwards.
               // roundToInt (not toInt): truncation biases up to ~1s backwards,
               // most visible on wide tracks with a coarse pixel-to-time ratio.
-              viewModel.seekTo(finalPosition.roundToInt(), isScrubbing = false)
-              // Unpause if it wasn't paused before seeking
+              // Ordered seek-then-resume in one coroutine: separate seekTo +
+              // unpause calls raced, letting playback resume at the pre-seek
+              // position before the seek landed (~1s hitch on slow devices).
               if (wasScrubbing && !wasPlayerAlreadyPaused) {
-                viewModel.unpause()
+                viewModel.seekToAndResume(finalPosition.roundToInt())
+              } else {
+                viewModel.seekTo(finalPosition.roundToInt(), isScrubbing = false)
               }
               viewModel.showControls()
             },

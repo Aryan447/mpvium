@@ -38,8 +38,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import android.os.SystemClock
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -103,6 +105,23 @@ private const val SEEK_SETTLE_TOLERANCE_SEC = 1.5f
  * releases the hold back to the live position; performs no seek.
  */
 private const val SEEK_SETTLE_TIMEOUT_MS = 2000L
+
+/**
+ * Blind window after a tap/release during which non-landed live polls are
+ * ignored outright. Covers the backlog of throttled scrub seeks still
+ * draining through mpv: without it, the first intermediate landing satisfies
+ * "moved on" and snaps the thumb backward (e.g. 12:20 -> 10:xx -> 12:20)
+ * before the final seek lands.
+ */
+private const val SEEK_SETTLE_HOLD_MS = 350L
+
+/**
+ * A moved live position only counts as the final landing once it sits
+ * unchanged this long. Queued intermediates keep changing poll-to-poll, so
+ * they can never trigger a release; the parked final (exact or
+ * keyframe-inexact) can.
+ */
+private const val SEEK_SETTLE_STABLE_MS = 250L
 
 private fun scrubRateForTier(tier: Int): Int = 1 shl tier.coerceIn(0, MAX_SCRUB_TIER)
 
@@ -194,6 +213,11 @@ fun SeekbarWithTimers(
   var settling by remember { mutableStateOf(false) }
   var settleTarget by remember { mutableFloatStateOf(Float.NaN) }
   var settleBase by remember { mutableFloatStateOf(0f) }
+  // Book-keeping for the backlog-proof settle policy below: when the hold
+  // started, and the last live value plus when it last changed.
+  var settleHoldUntilMs by remember { mutableLongStateOf(0L) }
+  var settleLastLive by remember { mutableFloatStateOf(Float.NaN) }
+  var settleLastChangeMs by remember { mutableLongStateOf(0L) }
 
   // Variable scrub rate: dragging upward while scrubbing steps through
   // 1x/2x/4x/8x tiers. Horizontal deltas are scaled by the active rate and
@@ -218,6 +242,26 @@ fun SeekbarWithTimers(
   val animatedPosition = remember { Animatable(position) }
   val scope = rememberCoroutineScope()
   val latestPosition by rememberUpdatedState(position)
+  // Read via state (not pointerInput keys) so a duration load completing
+  // mid-drag doesn't restart — and cancel — the active gesture detector.
+  val latestDuration by rememberUpdatedState(duration)
+  val latestOnValueChange by rememberUpdatedState(onValueChange)
+  val latestOnValueChangeFinished by rememberUpdatedState(onValueChangeFinished)
+
+  // Shared entry into the settling hold for taps and releases. The thumb
+  // parks on [target] until mpv proves it got there; see the policy below.
+  fun enterSettling(target: Float) {
+    val now = SystemClock.uptimeMillis()
+    dragActive = false
+    isUserInteracting = true
+    settling = true
+    settleBase = latestPosition
+    settleTarget = target
+    settleHoldUntilMs = now + SEEK_SETTLE_HOLD_MS
+    settleLastLive = Float.NaN
+    settleLastChangeMs = now
+    scrubTier = 0
+  }
 
   LaunchedEffect(position, dragActive, settling) {
     if (dragActive) return@LaunchedEffect // finger down: preview owns the thumb
@@ -226,14 +270,31 @@ fun SeekbarWithTimers(
       if (target.isNaN()) {
         settling = false
         isUserInteracting = false
+      } else if (abs(position - target) <= SEEK_SETTLE_TOLERANCE_SEC) {
+        // Fast path: mpv landed on (or plays through) the target. Stale
+        // polls sit far from the target by definition, so this can never
+        // false-fire on them — safe to release immediately, even mid-hold.
+        settling = false
+        isUserInteracting = false
+        settleTarget = Float.NaN
+        animatedPosition.snapTo(position)
       } else {
-        // Release as soon as mpv lands near the target, or decisively leaves
-        // the pre-seek base (covers inexact keyframe landings). Anything still
-        // sitting at the old position is stale and stays ignored, so the
-        // thumb can neither jump back nor flutter mid-seek.
-        val landed = abs(position - target) <= SEEK_SETTLE_TOLERANCE_SEC
-        val movedOn = abs(position - settleBase) >= SEEK_SETTLE_TOLERANCE_SEC
-        if (landed || movedOn) {
+        // Otherwise the final seek is still in flight (or landed keyframe-
+        // inexact). Throttled scrub seeks queued behind the finger keep
+        // landing here, and any one of them would satisfy a naive "moved
+        // on" check and snap the thumb backward mid-seek. So: track the
+        // live value and only accept a moved position once it has parked
+        // unchanged past the blind hold — i.e. the queue has drained and
+        // mpv sits on the final landing. Anything else keeps holding the
+        // thumb on the user's target.
+        val now = SystemClock.uptimeMillis()
+        if (settleLastLive.isNaN() || position != settleLastLive) {
+          settleLastLive = position
+          settleLastChangeMs = now
+        }
+        val moved = abs(position - settleBase) >= SEEK_SETTLE_TOLERANCE_SEC
+        val parked = now - settleLastChangeMs >= SEEK_SETTLE_STABLE_MS
+        if (moved && parked && now >= settleHoldUntilMs) {
           settling = false
           isUserInteracting = false
           settleTarget = Float.NaN
@@ -278,13 +339,16 @@ fun SeekbarWithTimers(
       modifier = Modifier.width(92.dp),
     )
 
-    // Seekbar with expanded touch area
+    // Seekbar with expanded touch area. The outer box is the full 48dp touch
+    // height; the visual track inside is smaller and centered. The overlay
+    // below uses matchParentSize so it exactly covers this box — a fixed
+    // larger height would overflow and steal taps meant for neighbouring
+    // controls (timers, video surface).
     Box(
       modifier =
         Modifier
           .weight(1f)
           .height(48.dp)
-          .padding(vertical = 8.dp) // Add vertical padding for larger touch area
           .onSizeChanged { trackWidthPx = it.width },
       contentAlignment = Alignment.Center,
     ) {
@@ -352,31 +416,29 @@ fun SeekbarWithTimers(
       // remains the single gesture handler for every seekbar style.
       Box(
         modifier = Modifier
-          .fillMaxWidth()
-          .height(64.dp) // Larger touch area
-          .pointerInput(duration) {
+          .matchParentSize()
+          .pointerInput(scrubTierStepPx) {
             detectTapGestures(
               onTap = { offset ->
-                val target = xToSeekPosition(offset.x, size.width, duration)
+                val currentDuration = latestDuration
+                if (currentDuration <= 0f) return@detectTapGestures
+                val target = xToSeekPosition(offset.x, size.width, currentDuration)
                 // Single exact seek per tap: park the thumb on the target
                 // immediately and let the settle guard hold it there until
                 // mpv's time-pos confirms. No preview scrub seek first — that
                 // issued two mpv seeks per tap plus a pause/unpause cycle.
-                dragActive = false
-                isUserInteracting = true
-                settling = true
-                settleBase = latestPosition
-                settleTarget = target
-                scrubTier = 0
+                enterSettling(target)
                 userPosition = target
                 scope.launch { animatedPosition.snapTo(target) }
-                onValueChangeFinished(target)
+                latestOnValueChangeFinished(target)
               }
             )
           }
-          .pointerInput(duration, scrubTierStepPx) {
+          .pointerInput(scrubTierStepPx) {
             detectDragGestures(
               onDragStart = { offset ->
+                val currentDuration = latestDuration
+                if (currentDuration <= 0f) return@detectDragGestures
                 dragActive = true
                 isUserInteracting = true
                 settling = false
@@ -385,31 +447,26 @@ fun SeekbarWithTimers(
                 // Anchor to the grab point immediately: the first onDrag
                 // callback only fires after touch slop, otherwise the
                 // preview would jump from the stale position on wide tracks.
-                dragAnchor = xToSeekPosition(offset.x, size.width, duration)
+                dragAnchor = xToSeekPosition(offset.x, size.width, currentDuration)
                 scaledDragDxPx = 0f
                 verticalDragPx = 0f
                 scrubTier = 0
                 userPosition = dragAnchor
                 scope.launch { animatedPosition.snapTo(dragAnchor) }
-                onValueChange(userPosition)
+                latestOnValueChange(userPosition)
               },
               onDragEnd = {
                 // Release uses the last settled drag value — never re-sample
                 // here, so lift-off micro-jitter can't clobber the target.
-                // No artificial delay: the settle guard above holds the thumb
-                // on the target until mpv's time-pos confirms the seek.
-                dragActive = false
-                settling = true
-                settleTarget = userPosition
-                scrubTier = 0
-                onValueChangeFinished(userPosition)
+                // enterSettling re-bases on the live position at release and
+                // starts the blind hold, so queued scrub intermediates landing
+                // now can't snap the thumb back before the final seek lands.
+                enterSettling(userPosition)
+                latestOnValueChangeFinished(userPosition)
               },
               onDragCancel = {
-                dragActive = false
-                settling = true
-                settleTarget = userPosition
-                scrubTier = 0
-                onValueChangeFinished(userPosition)
+                enterSettling(userPosition)
+                latestOnValueChangeFinished(userPosition)
               },
             ) { change, dragAmount ->
               change.consume()
@@ -421,14 +478,15 @@ fun SeekbarWithTimers(
                 ((-verticalDragPx) / scrubTierStepPx).toInt()
                   .coerceIn(0, MAX_SCRUB_TIER)
               if (newTier != scrubTier) scrubTier = newTier
-              if (size.width > 0 && duration > 0f) {
+              val currentDuration = latestDuration
+              if (size.width > 0 && currentDuration > 0f) {
                 scaledDragDxPx += dragAmount.x * scrubRateForTier(scrubTier)
-                val anchorFraction = dragAnchor.toDouble() / duration.toDouble()
+                val anchorFraction = dragAnchor.toDouble() / currentDuration.toDouble()
                 val deltaFraction = scaledDragDxPx.toDouble() / size.width.toDouble()
                 userPosition =
-                  ((anchorFraction + deltaFraction) * duration.toDouble())
-                    .toFloat().coerceIn(0f, duration)
-                onValueChange(userPosition)
+                  ((anchorFraction + deltaFraction) * currentDuration.toDouble())
+                    .toFloat().coerceIn(0f, currentDuration)
+                latestOnValueChange(userPosition)
               }
             }
           }
@@ -483,8 +541,6 @@ private fun SquigglySeekbar(
   var phaseOffset by remember { mutableFloatStateOf(0f) }
   var heightFraction by remember { mutableFloatStateOf(1f) }
 
-  val scope = rememberCoroutineScope()
-
   // Wave parameters
   val waveLength = 80f
   val lineAmplitude = if (useWavySeekbar) 6f else 0f
@@ -494,32 +550,33 @@ private fun SquigglySeekbar(
   val matchedWaveEndpoint = 1f
   val transitionEnabled = true
 
-  // Animate height fraction based on paused state and scrubbing state
+  // Animate height fraction based on paused state and scrubbing state.
+  // Runs directly in the LaunchedEffect (not a nested scope.launch) so a
+  // pause/resume toggle cancels the in-flight animation instead of leaking
+  // concurrent animators that fight over heightFraction.
   LaunchedEffect(isPaused, isScrubbing, useWavySeekbar) {
     if (!useWavySeekbar) {
       heightFraction = 0f
       return@LaunchedEffect
     }
 
-    scope.launch {
-      val shouldFlatten = isPaused || isScrubbing
-      val targetHeight = if (shouldFlatten) 0f else 1f
-      val duration = if (shouldFlatten) 550 else 800
-      val startDelay = if (shouldFlatten) 0L else 60L
+    val shouldFlatten = isPaused || isScrubbing
+    val targetHeight = if (shouldFlatten) 0f else 1f
+    val animDuration = if (shouldFlatten) 550 else 800
+    val startDelay = if (shouldFlatten) 0L else 60L
 
-      kotlinx.coroutines.delay(startDelay)
+    kotlinx.coroutines.delay(startDelay)
 
-      val animator = Animatable(heightFraction)
-      animator.animateTo(
-        targetValue = targetHeight,
-        animationSpec =
-          tween(
-            durationMillis = duration,
-            easing = LinearEasing,
-          ),
-      ) {
-        heightFraction = value
-      }
+    val animator = Animatable(heightFraction)
+    animator.animateTo(
+      targetValue = targetHeight,
+      animationSpec =
+        tween(
+          durationMillis = animDuration,
+          easing = LinearEasing,
+        ),
+    ) {
+      heightFraction = value
     }
   }
 
@@ -787,30 +844,27 @@ fun StandardSeekbar(
     val primaryColor = MaterialTheme.colorScheme.primary
     val interactionSource = remember { MutableInteractionSource() }
 
-    // Animation state (same as SquigglySeekbar)
+    // Animation state (same as SquigglySeekbar). Runs directly in the
+    // LaunchedEffect so toggle flapping cancels instead of leaking.
     var heightFraction by remember { mutableFloatStateOf(1f) }
-    val scope = rememberCoroutineScope()
 
-    // Animate height fraction based on paused state and scrubbing state (same as SquigglySeekbar)
     LaunchedEffect(isPaused, isScrubbing) {
-        scope.launch {
-            val shouldFlatten = isPaused || isScrubbing
-            val targetHeight = if (shouldFlatten) 0.7f else 1f // Slightly less dramatic for standard seekbar
-            val animationDuration = if (shouldFlatten) 550 else 800
-            val startDelay = if (shouldFlatten) 0L else 60L
+        val shouldFlatten = isPaused || isScrubbing
+        val targetHeight = if (shouldFlatten) 0.7f else 1f // Slightly less dramatic for standard seekbar
+        val animationDuration = if (shouldFlatten) 550 else 800
+        val startDelay = if (shouldFlatten) 0L else 60L
 
-            kotlinx.coroutines.delay(startDelay)
+        kotlinx.coroutines.delay(startDelay)
 
-            val animator = Animatable(heightFraction)
-            animator.animateTo(
-                targetValue = targetHeight,
-                animationSpec = tween(
-                    durationMillis = animationDuration,
-                    easing = LinearEasing,
-                ),
-            ) {
-                heightFraction = value
-            }
+        val animator = Animatable(heightFraction)
+        animator.animateTo(
+            targetValue = targetHeight,
+            animationSpec = tween(
+                durationMillis = animationDuration,
+                easing = LinearEasing,
+            ),
+        ) {
+            heightFraction = value
         }
     }
 
@@ -828,12 +882,17 @@ fun StandardSeekbar(
     val thumbHeight = if (isThick) 16.dp * scrubThickness else 14.dp
     val thumbShape = if (isThick) RoundedCornerShape(3.dp) else CircleShape
 
+    // Non-interactive visual only: the parent touch overlay is the single
+    // gesture handler for every style. Leaving this Slider enabled would add
+    // a second handler underneath (with its own thumb-inset mapping), stealing
+    // pointers from the overlay and clobbering the release target.
     Slider(
         value = position,
         onValueChange = onSeek,
         onValueChangeFinished = onSeekFinished,
         valueRange = 0f..duration.coerceAtLeast(0.1f),
         modifier = Modifier.fillMaxWidth(),
+        enabled = false,
         interactionSource = interactionSource,
         track = { sliderState ->
             val disabledAlpha = 0.3f
