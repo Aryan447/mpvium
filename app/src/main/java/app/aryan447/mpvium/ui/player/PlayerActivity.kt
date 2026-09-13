@@ -895,11 +895,13 @@ class PlayerActivity :
       Log.d(TAG, "Syncing from user MPV directory: ${tree.uri}")
       syncConfigFiles(tree)
       syncFonts(tree)
+      syncScripts(tree)
       Log.d(TAG, "Full MPV directory sync completed")
     } else {
       // Fallback: use preferences-based config (no user directory set)
       Log.d(TAG, "No MPV directory configured, using preferences fallback")
       copyMPVConfigFromPreferences()
+      pruneDisabledScripts()
     }
   }
 
@@ -1000,6 +1002,76 @@ class PlayerActivity :
     }
 
     Log.d(TAG, "Fonts sync: $count file(s) from MPV directory")
+  }
+
+  // ==================== Scripts Sync ====================
+
+  /**
+   * Syncs Lua/JS scripts from the user's MPV directory into internal storage
+   * (mpv auto-loads `<config>/scripts`). Honors the Enable scripts toggle and
+   * the per-script disabled list from Manage scripts.
+   */
+  private fun syncScripts(tree: DocumentFile) {
+    val internalScriptsDir = File(filesDir, "scripts")
+    internalScriptsDir.mkdirs()
+
+    if (!advancedPreferences.enableScripts.get()) {
+      internalScriptsDir.listFiles()?.forEach { it.delete() }
+      Log.d(TAG, "Scripts disabled, cleared internal scripts dir")
+      return
+    }
+
+    val disabled = advancedPreferences.disabledScripts.get()
+    val scriptsSubdir = findSubdirCaseInsensitive(tree, "scripts")
+    val sourceDir = scriptsSubdir ?: tree
+    var count = 0
+
+    sourceDir.listFiles().forEach { file ->
+      if (!file.isFile) return@forEach
+      val name = file.name ?: return@forEach
+      if (!isScriptFileName(name) || name in disabled) return@forEach
+      runCatching {
+        contentResolver.openInputStream(file.uri)?.use { input ->
+          File(internalScriptsDir, name).outputStream().use { output ->
+            input.copyTo(output)
+          }
+          count++
+          Log.d(TAG, "Synced script: $name")
+        }
+      }.onFailure { e ->
+        Log.e(TAG, "Error syncing script: $name", e)
+      }
+    }
+
+    pruneDisabledScripts()
+    Log.d(TAG, "Scripts sync: $count file(s) from MPV directory")
+  }
+
+  /**
+   * Removes disabled scripts (and everything when scripts are toggled off)
+   * from internal storage so mpv does not auto-load them.
+   */
+  private fun pruneDisabledScripts() {
+    runCatching {
+      val internalScriptsDir = File(filesDir, "scripts")
+      if (!internalScriptsDir.exists()) return
+      if (!advancedPreferences.enableScripts.get()) {
+        internalScriptsDir.listFiles()?.forEach { it.delete() }
+        return
+      }
+      val disabled = advancedPreferences.disabledScripts.get()
+      if (disabled.isEmpty()) return
+      disabled.forEach { name ->
+        File(internalScriptsDir, name).takeIf { it.exists() }?.delete()
+      }
+    }.onFailure { e ->
+      Log.e(TAG, "Error pruning scripts", e)
+    }
+  }
+
+  private fun isScriptFileName(name: String): Boolean {
+    val ext = name.substringAfterLast('.', "").lowercase()
+    return ext == "lua" || ext == "js"
   }
 
   // ==================== Helpers ====================

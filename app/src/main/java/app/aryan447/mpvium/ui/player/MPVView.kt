@@ -125,6 +125,10 @@ class MPVView(
 
     MPVLib.setPropertyBoolean("keep-open", true)
     MPVLib.setPropertyBoolean("input-default-bindings", true)
+    MPVLib.setOptionString(
+      "load-scripts",
+      if (advancedPreferences.enableScripts.get()) "yes" else "no",
+    )
 
     MPVLib.setOptionString("tls-verify", "yes")
     MPVLib.setOptionString("tls-ca-file", "${context.filesDir.path}/cacert.pem")
