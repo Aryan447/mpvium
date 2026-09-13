@@ -5,6 +5,7 @@ import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
 import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
+import app.aryan447.mpvium.ui.player.PlayerTitleMode
 import app.aryan447.mpvium.ui.player.RepeatMode
 import app.aryan447.mpvium.ui.player.VideoAspect
 
@@ -69,6 +70,12 @@ class PlayerPreferences(
 
   // New: autoplay next video when current file ends
   val autoplayNextVideo = preferenceStore.getBoolean("autoplay_next_video", true)
+
+  // Master toggle for clean titles. When off, the raw filename is shown.
+  val showEpisodeHeader = preferenceStore.getBoolean("show_episode_header", true)
+
+  // Clean title style, shown when the master toggle is on. Single line is the default.
+  val titleMode = preferenceStore.getEnum("player_title_mode", PlayerTitleMode.SingleLine)
 
   val autoPiPOnNavigation = preferenceStore.getBoolean("auto_pip_on_navigation", false)
 
