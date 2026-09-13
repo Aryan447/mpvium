@@ -14,6 +14,13 @@ export interface Shot {
  */
 export const shots: Shot[] = [
   {
+    src: "/screenshots/mpvium-player.jpg",
+    alt: "mpvium player",
+    title: "Player",
+    caption: "mpv power, touch-friendly controls.",
+    wide: true,
+  },
+  {
     src: "/screenshots/mpvium-dark-default-home.png",
     alt: "mpvium home library",
     title: "Home",
@@ -36,13 +43,6 @@ export const shots: Shot[] = [
     alt: "mpvium movie details",
     title: "Details",
     caption: "Movie showcase view.",
-  },
-  {
-    src: "/screenshots/mpvium-player.jpg",
-    alt: "mpvium player",
-    title: "Player",
-    caption: "mpv power, touch-friendly controls.",
-    wide: true,
   },
   {
     src: "/screenshots/mpvium-welcome.png",
