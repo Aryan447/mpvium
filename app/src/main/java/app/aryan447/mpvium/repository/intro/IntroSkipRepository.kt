@@ -1,24 +1,36 @@
 package app.aryan447.mpvium.repository.intro
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Log
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Describes a single skip window (intro / recap) for the currently playing media.
  */
+@Serializable
 data class IntroWindow(
   val startSeconds: Int,
   val endSeconds: Int,
@@ -27,6 +39,7 @@ data class IntroWindow(
   fun contains(positionSeconds: Int): Boolean = positionSeconds in startSeconds until endSeconds
 }
 
+@Serializable
 enum class IntroSegmentType { INTRO, RECAP }
 
 private sealed interface CachedWindows {
@@ -50,9 +63,15 @@ private data class TheIntroDbResponse(
 
 /**
  * Fetches intro/recap skip timestamps from TheIntroDB (keyless API) and caches
- * them in memory per media title. Media identity is derived from the filename.
+ * them in memory plus a disk-backed JSON file per media title. Media identity
+ * is derived from the filename. Disk entries live until the underlying
+ * episode/movie is deleted (evicted explicitly on delete or pruned on rescan),
+ * so a previously fetched skip window works offline. Only successful lookups
+ * are persisted; misses are kept in memory so a later DB entry can be picked
+ * up when online.
  */
 class IntroSkipRepository(
+  private val context: Context,
   private val client: OkHttpClient,
   private val json: Json,
   private val wyzieRepository: WyzieSearchRepository,
@@ -61,19 +80,34 @@ class IntroSkipRepository(
   companion object {
     private const val TAG = "IntroSkipRepository"
     private const val THE_INTRO_DB_BASE = "https://api.theintrodb.org/v3/media"
+    private const val DISK_CACHE_FILE_NAME = "intro_skip_cache_v1.json"
+
+    fun normalizeKey(title: String): String =
+      title.lowercase().replace(Regex("[^a-z0-9]"), "")
   }
 
   private val cache = ConcurrentHashMap<String, CachedWindows>()
   private val inflight = ConcurrentHashMap<String, Mutex>()
+  private val diskFile = File(context.filesDir, DISK_CACHE_FILE_NAME)
+  private val diskMutex = Mutex()
+  private var diskLoaded = false
 
   /**
    * Resolves all skip windows (intro, recap) for [mediaTitle]. Returns empty list when
-   * the media cannot be identified or no intro/recap data exists.
+   * the media cannot be identified or no intro/recap data exists. Previously
+   * fetched windows are served from memory or disk without network access.
    */
   suspend fun getSkipWindows(mediaTitle: String): List<IntroWindow> {
     if (mediaTitle.isBlank()) return emptyList()
     val key = normalizeKey(mediaTitle)
 
+    when (val cached = cache[key]) {
+      is CachedWindows.Present -> return cached.windows
+      is CachedWindows.None -> return emptyList()
+      null -> Unit
+    }
+
+    ensureDiskLoaded()
     when (val cached = cache[key]) {
       is CachedWindows.Present -> return cached.windows
       is CachedWindows.None -> return emptyList()
@@ -93,7 +127,14 @@ class IntroSkipRepository(
         val result = withContext(Dispatchers.IO) {
           fetchFromApi(mediaTitle)
         }
-        cache[key] = if (result.isNotEmpty()) CachedWindows.Present(result) else CachedWindows.None
+        if (result.isNotEmpty()) {
+          cache[key] = CachedWindows.Present(result)
+          persistDisk()
+        } else {
+          // Memory-only negative: a future IntroDB entry can still be picked
+          // up when online instead of being frozen on disk forever.
+          cache[key] = CachedWindows.None
+        }
         result
       }
     } catch (e: Exception) {
@@ -105,9 +146,156 @@ class IntroSkipRepository(
     }
   }
 
-  /** Clears the in-memory cache so the next lookup re-queries the API. */
+  /** Clears the in-memory cache and the persisted disk cache. */
   fun clearCache() {
     cache.clear()
+    runCatching { diskFile.takeIf { it.exists() }?.delete() }
+  }
+
+  /**
+   * Forgets the cached skip windows for a single episode/movie, e.g. right
+   * after its file is deleted. Other entries are untouched.
+   */
+  suspend fun evict(mediaTitle: String) {
+    if (mediaTitle.isBlank()) return
+    ensureDiskLoaded()
+    if (cache.remove(normalizeKey(mediaTitle)) != null) {
+      persistDisk()
+    }
+  }
+
+  /** Forgets cached skip windows for several deleted episodes/movies at once. */
+  suspend fun evictAll(mediaTitles: Collection<String>) {
+    if (mediaTitles.isEmpty()) return
+    ensureDiskLoaded()
+    var changed = false
+    mediaTitles.forEach { title ->
+      if (title.isNotBlank() && cache.remove(normalizeKey(title)) != null) {
+        changed = true
+      }
+    }
+    if (changed) persistDisk()
+  }
+
+  /**
+   * Drops cached entries whose media no longer exists on device. Pass the
+   * currently present episode/movie display names (the same values handed to
+   * [getSkipWindows]); every cached key absent from that set is evicted.
+   * Partial deletes keep surviving episodes: only fully-gone titles drop.
+   */
+  suspend fun pruneStale(presentMediaTitles: Set<String>) {
+    ensureDiskLoaded()
+    val keep = presentMediaTitles.mapTo(HashSet()) { normalizeKey(it) }
+    var changed = false
+    val iterator = cache.keys.iterator()
+    while (iterator.hasNext()) {
+      if (!keep.contains(iterator.next())) {
+        iterator.remove()
+        changed = true
+      }
+    }
+    if (changed) {
+      Log.d(TAG, "Pruned stale intro-skip entries")
+      persistDisk()
+    }
+  }
+
+  /**
+   * Returns true when the current network is suitable for background
+   * prefetching. With [requireUnmetered] (default) only Wi-Fi / unmetered
+   * connections qualify, so mobile data is never burned by prefetch.
+   * Playback-time lookups in [getSkipWindows] are unaffected and work on any
+   * connection.
+   */
+  fun canPrefetch(requireUnmetered: Boolean = true): Boolean {
+    return try {
+      val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        ?: return false
+      val network = cm.activeNetwork ?: return false
+      val caps = cm.getNetworkCapabilities(network) ?: return false
+      if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return false
+      if (requireUnmetered && !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)) {
+        return false
+      }
+      true
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to check network state for prefetch", e)
+      false
+    }
+  }
+
+  /**
+   * Warms the disk cache for every title in [mediaTitles] that isn't cached
+   * yet, so later playback works offline. Already-cached entries (memory or
+   * disk) are skipped with no network call. Fetches run with bounded
+   * parallelism ([concurrency]) and are cooperative with coroutine
+   * cancellation. Misses are kept memory-only, so a later IntroDB entry can
+   * still be picked up.
+   */
+  suspend fun prefetchAll(
+    mediaTitles: Collection<String>,
+    concurrency: Int = 3,
+  ) {
+    if (mediaTitles.isEmpty()) return
+    ensureDiskLoaded()
+    val pending = mediaTitles
+      .filter { it.isNotBlank() && !cache.containsKey(normalizeKey(it)) }
+      .distinctBy { normalizeKey(it) }
+    if (pending.isEmpty()) return
+    Log.d(TAG, "Prefetching intro-skip windows for ${pending.size} titles")
+    val permits = Semaphore(concurrency.coerceIn(1, 6))
+    coroutineScope {
+      pending.map { title ->
+        async(Dispatchers.IO) {
+          permits.withPermit {
+            ensureActive()
+            runCatching { getSkipWindows(title) }
+          }
+        }
+      }.awaitAll()
+    }
+    Log.d(TAG, "Intro-skip prefetch finished")
+  }
+
+  private suspend fun ensureDiskLoaded() {
+    if (diskLoaded) return
+    diskMutex.withLock {
+      if (diskLoaded) return@withLock
+      withContext(Dispatchers.IO) {
+        try {
+          if (diskFile.exists()) {
+            val text = diskFile.readText()
+            if (text.isNotBlank()) {
+              val stored = json.decodeFromString<Map<String, List<IntroWindow>>>(text)
+              stored.forEach { (key, windows) ->
+                if (windows.isNotEmpty()) {
+                  cache.putIfAbsent(key, CachedWindows.Present(windows))
+                }
+              }
+              Log.d(TAG, "Loaded ${stored.size} intro-skip entries from disk cache")
+            }
+          }
+        } catch (e: Exception) {
+          Log.w(TAG, "Failed to read intro-skip disk cache", e)
+        }
+      }
+      diskLoaded = true
+    }
+  }
+
+  private suspend fun persistDisk() {
+    val snapshot: Map<String, List<IntroWindow>> = diskMutex.withLock {
+      cache.entries.mapNotNull { (key, value) ->
+        (value as? CachedWindows.Present)?.let { key to it.windows }
+      }.toMap()
+    }
+    withContext(Dispatchers.IO) {
+      try {
+        diskFile.writeText(json.encodeToString(snapshot))
+      } catch (e: Exception) {
+        Log.w(TAG, "Failed to persist intro-skip disk cache", e)
+      }
+    }
   }
 
   private suspend fun fetchFromApi(mediaTitle: String): List<IntroWindow> {
@@ -207,9 +395,6 @@ class IntroSkipRepository(
       type = type,
     )
   }
-
-  private fun normalizeKey(title: String): String =
-    title.lowercase().replace(Regex("[^a-z0-9]"), "")
 
   private fun pickBestMatch(results: List<WyzieTmdbResult>, searchType: String, year: String?, targetTitle: String): WyzieTmdbResult? {
     val typed = results.filter { it.mediaType.equals(searchType, ignoreCase = true) }

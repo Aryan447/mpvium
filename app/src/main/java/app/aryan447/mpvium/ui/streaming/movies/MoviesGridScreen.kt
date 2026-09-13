@@ -57,6 +57,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
@@ -85,6 +86,7 @@ object MoviesGridScreen : Screen {
     val backstack = LocalBackStack.current
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val introSkipRepository = koinInject<IntroSkipRepository>()
     val navigationBarHeight = LocalNavigationBarHeight.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -293,6 +295,8 @@ object MoviesGridScreen : Screen {
             PermissionUtils.StorageOps.deleteVideos(context, listOf(movie.video))
             // Movie file is gone: drop its cached TMDB entry immediately.
             runCatching { metadataRepository.clearMovieMetadata(movie.title) }
+            // Movie file is gone: drop its cached intro/recap windows too.
+            runCatching { introSkipRepository.evictAll(listOf(movie.video.displayName, movie.title)) }
             movieList = movieList.filterNot { it.video.id == movie.video.id }
           }
         },

@@ -21,7 +21,7 @@ val domainModule = module {
     }
     single { Anime4KManager(androidContext()) }
     single { WyzieSearchRepository(androidContext(), get(), get(), get()) }
-    single { IntroSkipRepository(get(), get(), get(), get()) }
+    single { IntroSkipRepository(androidContext(), get(), get(), get(), get()) }
     single { ExplainRepository(get(), get()) }
     single { SeriesDetector(androidContext(), get()) }
     single { StreamingMetadataRepository(androidContext(), get(), get(), get()) }

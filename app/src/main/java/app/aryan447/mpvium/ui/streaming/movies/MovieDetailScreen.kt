@@ -68,6 +68,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
@@ -97,6 +98,7 @@ data class MovieDetailScreen(
     val paneBack = LocalDetailPaneBack.current
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val introSkipRepository = koinInject<IntroSkipRepository>()
     val coroutineScope = rememberCoroutineScope()
 
     var movie by remember { mutableStateOf<LocalMovie?>(null) }
@@ -434,6 +436,8 @@ data class MovieDetailScreen(
               if (deletedTitle != null) {
                 runCatching { metadataRepository.clearMovieMetadata(deletedTitle) }
               }
+              // Movie file is gone: drop its cached intro/recap windows too.
+              runCatching { introSkipRepository.evictAll(listOfNotNull(video.displayName, deletedTitle)) }
               if (paneBack != null) {
                 paneBack()
               } else if (backstack.size > 1) {
