@@ -11,7 +11,9 @@ plugins {
 
 android {
   namespace = "app.aryan447.mpvium"
-  compileSdk = 36
+  // Compose 1.12.x / OkHttp 5.5.0 require compiling against API 37+.
+  // targetSdk stays 36, so no runtime behavior change.
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "app.aryan447.mpvium"
