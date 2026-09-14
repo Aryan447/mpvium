@@ -94,6 +94,16 @@
   <string name="theme_dynamic">Dynamic</string>
   <string name="theme_cinema">Cinema</string>
   <string name="theme_noir_cinema">Noir Cinema</string>
+  <string name="theme_forest">Forest</string>
+  <string name="theme_rose_gold">Rose Gold</string>
+  <string name="theme_violet">Violet</string>
+  <string name="theme_sapphire">Sapphire</string>
+  <string name="theme_sunset">Sunset</string>
+  <string name="theme_ocean">Ocean</string>
+  <string name="theme_gruvbox">Gruvbox</string>
+  <string name="theme_kanagawa">Kanagawa</string>
+  <string name="theme_doom">Doom</string>
+  <string name="theme_rose_pine">Rosé Pine</string>
   <!-- Settings Search -->
   <string name="settings_search_hint">Search settings…</string>
   <string name="settings_search_no_results">No settings found</string>
