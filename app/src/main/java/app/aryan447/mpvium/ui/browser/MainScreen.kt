@@ -3,8 +3,8 @@ package app.aryan447.mpvium.ui.browser
 import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -14,14 +14,25 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -52,6 +63,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
@@ -144,6 +158,65 @@ object MainScreen : Screen {
         selected = selectedCanonicalIndex == tab.canonicalIndex,
         onClick = { onSelectTab(tab.canonicalIndex) }
       )
+    }
+  }
+
+  /**
+   * Compact tab item for the floating pill bar (issue #41).
+   *
+   * Unlike [NavigationBarItem], this never stretches to fill the screen
+   * width: each tab keeps a fixed [itemWidth], so hiding tabs shrinks the
+   * whole pill instead of leaving a full-width bar behind.
+   */
+  @Composable
+  private fun PillNavItem(
+    tab: MainTab,
+    selected: Boolean,
+    showLabels: Boolean,
+    itemWidth: Dp,
+    indicatorWidth: Dp,
+    onClick: () -> Unit,
+  ) {
+    val indicatorColor = MaterialTheme.colorScheme.secondaryContainer
+    val selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer
+    val selectedLabelColor = MaterialTheme.colorScheme.onSurface
+    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+      modifier = Modifier
+        .width(itemWidth)
+        .clip(RoundedCornerShape(24.dp))
+        .selectable(
+          selected = selected,
+          onClick = onClick,
+          role = Role.Tab,
+        )
+        .padding(vertical = if (showLabels) 4.dp else 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center,
+    ) {
+      Box(
+        modifier = Modifier
+          .width(indicatorWidth)
+          .height(32.dp)
+          .clip(CircleShape)
+          .background(if (selected) indicatorColor else Color.Transparent),
+        contentAlignment = Alignment.Center,
+      ) {
+        Icon(
+          tab.icon,
+          contentDescription = tab.label,
+          tint = if (selected) selectedIconColor else unselectedColor,
+        )
+      }
+      if (showLabels) {
+        Text(
+          text = tab.label,
+          style = MaterialTheme.typography.labelMedium,
+          color = if (selected) selectedLabelColor else unselectedColor,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+        )
+      }
     }
   }
 
@@ -250,21 +323,50 @@ object MainScreen : Screen {
               )
             ) {
               if (pillNavigationBar) {
-                // Floating pill bar: detached from screen edges, fully
-                // rounded, with a soft shadow. The capsule Surface owns the
-                // background + shadow while the inner bar stays transparent
-                // with real content padding, so edge items and their
-                // indicator pills never collide with the curved corners.
-                // Window insets are disabled on the bar itself; the outer
-                // padding clears the gesture navigation area instead.
+                // Floating pill bar (issue #41): a compact capsule centered
+                // on screen, like JusPlayer. Each tab keeps a fixed width so
+                // hiding tabs shrinks the whole pill instead of leaving a
+                // full-width bar behind. The outer Box clears the system
+                // gesture area; content padding is intentionally fixed here
+                // and the adaptive bottom offset is provided via
+                // LocalNavigationBarHeight below.
+                // Per-item widths stay compact on narrow phones: 5 visible
+                // tabs must fit in ~328dp (360dp screen minus margins).
+                val itemWidth = if (showBottomNavLabels) {
+                  when {
+                    navItems.size <= 3 -> 72.dp
+                    navItems.size == 4 -> 64.dp
+                    else -> 56.dp
+                  }
+                } else {
+                  when {
+                    navItems.size <= 3 -> 56.dp
+                    navItems.size == 4 -> 52.dp
+                    else -> 48.dp
+                  }
+                }
+                val indicatorWidth = when {
+                  itemWidth >= 72.dp -> 64.dp
+                  itemWidth >= 60.dp -> 52.dp
+                  itemWidth >= 52.dp -> 48.dp
+                  else -> 44.dp
+                }
                 Box(
                   modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 12.dp),
                   contentAlignment = Alignment.Center,
                 ) {
                   Surface(
+                    modifier = Modifier
+                      .animateContentSize(
+                        animationSpec = tween(
+                          durationMillis = 300,
+                          easing = FastOutSlowInEasing,
+                        ),
+                      ),
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 6.dp,
@@ -274,18 +376,24 @@ object MainScreen : Screen {
                       MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                     ),
                   ) {
-                    NavigationBar(
-                      modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                      containerColor = Color.Transparent,
-                      tonalElevation = 0.dp,
-                      windowInsets = WindowInsets(0, 0, 0, 0),
+                    Row(
+                      modifier = Modifier.padding(
+                        horizontal = 8.dp,
+                        vertical = if (showBottomNavLabels) 6.dp else 4.dp,
+                      ),
+                      horizontalArrangement = Arrangement.Center,
+                      verticalAlignment = Alignment.CenterVertically,
                     ) {
-                      BottomNavItems(
-                        navItems = navItems,
-                        selectedCanonicalIndex = selectedTabId,
-                        showLabels = showBottomNavLabels,
-                        onSelectTab = ::selectTab,
-                      )
+                      navItems.forEach { tab ->
+                        PillNavItem(
+                          tab = tab,
+                          selected = selectedTabId == tab.canonicalIndex,
+                          showLabels = showBottomNavLabels,
+                          itemWidth = itemWidth,
+                          indicatorWidth = indicatorWidth,
+                          onClick = { selectTab(tab.canonicalIndex) },
+                        )
+                      }
                     }
                   }
                 }
@@ -335,7 +443,23 @@ object MainScreen : Screen {
             }
           }
           Box(modifier = Modifier.fillMaxSize().weight(1f)) {
-            val fabBottomPadding = if (isWide) 24.dp else 80.dp
+            // Screens draw edge-to-edge and offset their content with this
+            // value, so it must track the visible bar: the compact pill is
+            // much shorter than the full-width bar, and both sit above the
+            // system gesture inset on phones.
+            val systemNavBottom =
+              WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val fabBottomPadding = if (isWide) {
+              24.dp
+            } else {
+              val barHeight = when {
+                pillNavigationBar && showBottomNavLabels -> 76.dp
+                pillNavigationBar -> 60.dp
+                else -> 80.dp
+              }
+              val barBottomMargin = if (pillNavigationBar) 12.dp else 0.dp
+              barHeight + barBottomMargin + systemNavBottom + 8.dp
+            }
 
         AnimatedContent(
           targetState = selectedTabId,
