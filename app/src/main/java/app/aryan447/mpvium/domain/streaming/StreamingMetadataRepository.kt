@@ -308,6 +308,37 @@ class StreamingMetadataRepository(
       ?: memoryCache["movie_$normalized"]?.tmdbId
   }
 
+  /**
+   * Local-cache-only episode title lookup for the player header.
+   *
+   * Reads the on-disk metadata cache populated by [enrichSeries] (kept until
+   * all episodes of the show are deleted). Never hits the network, so a
+   * missing entry simply returns null and the caller falls back to the
+   * filename-parsed title.
+   */
+  suspend fun findCachedEpisodeTitle(showTitle: String, season: Int, episode: Int): String? =
+    withContext(Dispatchers.IO) {
+      ensureCacheLoaded()
+      if (showTitle.isBlank()) return@withContext null
+      val normalized = normalizeKey(showTitle)
+      val standardKey = "S${season}E${episode}"
+      val paddedKey = "S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}"
+
+      // Direct hit: cache key is "series_" + normalized series id.
+      memoryCache[seriesKeyFor(normalized)]?.let { cached ->
+        cached.episodeTitles[standardKey]?.takeIf { it.isNotBlank() }?.let { return@withContext it }
+        cached.episodeTitles[paddedKey]?.takeIf { it.isNotBlank() }?.let { return@withContext it }
+      }
+
+      // Fallback: cached TMDb display title may differ slightly from the
+      // filename-parsed show name (e.g. manual match pick), so scan values.
+      memoryCache.values.firstNotNullOfOrNull { cached ->
+        if (normalizeKey(cached.title) != normalized) return@firstNotNullOfOrNull null
+        cached.episodeTitles[standardKey]?.takeIf { it.isNotBlank() }
+          ?: cached.episodeTitles[paddedKey]?.takeIf { it.isNotBlank() }
+      }
+    }
+
   private fun pickBestTvMatch(results: List<WyzieTmdbResult>, year: String?): WyzieTmdbResult? {
     val tvResults = results.filter { it.mediaType.equals("tv", ignoreCase = true) }
     val pool = if (tvResults.isNotEmpty()) tvResults else results

@@ -154,7 +154,7 @@
   <string name="pref_player_seeking_title">Seeking</string>
   <string name="pref_player_close_after_eof">Close after the end of playback</string>
   <string name="pref_player_episode_header">Clean titles</string>
-  <string name="pref_player_episode_header_summary_on">Show S1E2 and episode name instead of filename</string>
+  <string name="pref_player_episode_header_summary_on">Show S1:E2 and episode name instead of filename</string>
   <string name="pref_player_episode_header_summary_off">Show the raw filename</string>
   <string name="pref_player_title_style">Title style</string>
   <string name="pref_player_title_mode_single">Single line</string>
