@@ -35,6 +35,9 @@ class AppearancePreferences(
   val hidePlayerButtonsBackground = preferenceStore.getBoolean("hide_player_buttons_background", false)
   val showUnplayedOldVideoLabel = preferenceStore.getBoolean("show_unplayed_old_video_label", true)
   val unplayedOldVideoDays = preferenceStore.getInt("unplayed_old_video_days", 7)
+  // Manual "Mark as New" overrides (issue #47): displayNames forced to show the NEW
+  // badge regardless of file age. Cleared when the video is played or marked otherwise.
+  val manuallyMarkedNewVideos = preferenceStore.getStringSet("manually_marked_new_videos", emptySet())
   val showNetworkThumbnails = preferenceStore.getBoolean("show_network_thumbnails", false)
   val showFeaturedHero = preferenceStore.getBoolean("show_featured_hero", true)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Thick)

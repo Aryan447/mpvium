@@ -36,6 +36,7 @@ data class VideoWithPlaybackInfo(
   val progressPercentage: Float? = null, // 0.0 to 1.0
   val isOldAndUnplayed: Boolean = false, // true if video is older than threshold and never played
   val isWatched: Boolean = false, // true if video has any playback history
+  val isMarkedAsNew: Boolean = false, // true if manually marked as NEW (issue #47, ignores file age)
 )
 
 class VideoListViewModel(
@@ -240,6 +241,13 @@ class VideoListViewModel(
           progressPercentage = progress,
           isOldAndUnplayed = isOldAndUnplayed,
           isWatched = isWatched,
+          // Manual NEW override (issue #47): only honor when there is genuinely
+          // no watch progress, so real playback always wins over a stale flag.
+          isMarkedAsNew =
+            playbackState == null && progress == null && !isWatched &&
+            runCatching {
+              appearancePreferences.manuallyMarkedNewVideos.get().contains(video.displayName)
+            }.getOrDefault(false),
         )
       }
     _videosWithPlaybackInfo.value = videosWithInfo

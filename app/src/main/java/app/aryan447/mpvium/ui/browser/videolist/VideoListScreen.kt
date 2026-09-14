@@ -784,6 +784,7 @@ private fun VideoListContent(
                 isSelected = selectionManager.isSelected(videoWithInfo.video),
                 isOldAndUnplayed = videoWithInfo.isOldAndUnplayed,
                 isWatched = videoWithInfo.isWatched,
+                isMarkedAsNew = videoWithInfo.isMarkedAsNew,
                 onClick = { onVideoClick(videoWithInfo.video) },
                 onLongClick = { onVideoLongClick(videoWithInfo.video) },
                 onThumbClick = if (tapThumbnailToSelect) {
@@ -836,6 +837,7 @@ private fun VideoListContent(
                   isSelected = selectionManager.isSelected(videoWithInfo.video),
                   isOldAndUnplayed = videoWithInfo.isOldAndUnplayed,
                   isWatched = videoWithInfo.isWatched,
+                  isMarkedAsNew = videoWithInfo.isMarkedAsNew,
                   onClick = { onVideoClick(videoWithInfo.video) },
                   onLongClick = { onVideoLongClick(videoWithInfo.video) },
                   onThumbClick = if (tapThumbnailToSelect) {

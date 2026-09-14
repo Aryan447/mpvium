@@ -41,6 +41,7 @@ data class VideoFileWatchInfo(
   val progress: Float? = null, // 0.0 to 1.0, null when no resume point
   val isWatched: Boolean = false,
   val isUnplayed: Boolean = false, // true when there is no playback history
+  val isMarkedAsNew: Boolean = false, // manual NEW override (issue #47, ignores file age)
 )
 
 /**
@@ -519,9 +520,16 @@ class FileSystemBrowserViewModel(
               progress = progress,
               isWatched = isWatched,
               isUnplayed = false,
+              isMarkedAsNew = false,
             )
         } else {
-          watchStatusMap[video.id] = VideoFileWatchInfo(isUnplayed = playbackState == null)
+          val isUnplayed = playbackState == null
+          val isMarkedAsNew =
+            isUnplayed &&
+            runCatching {
+              appearancePreferences.manuallyMarkedNewVideos.get().contains(video.displayName)
+            }.getOrDefault(false)
+          watchStatusMap[video.id] = VideoFileWatchInfo(isUnplayed = isUnplayed, isMarkedAsNew = isMarkedAsNew)
         }
       }
 

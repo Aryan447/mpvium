@@ -1411,6 +1411,7 @@ private fun FileSystemBrowserContent(
                 isSelected = videoSelectionManager.isSelected(videoFile.video),
                 isOldAndUnplayed = watchInfo?.isUnplayed == true,
                 isWatched = watchInfo?.isWatched == true,
+                isMarkedAsNew = watchInfo?.isMarkedAsNew == true,
                 onClick = { onVideoClick(videoFile.video) },
                 onLongClick = { onVideoLongClick(videoFile.video) },
                 onThumbClick = if (tapThumbnailToSelect) {

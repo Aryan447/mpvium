@@ -32,6 +32,7 @@ object PlaybackStateOps {
       // Only update if the filename actually changed
       if (oldFileName != newFileName) {
         repository.updateMediaTitle(oldFileName, newFileName)
+        VideoWatchStatusOps.renameManualNew(oldFileName, newFileName)
         Log.d(TAG, "✓ Updated playback state: $oldFileName -> $newFileName")
       }
     } catch (e: Exception) {
@@ -51,6 +52,7 @@ object PlaybackStateOps {
     try {
       val fileName = File(filePath).name
       repository.deleteByTitle(fileName)
+      VideoWatchStatusOps.clearManualNew(fileName)
       Log.d(TAG, "✓ Deleted playback state for: $fileName")
     } catch (e: Exception) {
       Log.w(TAG, "Failed to delete playback state: ${e.message}")

@@ -49,6 +49,7 @@ import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.HttpUtils
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.media.SubtitleOps
+import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
 import app.aryan447.mpvium.utils.storage.FileTypeUtils
 import app.aryan447.mpvium.utils.storage.FileFilterUtils
 import com.github.k1rakishou.fsaf.FileManager
@@ -2045,6 +2046,7 @@ class PlayerActivity :
   private fun saveVideoPlaybackState(mediaTitle: String) {
     val snapshotIdentifier = mediaIdentifier
     if (snapshotIdentifier.isBlank()) return
+    val snapshotMediaTitle = mediaTitle
 
     // Snapshot mutable playback values on the main thread before launching IO work
     val snapshotPos = viewModel.pos
@@ -2112,6 +2114,10 @@ class PlayerActivity :
             },
           ),
         )
+        // Real playback supersedes a manual "Mark as New" override (issue #47):
+        // the video now has history, so it must no longer force the NEW badge.
+        VideoWatchStatusOps.clearManualNew(snapshotIdentifier)
+        VideoWatchStatusOps.clearManualNew(snapshotMediaTitle)
         // Notify after the latest position is persisted so episode/detail
         // screens refresh with the newly saved remaining time instead of
         // racing ahead with a stale read.

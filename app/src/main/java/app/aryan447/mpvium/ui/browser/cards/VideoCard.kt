@@ -68,6 +68,7 @@ fun VideoCard(
   progressPercentage: Float? = null,
   isOldAndUnplayed: Boolean = false,
   isWatched: Boolean = false,
+  isMarkedAsNew: Boolean = false,
   onThumbClick: () -> Unit = {},
   isGridMode: Boolean = false,
   gridColumns: Int = 1,
@@ -199,14 +200,18 @@ fun VideoCard(
           }
 
           // Show "NEW" label for recently added unplayed videos if enabled (top-left corner)
-          // Like MX Player: show NEW for videos added within threshold days that haven't been played
-          if (showUnplayedOldVideoLabel && isOldAndUnplayed) {
+          // Like MX Player: show NEW for videos added within threshold days that haven't been played.
+          // A manual "Mark as New" override bypasses the age check (issue #47).
+          if (showUnplayedOldVideoLabel && !isWatched && progressPercentage == null &&
+            (isMarkedAsNew || isOldAndUnplayed)
+          ) {
             // Check if video is recently modified (within threshold days)
+            // A manual "Mark as New" override bypasses the age check (issue #47).
             val currentTime = System.currentTimeMillis()
             val videoAge = currentTime - (video.dateModified * 1000) // dateModified is in seconds
             val thresholdMillis = unplayedOldVideoDays * 24 * 60 * 60 * 1000L
 
-            if (videoAge <= thresholdMillis) {
+            if (isMarkedAsNew || videoAge <= thresholdMillis) {
               Box(
                 modifier =
                   Modifier
@@ -477,14 +482,18 @@ fun VideoCard(
           }
 
           // Show "NEW" label for recently added unplayed videos if enabled (top-left corner)
-          // Like MX Player: show NEW for videos added within threshold days that haven't been played
-          if (showUnplayedOldVideoLabel && isOldAndUnplayed) {
+          // Like MX Player: show NEW for videos added within threshold days that haven't been played.
+          // A manual "Mark as New" override bypasses the age check (issue #47).
+          if (showUnplayedOldVideoLabel && !isWatched && progressPercentage == null &&
+            (isMarkedAsNew || isOldAndUnplayed)
+          ) {
             // Check if video is recently modified (within threshold days)
+            // A manual "Mark as New" override bypasses the age check (issue #47).
             val currentTime = System.currentTimeMillis()
             val videoAge = currentTime - (video.dateModified * 1000) // dateModified is in seconds
             val thresholdMillis = unplayedOldVideoDays * 24 * 60 * 60 * 1000L
 
-            if (videoAge <= thresholdMillis) {
+            if (isMarkedAsNew || videoAge <= thresholdMillis) {
               Box(
                 modifier =
                   Modifier

@@ -237,6 +237,8 @@ class FolderListViewModel(
               .getVideosInFolder(getApplication(), folder.bucketId)
 
             // Count new unplayed videos
+            val manualNewSet =
+              runCatching { appearancePreferences.manuallyMarkedNewVideos.get() }.getOrDefault(emptySet())
             val newCount = videos.count { video ->
               // Check if video was modified within threshold days
               val videoAge = currentTime - (video.dateModified * 1000)
@@ -247,7 +249,10 @@ class FolderListViewModel(
               val playbackState = playbackStateRepository.getVideoDataByTitle(video.displayName)
               val isUnplayed = playbackState == null
 
-              isRecent && isUnplayed
+              // Manual NEW override (issue #47) counts regardless of file age.
+              val isManualNew = isUnplayed && manualNewSet.contains(video.displayName)
+
+              (isRecent && isUnplayed) || isManualNew
             }
 
             FolderWithNewCount(folder, newCount)
