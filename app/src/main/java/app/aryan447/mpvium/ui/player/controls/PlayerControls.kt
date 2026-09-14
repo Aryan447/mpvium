@@ -347,14 +347,37 @@ fun PlayerControls(
         val rawMediaTitle by MPVLib.propString["media-title"].collectAsState()
         val showEpisodeHeader by playerPreferences.showEpisodeHeader.collectAsState()
         val titleMode by playerPreferences.titleMode.collectAsState()
-        val topTitle by remember(rawMediaTitle, activity, showEpisodeHeader, titleMode) {
+        val metadataRepository = koinInject<app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository>()
+        // TMDB episode name from the local metadata cache (no network). Stays null
+        // when the filename already carries the name or nothing is cached.
+        var tmdbEpisodeTitle by remember { mutableStateOf<String?>(null) }
+        val lookupRaw = rawMediaTitle?.takeIf { it.isNotBlank() }
+          ?: activity.getTitleForControls()
+        LaunchedEffect(lookupRaw) {
+          val raw = lookupRaw
+          val info = app.aryan447.mpvium.utils.media.MediaInfoParser.parse(raw)
+          if (info.type != "tv" || !info.episodeTitle.isNullOrBlank()) {
+            tmdbEpisodeTitle = null
+          } else {
+            val season = info.season
+            val episode = info.episode
+            tmdbEpisodeTitle = if (season != null && episode != null && info.title.isNotBlank()) {
+              runCatching {
+                metadataRepository.findCachedEpisodeTitle(info.title, season, episode)
+              }.getOrNull()
+            } else {
+              null
+            }
+          }
+        }
+        val topTitle by remember(rawMediaTitle, activity, showEpisodeHeader, titleMode, tmdbEpisodeTitle) {
           derivedStateOf {
             val raw = rawMediaTitle?.takeIf { it.isNotBlank() }
               ?: activity.getTitleForControls()
             if (!showEpisodeHeader) {
               Pair(raw, null)
             } else {
-              val clean = app.aryan447.mpvium.utils.media.EpisodeTitleFormatter.resolve(raw)
+              val clean = app.aryan447.mpvium.utils.media.EpisodeTitleFormatter.resolve(raw, tmdbEpisodeTitle)
               when (titleMode) {
                 app.aryan447.mpvium.ui.player.PlayerTitleMode.SingleLine ->
                   Pair(clean?.singleLine ?: raw, null)
@@ -369,14 +392,14 @@ fun PlayerControls(
         val (mediaTitle, mediaSubtitle) = topTitle
         // Pill buttons (customizable VIDEO_TITLE) stay single-line; two-line falls back
         // to the single-line form so the pill never grows vertically.
-        val mediaTitleSingleLine by remember(rawMediaTitle, activity, showEpisodeHeader, titleMode) {
+        val mediaTitleSingleLine by remember(rawMediaTitle, activity, showEpisodeHeader, titleMode, tmdbEpisodeTitle) {
           derivedStateOf {
             val raw = rawMediaTitle?.takeIf { it.isNotBlank() }
               ?: activity.getTitleForControls()
             if (!showEpisodeHeader) {
               raw
             } else {
-              val clean = app.aryan447.mpvium.utils.media.EpisodeTitleFormatter.resolve(raw)
+              val clean = app.aryan447.mpvium.utils.media.EpisodeTitleFormatter.resolve(raw, tmdbEpisodeTitle)
               when (titleMode) {
                 app.aryan447.mpvium.ui.player.PlayerTitleMode.EpisodeOnly ->
                   clean?.episodeOnly ?: raw
