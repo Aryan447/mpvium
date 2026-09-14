@@ -14,9 +14,29 @@ Source of truth for GitHub release notes.
 
 ## Unreleased
 
+### Added
+
+- Customizable bottom bar with labels toggle and selectable tabs.
+- Whitelisted-folders-only mode for folder list, file browser, and search.
+- Lua/JS Scripts section with per-script manage, custom buttons, and sync.
+- Manual "Mark as" watch status (Last played / New / Finished / None) in folder and file browser.
+- Clean episode titles in the player with selectable style (single-line, two-line, episode-only).
+- Offline intro-skip cache with Wi-Fi prefetch for uncached titles.
+- TMDB posters/ratings cached until media deletion (no re-scrape on app open).
+- Episode header falls back to cached TMDB title as S2:E12 "Name" when filename has no episode name.
+
+### Changed
+
+- Refreshed app logo artwork and linked Telegram community.
+- Bottom-edge swipes no longer trigger volume/brightness gestures.
+
 ### Fixed
 
 - Launcher icon: smaller play-button foreground to match mpvium proportions.
+- Continue Watching / playtime refreshes instantly on video exit.
+- Seekbar thumb flutter, tap-seek delay, snap-back, and post-seek stall.
+- Seek preview held until seek confirms instead of fixed-delay clear.
+- Folder blacklist/whitelist now respected across Home, Movies, Shows, and Insights.
 
 ## v1.1.6-preview.5
 
