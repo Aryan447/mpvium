@@ -11,7 +11,9 @@ plugins {
 
 android {
   namespace = "app.aryan447.mpvium"
-  compileSdk = 36
+  // Compose 1.12.x / OkHttp 5.5.0 require compiling against API 37+.
+  // targetSdk stays 36, so no runtime behavior change.
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "app.aryan447.mpvium"
@@ -172,15 +174,15 @@ dependencies {
   implementation(libs.androidx.ui)
   implementation(libs.androidx.ui.graphics)
   implementation(libs.androidx.material3.android)
-  implementation("com.google.android.material:material:1.13.0")
+  implementation(libs.google.material)
   implementation(libs.androidx.compose.material)
   implementation(libs.androidx.ui.tooling.preview)
   debugImplementation(libs.androidx.ui.tooling)
   implementation(libs.bundles.compose.navigation3)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.compose.constraintlayout)
-  implementation("androidx.preference:preference-ktx:1.2.1")
-  implementation("androidx.constraintlayout:constraintlayout:2.2.0")
+  implementation(libs.androidx.preference.ktx)
+  implementation(libs.androidx.constraintlayout)
   implementation(libs.androidx.material3.icons.extended)
   implementation(libs.androidx.compose.animation.graphics)
   implementation(libs.mediasession)
