@@ -237,6 +237,7 @@ fun GestureHandler(
       .coerceAtLeast(48.dp.toPx())
   }
   val configuration = LocalConfiguration.current
+  val density = LocalDensity.current
   val isTablet = remember(configuration) { configuration.smallestScreenWidthDp >= 600 }
 
   // Isolated double-tap state tracking
@@ -1190,9 +1191,17 @@ fun GestureHandler(
                   val deltaY = currentPosition.y - startPosition.y
                   val timeSinceStart = System.currentTimeMillis() - startTime
 
-                  // Tablet-specific responsive swipe gesture vs standard phone gesture
+                  // Tablet-specific responsive swipe gesture vs standard phone gesture.
+                  // The width-scaled sensitivity (reference/actual) already normalizes
+                  // seek distance per swipe, so the pixel gate must not be absurdly low:
+                  // an ordinary tap (touch slop ~8dp, often >18px on high-density
+                  // tablets) could previously fire the swipe-seek, which transiently
+                  // pauses, exact-seeks and resumes — the reported "video pauses/
+                  // freezes ~0.5-1s after a seek lands" on tablets. Require a real
+                  // swipe: past slop, clear horizontal dominance, and a short time gate.
+                  val horizontalSlopPx = with(density) { 24.dp.toPx() }
                   val isGestureTriggered = if (isTablet) {
-                    abs(deltaX) > 18f && abs(deltaX) > abs(deltaY) * 1.25f
+                    abs(deltaX) > horizontalSlopPx && abs(deltaX) > abs(deltaY) * 1.6f && timeSinceStart > 80L
                   } else {
                     abs(deltaX) > 30f && abs(deltaX) > abs(deltaY) * 2f && timeSinceStart > 100L
                   }

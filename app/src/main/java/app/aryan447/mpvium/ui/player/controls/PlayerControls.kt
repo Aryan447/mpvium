@@ -855,10 +855,12 @@ fun PlayerControls(
               viewModel.seekTo(it.roundToInt(), isScrubbing = true)
             },
             onValueChangeFinished = { finalPosition ->
-              // Only the scrub path pauses playback (see onValueChange
-              // above); a tap goes straight here, so only unpause when this
-              // gesture actually paused, otherwise a tap while paused would
-              // spuriously resume playback.
+              // Only the scrub path pauses playback (see onValueChange above);
+              // a tap goes straight here. Route a plain tap-while-playing
+              // through seekToAndResume so it also holds the clock through the
+              // landing (otherwise audio + timer race ahead of a video still
+              // decoding from the keyframe). A tap while paused just seeks and
+              // stays paused; a scrub that started paused also just seeks.
               val wasScrubbing = isSeeking
               isSeeking = false
               resetControlsTimestamp = System.currentTimeMillis()
@@ -870,7 +872,10 @@ fun PlayerControls(
               // Ordered seek-then-resume in one coroutine: separate seekTo +
               // unpause calls raced, letting playback resume at the pre-seek
               // position before the seek landed (~1s hitch on slow devices).
-              if (wasScrubbing && !wasPlayerAlreadyPaused) {
+              val shouldHoldAndResume =
+                if (wasScrubbing) !wasPlayerAlreadyPaused
+                else !(paused ?: false)
+              if (shouldHoldAndResume) {
                 viewModel.seekToAndResume(finalPosition.roundToInt())
               } else {
                 viewModel.seekTo(finalPosition.roundToInt(), isScrubbing = false)
