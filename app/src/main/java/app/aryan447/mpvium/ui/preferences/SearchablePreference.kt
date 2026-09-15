@@ -28,7 +28,7 @@ object SearchablePreferences {
             add(SearchablePreference(
                 titleRes = R.string.pref_appearance_title,
                 summaryRes = R.string.pref_appearance_summary,
-                keywords = listOf("theme", "dark", "light", "amoled", "material you", "color", "appearance"),
+                keywords = listOf("theme", "dark", "light", "amoled", "material you", "color", "appearance", "liquid", "glass", "transparent", "blur", "cinema", "noir"),
                 category = "Appearance",
                 screen = AppearancePreferencesScreen,
             ))

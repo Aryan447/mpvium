@@ -60,6 +60,11 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalLiquidGlass
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.theme.LocalThemeTransitionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -151,6 +156,12 @@ private fun NormalTopBar(
   val darkTheme = isSystemInDarkTheme()
   val themeTransition = LocalThemeTransitionState.current
   val coroutineScope = rememberCoroutineScope()
+  val isGlass = LocalLiquidGlass.current
+  val glassHaze = rememberGlassHazeState()
+  val glassStyle = glassHazeStyle(
+    isDark = darkMode == DarkMode.Dark || (darkMode == DarkMode.System && darkTheme),
+    kind = GlassKind.Bar,
+  )
 
   // Track title bounds for animation position
   val titleBounds = remember { mutableStateOf(Rect.Zero) }
@@ -178,7 +189,9 @@ private fun NormalTopBar(
 
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
-      containerColor = if (MaterialTheme.colorScheme.background == Color.Black) {
+      containerColor = if (isGlass) {
+        Color.Transparent
+      } else if (MaterialTheme.colorScheme.background == Color.Black) {
         Color.Black
       } else {
         MaterialTheme.colorScheme.surfaceContainerLow
@@ -288,7 +301,12 @@ private fun NormalTopBar(
         }
       }
     },
-    modifier = modifier,
+    modifier = modifier.glassChrome(
+      state = glassHaze,
+      style = glassStyle,
+      shape = RoundedCornerShape(0.dp),
+      enabled = isGlass,
+    ),
   )
 }
 
@@ -317,10 +335,18 @@ private fun SelectionTopBar(
   onMarkAs: (() -> Unit)? = null,
 ) {
   var showDropdown by remember { mutableStateOf(false) }
+  val isGlass = LocalLiquidGlass.current
+  val glassHaze = rememberGlassHazeState()
+  val glassStyle = glassHazeStyle(
+    isDark = isSystemInDarkTheme(),
+    kind = GlassKind.Bar,
+  )
 
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
-      containerColor = if (MaterialTheme.colorScheme.background == Color.Black) {
+      containerColor = if (isGlass) {
+        Color.Transparent
+      } else if (MaterialTheme.colorScheme.background == Color.Black) {
         Color.Black
       } else {
         MaterialTheme.colorScheme.surfaceContainer
@@ -525,6 +551,13 @@ private fun SelectionTopBar(
         }
       }
     },
-    modifier = modifier.clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
+    modifier = modifier
+      .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+      .glassChrome(
+        state = glassHaze,
+        style = glassStyle,
+        shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
+        enabled = isGlass,
+      ),
   )
 }

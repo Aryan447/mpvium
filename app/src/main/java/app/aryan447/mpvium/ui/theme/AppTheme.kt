@@ -68,6 +68,17 @@ enum class AppTheme(
     tertiaryDark = Color(0xFFD9A940),
     backgroundLight = Color(0xFFEFE9DC),
     backgroundDark = Color(0xFF0A0B0D),
+  ),
+  LiquidGlass(
+    titleRes = R.string.theme_liquid_glass,
+    primaryLight = Color(0xFF0061C2),
+    primaryDark = Color(0xFF8FCBFF),
+    secondaryLight = Color(0xFF3D5A73),
+    secondaryDark = Color(0xFFA8C4DC),
+    tertiaryLight = Color(0xFF2E6B62),
+    tertiaryDark = Color(0xFF7ED4C6),
+    backgroundLight = Color(0xFFEAF2F8),
+    backgroundDark = Color(0xFF0B1220),
   );
 
   /**
@@ -153,9 +164,13 @@ enum class AppTheme(
   }
 
   /**
-   * Get the AMOLED (pure black) color scheme for this theme
+   * Get the AMOLED (pure black) color scheme for this theme.
+   * LiquidGlass keeps its frosted dark background instead of pure black
+   * so the clear-glass translucency still has content to refract.
    */
-  fun getAmoledColorScheme(): ColorScheme = getDarkColorScheme().copy(
+  fun getAmoledColorScheme(): ColorScheme {
+    if (this == LiquidGlass) return getDarkColorScheme()
+    return getDarkColorScheme().copy(
     background = Color.Black,
     surface = Color.Black,
     surfaceVariant = primaryDark.copy(alpha = 0.08f).compositeOver(Color(0xFF1A1A1A)),
@@ -167,6 +182,7 @@ enum class AppTheme(
     surfaceDim = Color.Black,
     surfaceBright = primaryDark.copy(alpha = 0.06f).compositeOver(Color(0xFF2A2A2A)),
   )
+  }
 }
 
 // Extension functions for color manipulation

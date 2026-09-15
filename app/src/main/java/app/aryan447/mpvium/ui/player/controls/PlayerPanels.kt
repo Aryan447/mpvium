@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.player.Panels
+import app.aryan447.mpvium.ui.theme.LocalLiquidGlass
 import app.aryan447.mpvium.ui.player.controls.components.panels.AudioDelayPanel
 import app.aryan447.mpvium.ui.player.controls.components.panels.SubtitleDelayPanel
 import app.aryan447.mpvium.ui.player.controls.components.panels.SubtitleSettingsPanel
@@ -59,8 +60,10 @@ fun PlayerPanels(
 
 val CARDS_MAX_WIDTH = 420.dp
 val panelCardsColors: @Composable () -> CardColors = {
-  // Higher alpha for better readability in panels (less transparent)
-  val alpha = 0.85f
+  // Higher alpha for better readability in panels (less transparent).
+  // Liquid Glass uses a clearer, more translucent fill over video.
+  val isGlass = LocalLiquidGlass.current
+  val alpha = if (isGlass) 0.55f else 0.85f
 
   CardDefaults.cardColors(
     containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = alpha),
