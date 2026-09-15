@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
@@ -432,6 +433,15 @@ class PlayerViewModel(
      * local UI state and the release always issues one final exact seek.
      */
     const val SCRUB_SEEK_THROTTLE_MS = 80L
+
+    /**
+     * Landing tolerance (seconds): on gesture release, mpv is already parked
+     * at the requested spot by the final throttled keyframe scrub seek, so a
+     * target within this distance of the live position skips the redundant
+     * exact seek (whose keyframe-to-exact re-decode stalls high-res tablet
+     * playback for ~0.5-1s). Mirrors the seekbar settle guard's tolerance.
+     */
+    const val SEEK_SETTLE_TOLERANCE_SEC = 1.5f
     val VALID_SUBTITLE_EXTENSIONS =
       setOf(
         // Common & modern
@@ -1292,7 +1302,16 @@ class PlayerViewModel(
     val sequence = seekSequence.incrementAndGet()
     val cachedDuration = duration
     viewModelScope.launch(Dispatchers.IO) {
-      dispatchAbsoluteSeek(position, isScrubbing = false, sequence, cachedDuration)
+      // The scrub/swipe already parked mpv near the requested target with
+      // throttled keyframe seeks, so re-issuing an exact seek for a target
+      // within the landing tolerance re-decodes from that keyframe forward —
+      // on tablets decoding high-res content that shows up as a ~0.5-1s
+      // freeze after the seek lands. Skip the redundant exact seek and let
+      // playback resume instantly from where mpv already is.
+      val live = MPVLib.getPropertyDouble("time-pos")
+      if (live == null || abs(live - position) > SEEK_SETTLE_TOLERANCE_SEC) {
+        dispatchAbsoluteSeek(position, isScrubbing = false, sequence, cachedDuration)
+      }
       withContext(Dispatchers.Main) { host.requestAudioFocus() }
       MPVLib.setPropertyBoolean("pause", false)
     }
