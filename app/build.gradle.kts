@@ -19,8 +19,8 @@ android {
     applicationId = "app.aryan447.mpvium"
     minSdk = 26
     targetSdk = 36
-    versionCode = 117
-    versionName = "1.1.7"
+    versionCode = 118
+    versionName = "1.1.8"
 
     vectorDrawables {
       useSupportLibrary = true
