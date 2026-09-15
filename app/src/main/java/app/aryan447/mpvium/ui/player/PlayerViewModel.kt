@@ -1309,7 +1309,7 @@ class PlayerViewModel(
       // freeze after the seek lands. Skip the redundant exact seek and let
       // playback resume instantly from where mpv already is.
       val live = MPVLib.getPropertyDouble("time-pos")
-      if (live == null || abs(live - position) > SEEK_SETTLE_TOLERANCE_SEC) {
+      if (live == null || abs(live - position.toDouble()) > SEEK_SETTLE_TOLERANCE_SEC.toDouble()) {
         dispatchAbsoluteSeek(position, isScrubbing = false, sequence, cachedDuration)
       }
       withContext(Dispatchers.Main) { host.requestAudioFocus() }
