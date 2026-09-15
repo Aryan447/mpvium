@@ -34,6 +34,22 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew assembleStandardRelease -PciDebugSigning
 
+      - name: Build bundles with Gradle
+        run: ./gradlew bundleStandardRelease bundlePlaystoreRelease -PciDebugSigning
+
+      - name: Upload standard bundle Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-standard-release-bundle-ci-signed-${{ env.SHORT_SHA }}
+          path: app/build/outputs/bundle/standardRelease/app-standard-release.aab
+          if-no-files-found: warn
+      - name: Upload playstore bundle Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-playstore-release-bundle-ci-signed-${{ env.SHORT_SHA }}
+          path: app/build/outputs/bundle/playstoreRelease/app-playstore-release.aab
+          if-no-files-found: warn
+
       - name: Upload app-arm64-v8a Artifact
         uses: actions/upload-artifact@v7
         with:
