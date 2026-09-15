@@ -48,7 +48,7 @@ Verification log:
 - 2026-09-15 Steps 1-4: catalog + app build, LiquidGlass theme/AMOLED/preview, core kit, LocalLiquidGlass, scrims.
 - 2026-09-15 Step 5a: MainScreen pill transparent + glassChrome; content Box glassBackdrop.
 - 2026-09-15 Steps 5b-6: BrowserTopBar, FloatingBottomBar, panelCardsColors, ControlsButton, AMOLED guard, keywords, onboarding. `git diff --check` PASS.
-- 2026-09-15 Version/API audit: Central latest Haze = 1.5.3 (1.7.x NOT published; corrected pin). 1.5.3 monolithic API matches `LiquidGlass.kt` (`HazeStyle(backgroundColor, blurRadius)`, `hazeEffect(state, style)`, `hazeSource(state)`, `rememberHazeState()`).
+- 2026-09-15 Version/API audit: Central latest Haze = 1.5.3 (1.7.x NOT published; corrected pin). 1.5.3 API differs from code: `rememberHazeState()` removed (use `remember { HazeState() }`); `HazeStyle` has dual constructors (`tints` vs `tint`) requiring disambiguation. `HazeStyle(backgroundColor, tint, blurRadius)`, `hazeEffect(state, style)`, `hazeSource(state)`.
 - 2026-09-15 CI fix: merge of main into style/liquid-glass (7aac19d) dropped `haze = "1.5.3"` from `[versions]` while library entry still referenced it. Restored in eedf12d; pushed to PR #56; CI re-run pending.
 
 Resume:

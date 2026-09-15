@@ -8,17 +8,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
-import androidx.compose.runtime.Composable
 
 /**
  * Clear Liquid Glass core kit (chrome-first).
  *
- * Current blur core: Haze 1.7.2 (Maven Central, stable).
+ * Current blur core: Haze 1.5.3 (Maven Central, latest).
  * The preferred true-lens library (Abdullajon1881 LiquidGlass 1.0.0) is NOT
  * yet published to Maven Central (README: "Maven Central publishing is
  * configured but not yet released"), so it cannot be a Gradle dependency
@@ -51,7 +51,7 @@ val LocalLiquidGlass = compositionLocalOf { false }
 val GlassHazeBlurRadius: Dp = LiquidGlassTokens.blurRadius
 
 @Composable
-fun rememberGlassHazeState(): HazeState = rememberHazeState()
+fun rememberGlassHazeState(): HazeState = remember { HazeState() }
 
 /** Mark scrolling/content backdrop so glass above can sample it. No-op if glass off. */
 fun Modifier.glassBackdrop(
@@ -75,6 +75,7 @@ fun glassHazeStyle(
   }
   return HazeStyle(
     backgroundColor = base,
+    tint = null,
     blurRadius = blur,
   )
 }
