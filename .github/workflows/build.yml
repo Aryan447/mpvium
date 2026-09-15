@@ -35,7 +35,7 @@ jobs:
         run: ./gradlew assembleStandardRelease -PciDebugSigning
 
       - name: Build bundles with Gradle
-        run: ./gradlew bundleStandardRelease bundlePlaystoreRelease -PciDebugSigning
+        run: ./gradlew bundleStandardRelease bundlePlaystoreRelease -PciDebugSigning -PbundleBuild
 
       - name: Upload standard bundle Artifact
         uses: actions/upload-artifact@v7
