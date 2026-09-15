@@ -25,7 +25,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalLiquidGlass
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
+import androidx.compose.foundation.isSystemInDarkTheme
 
 /**
  * Material 3 Floating Button Bar for file/folder operations
@@ -53,12 +60,24 @@ fun BrowserBottomBar(
     enter = fadeIn(),
     exit = fadeOut(),
   ) {
+    val isGlass = LocalLiquidGlass.current
+    val glassHaze = rememberGlassHazeState()
+    val glassStyle = glassHazeStyle(
+      isDark = isSystemInDarkTheme(),
+      kind = GlassKind.Bar,
+    )
     Surface(
       modifier = Modifier
         .windowInsetsPadding(WindowInsets.systemBars)
-        .padding(horizontal = 20.dp, vertical = 8.dp),
+        .padding(horizontal = 20.dp, vertical = 8.dp)
+        .glassChrome(
+          state = glassHaze,
+          style = glassStyle,
+          shape = RoundedCornerShape(32.dp),
+          enabled = isGlass,
+        ),
       shape = RoundedCornerShape(32.dp),
-      color = MaterialTheme.colorScheme.surfaceContainerHigh,
+      color = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
       tonalElevation = 3.dp,
       shadowElevation = 8.dp
     ) {

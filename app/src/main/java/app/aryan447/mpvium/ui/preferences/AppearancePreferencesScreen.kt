@@ -29,6 +29,7 @@ import app.aryan447.mpvium.preferences.MultiChoiceSegmentedButton
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.preferences.components.ThemePicker
+import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
 import kotlin.math.roundToInt
 import kotlinx.collections.immutable.persistentListOf
@@ -113,11 +114,15 @@ object AppearancePreferencesScreen : Screen {
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_amoled_mode_title)) },
                                 summary = {
                                     Text(
-                                        text = stringResource(id = R.string.pref_appearance_amoled_mode_summary),
+                                        text = if (appTheme == AppTheme.LiquidGlass) {
+                                            stringResource(id = R.string.pref_appearance_amoled_mode_summary) + " (not used by Liquid Glass)"
+                                        } else {
+                                            stringResource(id = R.string.pref_appearance_amoled_mode_summary)
+                                        },
                                         color = MaterialTheme.colorScheme.outline,
                                     )
                                 },
-                                enabled = darkMode != DarkMode.Light
+                                enabled = darkMode != DarkMode.Light && appTheme != AppTheme.LiquidGlass
                             )
 
                             PreferenceDivider()

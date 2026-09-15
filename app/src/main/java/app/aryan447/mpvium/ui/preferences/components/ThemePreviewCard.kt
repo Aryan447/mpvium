@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -46,6 +47,7 @@ fun ThemePreviewCard(
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = if (isDarkMode) theme.getDarkColorScheme() else theme.getLightColorScheme()
+    val isGlass = theme == AppTheme.LiquidGlass
 
     // Use the current MaterialTheme primary for selection to ensure visibility
     val selectionColor = MaterialTheme.colorScheme.primary
@@ -75,7 +77,21 @@ fun ThemePreviewCard(
                     spotColor = if (isSelected) selectionColor.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.2f),
                 )
                 .clip(RoundedCornerShape(12.dp))
-                .background(colorScheme.surface)
+                .background(
+                    if (isGlass) {
+                        Brush.verticalGradient(
+                            listOf(
+                                colorScheme.surface.copy(alpha = 0.55f),
+                                colorScheme.primary.copy(alpha = 0.25f),
+                                colorScheme.surface.copy(alpha = 0.75f),
+                            )
+                        )
+                    } else {
+                        Brush.verticalGradient(
+                            listOf(colorScheme.surface, colorScheme.surface)
+                        )
+                    }
+                )
                 .border(
                     width = borderWidth,
                     color = borderColor,

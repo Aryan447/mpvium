@@ -83,11 +83,13 @@ class MainActivity : ComponentActivity() {
     setContent {
       // Set up theme and edge-to-edge display
       val dark by appearancePreferences.darkMode.collectAsState()
+      val appTheme by appearancePreferences.appTheme.collectAsState()
       val isSystemInDarkTheme = isSystemInDarkTheme()
       val isDarkMode = dark == DarkMode.Dark || (dark == DarkMode.System && isSystemInDarkTheme)
+      val isGlass = appTheme == app.aryan447.mpvium.ui.theme.AppTheme.LiquidGlass
       enableEdgeToEdge(
         SystemBarStyle.auto(
-          lightScrim = Color.White.toArgb(),
+          lightScrim = if (isGlass) Color.Transparent.toArgb() else Color.White.toArgb(),
           darkScrim = Color.Transparent.toArgb(),
         ) { isDarkMode },
       )

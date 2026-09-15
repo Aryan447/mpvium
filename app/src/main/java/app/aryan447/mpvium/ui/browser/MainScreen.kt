@@ -14,6 +14,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -59,6 +60,13 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
 import app.aryan447.mpvium.ui.streaming.home.StreamingHomeScreen
+import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalLiquidGlass
+import app.aryan447.mpvium.ui.theme.glassBackdrop
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
@@ -165,6 +173,16 @@ object MainScreen : Screen {
     val pillNavigationBar by appearancePreferences.pillNavigationBar.collectAsState()
     val showBottomNavLabels by appearancePreferences.showBottomNavLabels.collectAsState()
     val enabledBottomTabs by appearancePreferences.bottomNavTabs.collectAsState()
+    val darkMode by appearancePreferences.darkMode.collectAsState()
+    val isGlass = LocalLiquidGlass.current
+    val systemDark = isSystemInDarkTheme()
+    val isDark = when (darkMode) {
+      DarkMode.Dark -> true
+      DarkMode.Light -> false
+      DarkMode.System -> systemDark
+    }
+    val glassHaze = rememberGlassHazeState()
+    val glassStyle = glassHazeStyle(isDark = isDark, kind = GlassKind.Bar)
     val navItems = remember(enabledBottomTabs) {
       MainTab.visibleTabs(enabledBottomTabs)
     }
@@ -265,8 +283,14 @@ object MainScreen : Screen {
                   contentAlignment = Alignment.Center,
                 ) {
                   Surface(
+                    modifier = Modifier.glassChrome(
+                      state = glassHaze,
+                      style = glassStyle,
+                      shape = RoundedCornerShape(32.dp),
+                      enabled = isGlass,
+                    ),
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    color = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 6.dp,
                     shadowElevation = 8.dp,
                     border = BorderStroke(
@@ -334,7 +358,7 @@ object MainScreen : Screen {
               }
             }
           }
-          Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+          Box(modifier = Modifier.fillMaxSize().weight(1f).glassBackdrop(state = glassHaze, enabled = isGlass)) {
             val fabBottomPadding = if (isWide) 24.dp else 80.dp
 
         AnimatedContent(
