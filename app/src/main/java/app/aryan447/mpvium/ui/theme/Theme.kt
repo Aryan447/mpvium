@@ -253,7 +253,7 @@ fun MpviumTheme(content: @Composable () -> Unit) {
         LocalSpacing provides Spacing(),
         LocalThemeTransitionState provides rememberThemeTransitionState(),
         LocalAppTheme provides appTheme,
-        LocalLiquidGlass provides (appTheme == AppTheme.LiquidGlass),
+        LocalGlass provides (appTheme == AppTheme.Glass),
     ) {
         ThemeTransitionContent {
             MaterialTheme(

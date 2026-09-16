@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MenuDefaults
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -225,6 +227,7 @@ fun ContinueWatchingCard(
     DropdownMenu(
       expanded = showRemoveMenu,
       onDismissRequest = { showRemoveMenu = false },
+      containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
     ) {
       DropdownMenuItem(
         text = { Text("Remove from Continue Watching") },

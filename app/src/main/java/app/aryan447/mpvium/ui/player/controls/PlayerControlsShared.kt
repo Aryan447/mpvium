@@ -87,6 +87,7 @@ import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
 import app.aryan447.mpvium.ui.player.controls.components.CurrentChapter
 import app.aryan447.mpvium.ui.player.controls.components.PlayerPillButton
 import app.aryan447.mpvium.ui.theme.controlColor
+import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 
@@ -283,7 +284,7 @@ fun RenderPlayerButton(
         if (expanded) {
           Surface(
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
             border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
             modifier = Modifier.height(buttonSize),
           ) {
@@ -318,7 +319,7 @@ fun RenderPlayerButton(
               if (isSnapshotLoading) {
                 Surface(
                   shape = CircleShape,
-                  color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+                  color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
                   border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
                   modifier = Modifier.size(buttonSize - 4.dp),
                 ) {
@@ -334,7 +335,7 @@ fun RenderPlayerButton(
                 @OptIn(ExperimentalFoundationApi::class)
                 Surface(
                   shape = CircleShape,
-                  color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+                  color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
                   border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
                   modifier = Modifier
                     .size(buttonSize - 4.dp)
@@ -628,7 +629,7 @@ fun RenderPlayerButton(
       }
       Surface(
         shape = CircleShape,
-        color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+        color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
         contentColor = vFlipColor,
         border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
         modifier = Modifier
@@ -667,7 +668,7 @@ fun RenderPlayerButton(
         if (expanded) {
           Surface(
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
             border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
             modifier = Modifier.height(buttonSize),
           ) {
@@ -704,7 +705,7 @@ fun RenderPlayerButton(
               // Clear/Close Button - always has background
               Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+                color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
                 modifier = Modifier
                   .size(buttonSize - 4.dp)
@@ -754,7 +755,7 @@ fun RenderPlayerButton(
           // Collapsed: Show Autorenew icon
           Surface(
             shape = CircleShape,
-            color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+            color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
             border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
             modifier = Modifier
               .size(buttonSize)

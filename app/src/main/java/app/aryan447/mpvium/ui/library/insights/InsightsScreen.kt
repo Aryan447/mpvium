@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.library.insights
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -27,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -35,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +46,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import kotlin.math.roundToInt
@@ -68,6 +77,9 @@ object InsightsScreen : Screen {
       }
     }
 
+    val isGlass = LocalGlass.current
+    val glassHaze = rememberGlassHazeState()
+    val glassStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
     Scaffold(
       topBar = {
         TopAppBar(
@@ -89,6 +101,14 @@ object InsightsScreen : Screen {
               Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
             }
           },
+          colors = if (isGlass) TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            else TopAppBarDefaults.topAppBarColors(),
+          modifier = Modifier.glassChrome(
+            state = glassHaze,
+            style = glassStyle,
+            shape = RoundedCornerShape(0.dp),
+            enabled = isGlass,
+          ),
         )
       },
     ) { innerPadding ->

@@ -23,6 +23,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -407,6 +408,7 @@ fun UpdateDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
         icon = {
             Icon(
                 imageVector = if (actionLabel == "Install") Icons.Filled.SystemUpdate else Icons.Filled.CloudDownload,

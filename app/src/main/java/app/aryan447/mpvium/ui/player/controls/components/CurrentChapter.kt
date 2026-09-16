@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.theme.controlColor
+import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
@@ -61,7 +62,7 @@ fun CurrentChapter(
     shape = RoundedCornerShape(50),
     color =
         MaterialTheme.colorScheme.surfaceContainer.copy(
-          alpha = 0.55f,
+          alpha = glassPlayerAlpha(),
         ),
     contentColor = MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,

@@ -41,6 +41,7 @@ import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.player.Debanding
 import app.aryan447.mpvium.ui.player.MPVProfile
 import app.aryan447.mpvium.ui.preferences.VulkanUtils
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -127,6 +128,7 @@ object DecoderPreferencesScreen : Screen {
               if (showGpuNextWarning) {
                   AlertDialog(
                       onDismissRequest = { showGpuNextWarning = false },
+                      containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
                       title = { Text(stringResource(R.string.pref_decoder_gpu_next_enable_title)) },
                       text = {
                           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

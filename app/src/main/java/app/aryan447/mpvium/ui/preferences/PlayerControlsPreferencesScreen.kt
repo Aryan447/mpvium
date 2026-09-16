@@ -50,6 +50,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
 import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -268,6 +269,7 @@ object PlayerControlsPreferencesScreen : Screen {
             if (showCustomTimeDialog) {
               AlertDialog(
                 onDismissRequest = { showCustomTimeDialog = false },
+                containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
                 title = { Text(text = stringResource(R.string.pref_player_display_hide_player_control_time)) },
                 text = {
                   Column(

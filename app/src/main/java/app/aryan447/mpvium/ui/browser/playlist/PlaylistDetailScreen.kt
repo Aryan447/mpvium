@@ -40,6 +40,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import app.aryan447.mpvium.ui.theme.glassSearchBarColors
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -227,6 +229,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
             modifier = Modifier
               .fillMaxWidth()
               .padding(horizontal = 16.dp, vertical = 8.dp),
+            colors = glassSearchBarColors(),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 6.dp,
           ) {
@@ -699,6 +702,7 @@ private fun StreamUrlDialog(
 ) {
   androidx.compose.material3.AlertDialog(
     onDismissRequest = onDismiss,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
     title = { Text("Stream URL") },
     text = {
       Text(
@@ -743,6 +747,7 @@ private fun RemoveFromPlaylistDialog(
 
   androidx.compose.material3.AlertDialog(
     onDismissRequest = onDismiss,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
     title = {
       Text(
         text = "Remove $itemCount $itemText from playlist?",

@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.streaming.more
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.graphics.Color
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -44,6 +52,7 @@ import app.aryan447.mpvium.ui.browser.playlist.PlaylistScreen
 import app.aryan447.mpvium.ui.browser.recentlyplayed.RecentlyPlayedScreen
 import app.aryan447.mpvium.ui.library.insights.InsightsScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 
@@ -55,6 +64,9 @@ object MoreLibraryScreen : Screen {
   override fun Content() {
     val backstack = LocalBackStack.current
     val navigationBarHeight = LocalNavigationBarHeight.current
+    val isGlass = LocalGlass.current
+    val glassHaze = rememberGlassHazeState()
+    val glassStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
 
     Scaffold(
       topBar = {
@@ -65,6 +77,14 @@ object MoreLibraryScreen : Screen {
               style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             )
           },
+          colors = if (isGlass) TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            else TopAppBarDefaults.topAppBarColors(),
+          modifier = Modifier.glassChrome(
+            state = glassHaze,
+            style = glassStyle,
+            shape = RoundedCornerShape(0.dp),
+            enabled = isGlass,
+          ),
         )
       },
     ) { innerPadding ->
@@ -142,7 +162,7 @@ private fun LibraryItemCard(
       .fillMaxWidth()
       .clip(RoundedCornerShape(16.dp))
       .clickable(onClick = onClick),
-    color = MaterialTheme.colorScheme.surfaceContainer,
+    color = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainer),
     shape = RoundedCornerShape(16.dp),
   ) {
     Row(

@@ -69,16 +69,18 @@ enum class AppTheme(
     backgroundLight = Color(0xFFEFE9DC),
     backgroundDark = Color(0xFF0A0B0D),
   ),
-  LiquidGlass(
-    titleRes = R.string.theme_liquid_glass,
-    primaryLight = Color(0xFF0061C2),
-    primaryDark = Color(0xFF8FCBFF),
-    secondaryLight = Color(0xFF3D5A73),
-    secondaryDark = Color(0xFFA8C4DC),
-    tertiaryLight = Color(0xFF2E6B62),
-    tertiaryDark = Color(0xFF7ED4C6),
-    backgroundLight = Color(0xFFEAF2F8),
-    backgroundDark = Color(0xFF0B1220),
+  Glass(
+    titleRes = R.string.theme_glass,
+    // Neutral black glass: no blue tint. Near-black primaries in light,
+    // near-white in dark; gray secondaries/tertiaries; pure-black dark bg.
+    primaryLight = Color(0xFF1B1B1B),
+    primaryDark = Color(0xFFF2F2F2),
+    secondaryLight = Color(0xFF5A5A5A),
+    secondaryDark = Color(0xFFB3B3B3),
+    tertiaryLight = Color(0xFF6E6E6E),
+    tertiaryDark = Color(0xFF9E9E9E),
+    backgroundLight = Color(0xFFF4F4F4),
+    backgroundDark = Color(0xFF000000),
   );
 
   /**
@@ -165,11 +167,11 @@ enum class AppTheme(
 
   /**
    * Get the AMOLED (pure black) color scheme for this theme.
-   * LiquidGlass keeps its frosted dark background instead of pure black
+   * Glass keeps its frosted dark background instead of pure black
    * so the clear-glass translucency still has content to refract.
    */
   fun getAmoledColorScheme(): ColorScheme {
-    if (this == LiquidGlass) return getDarkColorScheme()
+    if (this == Glass) return getDarkColorScheme()
     return getDarkColorScheme().copy(
     background = Color.Black,
     surface = Color.Black,

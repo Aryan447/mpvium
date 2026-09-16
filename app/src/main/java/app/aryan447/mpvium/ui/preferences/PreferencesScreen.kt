@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
@@ -63,7 +64,7 @@ object PreferencesScreen : Screen {
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .clickable { backstack.add(SettingsSearchScreen) },
               shape = RoundedCornerShape(28.dp),
-              color = MaterialTheme.colorScheme.primaryContainer,
+              color = glassSheetContainerColor(MaterialTheme.colorScheme.primaryContainer),
               tonalElevation = 2.dp,
             ) {
               Row(

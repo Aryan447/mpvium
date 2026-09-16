@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.SeekbarStyle
+import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 import kotlin.math.roundToInt
 
@@ -285,7 +286,7 @@ fun BrightnessSlider(
   Surface(
     modifier = modifier,
     shape = RoundedCornerShape(20.dp),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
     contentColor = MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
@@ -332,7 +333,7 @@ fun VolumeSlider(
   Surface(
     modifier = modifier,
     shape = RoundedCornerShape(20.dp),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
     contentColor = MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,

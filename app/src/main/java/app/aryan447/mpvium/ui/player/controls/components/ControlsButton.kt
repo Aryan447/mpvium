@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
-import app.aryan447.mpvium.ui.theme.LocalLiquidGlass
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.spacing
 import org.koin.compose.koinInject
 
@@ -46,8 +46,8 @@ fun ControlsButton(
   val interactionSource = remember { MutableInteractionSource() }
   val appearancePreferences = koinInject<AppearancePreferences>()
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
-  // Liquid Glass keeps control chips clearer over video.
-  val isGlass = LocalLiquidGlass.current
+  // Glass keeps control chips clear over video (was 0.35 frosted).
+  val isGlass = LocalGlass.current
 
   val clickEvent = LocalPlayerButtonsClickEvent.current
   Surface(
@@ -67,7 +67,7 @@ fun ControlsButton(
     color = if (hideBackground) {
       Color.Transparent
     } else {
-      MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (isGlass) 0.35f else 0.55f)
+      MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (isGlass) 0.22f else 0.55f)
     },
     contentColor = color ?: MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,

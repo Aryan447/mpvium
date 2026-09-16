@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
       val appTheme by appearancePreferences.appTheme.collectAsState()
       val isSystemInDarkTheme = isSystemInDarkTheme()
       val isDarkMode = dark == DarkMode.Dark || (dark == DarkMode.System && isSystemInDarkTheme)
-      val isGlass = appTheme == app.aryan447.mpvium.ui.theme.AppTheme.LiquidGlass
+      val isGlass = appTheme == app.aryan447.mpvium.ui.theme.AppTheme.Glass
       enableEdgeToEdge(
         SystemBarStyle.auto(
           lightScrim = if (isGlass) Color.Transparent.toArgb() else Color.White.toArgb(),

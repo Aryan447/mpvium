@@ -58,6 +58,7 @@ import app.aryan447.mpvium.utils.media.CustomFontEntry
 import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import app.aryan447.mpvium.utils.media.copyFontsFromDirectory
 import app.aryan447.mpvium.utils.media.loadCustomFontEntries
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import com.github.k1rakishou.fsaf.FileManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -532,6 +533,7 @@ object SubtitlesPreferencesScreen : Screen {
               if (showClearDialog) {
                 AlertDialog(
                   onDismissRequest = { showClearDialog = false },
+                  containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
                   title = { Text(stringResource(R.string.pref_subtitles_clear_downloads)) },
                   text = { Text(stringResource(R.string.pref_subtitles_clear_downloads_confirmation)) },
                   confirmButton = {
@@ -684,6 +686,7 @@ fun MultiChoicePreference(
   if (showDialog) {
     AlertDialog(
       onDismissRequest = { showDialog = false },
+      containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
       title = title,
       text = {
         LazyColumn {

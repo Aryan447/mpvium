@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
@@ -61,7 +62,12 @@ import androidx.core.content.FileProvider
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.MpviumTheme
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.utils.media.MediaInfoOps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -123,6 +129,10 @@ class MediaInfoActivity : ComponentActivity() {
     val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
     val surfaceContainerColor = MaterialTheme.colorScheme.surfaceContainer
     val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
+
+    val isGlass = LocalGlass.current
+    val glassHaze = rememberGlassHazeState()
+    val glassStyle = glassHazeStyle(isDark = isDarkMode, kind = GlassKind.Bar)
 
     LaunchedEffect(Unit) {
       val uri = when (intent?.action) {
@@ -256,9 +266,18 @@ class MediaInfoActivity : ComponentActivity() {
               }
             }
           },
-          colors = TopAppBarDefaults.topAppBarColors(
+          colors = if (isGlass) TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+          ) else TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
+          ),
+          modifier = Modifier.glassChrome(
+            state = glassHaze,
+            style = glassStyle,
+            shape = RoundedCornerShape(0.dp),
+            enabled = isGlass,
           ),
         )
       },

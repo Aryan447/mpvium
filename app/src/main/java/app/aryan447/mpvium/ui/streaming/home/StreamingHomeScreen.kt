@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,7 +48,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSearchBarColors
 import androidx.compose.material3.Surface
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -61,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import androidx.compose.ui.Alignment
@@ -136,6 +144,9 @@ object StreamingHomeScreen : Screen {
 
     Scaffold(
       topBar = {
+        val isGlass = LocalGlass.current
+        val glassHaze = rememberGlassHazeState()
+        val glassStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
         if (state.isSearching) {
           SearchBar(
             inputField = {
@@ -159,6 +170,7 @@ object StreamingHomeScreen : Screen {
             modifier = Modifier
               .fillMaxWidth()
               .padding(horizontal = 16.dp, vertical = 6.dp),
+            colors = glassSearchBarColors(),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 6.dp,
           ) {}
@@ -210,6 +222,12 @@ object StreamingHomeScreen : Screen {
             },
             colors = TopAppBarDefaults.topAppBarColors(
               containerColor = Color.Transparent,
+            ),
+            modifier = Modifier.glassChrome(
+              state = glassHaze,
+              style = glassStyle,
+              shape = RoundedCornerShape(0.dp),
+              enabled = isGlass,
             ),
           )
         }
@@ -546,7 +564,7 @@ private fun FolderQuickCard(
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         onClick()
       }),
-    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    color = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainerHigh),
     shape = RoundedCornerShape(12.dp),
   ) {
     Row(

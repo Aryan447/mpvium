@@ -58,6 +58,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -168,7 +171,14 @@ fun PlayerSheet(
               .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
           ).imePadding(),
       shape = MaterialTheme.shapes.extraLarge.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
-      color = surfaceColor ?: MaterialTheme.colorScheme.surface,
+      color = surfaceColor ?: run {
+        val isGlass = LocalGlass.current
+        if (!isGlass) return@run MaterialTheme.colorScheme.surface
+        val dark = androidx.compose.foundation.isSystemInDarkTheme()
+        // Clear frost over video; sheets float above playback so the
+        // translucency shows real content behind.
+        glassFrostColor(isDark = dark, kind = GlassKind.Sheet).copy(alpha = 0.5f)
+      },
       tonalElevation = tonalElevation,
       content = {
         BackHandler(

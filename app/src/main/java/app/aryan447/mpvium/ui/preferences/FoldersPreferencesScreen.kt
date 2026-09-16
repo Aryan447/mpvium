@@ -30,6 +30,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MenuDefaults
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -438,6 +441,7 @@ object FoldersPreferencesScreen : Screen {
     if (showClearWhitelistDialog) {
       AlertDialog(
         onDismissRequest = { showClearWhitelistDialog = false },
+        containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
         title = { Text(stringResource(R.string.pref_folders_clear_all_whitelist_confirm_title)) },
         text = { Text(stringResource(R.string.pref_folders_clear_all_whitelist_confirm_message)) },
         confirmButton = {
@@ -461,6 +465,7 @@ object FoldersPreferencesScreen : Screen {
     if (showClearAllDialog) {
       AlertDialog(
         onDismissRequest = { showClearAllDialog = false },
+        containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
         title = { Text(stringResource(R.string.pref_folders_clear_all_confirm_title)) },
         text = { Text(stringResource(R.string.pref_folders_clear_all_confirm_message)) },
         confirmButton = {
@@ -574,6 +579,7 @@ private fun AddFolderDialog(
 
   AlertDialog(
     onDismissRequest = onDismiss,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
     title = {
       Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -601,6 +607,7 @@ private fun AddFolderDialog(
         DropdownMenu(
           expanded = showDropdown,
           onDismissRequest = { showDropdown = false },
+          containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
         ) {
           DropdownMenuItem(
             text = { Text(stringResource(R.string.select_all)) },

@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.browser.networkstreaming
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -60,6 +62,9 @@ import app.aryan447.mpvium.ui.browser.dialogs.AddConnectionSheet
 import app.aryan447.mpvium.ui.browser.dialogs.EditConnectionSheet
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.launch
@@ -148,6 +153,11 @@ object NetworkStreamingScreen : Screen {
             icon = { Icon(Icons.Filled.Add, contentDescription = null) },
             text = { Text("Add Connection") },
             modifier = Modifier.padding(bottom = navigationBarHeight)
+            containerColor = if (LocalGlass.current) {
+              glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+            } else {
+              FloatingActionButtonDefaults.containerColor
+            },
           )
         }
       },

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -144,7 +145,7 @@ fun RenameDialog(
         Text("Cancel", fontWeight = FontWeight.Medium)
       }
     },
-    containerColor = MaterialTheme.colorScheme.surface,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
     tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
   )

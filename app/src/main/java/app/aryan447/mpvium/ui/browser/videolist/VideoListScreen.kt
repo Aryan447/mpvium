@@ -8,9 +8,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.material3.FloatingActionButtonDefaults
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -110,6 +113,12 @@ import app.aryan447.mpvium.utils.media.CopyPasteOps
 import app.aryan447.mpvium.utils.media.MediaUtils
 import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
 import app.aryan447.mpvium.utils.sort.SortUtils
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassBackdrop
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -231,6 +240,13 @@ data class VideoListScreen(
     var showFloatingBottomBar by remember { mutableStateOf(false) }
     val animationDuration = 300
 
+    // Shared glass state for live floating-bar blur (Step 5e): the video
+    // content below is marked as the haze source, the BrowserBottomBar
+    // overlay samples it. Falls back to frost on non-glass themes (no-op).
+    val isGlass = LocalGlass.current
+    val bottomBarHaze = rememberGlassHazeState()
+    val bottomBarHazeStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
+
     // Handle selection mode changes with animation
     LaunchedEffect(selectionManager.isInSelectionMode) {
       if (selectionManager.isInSelectionMode) {
@@ -335,6 +351,11 @@ data class VideoListScreen(
                   }
                 }
               },
+              containerColor = if (LocalGlass.current) {
+                glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+              } else {
+                FloatingActionButtonDefaults.containerColor
+              },
             ) {
               Icon(Icons.Filled.PlayArrow, contentDescription = "Play recently played or first video")
             }
@@ -367,7 +388,7 @@ data class VideoListScreen(
           },
           onVideoLongClick = { video -> selectionManager.toggle(video) },
           isFabVisible = isFabVisible,
-          modifier = Modifier.padding(padding),
+          modifier = Modifier.padding(padding).glassBackdrop(state = bottomBarHaze, enabled = isGlass),
           showFloatingBottomBar = showFloatingBottomBar,
         )
 
@@ -406,7 +427,9 @@ data class VideoListScreen(
             onRenameClick = { renameDialogOpen.value = true },
             onDeleteClick = { deleteDialogOpen.value = true },
             onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
-            showRename = selectionManager.isSingleSelection
+            showRename = selectionManager.isSingleSelection,
+            hazeState = bottomBarHaze,
+            hazeStyle = bottomBarHazeStyle,
           )
         }
       }
@@ -512,6 +535,7 @@ data class VideoListScreen(
       if (showPrivateSpaceCompletionDialog.value) {
         androidx.compose.material3.AlertDialog(
           onDismissRequest = { showPrivateSpaceCompletionDialog.value = false },
+          containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
           title = {
             Text(
               text = "Moved to Private Space",

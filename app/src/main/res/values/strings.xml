@@ -65,7 +65,7 @@
   <string name="onboarding_page2_title">Your library, your way</string>
   <string name="onboarding_page2_message">Movies and TV shows are detected automatically, with posters, continue watching, playlists, history and folder browsing built in.</string>
   <string name="onboarding_page3_title">Make it yours</string>
-  <string name="onboarding_page3_message">Pick Cinema, Noir or clear Liquid Glass themes, pure-black AMOLED, a floating pill bar, gesture controls — and full mpv.conf power when you want it.</string>
+  <string name="onboarding_page3_message">Pick Cinema, Noir or clear Glass themes, pure-black AMOLED, a floating pill bar, gesture controls — and full mpv.conf power when you want it.</string>
   <string name="pref_appearance_material_you_title">Material You</string>
   <string name="pref_appearance_material_you_summary">Enable dynamic colors</string>
   <string name="pref_appearance_material_you_summary_disabled">Only available on Android 12 and above</string>
@@ -94,7 +94,7 @@
   <string name="theme_dynamic">Dynamic</string>
   <string name="theme_cinema">Cinema</string>
   <string name="theme_noir_cinema">Noir Cinema</string>
-  <string name="theme_liquid_glass">Liquid Glass</string>
+  <string name="theme_glass">Glass</string>
   <!-- Settings Search -->
   <string name="settings_search_hint">Search settings…</string>
   <string name="settings_search_no_results">No settings found</string>

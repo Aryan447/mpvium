@@ -11,6 +11,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MenuDefaults
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
@@ -129,6 +132,7 @@ fun EditConnectionSheet(
                 ExposedDropdownMenu(
                   expanded = protocolMenuExpanded,
                   onDismissRequest = { protocolMenuExpanded = false },
+                  containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
                 ) {
                   NetworkProtocol.entries.forEach { proto ->
                     DropdownMenuItem(
@@ -262,7 +266,7 @@ fun EditConnectionSheet(
         )
       }
     },
-    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainerHigh),
     tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
   )

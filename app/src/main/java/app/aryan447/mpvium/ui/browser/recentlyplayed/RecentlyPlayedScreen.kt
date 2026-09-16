@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,6 +35,7 @@ import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -76,6 +78,9 @@ import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
 import app.aryan447.mpvium.ui.browser.sheets.PlayLinkSheet
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.preferences.AdvancedPreferencesScreen
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.launch
@@ -233,6 +238,11 @@ object RecentlyPlayedScreen : Screen {
                   ),
                 checked = isFabExpanded.value,
                 onCheckedChange = { isFabExpanded.value = !isFabExpanded.value },
+                containerColor = if (LocalGlass.current) {
+                  glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+                } else {
+                  ToggleFloatingActionButtonDefaults.containerColor
+                },
               ) {
                 val imageVector by remember {
                   derivedStateOf {

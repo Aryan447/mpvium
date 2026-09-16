@@ -43,6 +43,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassCardColors
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +68,7 @@ fun PlaylistActionSheet(
     onDismissRequest = onDismiss,
     sheetState = sheetState,
     dragHandle = { BottomSheetDefaults.DragHandle() },
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
     modifier = modifier,
   ) {
     Column(
@@ -91,7 +95,7 @@ fun PlaylistActionSheet(
           showCreateDialog = true
         },
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
+        colors = if (LocalGlass.current) glassCardColors() else CardDefaults.cardColors(
           containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
       ) {
@@ -128,7 +132,7 @@ fun PlaylistActionSheet(
           showM3UDialog = true
         },
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
+        colors = if (LocalGlass.current) glassCardColors() else CardDefaults.cardColors(
           containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
       ) {
