@@ -115,10 +115,20 @@ class MPVView(
       MPVLib.setOptionString("vf", "format=yuv420p")
     }
 
-    // Cap demuxer cache for mobile to prevent memory issues
+    // Cap demuxer cache for mobile to prevent memory issues. Keep the forward
+    // cap modest, but allow a deeper backward cache on modern devices so
+    // backward seeks are served from RAM instead of re-reading the stream —
+    // that re-read is a large part of the post-seek stall on network sources.
     val cacheMegs = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) 64 else 32
+    val backCacheMegs = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) 128 else 32
     MPVLib.setOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
-    MPVLib.setOptionString("demuxer-max-back-bytes", "${cacheMegs * 1024 * 1024}")
+    MPVLib.setOptionString("demuxer-max-back-bytes", "${backCacheMegs * 1024 * 1024}")
+    // Preload more data around the playhead so the pipeline refills faster
+    // right after a seek lands instead of trickling in, and use bigger
+    // network read chunks so stream re-reads (SMB/FTP/WebDAV) stall less.
+    MPVLib.setOptionString("demuxer-readahead-secs", "10")
+    MPVLib.setOptionString("cache-secs", "20")
+    MPVLib.setOptionString("stream-buffer-size", "${1024 * 1024}")
 
     val logLevel = if (advancedPreferences.verboseLogging.get()) "v" else "warn"
     MPVLib.setOptionString("msg-level", "all=$logLevel")
