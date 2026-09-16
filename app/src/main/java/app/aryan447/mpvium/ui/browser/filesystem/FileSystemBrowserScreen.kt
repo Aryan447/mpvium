@@ -742,6 +742,8 @@ fun FileSystemBrowserScreen(path: String? = null) {
                 tooltip = { PlainTooltip { Text("Toggle menu") } },
                 state = rememberTooltipState(),
               ) {
+                val toggleFrost = glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+                val defaultToggleContainer = ToggleFloatingActionButtonDefaults.containerColor()
                 ToggleFloatingActionButton(
                   modifier = Modifier
                     .animateFloatingActionButton(
@@ -751,9 +753,9 @@ fun FileSystemBrowserScreen(path: String? = null) {
                   checked = isFabExpanded.value,
                   onCheckedChange = { isFabExpanded.value = !isFabExpanded.value },
                 containerColor = if (LocalGlass.current) {
-                  glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+                  { _ -> toggleFrost }
                 } else {
-                  ToggleFloatingActionButtonDefaults.containerColor
+                  defaultToggleContainer
                 },
                 ) {
                   val imageVector by remember {
