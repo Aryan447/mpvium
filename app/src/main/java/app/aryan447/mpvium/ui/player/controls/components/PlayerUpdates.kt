@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.ui.graphics.Shape
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.player.HoldControlTarget
+import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 
 @Composable
@@ -49,7 +50,7 @@ fun PlayerUpdate(
 ) {
   Surface(
     shape = shape,
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
     contentColor = MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,

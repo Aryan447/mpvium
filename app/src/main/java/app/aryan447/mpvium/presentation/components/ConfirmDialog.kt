@@ -21,6 +21,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -33,13 +36,16 @@ fun ConfirmDialog(
   customContent: (@Composable () -> Unit)? = null,
 ) {
   val haptic = LocalHapticFeedback.current
+  val isGlass = LocalGlass.current
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
   BasicAlertDialog(
     onCancel,
     modifier = modifier,
   ) {
     Surface(
       shape = MaterialTheme.shapes.extraLarge,
-      color = AlertDialogDefaults.containerColor,
+      color = if (isGlass) glassFrostColor(isDark = dark, kind = GlassKind.Sheet)
+      else AlertDialogDefaults.containerColor,
       tonalElevation = AlertDialogDefaults.TonalElevation,
     ) {
       Column(

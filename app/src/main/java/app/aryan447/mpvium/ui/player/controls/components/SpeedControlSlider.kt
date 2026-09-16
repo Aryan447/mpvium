@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 import kotlinx.coroutines.delay
 
@@ -73,7 +74,7 @@ fun SpeedControlSlider(
   // Use a Surface with less rounded corners instead of CircleShape
   Surface(
     shape = RoundedCornerShape(12.dp),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
     contentColor = MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
@@ -200,7 +201,7 @@ fun CompactSpeedIndicator(
     horizontalArrangement = Arrangement.Center,
     modifier = modifier
       .background(
-        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
         shape = RoundedCornerShape(100.dp)
       )
       .border(

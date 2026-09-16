@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ViewComfy
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -61,9 +62,10 @@ import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.GlassKind
-import app.aryan447.mpvium.ui.theme.LocalLiquidGlass
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.theme.LocalThemeTransitionState
 import kotlinx.coroutines.delay
@@ -156,7 +158,7 @@ private fun NormalTopBar(
   val darkTheme = isSystemInDarkTheme()
   val themeTransition = LocalThemeTransitionState.current
   val coroutineScope = rememberCoroutineScope()
-  val isGlass = LocalLiquidGlass.current
+  val isGlass = LocalGlass.current
   val glassHaze = rememberGlassHazeState()
   val glassStyle = glassHazeStyle(
     isDark = darkMode == DarkMode.Dark || (darkMode == DarkMode.System && darkTheme),
@@ -335,7 +337,7 @@ private fun SelectionTopBar(
   onMarkAs: (() -> Unit)? = null,
 ) {
   var showDropdown by remember { mutableStateOf(false) }
-  val isGlass = LocalLiquidGlass.current
+  val isGlass = LocalGlass.current
   val glassHaze = rememberGlassHazeState()
   val glassStyle = glassHazeStyle(
     isDark = isSystemInDarkTheme(),
@@ -374,6 +376,7 @@ private fun SelectionTopBar(
         DropdownMenu(
           expanded = showDropdown,
           onDismissRequest = { showDropdown = false },
+          containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
         ) {
           if (onSelectAll != null) {
             DropdownMenuItem(

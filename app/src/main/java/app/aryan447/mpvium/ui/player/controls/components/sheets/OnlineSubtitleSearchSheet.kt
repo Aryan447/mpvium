@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.components.PlayerSheet
 import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.collections.immutable.ImmutableList
@@ -674,7 +675,7 @@ fun SeriesDetailsSection(
                       onDismissRequest = { seasonDropdownExpanded.value = false },
                       modifier = Modifier.heightIn(max = 300.dp),
                       shape = RoundedCornerShape(12.dp),
-                      containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                      containerColor = glassMenuContainerColor(MaterialTheme.colorScheme.surfaceContainerHigh)
                   ) {
                       tvShow.seasons.forEach { season ->
                           DropdownMenuItem(
@@ -724,7 +725,7 @@ fun SeriesDetailsSection(
                       onDismissRequest = { episodeDropdownExpanded.value = false },
                       modifier = Modifier.heightIn(max = 300.dp).widthIn(min = 200.dp),
                       shape = RoundedCornerShape(12.dp),
-                      containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                      containerColor = glassMenuContainerColor(MaterialTheme.colorScheme.surfaceContainerHigh)
                   ) {
                       episodes.forEach { episode ->
                           DropdownMenuItem(

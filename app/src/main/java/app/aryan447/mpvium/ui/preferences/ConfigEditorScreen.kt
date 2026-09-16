@@ -2,6 +2,7 @@ package app.aryan447.mpvium.ui.preferences
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -44,6 +47,11 @@ import androidx.documentfile.provider.DocumentFile
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import java.io.File
 import kotlin.io.path.createTempFile
@@ -73,6 +81,9 @@ data class ConfigEditorScreen(
     val backStack    = LocalBackStack.current
     val preferences  = koinInject<AdvancedPreferences>()
     val scope        = rememberCoroutineScope()
+    val isGlass = LocalGlass.current
+    val glassHaze = rememberGlassHazeState()
+    val glassStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
 
     val (fileName, initialValue) = when (configType) {
       ConfigType.MPV_CONF   -> "mpv.conf"   to preferences.mpvConf.get()
@@ -203,6 +214,14 @@ data class ConfigEditorScreen(
             Icon(Icons.Default.Check, contentDescription = "Save")
           }
         },
+        colors = if (isGlass) TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+          else TopAppBarDefaults.topAppBarColors(),
+        modifier = Modifier.glassChrome(
+          state = glassHaze,
+          style = glassStyle,
+          shape = RoundedCornerShape(0.dp),
+          enabled = isGlass,
+        ),
       )
 
       // Editor content with IME padding

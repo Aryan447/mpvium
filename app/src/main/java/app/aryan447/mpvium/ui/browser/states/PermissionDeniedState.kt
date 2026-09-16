@@ -60,6 +60,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.BuildConfig
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 
 @SuppressLint("UseKtx")
 @Composable
@@ -240,6 +241,7 @@ fun PermissionDeniedState(
 
     AlertDialog(
       onDismissRequest = { showExplanationDialog = false },
+      containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
       icon = {
         Icon(
           imageVector = Icons.Outlined.Info,

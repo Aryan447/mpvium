@@ -62,7 +62,7 @@ import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
 import app.aryan447.mpvium.ui.streaming.home.StreamingHomeScreen
 import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.GlassKind
-import app.aryan447.mpvium.ui.theme.LocalLiquidGlass
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassBackdrop
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
@@ -174,7 +174,7 @@ object MainScreen : Screen {
     val showBottomNavLabels by appearancePreferences.showBottomNavLabels.collectAsState()
     val enabledBottomTabs by appearancePreferences.bottomNavTabs.collectAsState()
     val darkMode by appearancePreferences.darkMode.collectAsState()
-    val isGlass = LocalLiquidGlass.current
+    val isGlass = LocalGlass.current
     val systemDark = isSystemInDarkTheme()
     val isDark = when (darkMode) {
       DarkMode.Dark -> true
@@ -323,7 +323,19 @@ object MainScreen : Screen {
                         bottomStart = 0.dp,
                         bottomEnd = 0.dp
                       )
+                    )
+                    .glassChrome(
+                      state = glassHaze,
+                      style = glassStyle,
+                      shape = RoundedCornerShape(
+                        topStart = 20.dp,
+                        topEnd = 20.dp,
+                        bottomStart = 0.dp,
+                        bottomEnd = 0.dp
+                      ),
+                      enabled = isGlass,
                     ),
+                  containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
                   tonalElevation = 3.dp
                 ) {
                   BottomNavItems(
@@ -345,7 +357,15 @@ object MainScreen : Screen {
         Row(modifier = Modifier.fillMaxSize()) {
           if (isWide) {
             AnimatedVisibility(visible = !hideNavigationBar) {
-              NavigationRail {
+              NavigationRail(
+                modifier = Modifier.glassChrome(
+                  state = glassHaze,
+                  style = glassHazeStyle(isDark = isDark, kind = GlassKind.Card),
+                  shape = RoundedCornerShape(24.dp),
+                  enabled = isGlass,
+                ),
+                containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surface,
+              ) {
                 navItems.forEach { tab ->
                   NavigationRailItem(
                     icon = { Icon(tab.icon, contentDescription = tab.label) },

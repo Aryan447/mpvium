@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.browser.playlist
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +39,10 @@ import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassFrostColor
+import app.aryan447.mpvium.ui.theme.glassSearchBarColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -74,6 +80,7 @@ import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
 import app.aryan447.mpvium.ui.browser.sheets.PlaylistActionSheet
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
@@ -212,6 +219,7 @@ object PlaylistScreen : Screen {
               modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
+              colors = glassSearchBarColors(),
               shape = RoundedCornerShape(28.dp),
               tonalElevation = 6.dp,
             ) {
@@ -248,6 +256,11 @@ object PlaylistScreen : Screen {
               icon = { Icon(Icons.Filled.Add, contentDescription = null) },
               text = { Text("Create Playlist") },
               modifier = Modifier.padding(bottom = navigationBarHeight)
+            containerColor = if (LocalGlass.current) {
+              glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+            } else {
+              FloatingActionButtonDefaults.containerColor
+            },
             )
           }
         }
@@ -326,6 +339,7 @@ object PlaylistScreen : Screen {
           var playlistName by remember { mutableStateOf(selectedPlaylist.playlist.name) }
           androidx.compose.material3.AlertDialog(
             onDismissRequest = { showRenameDialog = false },
+            containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
             title = { Text("Rename Playlist") },
             text = {
               androidx.compose.material3.OutlinedTextField(

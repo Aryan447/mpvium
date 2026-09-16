@@ -11,7 +11,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +54,12 @@ import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassBackdrop
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSearchBarColors
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
@@ -230,6 +239,13 @@ fun FileSystemBrowserScreen(path: String? = null) {
 
   // Animation duration for responsive slide animations
   val animationDuration = 200
+
+  // Shared glass state for live floating-bar blur (Step 5e): the browser
+  // content below is marked as the haze source, the BrowserBottomBar
+  // overlay samples it. Falls back to frost on non-glass themes (no-op).
+  val isGlass = LocalGlass.current
+  val bottomBarHaze = rememberGlassHazeState()
+  val bottomBarHazeStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
 
   // Selection managers - separate for folders and videos
   val folders = items.filterIsInstance<FileSystemItem.Folder>()
@@ -545,6 +561,7 @@ fun FileSystemBrowserScreen(path: String? = null) {
             modifier = Modifier
               .fillMaxWidth()
               .padding(horizontal = 16.dp),
+            colors = glassSearchBarColors(),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 6.dp,
           ) {
@@ -733,6 +750,11 @@ fun FileSystemBrowserScreen(path: String? = null) {
                     ),
                   checked = isFabExpanded.value,
                   onCheckedChange = { isFabExpanded.value = !isFabExpanded.value },
+                containerColor = if (LocalGlass.current) {
+                  glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+                } else {
+                  ToggleFloatingActionButtonDefaults.containerColor
+                },
                 ) {
                   val imageVector by remember {
                     derivedStateOf {
@@ -784,7 +806,7 @@ fun FileSystemBrowserScreen(path: String? = null) {
         }
       },
     ) { padding ->
-      Box(modifier = Modifier.padding(padding)) {
+      Box(modifier = Modifier.padding(padding).glassBackdrop(state = bottomBarHaze, enabled = isGlass)) {
         when (permissionState.status) {
           PermissionStatus.Granted -> {
             if (isSearching) {
@@ -932,6 +954,8 @@ fun FileSystemBrowserScreen(path: String? = null) {
         onDeleteClick = { deleteDialogOpen.value = true },
         onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
         showRename = videoSelectionManager.isSingleSelection,
+        hazeState = bottomBarHaze,
+        hazeStyle = bottomBarHazeStyle,
         modifier = Modifier.padding(bottom = 0.dp) // Zero bottom padding - absolute bottom
       )
     }

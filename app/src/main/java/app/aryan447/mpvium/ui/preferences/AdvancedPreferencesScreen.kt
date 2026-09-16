@@ -55,6 +55,7 @@ import app.aryan447.mpvium.presentation.crash.CrashActivity
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import java.io.File
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.outputStream
@@ -135,6 +136,7 @@ object AdvancedPreferencesScreen : Screen {
     if (showExportDialog && exportStats != null) {
       AlertDialog(
         onDismissRequest = { showExportDialog = false },
+        containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
         title = { Text("Export Complete") },
         text = {
           Column(
@@ -159,6 +161,7 @@ object AdvancedPreferencesScreen : Screen {
     if (showImportDialog && importStats != null) {
       AlertDialog(
         onDismissRequest = { showImportDialog = false },
+        containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
         title = { Text("Import Complete") },
         text = {
           Text(

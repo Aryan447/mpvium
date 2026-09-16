@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,6 +89,7 @@ fun PlayLinkSheet(
     onDismissRequest = handleDismiss,
     sheetState = sheetState,
     dragHandle = { BottomSheetDefaults.DragHandle() },
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
     modifier = modifier,
   ) {
     Column(

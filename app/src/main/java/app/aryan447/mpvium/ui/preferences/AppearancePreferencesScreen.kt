@@ -114,15 +114,15 @@ object AppearancePreferencesScreen : Screen {
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_amoled_mode_title)) },
                                 summary = {
                                     Text(
-                                        text = if (appTheme == AppTheme.LiquidGlass) {
-                                            stringResource(id = R.string.pref_appearance_amoled_mode_summary) + " (not used by Liquid Glass)"
+                                        text = if (appTheme == AppTheme.Glass) {
+                                            stringResource(id = R.string.pref_appearance_amoled_mode_summary) + " (not used by Glass)"
                                         } else {
                                             stringResource(id = R.string.pref_appearance_amoled_mode_summary)
                                         },
                                         color = MaterialTheme.colorScheme.outline,
                                     )
                                 },
-                                enabled = darkMode != DarkMode.Light && appTheme != AppTheme.LiquidGlass
+                                enabled = darkMode != DarkMode.Light && appTheme != AppTheme.Glass
                             )
 
                             PreferenceDivider()

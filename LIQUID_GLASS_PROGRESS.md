@@ -1,29 +1,34 @@
-# Liquid Glass Progress — resumable tracker
+# Glass Progress — resumable tracker (renamed from Liquid Glass, 2026-09-16; inspired-by, not iOS copy)
 
-Goal: Optional clear iOS 26-style Liquid Glass theme beside Cinema / Noir, chrome-first.
+Goal: Optional clear Glass theme beside Cinema / Noir, chrome-first.
 
 Decisions (locked):
 - Blur core: Haze 1.5.3 (verified latest on Maven Central; monolithic 1.x API). Runner-up true-lens libs (Abdullajon1881 LiquidGlass 1.0.0, Haze 2.x `haze-glass` beta) are NOT on Central — revisit when published.
-- Theme model: new `AppTheme.LiquidGlass` entry (auto-appears in picker), not an overlay toggle.
+- Theme model: new `AppTheme.Glass` entry (auto-appears in picker), not an overlay toggle.
 - Coverage: chrome first (bottom nav pill, top bars, floating bar, player panels/chips). Cards/lists later.
 - Look: CLEAR (translucent ~35-55%, blur ~20-24dp, subtle tint + rim), not frosted-opaque.
 
 File index:
 - `gradle/libs.versions.toml` — version catalog (+haze 1.5.3)
 - `app/build.gradle.kts` — app deps (+implementation(libs.haze))
-- `app/src/main/java/app/aryan447/mpvium/ui/theme/AppTheme.kt` — LiquidGlass entry + AMOLED guard
-- `app/src/main/java/app/aryan447/mpvium/ui/theme/LiquidGlass.kt` — NEW core kit (tokens, LocalLiquidGlass, glassBackdrop/glassChrome/glassHazeStyle)
-- `app/src/main/java/app/aryan447/mpvium/ui/theme/Theme.kt` — provide LocalLiquidGlass
+- `app/src/main/java/app/aryan447/mpvium/ui/theme/AppTheme.kt` — Glass entry (neutral grayscale, no blue) + AMOLED guard
+- `app/src/main/java/app/aryan447/mpvium/ui/theme/Glass.kt` — NEW core kit (tokens, LocalGlass, glassBackdrop/glassChrome/glassHazeStyle/glassFrostColor/glassRimColor/glassPlayerAlpha/glassSheetContainerColor/glassMenuContainerColor/glassSearchBarColors/glassCardColors)
+- `app/src/main/java/app/aryan447/mpvium/ui/theme/Theme.kt` — provide LocalGlass
 - `app/src/main/java/app/aryan447/mpvium/MainActivity.kt` — transparent scrims for glass
-- `app/src/main/java/app/aryan447/mpvium/ui/browser/MainScreen.kt` — pill nav glass + content backdrop source
+- `app/src/main/java/app/aryan447/mpvium/ui/browser/MainScreen.kt` — pill + flat bottom nav + NavigationRail glass, content backdrop source
 - `app/src/main/java/app/aryan447/mpvium/ui/browser/components/BrowserTopBar.kt` — top bar glass (both modes)
 - `app/src/main/java/app/aryan447/mpvium/ui/browser/components/FloatingBottomBar.kt` — selection bar glass
 - `app/src/main/java/app/aryan447/mpvium/ui/player/controls/PlayerPanels.kt` — panelCardsColors glass alpha
-- `app/src/main/java/app/aryan447/mpvium/ui/player/controls/components/ControlsButton.kt` — clearer chips over video
-- `app/src/main/java/app/aryan447/mpvium/ui/preferences/components/ThemePreviewCard.kt` — frosted preview
+- `app/src/main/java/app/aryan447/mpvium/ui/player/controls/` — portrait/landscape/shared panels + TransportButtons/VerticalSliders/SpeedControlSlider/PlayerUpdates/CurrentChapter/ControlsButton via glassPlayerAlpha()
+- `app/src/main/java/app/aryan447/mpvium/presentation/components/` — PlayerSheet funnel, ExpandableCard, ConfirmDialog (glass via glassSheetContainerColor/glassCardColors)
+- `app/src/main/java/app/aryan447/mpvium/ui/preferences/` — PreferenceCard + SettingsTopBar (CardPreferences), search bar surface, ThemePreviewCard frost; all dialogs glassed
+- `app/src/main/java/app/aryan447/mpvium/ui/browser/dialogs/` — all 9 dialogs glassed via glassSheetContainerColor
+- `app/src/main/java/app/aryan447/mpvium/ui/browser/sheets/` — PlayLinkSheet, PlaylistActionSheet glass
+- `app/src/main/java/app/aryan447/mpvium/ui/streaming/` — search bars, FolderQuickCard, LibraryItemCard, ContinueWatchingRow menus, Movie/Series detail dialogs glassed
+- `app/src/main/java/app/aryan447/mpvium/utils/update/UpdateFeature.kt` — update dialog glassed
 - `app/src/main/java/app/aryan447/mpvium/ui/preferences/AppearancePreferencesScreen.kt` — AMOLED guard
 - `app/src/main/java/app/aryan447/mpvium/ui/preferences/SearchablePreference.kt` — glass keywords
-- `app/src/main/res/values/strings.xml` — `theme_liquid_glass` + onboarding copy
+- `app/src/main/res/values/strings.xml` — `theme_glass` + onboarding copy
 
 Steps:
 - [x] Step 0: Create this progress file
@@ -34,22 +39,36 @@ Steps:
 - [x] Step 5a: Nav pill + content backdrop glass (MainScreen — true live blur)
 - [x] Step 5b: Top bars glass (BrowserTopBar normal + selection — frost until 5e)
 - [x] Step 5c: Floating selection bar glass (FloatingBottomBar — frost until 5e)
-- [x] Step 5d: Player glass (panelCardsColors 0.55 + ControlsButton 0.35; native video surface can't be Haze-sampled so frost is correct)
+- [x] Step 5d: Player glass (glassPlayerAlpha 0.22 over video)
+- [x] Step 5f: Glass extension everywhere (nav flat/rail, PlayerSheet funnel, dialogs, dropdowns, search bars, cards) — CLEAR look (blur 12dp, alpha ~0.28), neutral grayscale, no blue
 - [x] Step 6: Settings polish (AMOLED disabled for glass, keywords, onboarding)
-- [x] Step 7 (local): diff-check PASS, rg audit 7 call sites. CI build + device matrix pending.
-- [ ] Step 5e (optional): per-screen HazeState refactor for live top-bar/floating-bar blur
+- [x] Step 7b (local): diff-check PASS, all AlertDialog sites audited to have containerColor = glassSheetContainerColor. CI build + device matrix pending.
+- [x] Step 5e (partial, 2026-09-16): live floating-bar blur — BrowserBottomBar accepts optional shared hazeState/hazeStyle (null = frost fallback, unchanged); VideoListScreen + FileSystemBrowserScreen hoist a shared HazeState, mark content via glassBackdrop, pass to bar. Top bars remain frost (TopBar hoist deferred — marginal gain, bigger diff).
 - [ ] Step 8 (later): lens swap (Abdullajon1881 or Haze `haze-glass`) once published to Central
 
 Notes:
 - Top-bar / floating-bar `glassHaze` states have no `hazeSource` behind them yet → translucent frost until 5e (each list screen owns a shared HazeState, bar as sibling above provider).
 - Haze 2.x (`haze-blur`/`haze-glass`, `GlassStyle.clear`) is beta and `haze-glass` is NOT on Central (verified 2026-09-15). Abdullajon1881 1.0.0 README says Central "configured but not yet released". `LiquidGlass.kt` isolates all glass calls for a later swap.
+- Blur/alpha tokens updated for CLEAR look: bars 24→12dp, chips 20→8dp, cards 10dp; surface alpha ~0.28, card alpha ~0.24; no blue tint (pure black/white bases).
+- `glassSheetContainerColor` fallback: non-glass themes keep default M3 surface; only LiquidGlass becomes translucent.
+- Dialog coverage: ALL `AlertDialog` sites use `containerColor = glassSheetContainerColor(...)`; the single `BasicAlertDialog` site (ConfirmDialog, which has no containerColor param in M3) is glassed via inner-Surface `glassFrostColor(Sheet)` instead (script-audited over whole tree).
 
 Verification log:
 - 2026-09-15 Steps 1-4: catalog + app build, LiquidGlass theme/AMOLED/preview, core kit, LocalLiquidGlass, scrims.
 - 2026-09-15 Step 5a: MainScreen pill transparent + glassChrome; content Box glassBackdrop.
 - 2026-09-15 Steps 5b-6: BrowserTopBar, FloatingBottomBar, panelCardsColors, ControlsButton, AMOLED guard, keywords, onboarding. `git diff --check` PASS.
 - 2026-09-15 Version/API audit: Central latest Haze = 1.5.3 (1.7.x NOT published; corrected pin). 1.5.3 API differs from code: `rememberHazeState()` removed (use `remember { HazeState() }`); `HazeStyle` has dual constructors (`tints` vs `tint`) requiring disambiguation. `HazeStyle(backgroundColor, tint, blurRadius)`, `hazeEffect(state, style)`, `hazeSource(state)`.
-- 2026-09-15 CI fix: merge of main into style/liquid-glass (7aac19d) dropped `haze = "1.5.3"` from `[versions]` while library entry still referenced it. Restored in eedf12d; pushed to PR #56; CI re-run pending.
+- 2026-09-15 CI fix: merge of main into style/liquid-glass (7aac19d) dropped `haze = "1.5.3"` from `[versions]` while library entry still referenced it. Restored in eedf12d; pushed to PR #56.
+- 2026-09-15 Step 5f (clearer + neutral): blur 24→12, alpha lowered, LiquidGlass theme switched to grayscale (no blue hexes; rg audit 0 matches). Glass extended to nav flat/rail, PlayerSheet, all 9 browser dialogs, all remaining AlertDialogs (UpdateFeature, Series/MovieDetail, VideoList, PermissionDenied, Sub/PlayerControls/Gesture/Advanced/Decoder/CustomButtons/Folders/Playlist prefs), dropdown menus, search bars, content cards (PreferenceCard, LibraryItemCard, FolderQuickCard).
+- 2026-09-15 Step 7b (local): `git diff --check` PASS. Python scripted audit: every AlertDialog call site across app/src has `containerColor = glassSheetContainerColor(...)`; zero missing. Blue-tint hex audit zero matches. CI build + manual device matrix pending.
+- 2026-09-16 Full codebase audit (resume session): 54 files modified (335 insertions, 78 deletions). `git diff --check` PASS. All glass integration points verified: MainScreen (pill/flat/rail/backdrop), BrowserTopBar (normal+selection), FloatingBottomBar, PlayerPanels (glassPlayerAlpha 0.22), PlayerSheet (frost funnel), all 9 browser dialogs, PreferenceCard, SettingsTopBar, SearchBar (3 screens), all PlayerControls components, streaming screens, UpdateFeature. No remaining AlertDialog sites missing glassSheetContainerColor. No blue-tint hexes (rg audit 0 matches). Haze 1.5.3 in version catalog (cache has 2.x only; needs Maven Central download at build time, network confirmed). No cmake/ndk locally; AAR has prebuilt .so for all ABIs.
+- 2026-09-16 Resume session #2: worktree still dirty (55 paths: 54 content files + `gradlew` mode-only 644→755 noise, same blob everywhere — revert mode before commit to keep PR clean). `git diff --check` PASS. Re-audited: 32 AlertDialog/BasicAlertDialog call sites — 31 use `containerColor = glassSheetContainerColor(...)`, 1 (ConfirmDialog `BasicAlertDialog`, no containerColor param in M3) is glassed via inner-Surface `glassFrostColor(Sheet)` by design. Blue-tint hex audit 0 matches in theme. Verified wiring intact: Theme.kt provides LocalLiquidGlass, MainActivity transparent scrims, MainScreen pill/flat/rail/backdrop, BrowserTopBar normal+selection glassChrome + menu frost, FloatingBottomBar glassChrome, PlayerPanels inline clear alpha 0.32 (progress earlier said 0.22 — drift noted; other player components use glassPlayerAlpha()). Haze 1.5.3 catalog + app-dep pins intact. Local build/CI not run (no SDK/NDK download per policy; GitHub Actions is the build path).
 
 Resume:
-- ▶ NEXT: CI re-run (PR #56 head now at eedf12d with haze version restored); then manual matrix (API 26 fallback, 31-32 blur, 33+ full; light/dark; pill/flat; player; rotation/tablet). Optional 5e afterwards.
+- ▶ NEXT: working tree has UNCOMMITTED Step 5f + 5e-bottom-bar content (nothing new committed since 1021e4e; HEAD == origin/style/liquid-glass). Steps: (1) revert `gradlew` mode noise, (2) commit + push style/liquid-glass, (3) CI re-run on PR #56, (4) manual matrix (API 26 fallback, 31-32 blur, 33+ full; light/dark; pill/flat; player; selection-bar live blur in VideoList + FileSystem; rotation/tablet). Top-bar live-blur hoist (rest of 5e) deferred.
+- Local build possible only with NDK/cmake (not on this machine); GitHub Actions is the preferred build path. Do not commit/push without explicit user approval.
+- 2026-09-16 Step 5e (partial): `BrowserBottomBar(hazeState?, hazeStyle?)` — shared state wins, null falls back to private frost state (hooks unconditional; non-glass path byte-identical). VideoListScreen (source on VideoListContent modifier) + FileSystemBrowserScreen (source on Scaffold content Box) hoist `rememberGlassHazeState()` + `glassHazeStyle(Bar)` and pass to bar. `git diff --check` PASS. Compile/CI not run locally (no SDK per policy).
+- 2026-09-16 Rename Liquid Glass → Glass (inspired, not iOS copy): `AppTheme.LiquidGlass` → `AppTheme.Glass`, `LiquidGlass.kt` → `Glass.kt`, `LiquidGlassTokens` → `GlassTokens`, `LocalLiquidGlass` → `LocalGlass`, `theme_liquid_glass` → `theme_glass` ("Glass"), onboarding "clear Glass themes", AMOLED note "(not used by Glass)", dropped "liquid" search keyword. External lib ref `Abdullajon1881 LiquidGlass 1.0.0` + `Modifier.liquidGlass` API name kept. `git diff --check` PASS. No commit/push without approval.
+- 2026-09-16 Gap extension (11 files): glassed the 8 remaining opaque `TopAppBar`s (StreamingHome/MoviesGrid/SeriesGrid/MoreLibrary/Insights/ConfigEditor/MediaInfoActivity/MultiCardPanel) with the BrowserTopBar pattern (transparent container when glass + `glassChrome` square shape, non-glass path byte-identical; MediaInfo uses its preference-aware `isDarkMode`); glassed 3 `ExposedDropdownMenu`s (Add/EditConnectionDialog, shared ExposedTextDropDownMenu) via `glassMenuContainerColor`. `ExposedDropDownMenu.kt` is a `@Preview`-only stub — left alone. Content/poster cards deliberately stay opaque. `git diff --check` PASS. CI/device matrix still pending.
+- 2026-09-16 FAB extension (6 files): last chrome gap closed — `FloatingActionButton` (VideoList), `ExtendedFloatingActionButton` (Playlist, NetworkStreaming), `ToggleFloatingActionButton` (FolderList, RecentlyPlayed, FileSystem) now use frost `glassFrostColor(Chip)` container when glass, `*Defaults.containerColor` otherwise (non-glass byte-identical). Full audits: 0 missing top bars / dialogs / sheets / search bars / menus / FABs (only `@Preview` stub excluded). Added lines kept ≤120 chars (`max_line_length`). `git diff --check` PASS. Translucency now covers all chrome; true live blur still only MainScreen pill/rail + 2 bottom bars (per-screen HazeState hoists = remaining Step 5e).
+- 2026-09-16 Step 5e remainder assessed — NOT needed, not applied: audited all overlay points. `FloatingBottomBar.kt` defines `BrowserBottomBar`, whose only 2 hosts (VideoList, FileSystem) already pass shared HazeState (5e partial). All Scaffold top bars consume `innerPadding`, so no scroll content passes beneath them — a shared state would sample plain background (zero gain, bigger diff). Player chrome sits over a native video surface Haze cannot sample (frost is the only option). Dialogs/sheets/FABs are frost-appropriate. Live blur stays where it pays: nav pill/rail + 2 bottom bars.

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -202,7 +203,7 @@ fun AddToPlaylistDialog(
         Text("Cancel", fontWeight = FontWeight.Medium)
       }
     },
-    containerColor = MaterialTheme.colorScheme.surface,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
     tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
     modifier = modifier,
@@ -344,7 +345,7 @@ private fun CreatePlaylistDialog(
         Text("Cancel", fontWeight = FontWeight.Medium)
       }
     },
-    containerColor = MaterialTheme.colorScheme.surface,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
     tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
   )

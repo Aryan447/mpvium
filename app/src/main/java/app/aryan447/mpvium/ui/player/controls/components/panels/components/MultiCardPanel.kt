@@ -4,6 +4,7 @@ import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,6 +18,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,6 +42,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import app.aryan447.mpvium.ui.player.controls.CARDS_MAX_WIDTH
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.theme.spacing
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -59,6 +66,9 @@ fun MultiCardPanel(
     val settingsCards = createRef()
 
     val pagerState = rememberPagerState { cardCount }
+  val isGlass = LocalGlass.current
+  val glassHaze = rememberGlassHazeState()
+  val glassStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
     if (orientation == ORIENTATION_PORTRAIT) {
       Column(
         modifier =
@@ -81,6 +91,12 @@ fun MultiCardPanel(
             }
           },
           colors = TopAppBarDefaults.topAppBarColors().copy(containerColor = Color.Transparent),
+          modifier = Modifier.glassChrome(
+            state = glassHaze,
+            style = glassStyle,
+            shape = RoundedCornerShape(0.dp),
+            enabled = isGlass,
+          ),
         )
         HorizontalPager(
           state = pagerState,

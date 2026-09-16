@@ -38,6 +38,7 @@ import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import java.util.UUID
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.Preference
@@ -80,6 +81,7 @@ object CustomButtonsScreen : Screen {
     if (showEditor) {
       AlertDialog(
         onDismissRequest = { showEditor = false },
+        containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
         title = { Text(if (editingId == null) "New custom button" else "Edit custom button") },
         text = {
           Column(

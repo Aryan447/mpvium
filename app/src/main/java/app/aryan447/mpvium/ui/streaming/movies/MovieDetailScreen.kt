@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -456,6 +457,7 @@ data class MovieDetailScreen(
     if (showMatchPicker) {
       AlertDialog(
         onDismissRequest = { showMatchPicker = false },
+        containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
         title = {
           Text(
             text = "Choose the correct match",

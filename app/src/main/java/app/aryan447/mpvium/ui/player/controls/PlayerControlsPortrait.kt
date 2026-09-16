@@ -37,6 +37,7 @@ import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
 import app.aryan447.mpvium.ui.player.controls.components.ControlsGroup
 import app.aryan447.mpvium.ui.theme.controlColor
+import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 
@@ -85,7 +86,7 @@ fun TopPlayerControlsPortrait(
                 Color.Transparent
               } else {
                 MaterialTheme.colorScheme.surfaceContainer.copy(
-                  alpha = 0.55f,
+                  alpha = glassPlayerAlpha(),
                 )
               },
             contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,

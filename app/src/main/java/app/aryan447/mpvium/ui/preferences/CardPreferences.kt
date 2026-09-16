@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.preferences
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +35,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassCardColors
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 
 /**
@@ -44,14 +51,19 @@ fun PreferenceCard(
   modifier: Modifier = Modifier,
   content: @Composable ColumnScope.() -> Unit,
 ) {
+  val isGlass = LocalGlass.current
   Card(
     modifier = modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp, vertical = 8.dp),
     shape = RoundedCornerShape(28.dp),
-    colors = CardDefaults.cardColors(
+    colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
       containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ),
+    border = if (isGlass) BorderStroke(
+      1.dp,
+      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+    ) else null,
     elevation = CardDefaults.cardElevation(
       defaultElevation = 0.dp,
     ),
@@ -107,8 +119,23 @@ fun SettingsTopBar(
   onBack: (() -> Unit)? = null,
 ) {
   val backstack = LocalBackStack.current
+  val isGlass = LocalGlass.current
+  val glassHaze = rememberGlassHazeState()
+  val glassStyle = glassHazeStyle(
+    isDark = androidx.compose.foundation.isSystemInDarkTheme(),
+    kind = GlassKind.Bar,
+  )
   TopAppBar(
-    modifier = modifier,
+    modifier = modifier.glassChrome(
+      state = glassHaze,
+      style = glassStyle,
+      shape = RoundedCornerShape(0.dp),
+      enabled = isGlass,
+    ),
+    colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+      containerColor = if (isGlass) androidx.compose.ui.graphics.Color.Transparent
+      else MaterialTheme.colorScheme.surface,
+    ),
     title = {
       Text(
         text = title,

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,6 +43,7 @@ fun MarkAsDialog(
 
   AlertDialog(
     onDismissRequest = onDismiss,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainerHigh),
     title = {
       Text(
         text = stringResource(R.string.mark_as_title, selectedCount),

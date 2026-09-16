@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.streaming.series
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.graphics.Color
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSearchBarColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
@@ -65,6 +73,7 @@ import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
+import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
@@ -166,6 +175,9 @@ object SeriesGridScreen : Screen {
 
     Scaffold(
       topBar = {
+        val isGlass = LocalGlass.current
+        val glassHaze = rememberGlassHazeState()
+        val glassStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
         if (isSearching) {
           SearchBar(
             inputField = {
@@ -192,6 +204,7 @@ object SeriesGridScreen : Screen {
             modifier = Modifier
               .fillMaxWidth()
               .padding(horizontal = 16.dp, vertical = 6.dp),
+            colors = glassSearchBarColors(),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 6.dp,
           ) {}
@@ -221,6 +234,14 @@ object SeriesGridScreen : Screen {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
             },
+            colors = if (isGlass) TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+              else TopAppBarDefaults.topAppBarColors(),
+            modifier = Modifier.glassChrome(
+              state = glassHaze,
+              style = glassStyle,
+              shape = RoundedCornerShape(0.dp),
+              enabled = isGlass,
+            ),
           )
         }
       },

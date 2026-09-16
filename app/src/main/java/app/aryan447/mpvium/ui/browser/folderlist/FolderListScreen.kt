@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
@@ -48,6 +50,10 @@ import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassFrostColor
+import app.aryan447.mpvium.ui.theme.glassSearchBarColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
@@ -339,6 +345,7 @@ object FolderListScreen : Screen {
             modifier = Modifier
               .fillMaxWidth()
               .padding(horizontal = 16.dp),
+            colors = glassSearchBarColors(),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 6.dp,
           ) {
@@ -438,6 +445,11 @@ object FolderListScreen : Screen {
                 ),
                 checked = isFabExpanded.value,
                 onCheckedChange = { isFabExpanded.value = !isFabExpanded.value },
+                containerColor = if (LocalGlass.current) {
+                  glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+                } else {
+                  ToggleFloatingActionButtonDefaults.containerColor
+                },
               ) {
                 val imageVector by remember {
                   derivedStateOf {

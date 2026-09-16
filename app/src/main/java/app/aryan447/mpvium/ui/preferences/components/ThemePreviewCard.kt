@@ -47,7 +47,7 @@ fun ThemePreviewCard(
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = if (isDarkMode) theme.getDarkColorScheme() else theme.getLightColorScheme()
-    val isGlass = theme == AppTheme.LiquidGlass
+    val isGlass = theme == AppTheme.Glass
 
     // Use the current MaterialTheme primary for selection to ensure visibility
     val selectionColor = MaterialTheme.colorScheme.primary
@@ -79,11 +79,12 @@ fun ThemePreviewCard(
                 .clip(RoundedCornerShape(12.dp))
                 .background(
                     if (isGlass) {
+                        // Clear black glass preview: neutral translucent layers.
                         Brush.verticalGradient(
                             listOf(
-                                colorScheme.surface.copy(alpha = 0.55f),
-                                colorScheme.primary.copy(alpha = 0.25f),
-                                colorScheme.surface.copy(alpha = 0.75f),
+                                colorScheme.surface.copy(alpha = 0.30f),
+                                Color.Black.copy(alpha = 0.18f),
+                                colorScheme.surface.copy(alpha = 0.42f),
                             )
                         )
                     } else {

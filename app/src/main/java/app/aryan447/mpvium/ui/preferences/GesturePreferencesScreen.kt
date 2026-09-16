@@ -36,6 +36,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.player.CustomKeyCodes
 import app.aryan447.mpvium.ui.player.SingleActionGesture
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.FooterPreference
@@ -113,6 +114,7 @@ object GesturePreferencesScreen : Screen {
           if (showCustomSeekDialog) {
             AlertDialog(
               onDismissRequest = { showCustomSeekDialog = false },
+              containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
               title = { Text(text = stringResource(id = R.string.pref_player_double_tap_seek_duration)) },
               text = {
                 Column {

@@ -28,15 +28,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.GlassKind
-import app.aryan447.mpvium.ui.theme.LocalLiquidGlass
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import androidx.compose.foundation.isSystemInDarkTheme
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 
 /**
  * Material 3 Floating Button Bar for file/folder operations
  * Icon-only buttons in a floating pill-shaped surface
+ *
+ * Live blur (Step 5e): pass the screen's shared [hazeState]/[hazeStyle] (with
+ * content marked via `glassBackdrop`) for true backdrop blur. When null
+ * (default), the bar falls back to its private state = translucent frost,
+ * so non-wired screens keep their existing look.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -53,6 +60,8 @@ fun BrowserBottomBar(
   showRename: Boolean = true,
   showDelete: Boolean = true,
   showAddToPlaylist: Boolean = true,
+  hazeState: HazeState? = null,
+  hazeStyle: HazeStyle? = null,
 ) {
   AnimatedVisibility(
     visible = isSelectionMode,
@@ -60,19 +69,23 @@ fun BrowserBottomBar(
     enter = fadeIn(),
     exit = fadeOut(),
   ) {
-    val isGlass = LocalLiquidGlass.current
-    val glassHaze = rememberGlassHazeState()
-    val glassStyle = glassHazeStyle(
+    val isGlass = LocalGlass.current
+    // Always remember the fallback so hooks stay unconditional; the shared
+    // screen state (when provided) takes precedence for live blur.
+    val fallbackHaze = rememberGlassHazeState()
+    val fallbackStyle = glassHazeStyle(
       isDark = isSystemInDarkTheme(),
       kind = GlassKind.Bar,
     )
+    val effectiveHaze = hazeState ?: fallbackHaze
+    val effectiveStyle = hazeStyle ?: fallbackStyle
     Surface(
       modifier = Modifier
         .windowInsetsPadding(WindowInsets.systemBars)
         .padding(horizontal = 20.dp, vertical = 8.dp)
         .glassChrome(
-          state = glassHaze,
-          style = glassStyle,
+          state = effectiveHaze,
+          style = effectiveStyle,
           shape = RoundedCornerShape(32.dp),
           enabled = isGlass,
         ),

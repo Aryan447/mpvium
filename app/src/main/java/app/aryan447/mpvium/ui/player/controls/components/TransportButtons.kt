@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.theme.controlColor
+import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 
 private val transportShadow =
@@ -84,7 +85,7 @@ fun PlayerTransportButton(
     shape = CircleShape,
     color =
       if (!hideBackground) {
-        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha())
       } else {
         Color.Transparent
       },
@@ -141,7 +142,7 @@ fun PlayerPillButton(
       if (hideBackground) {
         Color.Transparent
       } else {
-        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha())
       },
     contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,
@@ -213,7 +214,7 @@ fun PlayerPlayPauseButton(
     shape = CircleShape,
     color =
       if (!hideBackground) {
-        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha())
       } else {
         Color.Transparent
       },

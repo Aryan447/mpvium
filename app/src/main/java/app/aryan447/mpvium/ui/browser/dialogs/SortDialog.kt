@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -154,7 +155,7 @@ fun SortDialog(
       }
     },
     confirmButton = {},
-    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainerHigh),
     tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
     modifier = modifier,
