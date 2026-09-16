@@ -255,7 +255,7 @@ object PlaylistScreen : Screen {
               onClick = { showPlaylistActionSheet = true },
               icon = { Icon(Icons.Filled.Add, contentDescription = null) },
               text = { Text("Create Playlist") },
-              modifier = Modifier.padding(bottom = navigationBarHeight)
+              modifier = Modifier.padding(bottom = navigationBarHeight),
             containerColor = if (LocalGlass.current) {
               glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
             } else {

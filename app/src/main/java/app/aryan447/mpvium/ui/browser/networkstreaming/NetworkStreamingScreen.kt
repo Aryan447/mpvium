@@ -152,7 +152,7 @@ object NetworkStreamingScreen : Screen {
             onClick = { showAddSheet = true },
             icon = { Icon(Icons.Filled.Add, contentDescription = null) },
             text = { Text("Add Connection") },
-            modifier = Modifier.padding(bottom = navigationBarHeight)
+            modifier = Modifier.padding(bottom = navigationBarHeight),
             containerColor = if (LocalGlass.current) {
               glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
             } else {

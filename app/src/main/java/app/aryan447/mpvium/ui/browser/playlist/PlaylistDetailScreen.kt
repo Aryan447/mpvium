@@ -803,7 +803,6 @@ private fun RemoveFromPlaylistDialog(
         Text("Cancel", fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
       }
     },
-    containerColor = MaterialTheme.colorScheme.surface,
     tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
   )
