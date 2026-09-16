@@ -19,8 +19,8 @@ android {
     applicationId = "app.aryan447.mpvium"
     minSdk = 26
     targetSdk = 36
-    versionCode = 117
-    versionName = "1.1.7"
+    versionCode = 118
+    versionName = "1.1.8"
 
     vectorDrawables {
       useSupportLibrary = true
@@ -54,7 +54,10 @@ android {
 
   splits {
     abi {
-      isEnable = true
+      // ABI splits produce per-ABI APKs, but an App Bundle must be built
+      // with splits disabled (AGP fails buildPreBundle otherwise). CI passes
+      // -PbundleBuild for the bundle step to switch splits off.
+      isEnable = !providers.gradleProperty("bundleBuild").isPresent
       reset()
       include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
       isUniversalApk = true

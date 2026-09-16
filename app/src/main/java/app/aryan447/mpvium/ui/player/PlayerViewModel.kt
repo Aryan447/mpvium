@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
@@ -432,6 +433,26 @@ class PlayerViewModel(
      * local UI state and the release always issues one final exact seek.
      */
     const val SCRUB_SEEK_THROTTLE_MS = 80L
+
+    /**
+     * Landing tolerance (seconds): on gesture release, mpv is already parked
+     * at the requested spot by the final throttled keyframe scrub seek, so a
+     * target within this distance of the live position skips the redundant
+     * exact seek (whose keyframe-to-exact re-decode stalls high-res tablet
+     * playback for ~0.5-1s). Mirrors the seekbar settle guard's tolerance.
+     */
+    const val SEEK_SETTLE_TOLERANCE_SEC = 1.5f
+
+    /**
+     * Landing hold: after a keyframe seek the audio clock jumps to the target
+     * while the video pipeline still decodes from the keyframe toward it, so
+     * an immediate resume leaves the picture frozen while audio/timer advance
+     * (~0.5-1s on high-res content). Keep the player paused through the
+     * landing and only resume once video-pts crosses the target.
+     */
+    const val SEEK_LAND_WAIT_TIMEOUT_MS = 1500L
+    const val VIDEO_LAND_TOLERANCE_SEC = 0.15
+    const val VIDEO_LAND_POLL_MS = 25L
     val VALID_SUBTITLE_EXTENSIONS =
       setOf(
         // Common & modern
@@ -1292,9 +1313,53 @@ class PlayerViewModel(
     val sequence = seekSequence.incrementAndGet()
     val cachedDuration = duration
     viewModelScope.launch(Dispatchers.IO) {
-      dispatchAbsoluteSeek(position, isScrubbing = false, sequence, cachedDuration)
+      // The scrub/swipe already parked mpv near the requested target with
+      // throttled keyframe seeks, so re-issuing an exact seek for a target
+      // within the landing tolerance re-decodes from that keyframe forward —
+      // on tablets decoding high-res content that shows up as a ~0.5-1s
+      // freeze after the seek lands. Skip the redundant exact seek and let
+      // playback resume instantly from where mpv already is.
+      val live = MPVLib.getPropertyDouble("time-pos")
+      val farSeek = live == null || abs(live - position.toDouble()) > SEEK_SETTLE_TOLERANCE_SEC.toDouble()
+
+      // A landed keyframe seek jumps the audio clock (and time-pos) straight
+      // to the target while the video pipeline still decodes from the
+      // keyframe toward it, so resuming right away leaves the picture frozen
+      // while audio + the timer keep advancing. Hold the clock by keeping the
+      // player paused through the landing, waiting for the video to catch up,
+      // and only then resume — playback restarts in sync instead of chasing.
+      val wasPlaying = !(MPVLib.getPropertyBoolean("pause") ?: true)
+      if (wasPlaying && farSeek) {
+        MPVLib.setPropertyBoolean("pause", true)
+      }
+      if (farSeek && dispatchAbsoluteSeek(position, isScrubbing = false, sequence, cachedDuration)) {
+        // Wait (still paused) for video-pts to cross the target. Bounded and
+        // cancellable; falls through to resume if the property is unavailable
+        // (audio-only), the decoder stalls, or the seek is superseded.
+        awaitVideoAtOrAfter(position)
+      }
       withContext(Dispatchers.Main) { host.requestAudioFocus() }
       MPVLib.setPropertyBoolean("pause", false)
+    }
+  }
+
+  /**
+   * While paused, mpv still decodes forward from the seek keyframe to display
+   * the frame at the target, so video-pts advances with playback held. Wait
+   * until it reaches the target (within tolerance) before resume so audio can
+   * never outrun a video that is still decoding from the keyframe. Gives up
+   * instead of extending the pause when the video track is absent, mpv
+   * pauses-for-cache, or the deadline elapses.
+   */
+  private suspend fun awaitVideoAtOrAfter(targetSec: Int) {
+    if (MPVLib.getPropertyDouble("video-pts") == null) return
+    val deadline = System.currentTimeMillis() + SEEK_LAND_WAIT_TIMEOUT_MS
+    while (System.currentTimeMillis() < deadline) {
+      if (MPVLib.getPropertyBoolean("paused-for-cache") == true) return
+      val videoPts = MPVLib.getPropertyDouble("video-pts")
+      if (videoPts == null) return
+      if (videoPts >= targetSec - VIDEO_LAND_TOLERANCE_SEC) return
+      delay(VIDEO_LAND_POLL_MS)
     }
   }
 
