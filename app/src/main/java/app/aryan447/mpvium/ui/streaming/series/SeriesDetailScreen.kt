@@ -41,11 +41,11 @@ import androidx.compose.material3.ButtonDefaults
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
+import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -460,7 +460,7 @@ data class SeriesDetailScreen(
                       selected = selected,
                       onClick = { selectedSeason = seasonNum },
                       label = { Text("Season $seasonNum") },
-                      colors = FilterChipDefaults.filterChipColors(
+                      colors = glassFilterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                       ),

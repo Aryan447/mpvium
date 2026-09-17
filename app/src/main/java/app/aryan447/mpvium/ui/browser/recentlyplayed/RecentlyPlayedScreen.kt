@@ -80,7 +80,9 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.preferences.AdvancedPreferencesScreen
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassFrostColor
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.coroutines.launch
@@ -227,7 +229,16 @@ object RecentlyPlayedScreen : Screen {
                   TooltipAnchorPosition.Above
                 }
               ),
-              tooltip = { PlainTooltip { Text("Toggle menu") } },
+              tooltip = {
+                PlainTooltip(
+                  containerColor = glassMenuContainerColor(
+                    TooltipDefaults.plainTooltipContainerColor,
+                  ),
+                  contentColor = glassButtonContentColor(
+                    TooltipDefaults.plainTooltipContentColor,
+                  ),
+                ) { Text("Toggle menu") }
+              },
               state = rememberTooltipState(),
             ) {
               val toggleFrost = glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)

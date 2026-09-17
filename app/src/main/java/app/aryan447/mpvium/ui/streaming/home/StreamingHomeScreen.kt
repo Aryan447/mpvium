@@ -42,7 +42,6 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +52,7 @@ import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.glassRimColor
@@ -519,7 +519,7 @@ private fun CategoryChipsRow(
             ),
           )
         },
-        colors = FilterChipDefaults.filterChipColors(
+        colors = glassFilterChipColors(
           selectedContainerColor = MaterialTheme.colorScheme.primary,
           selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
         ),

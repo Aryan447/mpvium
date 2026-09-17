@@ -33,6 +33,7 @@ import app.aryan447.mpvium.preferences.AudioChannels
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.TrackNode
+import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.ImmutableList
@@ -101,6 +102,7 @@ fun AudioTracksSheet(
               },
               label = { Text(text = stringResource(id = it.title)) },
               leadingIcon = null,
+              colors = glassFilterChipColors(),
             )
           }
         }

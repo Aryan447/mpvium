@@ -57,6 +57,7 @@ import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.components.PlayerSheet
 import app.aryan447.mpvium.presentation.components.SliderItem
+import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -201,12 +202,12 @@ fun PlaybackSpeedSheet(
                 label = { Text("${presetSpeed.toFixed(2)}") },
                 leadingIcon = null,
                 colors = if (!isDefault) {
-                    androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                    glassFilterChipColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        labelColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        labelColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     )
                 } else {
-                    androidx.compose.material3.FilterChipDefaults.filterChipColors()
+                    glassFilterChipColors()
                 }
               )
             }

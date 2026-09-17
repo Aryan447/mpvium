@@ -202,6 +202,96 @@ fun glassButtonContentColor(fallback: Color): Color {
   return if (androidx.compose.foundation.isSystemInDarkTheme()) Color.White else Color.Black
 }
 
+/**
+ * FilterChip colors: frost container + contrast label for Glass, M3 defaults
+ * (with the call site's selected colors) otherwise. Custom unselected
+ * [containerColor] hues (e.g. tertiary user-preset markers) are kept at glass
+ * alpha instead of frost so their meaning survives; selected fills drop to
+ * glass alpha so chips read as glass without losing state affordance.
+ */
+@Composable
+fun glassFilterChipColors(
+  containerColor: Color = Color.Transparent,
+  labelColor: Color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+  selectedContainerColor: Color = androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer,
+  selectedLabelColor: Color = androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+): androidx.compose.material3.SelectableChipColors {
+  if (!LocalGlass.current) {
+    return androidx.compose.material3.FilterChipDefaults.filterChipColors(
+      containerColor = containerColor,
+      labelColor = labelColor,
+      selectedContainerColor = selectedContainerColor,
+      selectedLabelColor = selectedLabelColor,
+    )
+  }
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val glassContainer = if (containerColor == Color.Transparent) {
+    glassFrostColor(isDark = dark, kind = GlassKind.Chip)
+  } else {
+    containerColor.copy(alpha = 0.45f)
+  }
+  return androidx.compose.material3.FilterChipDefaults.filterChipColors(
+    containerColor = glassContainer,
+    labelColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+    ),
+    selectedContainerColor = selectedContainerColor.copy(alpha = 0.55f),
+    selectedLabelColor = glassButtonContentColor(selectedLabelColor),
+  )
+}
+
+/**
+ * AssistChip colors: frost container + contrast label for Glass, M3 defaults
+ * otherwise. Single funnel for word-tap chips in player sheets.
+ */
+@Composable
+fun glassAssistChipColors(): androidx.compose.material3.ChipColors {
+  if (!LocalGlass.current) return androidx.compose.material3.AssistChipDefaults.assistChipColors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.AssistChipDefaults.assistChipColors(
+    containerColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    labelColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+    ),
+  )
+}
+
+/**
+ * Bottom-nav item colors: frost indicator pill + contrast selected icon/label
+ * for Glass, M3 defaults otherwise. The indicator sits on the already-glass
+ * bar, so frost-on-frost keeps the pill readable as a glass highlight.
+ */
+@Composable
+fun glassNavigationBarItemColors(): androidx.compose.material3.NavigationBarItemColors {
+  if (!LocalGlass.current) return androidx.compose.material3.NavigationBarItemDefaults.colors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.NavigationBarItemDefaults.colors(
+    selectedIconColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+    ),
+    selectedTextColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+    ),
+    indicatorColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+  )
+}
+
+/** Rail twin of [glassNavigationBarItemColors]. */
+@Composable
+fun glassNavigationRailItemColors(): androidx.compose.material3.NavigationRailItemColors {
+  if (!LocalGlass.current) return androidx.compose.material3.NavigationRailItemDefaults.colors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.NavigationRailItemDefaults.colors(
+    selectedIconColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+    ),
+    selectedTextColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+    ),
+    indicatorColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+  )
+}
+
 /** SearchBar colors: clear frost for Glass, M3 defaults otherwise. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable

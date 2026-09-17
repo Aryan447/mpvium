@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.presentation.components.pullrefresh
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -17,6 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -90,7 +94,11 @@ fun PullRefreshBox(
       refreshing = isRefreshing.value,
       state = pullRefreshState,
       modifier = Modifier.align(Alignment.TopCenter),
-      backgroundColor = MaterialTheme.colorScheme.surfaceContainer,
+      backgroundColor = if (LocalGlass.current) {
+        glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
+      } else {
+        MaterialTheme.colorScheme.surfaceContainer
+      },
       contentColor = MaterialTheme.colorScheme.primary,
     )
   }
