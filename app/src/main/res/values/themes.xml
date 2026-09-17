@@ -2,4 +2,15 @@
 <resources>
 
     <style name="Theme.mpvium" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar" />
+
+    <!-- Cold-start system splash. Kept deliberately quiet (static emblem on the
+        cinematic background) so the choreographed in-app splash owns the motion.
+        No branding image: bottom logos read as cheap and are deprecated. -->
+    <style name="Theme.mpvium.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/Theme.mpvium</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>
