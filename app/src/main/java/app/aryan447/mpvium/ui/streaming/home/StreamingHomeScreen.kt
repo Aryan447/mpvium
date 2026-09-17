@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -50,8 +51,11 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.glassSearchBarColors
 import androidx.compose.material3.Surface
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
@@ -210,13 +214,36 @@ object StreamingHomeScreen : Screen {
               }
             },
             actions = {
-              IconButton(onClick = { viewModel.refreshMetadata() }) {
+              val dark = isSystemInDarkTheme()
+              val iconGlass = Modifier
+                .clip(CircleShape)
+                .background(glassFrostColor(isDark = dark, kind = GlassKind.Chip))
+                .border(1.dp, glassRimColor(dark), CircleShape)
+              IconButton(
+                onClick = { viewModel.refreshMetadata() },
+                modifier = if (isGlass) iconGlass else Modifier,
+                colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                  contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSurface),
+                ),
+              ) {
                 Icon(Icons.Filled.Refresh, contentDescription = "Refresh details")
               }
-              IconButton(onClick = { viewModel.setSearching(true) }) {
+              IconButton(
+                onClick = { viewModel.setSearching(true) },
+                modifier = if (isGlass) iconGlass else Modifier,
+                colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                  contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSurface),
+                ),
+              ) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
-              IconButton(onClick = { backstack.add(PreferencesScreen) }) {
+              IconButton(
+                onClick = { backstack.add(PreferencesScreen) },
+                modifier = if (isGlass) iconGlass else Modifier,
+                colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                  contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSurface),
+                ),
+              ) {
                 Icon(Icons.Filled.Settings, contentDescription = "Settings")
               }
             },

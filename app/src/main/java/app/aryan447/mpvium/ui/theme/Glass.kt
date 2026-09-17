@@ -179,6 +179,29 @@ fun glassMenuContainerColor(fallback: Color): Color {
   return glassFrostColor(isDark = dark, kind = GlassKind.Card)
 }
 
+/**
+ * Button container: clear frost for Glass, [fallback] otherwise. Single funnel
+ * for hero/detail Play + Details actions sitting over backdrop art so buttons
+ * read as glass without per-screen Haze states (frost-appropriate, like FABs).
+ */
+@Composable
+fun glassButtonContainerColor(fallback: Color): Color {
+  if (!LocalGlass.current) return fallback
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return glassFrostColor(isDark = dark, kind = GlassKind.Chip)
+}
+
+/**
+ * Button content: high-contrast white/black on frost for Glass, [fallback]
+ * otherwise. Needed because frost flips container luminance vs. the opaque
+ * primary/tonal fills (light-mode frost + onPrimary white would be unreadable).
+ */
+@Composable
+fun glassButtonContentColor(fallback: Color): Color {
+  if (!LocalGlass.current) return fallback
+  return if (androidx.compose.foundation.isSystemInDarkTheme()) Color.White else Color.Black
+}
+
 /** SearchBar colors: clear frost for Glass, M3 defaults otherwise. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable

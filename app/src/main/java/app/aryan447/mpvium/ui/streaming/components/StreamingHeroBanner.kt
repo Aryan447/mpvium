@@ -1,6 +1,8 @@
 package app.aryan447.mpvium.ui.streaming.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -40,8 +43,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalAppTheme
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
+import app.aryan447.mpvium.ui.theme.glassFrostColor
+import app.aryan447.mpvium.ui.theme.glassRimColor
 
 @Composable
 fun StreamingHeroBanner(
@@ -55,6 +64,9 @@ fun StreamingHeroBanner(
   val context = LocalContext.current
   val haptic = LocalHapticFeedback.current
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
+  val isGlass = LocalGlass.current
+  val dark = isSystemInDarkTheme()
+  val chipFrost = glassFrostColor(isDark = dark, kind = GlassKind.Chip)
 
   Box(
     modifier = modifier
@@ -153,8 +165,9 @@ fun StreamingHeroBanner(
 
         // Season count pill
         Surface(
-          color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
-          shape = RoundedCornerShape(6.dp)
+          color = if (isGlass) chipFrost else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
+          shape = RoundedCornerShape(6.dp),
+          border = if (isGlass) BorderStroke(1.dp, glassRimColor(dark)) else null,
         ) {
           Text(
             text = "${series.seasonCount} ${if (series.seasonCount == 1) "Season" else "Seasons"}",
@@ -162,7 +175,7 @@ fun StreamingHeroBanner(
               fontWeight = FontWeight.Medium,
               fontSize = 11.sp,
             ),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = glassButtonContentColor(MaterialTheme.colorScheme.onSurface),
             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
           )
         }
@@ -170,8 +183,9 @@ fun StreamingHeroBanner(
         // Year pill
         if (!series.year.isNullOrBlank()) {
           Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
-            shape = RoundedCornerShape(6.dp)
+            color = if (isGlass) chipFrost else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
+            shape = RoundedCornerShape(6.dp),
+            border = if (isGlass) BorderStroke(1.dp, glassRimColor(dark)) else null,
           ) {
             Text(
               text = series.year,
@@ -179,7 +193,7 @@ fun StreamingHeroBanner(
                 fontWeight = FontWeight.Medium,
                 fontSize = 11.sp,
               ),
-              color = MaterialTheme.colorScheme.onSurface,
+              color = glassButtonContentColor(MaterialTheme.colorScheme.onSurface),
               modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
             )
           }
@@ -189,8 +203,9 @@ fun StreamingHeroBanner(
         fallbackVideo?.resolution?.takeIf { it != "--" }?.let { resolution ->
           val displayRes = resolution.substringBefore("@")
           Surface(
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-            shape = RoundedCornerShape(6.dp)
+            color = if (isGlass) chipFrost else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+            shape = RoundedCornerShape(6.dp),
+            border = if (isGlass) BorderStroke(1.dp, glassRimColor(dark)) else null,
           ) {
             Text(
               text = displayRes,
@@ -198,7 +213,7 @@ fun StreamingHeroBanner(
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp,
               ),
-              color = MaterialTheme.colorScheme.onPrimaryContainer,
+              color = glassButtonContentColor(MaterialTheme.colorScheme.onPrimaryContainer),
               modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
             )
           }
@@ -289,10 +304,11 @@ fun StreamingHeroBanner(
           },
           modifier = Modifier.weight(1f).height(44.dp),
           colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+            containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.primary),
+            contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onPrimary),
           ),
           shape = RoundedCornerShape(12.dp),
+          border = if (isGlass) BorderStroke(1.dp, glassRimColor(dark)) else null,
         ) {
           Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
           Spacer(modifier = Modifier.width(6.dp))
@@ -311,6 +327,11 @@ fun StreamingHeroBanner(
           },
           modifier = Modifier.height(44.dp),
           shape = RoundedCornerShape(12.dp),
+          colors = FilledTonalButtonDefaults.filledTonalButtonColors(
+            containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
+            contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
+          ),
+          border = if (isGlass) BorderStroke(1.dp, glassRimColor(dark)) else null,
         ) {
           Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(18.dp))
           Spacer(modifier = Modifier.width(6.dp))
