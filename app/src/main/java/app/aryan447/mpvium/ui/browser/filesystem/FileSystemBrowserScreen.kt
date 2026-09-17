@@ -12,7 +12,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassFrostColor
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -739,7 +741,16 @@ fun FileSystemBrowserScreen(path: String? = null) {
                     TooltipAnchorPosition.Above
                   }
                 ),
-                tooltip = { PlainTooltip { Text("Toggle menu") } },
+                tooltip = {
+                  PlainTooltip(
+                    containerColor = glassMenuContainerColor(
+                      TooltipDefaults.plainTooltipContainerColor,
+                    ),
+                    contentColor = glassButtonContentColor(
+                      TooltipDefaults.plainTooltipContentColor,
+                    ),
+                  ) { Text("Toggle menu") }
+                },
                 state = rememberTooltipState(),
               ) {
                 val toggleFrost = glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)

@@ -65,6 +65,8 @@ import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.MpviumTheme
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
@@ -235,8 +237,12 @@ class MediaInfoActivity : ComponentActivity() {
                     }
                   },
                   colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = glassButtonContainerColor(
+                      MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                    contentColor = glassButtonContentColor(
+                      MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
                   ),
                 ) {
                   Icon(
@@ -254,8 +260,12 @@ class MediaInfoActivity : ComponentActivity() {
                     }
                   },
                   colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = glassButtonContainerColor(
+                      MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                    contentColor = glassButtonContentColor(
+                      MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
                   ),
                 ) {
                   Icon(

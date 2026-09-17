@@ -121,6 +121,7 @@ import app.aryan447.mpvium.ui.player.controls.components.SubtitlePositionPlayerU
 import app.aryan447.mpvium.ui.player.controls.components.TextPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.VolumeSlider
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.controlColor
 import app.aryan447.mpvium.ui.theme.playerRippleConfiguration
 import app.aryan447.mpvium.ui.theme.spacing
@@ -317,7 +318,8 @@ fun PlayerControls(
                 Pair(.6f, Color.Transparent),
                 Pair(1f, Color.Black),
               ),
-              alpha = transparentOverlay,
+              // No vignette in the Glass theme: chrome floats clean over video.
+              alpha = if (LocalGlass.current) 0f else transparentOverlay,
             ),
       ) {
         val (topLeftControls, topRightControls) = createRefs()

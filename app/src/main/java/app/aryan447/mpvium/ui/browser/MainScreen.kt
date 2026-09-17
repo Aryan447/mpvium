@@ -66,6 +66,9 @@ import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassBackdrop
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassNavigationBarItemColors
+import app.aryan447.mpvium.ui.theme.glassNavigationRailItemColors
+import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
@@ -150,7 +153,8 @@ object MainScreen : Screen {
         label = if (showLabels) ({ Text(tab.label) }) else null,
         alwaysShowLabel = showLabels,
         selected = selectedCanonicalIndex == tab.canonicalIndex,
-        onClick = { onSelectTab(tab.canonicalIndex) }
+        onClick = { onSelectTab(tab.canonicalIndex) },
+        colors = glassNavigationBarItemColors(),
       )
     }
   }
@@ -295,7 +299,11 @@ object MainScreen : Screen {
                     shadowElevation = 8.dp,
                     border = BorderStroke(
                       1.dp,
-                      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                      if (isGlass) {
+                        glassRimColor(isDark)
+                      } else {
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                      },
                     ),
                   ) {
                     NavigationBar(
@@ -372,7 +380,8 @@ object MainScreen : Screen {
                     label = if (showBottomNavLabels) ({ Text(tab.label) }) else null,
                     alwaysShowLabel = showBottomNavLabels,
                     selected = selectedTabId == tab.canonicalIndex,
-                    onClick = { selectTab(tab.canonicalIndex) }
+                    onClick = { selectTab(tab.canonicalIndex) },
+                    colors = glassNavigationRailItemColors(),
                   )
                 }
               }

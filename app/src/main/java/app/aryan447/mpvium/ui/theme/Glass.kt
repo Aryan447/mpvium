@@ -179,6 +179,160 @@ fun glassMenuContainerColor(fallback: Color): Color {
   return glassFrostColor(isDark = dark, kind = GlassKind.Card)
 }
 
+/**
+ * Button container: clear frost for Glass, [fallback] otherwise. Single funnel
+ * for hero/detail Play + Details actions sitting over backdrop art so buttons
+ * read as glass without per-screen Haze states (frost-appropriate, like FABs).
+ */
+@Composable
+fun glassButtonContainerColor(fallback: Color): Color {
+  if (!LocalGlass.current) return fallback
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return glassFrostColor(isDark = dark, kind = GlassKind.Chip)
+}
+
+/**
+ * Button content: high-contrast white/black on frost for Glass, [fallback]
+ * otherwise. Needed because frost flips container luminance vs. the opaque
+ * primary/tonal fills (light-mode frost + onPrimary white would be unreadable).
+ */
+@Composable
+fun glassButtonContentColor(fallback: Color): Color {
+  if (!LocalGlass.current) return fallback
+  return if (androidx.compose.foundation.isSystemInDarkTheme()) Color.White else Color.Black
+}
+
+/**
+ * FilterChip colors: frost container + contrast label for Glass, M3 defaults
+ * (with the call site's selected colors) otherwise. Custom unselected
+ * [containerColor] hues (e.g. tertiary user-preset markers) are kept at glass
+ * alpha instead of frost so their meaning survives; selected fills drop to
+ * glass alpha so chips read as glass without losing state affordance.
+ */
+@Composable
+fun glassFilterChipColors(
+  containerColor: Color = Color.Transparent,
+  labelColor: Color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+  selectedContainerColor: Color = androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer,
+  selectedLabelColor: Color = androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+): androidx.compose.material3.SelectableChipColors {
+  if (!LocalGlass.current) {
+    return androidx.compose.material3.FilterChipDefaults.filterChipColors(
+      containerColor = containerColor,
+      labelColor = labelColor,
+      selectedContainerColor = selectedContainerColor,
+      selectedLabelColor = selectedLabelColor,
+    )
+  }
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val glassContainer = if (containerColor == Color.Transparent) {
+    glassFrostColor(isDark = dark, kind = GlassKind.Chip)
+  } else {
+    containerColor.copy(alpha = 0.45f)
+  }
+  return androidx.compose.material3.FilterChipDefaults.filterChipColors(
+    containerColor = glassContainer,
+    labelColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+    ),
+    selectedContainerColor = selectedContainerColor.copy(alpha = 0.55f),
+    selectedLabelColor = glassButtonContentColor(selectedLabelColor),
+  )
+}
+
+/**
+ * AssistChip colors: frost container + contrast label for Glass, M3 defaults
+ * otherwise. Single funnel for word-tap chips in player sheets.
+ */
+@Composable
+fun glassAssistChipColors(): androidx.compose.material3.ChipColors {
+  if (!LocalGlass.current) return androidx.compose.material3.AssistChipDefaults.assistChipColors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.AssistChipDefaults.assistChipColors(
+    containerColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    labelColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+    ),
+  )
+}
+
+/**
+ * Bottom-nav item colors: frost indicator pill + contrast selected icon/label
+ * for Glass, M3 defaults otherwise. The indicator sits on the already-glass
+ * bar, so frost-on-frost keeps the pill readable as a glass highlight.
+ */
+@Composable
+fun glassNavigationBarItemColors(): androidx.compose.material3.NavigationBarItemColors {
+  if (!LocalGlass.current) return androidx.compose.material3.NavigationBarItemDefaults.colors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.NavigationBarItemDefaults.colors(
+    selectedIconColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+    ),
+    selectedTextColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+    ),
+    indicatorColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+  )
+}
+
+/** Rail twin of [glassNavigationBarItemColors]. */
+@Composable
+fun glassNavigationRailItemColors(): androidx.compose.material3.NavigationRailItemColors {
+  if (!LocalGlass.current) return androidx.compose.material3.NavigationRailItemDefaults.colors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.NavigationRailItemDefaults.colors(
+    selectedIconColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+    ),
+    selectedTextColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+    ),
+    indicatorColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+  )
+}
+
+/**
+ * Segmented-button colors: frost inactive container + translucent active fill
+ * for Glass, M3 defaults otherwise. Single funnel for the sort-order selector
+ * and the appearance multi-choice row.
+ */
+@Composable
+fun glassSegmentedButtonColors(): androidx.compose.material3.SegmentedButtonColors {
+  if (!LocalGlass.current) return androidx.compose.material3.SegmentedButtonDefaults.colors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.SegmentedButtonDefaults.colors(
+    activeContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer.copy(
+      alpha = 0.55f,
+    ),
+    activeContentColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+    ),
+    inactiveContainerColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    inactiveContentColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+    ),
+  )
+}
+
+/**
+ * Slider colors: translucent thumb/track for Glass, M3 defaults otherwise.
+ * For grid-column sliders inside glass dialogs.
+ */
+@Composable
+fun glassSliderColors(): androidx.compose.material3.SliderColors {
+  if (!LocalGlass.current) return androidx.compose.material3.SliderDefaults.colors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val content = glassButtonContentColor(
+    androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+  )
+  return androidx.compose.material3.SliderDefaults.colors(
+    thumbColor = content,
+    activeTrackColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    inactiveTrackColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip).copy(alpha = 0.5f),
+  )
+}
+
 /** SearchBar colors: clear frost for Glass, M3 defaults otherwise. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable

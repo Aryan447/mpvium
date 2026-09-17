@@ -52,7 +52,9 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassFrostColor
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.theme.glassSearchBarColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
@@ -435,7 +437,16 @@ object FolderListScreen : Screen {
                   TooltipAnchorPosition.Above
                 }
               ),
-              tooltip = { PlainTooltip { Text("Toggle menu") } },
+              tooltip = {
+                PlainTooltip(
+                  containerColor = glassMenuContainerColor(
+                    TooltipDefaults.plainTooltipContainerColor,
+                  ),
+                  contentColor = glassButtonContentColor(
+                    TooltipDefaults.plainTooltipContentColor,
+                  ),
+                ) { Text("Toggle menu") }
+              },
               state = rememberTooltipState(),
             ) {
               val toggleFrost = glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)

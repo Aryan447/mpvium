@@ -14,6 +14,7 @@ import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.glassSegmentedButtonColors
 import app.aryan447.mpvium.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
 
@@ -109,6 +110,7 @@ fun MultiChoiceSegmentedButton(
         checked = selectedIndices.contains(index),
         onCheckedChange = { onClick(index) },
         shape = SegmentedButtonDefaults.itemShape(index = index, count = choices.size),
+        colors = glassSegmentedButtonColors(),
       ) {
         Text(text = choice)
       }

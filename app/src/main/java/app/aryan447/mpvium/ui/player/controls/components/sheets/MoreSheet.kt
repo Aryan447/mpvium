@@ -55,6 +55,8 @@ import app.aryan447.mpvium.preferences.getPlayerButtonLabel
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.components.PlayerSheet
 import app.aryan447.mpvium.ui.player.Sheets
+import app.aryan447.mpvium.ui.theme.glassFilterChipColors
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.Dispatchers
@@ -180,6 +182,7 @@ val scope = rememberCoroutineScope()
             },
             selected = statisticsPage == page,
             leadingIcon = null,
+            colors = glassFilterChipColors(),
           )
         }
       }
@@ -216,6 +219,7 @@ val scope = rememberCoroutineScope()
               selected = anime4kMode == mode.name,
               enabled = !isHighRes,
               leadingIcon = null,
+              colors = glassFilterChipColors(),
               onClick = {
                 decoderPreferences.anime4kMode.set(mode.name)
 
@@ -260,6 +264,7 @@ val scope = rememberCoroutineScope()
               selected = anime4kQuality == quality.name,
               enabled = anime4kMode != "OFF" && !isHighRes,
               leadingIcon = null,
+              colors = glassFilterChipColors(),
               onClick = {
                 decoderPreferences.anime4kQuality.set(quality.name)
 
@@ -346,7 +351,7 @@ fun TimePickerDialog(
   ) {
     Surface(
       shape = MaterialTheme.shapes.extraLarge,
-      color = MaterialTheme.colorScheme.surfaceContainerHigh,
+      color = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainerHigh),
       tonalElevation = 6.dp,
       modifier = modifier
           .width(360.dp) // Fixed wide width to fit presets
@@ -412,6 +417,7 @@ fun TimePickerDialog(
                         },
                         label = { Text("${minutes}m") },
                         leadingIcon = null,
+                        colors = glassFilterChipColors(),
                     )
                 }
             }

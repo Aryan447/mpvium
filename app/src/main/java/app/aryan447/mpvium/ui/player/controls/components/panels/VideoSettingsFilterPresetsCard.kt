@@ -27,6 +27,7 @@ import app.aryan447.mpvium.presentation.components.ExpandableCard
 import app.aryan447.mpvium.ui.player.FilterPreset
 import app.aryan447.mpvium.ui.player.controls.CARDS_MAX_WIDTH
 import app.aryan447.mpvium.ui.player.controls.panelCardsColors
+import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import org.koin.compose.koinInject
@@ -102,6 +103,7 @@ fun VideoSettingsFilterPresetsCard(modifier: Modifier = Modifier) {
             },
             label = { Text(preset.displayName) },
             leadingIcon = null,
+            colors = glassFilterChipColors(),
           )
         }
       }

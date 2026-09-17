@@ -49,6 +49,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.utils.storage.StorageVolumeUtils
 import java.io.File
 
@@ -169,7 +172,7 @@ fun FilePickerDialog(
       Surface(
           modifier = modifier.fillMaxWidth(if (isPortrait) 0.9f else 0.50f),
           shape = MaterialTheme.shapes.extraLarge,
-          color = MaterialTheme.colorScheme.surface,
+          color = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
           tonalElevation = 6.dp,
       ) {
           Column(
@@ -462,8 +465,8 @@ private fun NavigationButtons(
       onClick = onBack,
       modifier = Modifier.size(buttonSize),
       colors = IconButtonDefaults.filledTonalIconButtonColors(
-        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
+        contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
       )
     ) {
       Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", modifier = Modifier.size(iconSize))
@@ -474,8 +477,8 @@ private fun NavigationButtons(
     onClick = onHome,
     modifier = Modifier.size(buttonSize),
     colors = IconButtonDefaults.filledTonalIconButtonColors(
-      containerColor = MaterialTheme.colorScheme.secondaryContainer,
-      contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+      containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
+      contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
     )
   ) {
     Icon(Icons.Default.Home, "Home", modifier = Modifier.size(iconSize))
@@ -485,8 +488,8 @@ private fun NavigationButtons(
     onClick = onSystemPicker,
     modifier = Modifier.size(buttonSize),
     colors = IconButtonDefaults.filledTonalIconButtonColors(
-      containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-      contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+      containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.tertiaryContainer),
+      contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onTertiaryContainer),
     )
   ) {
     Icon(Icons.Default.DriveFolderUpload, "System Picker", modifier = Modifier.size(iconSize))

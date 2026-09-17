@@ -9,7 +9,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.FloatingActionButtonDefaults
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassFrostColor
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -325,7 +327,16 @@ data class VideoListScreen(
         if (sortedVideosWithInfo.isNotEmpty()) {
           TooltipBox(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-            tooltip = { PlainTooltip { Text("Play recently played or first video") } },
+            tooltip = {
+              PlainTooltip(
+                containerColor = glassMenuContainerColor(
+                  TooltipDefaults.plainTooltipContainerColor,
+                ),
+                contentColor = glassButtonContentColor(
+                  TooltipDefaults.plainTooltipContentColor,
+                ),
+              ) { Text("Play recently played or first video") }
+            },
             state = rememberTooltipState(),
           ) {
             FloatingActionButton(
