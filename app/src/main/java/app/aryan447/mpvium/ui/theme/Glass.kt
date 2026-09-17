@@ -292,6 +292,47 @@ fun glassNavigationRailItemColors(): androidx.compose.material3.NavigationRailIt
   )
 }
 
+/**
+ * Segmented-button colors: frost inactive container + translucent active fill
+ * for Glass, M3 defaults otherwise. Single funnel for the sort-order selector
+ * and the appearance multi-choice row.
+ */
+@Composable
+fun glassSegmentedButtonColors(): androidx.compose.material3.SegmentedButtonColors {
+  if (!LocalGlass.current) return androidx.compose.material3.SegmentedButtonDefaults.colors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.SegmentedButtonDefaults.colors(
+    activeContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer.copy(
+      alpha = 0.55f,
+    ),
+    activeContentColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+    ),
+    inactiveContainerColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    inactiveContentColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+    ),
+  )
+}
+
+/**
+ * Slider colors: translucent thumb/track for Glass, M3 defaults otherwise.
+ * For grid-column sliders inside glass dialogs.
+ */
+@Composable
+fun glassSliderColors(): androidx.compose.material3.SliderColors {
+  if (!LocalGlass.current) return androidx.compose.material3.SliderDefaults.colors()
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val content = glassButtonContentColor(
+    androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+  )
+  return androidx.compose.material3.SliderDefaults.colors(
+    thumbColor = content,
+    activeTrackColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    inactiveTrackColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip).copy(alpha = 0.5f),
+  )
+}
+
 /** SearchBar colors: clear frost for Glass, M3 defaults otherwise. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable

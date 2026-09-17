@@ -179,6 +179,7 @@ fun PlaylistActionSheet(
           .fillMaxWidth()
           .padding(16.dp),
         shape = MaterialTheme.shapes.extraLarge,
+        colors = if (LocalGlass.current) glassCardColors() else CardDefaults.cardColors(),
       ) {
         Column(
           modifier = Modifier.padding(24.dp),
@@ -278,6 +279,7 @@ fun PlaylistActionSheet(
           .fillMaxWidth()
           .padding(16.dp),
         shape = MaterialTheme.shapes.extraLarge,
+        colors = if (LocalGlass.current) glassCardColors() else CardDefaults.cardColors(),
       ) {
         Column(
           modifier = Modifier.padding(24.dp),

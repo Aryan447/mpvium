@@ -56,6 +56,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.components.PlayerSheet
 import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.theme.glassFilterChipColors
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.Dispatchers
@@ -350,7 +351,7 @@ fun TimePickerDialog(
   ) {
     Surface(
       shape = MaterialTheme.shapes.extraLarge,
-      color = MaterialTheme.colorScheme.surfaceContainerHigh,
+      color = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainerHigh),
       tonalElevation = 6.dp,
       modifier = modifier
           .width(360.dp) // Fixed wide width to fit presets

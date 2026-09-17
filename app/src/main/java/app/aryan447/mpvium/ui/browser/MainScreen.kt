@@ -68,6 +68,7 @@ import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.glassNavigationBarItemColors
 import app.aryan447.mpvium.ui.theme.glassNavigationRailItemColors
+import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
@@ -298,7 +299,11 @@ object MainScreen : Screen {
                     shadowElevation = 8.dp,
                     border = BorderStroke(
                       1.dp,
-                      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                      if (isGlass) {
+                        glassRimColor(isDark)
+                      } else {
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                      },
                     ),
                   ) {
                     NavigationBar(
