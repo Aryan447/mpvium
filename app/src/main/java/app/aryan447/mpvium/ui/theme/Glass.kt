@@ -116,25 +116,32 @@ fun Modifier.glassChrome(
   shape: RoundedCornerShape = GlassTokens.pillShape,
   enabled: Boolean,
   rim: Boolean = false,
+  glint: Boolean = shape != RoundedCornerShape(0.dp),
 ): Modifier = composed {
   if (!enabled) return@composed this
   val isDark = isSystemInDarkTheme()
   clip(shape)
     .background(style.backgroundColor, shape)
-    .drawWithContent {
-      drawContent()
-      // Top-lip specular reflection (light caught in curved glass edge)
-      drawRect(
-        brush = Brush.verticalGradient(
-          0.0f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintTopAlphaDark)
-          else Color.White.copy(alpha = GlassTokens.glintTopAlphaLight)),
-          0.18f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintMidAlphaDark)
-          else Color.White.copy(alpha = GlassTokens.glintMidAlphaLight)),
-          0.50f to Color.Transparent,
-        ),
-        size = size,
-      )
-    }
+    .then(
+      if (glint) {
+        Modifier.drawWithContent {
+          drawContent()
+          // Top-lip specular reflection (light caught in curved glass edge)
+          drawRect(
+            brush = Brush.verticalGradient(
+              0.0f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintTopAlphaDark)
+              else Color.White.copy(alpha = GlassTokens.glintTopAlphaLight)),
+              0.18f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintMidAlphaDark)
+              else Color.White.copy(alpha = GlassTokens.glintMidAlphaLight)),
+              0.50f to Color.Transparent,
+            ),
+            size = size,
+          )
+        }
+      } else {
+        Modifier
+      },
+    )
     .then(
       if (rim) {
         Modifier.border(
