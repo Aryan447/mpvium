@@ -257,25 +257,18 @@ fun glassPlayerAlpha(default: Float = 0.55f, glass: Float = 0.22f): Float =
   if (LocalGlass.current) glass else default
 
 /**
- * Sheet container: deep smoked glass for Glass, standard M3 surface
- * otherwise. Single funnel for ModalBottomSheet / PlayerSheet / dialog
- * surfaces so sheets stay readable with zero background text collisions.
+ * Sheet container: fully opaque [fallback] surface in every theme, including
+ * Glass. Dialogs and bottom sheets float over busy thumbnails/lists, so any
+ * translucency lets background text and artwork bleed through and destroys
+ * contrast (e.g. the Add-to-Playlist dialog). Glass identity lives on the
+ * bars and pills, not on top of readable content.
  */
 @Composable
-fun glassSheetContainerColor(fallback: Color): Color {
-  if (!LocalGlass.current) return fallback
-  val dark = isSystemInDarkTheme()
-  return glassFrostColor(isDark = dark, kind = GlassKind.Sheet)
-}
+fun glassSheetContainerColor(fallback: Color): Color = fallback
 
-/** Dropdown/exposed-menu container for Glass. */
+/** Dropdown/exposed-menu container: opaque [fallback] in every theme. */
 @Composable
-fun glassMenuContainerColor(fallback: Color): Color {
-  if (!LocalGlass.current) return fallback
-  val dark = isSystemInDarkTheme()
-  // Menus float over busy lists: sheet-grade veil so items stay readable.
-  return glassFrostColor(isDark = dark, kind = GlassKind.Sheet)
-}
+fun glassMenuContainerColor(fallback: Color): Color = fallback
 
 /**
  * Button container: clear glass for Glass, [fallback] otherwise. Single funnel

@@ -191,6 +191,17 @@ object FolderListScreen : Screen {
     // UI state - use standalone states to avoid scroll issues with predictive back gesture
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
+
+    // Top bar turns glassy (like the bottom pill bar) once content scrolls
+    val topBarScrolled by remember(mediaLayoutMode, listState, gridState) {
+      derivedStateOf {
+        if (mediaLayoutMode == MediaLayoutMode.GRID) {
+          gridState.firstVisibleItemIndex != 0 || gridState.firstVisibleItemScrollOffset != 0
+        } else {
+          listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0
+        }
+      }
+    }
     val navigationBarHeight = LocalNavigationBarHeight.current
     val isRefreshing = remember { mutableStateOf(false) }
     val sortDialogOpen = rememberSaveable { mutableStateOf(false) }
@@ -359,6 +370,7 @@ object FolderListScreen : Screen {
             isInSelectionMode = selectionManager.isInSelectionMode,
             selectedCount = selectionManager.selectedCount,
             totalCount = videoFolders.size,
+            scrolled = topBarScrolled,
             onBackClick = null,
             onCancelSelection = { selectionManager.clear() },
             onSortClick = { sortDialogOpen.value = true },

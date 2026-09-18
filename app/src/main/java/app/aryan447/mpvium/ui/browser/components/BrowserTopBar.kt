@@ -103,6 +103,7 @@ fun BrowserTopBar(
   useRemoveIcon: Boolean = false,
   onAddToPlaylistClick: (() -> Unit)? = null,
   onMarkAsClick: (() -> Unit)? = null,
+  scrolled: Boolean = true,
 ) {
   if (isInSelectionMode) {
     SelectionTopBar(
@@ -134,6 +135,7 @@ fun BrowserTopBar(
       additionalActions = additionalActions,
       modifier = modifier,
       onTitleLongPress = onTitleLongPress,
+      scrolled = scrolled,
     )
   }
 }
@@ -152,6 +154,7 @@ private fun NormalTopBar(
   additionalActions: @Composable RowScope.() -> Unit,
   modifier: Modifier = Modifier,
   onTitleLongPress: (() -> Unit)?,
+  scrolled: Boolean = true,
 ) {
   val preferences = koinInject<AppearancePreferences>()
   val darkMode by preferences.darkMode.collectAsState()
@@ -303,12 +306,24 @@ private fun NormalTopBar(
         }
       }
     },
-    modifier = modifier.glassChrome(
-      state = glassHaze,
-      style = glassStyle,
-      shape = RoundedCornerShape(0.dp),
-      enabled = isGlass,
-    ),
+    modifier = if (isGlass && scrolled) {
+      modifier
+        .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+        .glassChrome(
+          state = glassHaze,
+          style = glassStyle,
+          shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
+          enabled = true,
+          rim = true,
+        )
+    } else {
+      modifier.glassChrome(
+        state = glassHaze,
+        style = glassStyle,
+        shape = RoundedCornerShape(0.dp),
+        enabled = false,
+      )
+    },
   )
 }
 
@@ -561,6 +576,7 @@ private fun SelectionTopBar(
         style = glassStyle,
         shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
         enabled = isGlass,
+        rim = true,
       ),
   )
 }
