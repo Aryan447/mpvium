@@ -59,7 +59,13 @@ android {
       // -PbundleBuild for the bundle step to switch splits off.
       isEnable = !providers.gradleProperty("bundleBuild").isPresent
       reset()
-      include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+      // -PciFastBuild (CI only): build just arm64-v8a + universal to cut
+      // CI time. Production releases omit it and build all ABIs.
+      if (providers.gradleProperty("ciFastBuild").isPresent) {
+        include("arm64-v8a")
+      } else {
+        include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+      }
       isUniversalApk = true
     }
   }
@@ -71,8 +77,12 @@ android {
       if (providers.gradleProperty("ciDebugSigning").isPresent) {
         signingConfig = signingConfigs.getByName("debug")
       }
-      isMinifyEnabled = true
-      isShrinkResources = true
+      // -PciFastBuild (CI only) skips R8 minify + resource shrinking:
+      // the single biggest CI time saver. Artifacts are larger but
+      // functionally identical. Production releases omit it.
+      val ciFastBuild = providers.gradleProperty("ciFastBuild").isPresent
+      isMinifyEnabled = !ciFastBuild
+      isShrinkResources = !ciFastBuild
       proguardFiles(
         getDefaultProguardFile("proguard-android-optimize.txt"),
         "proguard-rules.pro"

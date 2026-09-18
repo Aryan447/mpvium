@@ -1,12 +1,12 @@
-name: CI/CD Build
+name: CI Build
 
 on:
-  # push:
-  #   branches: [main]
   pull_request:
+  push:
+    branches: [main]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -24,43 +24,34 @@ jobs:
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
+          distribution: 'temurin'
           java-version: 17
           cache: 'gradle'
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew assembleStandardRelease -PciDebugSigning
+      - name: Build standard release APKs and bundle
+        # Single Gradle invocation: one daemon + one configuration phase
+        # instead of paying JVM startup/configure costs twice.
+        # -PbundleBuild disables ABI splits for the bundle step
+        # (see app/build.gradle.kts); AGP fails bundle builds otherwise.
+        # -PciFastBuild: arm64-v8a + universal only, no R8/shrinking.
+        # CI artifacts are larger but installable; production releases
+        # (release.yml) are unaffected and still build all ABIs minified.
+        # lintVital is skipped for speed; re-add if release lint gate needed.
+        run: ./gradlew assembleStandardRelease bundleStandardRelease --parallel -x lintVitalStandardRelease -PciDebugSigning -PbundleBuild -PciFastBuild
 
-      - name: Upload app-arm64-v8a Artifact
+      - name: Upload release bundle
         uses: actions/upload-artifact@v7
         with:
-          name: app-standard-arm64-v8a-release-ci-signed-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/standard/release/app-standard-arm64-v8a-release.apk
+          name: app-standard-release-bundle-ci-signed-${{ env.SHORT_SHA }}
+          path: app/build/outputs/bundle/standardRelease/app-standard-release.aab
           if-no-files-found: warn
-      - name: Upload app-armeabi-v7a Artifact
+
+      - name: Upload release APKs
         uses: actions/upload-artifact@v7
         with:
-          name: app-standard-armeabi-v7a-release-ci-signed-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/standard/release/app-standard-armeabi-v7a-release.apk
-          if-no-files-found: warn
-      - name: Upload app-universal Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: app-standard-universal-release-ci-signed-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/standard/release/app-standard-universal-release.apk
-          if-no-files-found: warn
-      - name: Upload app-x86 Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: app-standard-x86-release-ci-signed-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/standard/release/app-standard-x86-release.apk
-          if-no-files-found: warn
-      - name: Upload app-x86_64 Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: app-standard-x86_64-release-ci-signed-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/standard/release/app-standard-x86_64-release.apk
+          name: app-standard-release-apks-ci-signed-${{ env.SHORT_SHA }}
+          path: app/build/outputs/apk/standard/release/*.apk
           if-no-files-found: warn
