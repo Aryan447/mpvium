@@ -1,9 +1,13 @@
 package app.aryan447.mpvium.ui.theme
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
@@ -13,23 +17,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 
 /**
- * Clear Glass core kit (chrome-first).
+ * Clear Liquid Glass core kit (iOS-inspired).
  *
- * No backdrop blur: glass here is frost fill + hairline rim, deliberately NOT
- * a live-blur lens. Live blur (Haze) smeared scrolling content behind bars
- * and was invisible on dark surfaces, so it was removed — translucency
- * without blur also let list text bleed through dialogs. The Haze dependency
- * is retained (types only) in case a true-lens library lands on Maven Central
- * later; see the progress tracker. Preferred lens candidates
- * (Abdullajon1881 LiquidGlass 1.0.0, Haze 2.x `haze-glass` beta) are NOT
- * yet published to Maven Central, so neither can be a Gradle dependency
- * without breaking CI resolution.
+ * Provides true optical clarity:
+ * - Live optical backdrop blur via Haze 1.5.3 (hazeEffect + hazeSource)
+ * - Directional specular rim gradient (bright overhead light catch on top edge, subtle shadow below)
+ * - Refractive top-lip specular glint (internal reflection inside curved glass thickness)
+ * - Crystal dark-tinted glass in dark theme (never chalky or milky white) and luminous clarity in light theme
+ * - Deep smoked glass for sheets/dialogs for 100% typography contrast
  */
 enum class GlassKind {
   Bar,
@@ -39,27 +40,35 @@ enum class GlassKind {
 }
 
 object GlassTokens {
-  // CLEAR look: low alpha so content stays readable behind chrome, with a
-  // hairline rim for definition. Dark-theme frost is white-based so glass
-  // stays visible over near-black surfaces (black-on-black was invisible).
-  // Sheets/dialogs are near-opaque veils: body text must never collide with
-  // content showing through.
-  val blurRadius: Dp = 12.dp
+  // CLEAR LIQUID GLASS:
+  // Optical diffusion with crisp edges.
+  val blurRadius: Dp = 16.dp
   val chipBlurRadius: Dp = 8.dp
-  val cardBlurRadius: Dp = 10.dp
-  // Translucent fills — neutral black/white bases, no blue tint.
-  // Dark Chip/Bar carry a little extra milk so the gloss gradient reads.
-  const val lightSurfaceAlpha: Float = 0.32f
-  const val darkSurfaceAlpha: Float = 0.26f
-  const val lightCardAlpha: Float = 0.28f
-  const val darkCardAlpha: Float = 0.20f
-  const val lightSheetAlpha: Float = 0.68f
-  const val darkSheetAlpha: Float = 0.60f
-  const val glossBoost: Float = 0.12f
-  const val glossOverlayAlpha: Float = 0.14f
-  const val tintAlpha: Float = 0.04f
-  const val rimAlpha: Float = 0.35f
-  const val highlightAlpha: Float = 0.18f
+  val cardBlurRadius: Dp = 12.dp
+
+  // Translucent base fills: deep crystal in dark, luminous in light
+  const val lightSurfaceAlpha: Float = 0.42f
+  const val darkSurfaceAlpha: Float = 0.40f
+  const val lightCardAlpha: Float = 0.42f
+  const val darkCardAlpha: Float = 0.35f
+  const val lightSheetAlpha: Float = 0.85f
+  const val darkSheetAlpha: Float = 0.78f
+
+  // Specular rim alphas (directional light catch from overhead)
+  const val specularRimTopDark: Float = 0.45f
+  const val specularRimMidDark: Float = 0.15f
+  const val specularRimBottomDark: Float = 0.05f
+
+  const val specularRimTopLight: Float = 0.70f
+  const val specularRimMidLight: Float = 0.30f
+  const val specularRimBottomLight: Float = 0.08f
+
+  // Internal specular reflection glint (refractive lip)
+  const val glintTopAlphaDark: Float = 0.16f
+  const val glintMidAlphaDark: Float = 0.02f
+  const val glintTopAlphaLight: Float = 0.28f
+  const val glintMidAlphaLight: Float = 0.04f
+
   val pillShape = RoundedCornerShape(32.dp)
   val cardShape = RoundedCornerShape(20.dp)
   val sheetShape = RoundedCornerShape(16.dp)
@@ -69,20 +78,19 @@ val LocalGlass = compositionLocalOf { false }
 
 val GlassHazeBlurRadius: Dp = GlassTokens.blurRadius
 
-/** Retained no-op state holder (blur removed): keeps call sites unchanged. */
+/** State holder for Haze live backdrop blur. */
 @Composable
 fun rememberGlassHazeState(): HazeState = remember { HazeState() }
 
-/**
- * Former backdrop-blur source marker. Now a pass-through (no blur anywhere):
- * kept so call sites don't churn if a lens ever returns.
- */
+/** Mark scrolling/content backdrop so glass chrome above can optically sample it. */
 fun Modifier.glassBackdrop(
   state: HazeState,
   enabled: Boolean,
-): Modifier = this
+): Modifier = composed {
+  if (enabled) hazeSource(state = state) else this
+}
 
-/** Frost fill for clear glass: style background only (no blur is applied). */
+/** Haze style for clear liquid glass: optical blur + crystal tinted background. */
 @Composable
 fun glassHazeStyle(
   isDark: Boolean,
@@ -93,23 +101,18 @@ fun glassHazeStyle(
     GlassKind.Card, GlassKind.Sheet -> GlassTokens.cardBlurRadius
     GlassKind.Bar -> GlassTokens.blurRadius
   }
-  // White-based frost in dark theme so glass reads over black surfaces;
-  // sheets stay dark veils so dialog text never collides with show-through.
-  // (blurRadius is retained on the style but no blur modifier reads it.)
   val base = glassFrostColor(isDark = isDark, kind = kind)
+  val tint = if (isDark) Color.White.copy(alpha = 0.03f) else null
   return HazeStyle(
     backgroundColor = base,
-    tint = null,
+    tint = tint,
     blurRadius = blur,
   )
 }
 
 /**
- * Clear-glass chrome modifier: gloss-gradient frost fill + optional hairline
- * rim. The fill is brightest at the top edge and settles to the base frost
- * below, which is what reads as curved glass. No backdrop blur is applied
- * anywhere. Falls back to the call site's own container when [enabled] is
- * false (non-glass themes must keep their existing opaque behavior).
+ * Clear-glass chrome modifier: live optical blur + top-lip specular glint +
+ * optional directional specular rim.
  */
 fun Modifier.glassChrome(
   state: HazeState,
@@ -119,20 +122,29 @@ fun Modifier.glassChrome(
   rim: Boolean = false,
 ): Modifier = composed {
   if (!enabled) return@composed this
-  val base = style.backgroundColor
-  val gloss = Brush.verticalGradient(
-    0.0f to base.copy(alpha = (base.alpha + GlassTokens.glossBoost).coerceAtMost(0.6f)),
-    0.4f to base,
-    1.0f to base.copy(alpha = base.alpha * 0.6f),
-  )
+  val isDark = isSystemInDarkTheme()
   clip(shape)
-    .background(gloss, shape)
+    .hazeEffect(state = state, style = style)
+    .drawWithContent {
+      drawContent()
+      // Top-lip specular reflection (light caught in curved glass edge)
+      drawRect(
+        brush = Brush.verticalGradient(
+          0.0f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintTopAlphaDark)
+          else Color.White.copy(alpha = GlassTokens.glintTopAlphaLight)),
+          0.20f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintMidAlphaDark)
+          else Color.White.copy(alpha = GlassTokens.glintMidAlphaLight)),
+          0.55f to Color.Transparent,
+        ),
+        size = size,
+      )
+    }
     .then(
       if (rim) {
         Modifier.border(
-          1.dp,
-          glassRimColor(androidx.compose.foundation.isSystemInDarkTheme()),
-          shape,
+          width = 1.dp,
+          brush = glassRimBrush(isDark),
+          shape = shape,
         )
       } else {
         Modifier
@@ -141,23 +153,23 @@ fun Modifier.glassChrome(
 }
 
 /**
- * Specular gloss overlay for M3 components whose fill comes from a
- * `*Colors` object (buttons, icon buttons) rather than [glassChrome]:
- * draws content first, then a top-weighted white sheen clipped to [shape].
- * Kept faint so labels stay readable; skip on body-text surfaces.
+ * Specular gloss overlay for glass components (buttons, icon buttons):
+ * draws content first, then a delicate top-lip specular sheen clipped to [shape].
  */
 fun Modifier.glassSheen(
   shape: Shape,
   enabled: Boolean,
 ): Modifier = composed {
   if (!enabled) return@composed this
+  val isDark = isSystemInDarkTheme()
   clip(shape)
     .drawWithContent {
       drawContent()
       drawRect(
         brush = Brush.verticalGradient(
-          0.0f to Color.White.copy(alpha = GlassTokens.glossOverlayAlpha),
-          0.55f to Color.Transparent,
+          0.0f to (if (isDark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.28f)),
+          0.22f to (if (isDark) Color.White.copy(alpha = 0.02f) else Color.White.copy(alpha = 0.04f)),
+          0.50f to Color.Transparent,
         ),
         size = size,
       )
@@ -165,46 +177,62 @@ fun Modifier.glassSheen(
 }
 
 /**
- * Frost fill used by every glass surface ([glassChrome] reads it off the
- * style; funnels below call it directly). White-based in dark theme so glass
- * stays visible over black; sheets are dark veils so dialog text stays
- * readable with zero background bleed.
+ * Color fill used by glass surfaces:
+ * In dark mode: crystal-tinted dark neutral glass (never chalky white).
+ * In light mode: luminous crystal white glass.
+ * Sheets stay deep smoked glass so text remains razor sharp.
  */
 @Composable
 fun glassFrostColor(isDark: Boolean, kind: GlassKind = GlassKind.Card): Color {
   return when (kind) {
     GlassKind.Chip -> if (isDark) {
-      Color.White.copy(alpha = 0.20f)
+      Color(0xFF202024).copy(alpha = 0.50f)
     } else {
-      Color.White.copy(alpha = 0.26f)
+      Color.White.copy(alpha = 0.60f)
     }
     GlassKind.Bar -> if (isDark) {
-      Color.White.copy(alpha = GlassTokens.darkSurfaceAlpha)
+      Color(0xFF101014).copy(alpha = GlassTokens.darkSurfaceAlpha)
     } else {
       Color.White.copy(alpha = GlassTokens.lightSurfaceAlpha)
     }
     GlassKind.Card -> if (isDark) {
-      Color.White.copy(alpha = GlassTokens.darkCardAlpha)
+      Color(0xFF16161A).copy(alpha = GlassTokens.darkCardAlpha)
     } else {
       Color.White.copy(alpha = GlassTokens.lightCardAlpha)
     }
     GlassKind.Sheet -> if (isDark) {
-      Color.Black.copy(alpha = GlassTokens.darkSheetAlpha)
+      Color(0xFF121216).copy(alpha = GlassTokens.darkSheetAlpha)
     } else {
       Color.White.copy(alpha = GlassTokens.lightSheetAlpha)
     }
   }
 }
 
-/** Neutral hairline rim for glass surfaces. */
+/** Directional specular gradient rim: catches ambient overhead light on top curve. */
+fun glassRimBrush(isDark: Boolean): Brush {
+  return Brush.verticalGradient(
+    0.0f to (if (isDark) Color.White.copy(alpha = GlassTokens.specularRimTopDark)
+    else Color.White.copy(alpha = GlassTokens.specularRimTopLight)),
+    0.35f to (if (isDark) Color.White.copy(alpha = GlassTokens.specularRimMidDark)
+    else Color.White.copy(alpha = GlassTokens.specularRimMidLight)),
+    1.0f to (if (isDark) Color.White.copy(alpha = GlassTokens.specularRimBottomDark)
+    else Color.Black.copy(alpha = GlassTokens.specularRimBottomLight)),
+  )
+}
+
+/** Directional specular hairline rim stroke helper. */
+fun glassRimStroke(isDark: Boolean, width: Dp = 1.dp): BorderStroke =
+  BorderStroke(width = width, brush = glassRimBrush(isDark))
+
+/** Neutral hairline rim color fallback. */
 @Composable
 fun glassRimColor(isDark: Boolean): Color =
-  if (isDark) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f)
+  if (isDark) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.12f)
 
 @Composable
 fun glassCardColors(kind: GlassKind = GlassKind.Card): androidx.compose.material3.CardColors {
   val isGlass = LocalGlass.current
-  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val dark = isSystemInDarkTheme()
   // Non-glass themes keep their default opaque card colors.
   if (!isGlass) return androidx.compose.material3.CardDefaults.cardColors()
   val frost = glassFrostColor(isDark = dark, kind = kind)
@@ -224,14 +252,14 @@ fun glassPlayerAlpha(default: Float = 0.55f, glass: Float = 0.22f): Float =
   if (LocalGlass.current) glass else default
 
 /**
- * Sheet container: dark veil for Glass, standard M3 surface
+ * Sheet container: deep smoked glass for Glass, standard M3 surface
  * otherwise. Single funnel for ModalBottomSheet / PlayerSheet / dialog
- * surfaces so sheets stay readable with no background bleed.
+ * surfaces so sheets stay readable with zero background text collisions.
  */
 @Composable
 fun glassSheetContainerColor(fallback: Color): Color {
   if (!LocalGlass.current) return fallback
-  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val dark = isSystemInDarkTheme()
   return glassFrostColor(isDark = dark, kind = GlassKind.Sheet)
 }
 
@@ -239,20 +267,19 @@ fun glassSheetContainerColor(fallback: Color): Color {
 @Composable
 fun glassMenuContainerColor(fallback: Color): Color {
   if (!LocalGlass.current) return fallback
-  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val dark = isSystemInDarkTheme()
   // Menus float over busy lists: sheet-grade veil so items stay readable.
   return glassFrostColor(isDark = dark, kind = GlassKind.Sheet)
 }
 
 /**
- * Button container: clear frost for Glass, [fallback] otherwise. Single funnel
- * for hero/detail Play + Details actions sitting over backdrop art so buttons
- * read as glass (frost fill + rim, no blur).
+ * Button container: clear glass for Glass, [fallback] otherwise. Single funnel
+ * for hero/detail Play + Details actions sitting over backdrop art.
  */
 @Composable
 fun glassButtonContainerColor(fallback: Color): Color {
   if (!LocalGlass.current) return fallback
-  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val dark = isSystemInDarkTheme()
   return glassFrostColor(isDark = dark, kind = GlassKind.Chip)
 }
 
@@ -329,7 +356,7 @@ fun glassAssistChipColors(): androidx.compose.material3.ChipColors {
 @Composable
 fun glassNavigationBarItemColors(): androidx.compose.material3.NavigationBarItemColors {
   if (!LocalGlass.current) return androidx.compose.material3.NavigationBarItemDefaults.colors()
-  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val dark = isSystemInDarkTheme()
   return androidx.compose.material3.NavigationBarItemDefaults.colors(
     selectedIconColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
@@ -337,7 +364,7 @@ fun glassNavigationBarItemColors(): androidx.compose.material3.NavigationBarItem
     selectedTextColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
     ),
-    indicatorColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    indicatorColor = if (dark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.65f),
   )
 }
 
@@ -345,7 +372,7 @@ fun glassNavigationBarItemColors(): androidx.compose.material3.NavigationBarItem
 @Composable
 fun glassNavigationRailItemColors(): androidx.compose.material3.NavigationRailItemColors {
   if (!LocalGlass.current) return androidx.compose.material3.NavigationRailItemDefaults.colors()
-  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val dark = isSystemInDarkTheme()
   return androidx.compose.material3.NavigationRailItemDefaults.colors(
     selectedIconColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
@@ -353,7 +380,7 @@ fun glassNavigationRailItemColors(): androidx.compose.material3.NavigationRailIt
     selectedTextColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
     ),
-    indicatorColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    indicatorColor = if (dark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.65f),
   )
 }
 

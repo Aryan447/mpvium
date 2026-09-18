@@ -68,6 +68,7 @@ import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.glassNavigationBarItemColors
 import app.aryan447.mpvium.ui.theme.glassNavigationRailItemColors
+import app.aryan447.mpvium.ui.theme.glassRimBrush
 import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
@@ -297,14 +298,11 @@ object MainScreen : Screen {
                     color = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 6.dp,
                     shadowElevation = 8.dp,
-                    border = BorderStroke(
-                      1.dp,
-                      if (isGlass) {
-                        glassRimColor(isDark)
-                      } else {
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                      },
-                    ),
+                    border = if (isGlass) {
+                      BorderStroke(1.dp, glassRimBrush(isDark))
+                    } else {
+                      BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    },
                   ) {
                     NavigationBar(
                       modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
