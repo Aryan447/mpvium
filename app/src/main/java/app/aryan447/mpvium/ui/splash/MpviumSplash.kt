@@ -7,6 +7,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,53 +25,60 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.R
+import kotlinx.coroutines.launch
 
 /**
- * Branded launch gate.
+ * World-class branded launch gate for mpvium.
  *
- * The cold-start system splash (Theme.mpvium.Starting) is intentionally static;
- * all motion lives here so cold start stays fast and the choreography is owned
- * by a single deterministic clock. Content composes underneath the opaque
- * overlay so first-frame work starts while the brand moment plays.
- *
- * Design — flagship restraint (the trillion-dollar rule: stillness is luxury):
- *  1. Near-black frame. A studio top-light fades on, like a softbox warming up.
- *  2. The mark emerges from darkness — slow fade, 0.965 settle, expo-out.
- *     Nothing pops, nothing bounces, nothing rotates.
- *  3. The wordmark sets itself in editorial type: wide tracking that tightens
- *     as each letter rises into place, unhurried.
- *  4. A beat of absolute stillness. Confidence, not decoration.
- *  5. A slow pure cross-dissolve into the app. No scale, no slide — dissolves
- *     are how flagship launches hand off.
- *
- * Deliberately absent: spinners, orbit rings, progress bars, beams, sheens,
- * taglines, version strings, bottom branding. Luxury is what you leave out.
+ * Drawing inspiration from Apple, Google, Netflix, YouTube, and X:
+ * - **Apple**: Atmospheric studio top-lighting, ultra-smooth cubic-bezier spring
+ *   optics, a subtle diagonal specular sheen gliding across the play emblem, and
+ *   razor-sharp micro-typography.
+ * - **Netflix**: Deepest OLED darkroom canvas with an expanding chromatic aura
+ *   (crimson, electric violet, cyan) breathing behind the hero mark like a theater
+ *   projector warming to life.
+ * - **YouTube**: Confident, unmistakable play emblem presence with crisp contrast
+ *   and responsive execution (~1900ms duration).
+ * - **X**: Scale-through portal dissolve on exit — smoothly expanding into the
+ *   frame to seamlessly unveil the app underneath.
+ * - **Google (Material 3)**: Fluid physics, organic settle, edge-to-edge immersion,
+ *   and instant tap-to-skip responsiveness.
  */
-private const val SPLASH_TOTAL_MS = 2200
-private const val WORDMARK = "mpvium"
+private const val SPLASH_TOTAL_MS = 1900
 
-// Signature expo-out: fast resolve, endless settle. Slow = expensive.
+// Signature easing physics
 private val EnterEasing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)
 private val ExitEasing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
+private val SheenEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
 
 private val SplashBlack = Color(0xFF060609)
-private val SplashLift = Color(0xFF0C0C12)
+private val SplashLift = Color(0xFF0D0B14)
+
+// Brand chromatic streaming aura
 private val FocusViolet = Color(0xFF8A2BE2)
+private val RubyCrimson = Color(0xFFFF416C)
+private val CyanElectric = Color(0xFF00D2FF)
 
 @Composable
 fun MpviumSplashGate(content: @Composable () -> Unit) {
@@ -85,65 +94,131 @@ fun MpviumSplashGate(content: @Composable () -> Unit) {
 @Composable
 private fun MpviumSplashScreen(onFinished: () -> Unit) {
   val clock = remember { Animatable(0f) }
+  val scope = rememberCoroutineScope()
+  var isSkipping by remember { mutableStateOf(false) }
+
   LaunchedEffect(Unit) {
     clock.animateTo(1f, tween(SPLASH_TOTAL_MS, easing = LinearEasing))
     onFinished()
   }
-  MpviumSplashFrame(progress = clock.value)
+
+  val skipToFinish: () -> Unit = {
+    if (!isSkipping && clock.value < 0.86f) {
+      isSkipping = true
+      scope.launch {
+        clock.animateTo(1f, tween(240, easing = ExitEasing))
+        onFinished()
+      }
+    }
+  }
+
+  MpviumSplashFrame(
+    progress = clock.value,
+    onTap = skipToFinish,
+  )
 }
 
 @Composable
-private fun MpviumSplashFrame(progress: Float) {
-  // ---- phase mapping (fractions of the master clock) ----
-  val lightP = EnterEasing.transform(phase(progress, 0f, 0.5f))
-  val emblemP = EnterEasing.transform(phase(progress, 0.03f, 0.42f))
+private fun MpviumSplashFrame(
+  progress: Float,
+  onTap: (() -> Unit)? = null,
+) {
+  // ---- Phase choreography ----
+  val lightP = EnterEasing.transform(phase(progress, 0f, 0.48f))
+  val emblemP = EnterEasing.transform(phase(progress, 0.04f, 0.42f))
+  val auraP = EnterEasing.transform(phase(progress, 0.06f, 0.65f))
+  val wordmarkP = EnterEasing.transform(phase(progress, 0.26f, 0.58f))
+  val taglineP = EnterEasing.transform(phase(progress, 0.44f, 0.72f))
   val exitP = ExitEasing.transform(phase(progress, 0.86f, 1f))
 
+  // Sheen light glint across the emblem
+  val sheenP = SheenEasing.transform(phase(progress, 0.32f, 0.66f))
+  val sheenAlpha = (phase(progress, 0.32f, 0.40f) * (1f - phase(progress, 0.58f, 0.66f))).coerceIn(0f, 1f)
+
+  // Emblem transform
   val emblemAlpha = emblemP
-  val emblemScale = lerp(0.965f, 1f, emblemP)
-  val emblemRiseDp = lerp(10f, 0f, emblemP)
+  val emblemScale = lerp(0.88f, 1f, emblemP)
+  val emblemRiseDp = lerp(12f, 0f, emblemP)
 
-  // Backlight swells once, then holds perfectly still.
-  val glowAlpha = 0.08f + 0.07f * EnterEasing.transform(phase(progress, 0f, 0.6f))
+  // Ambient chromatic aura breathing
+  val glowAlpha = 0.10f + 0.12f * auraP
 
-  val trackingEm = lerp(0.22f, 0.07f, EnterEasing.transform(phase(progress, 0.30f, 0.70f)))
+  // Wordmark dynamic tracking & rise
+  val trackingEm = lerp(0.18f, 0.06f, wordmarkP)
+  val wordmarkRiseDp = lerp(10f, 0f, wordmarkP)
+  val taglineRiseDp = lerp(8f, 0f, taglineP)
+
+  // Portal exit: scale-through dissolve (X / Netflix style)
+  val frameAlpha = 1f - exitP
+  val frameScale = 1f + 0.08f * exitP
 
   Box(
     modifier = Modifier
       .fillMaxSize()
-      .graphicsLayer { alpha = 1f - exitP }
+      .then(
+        if (onTap != null) {
+          Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onTap,
+          )
+        } else Modifier
+      )
+      .graphicsLayer {
+        alpha = frameAlpha
+        scaleX = frameScale
+        scaleY = frameScale
+      }
       .background(Brush.verticalGradient(listOf(SplashLift, SplashBlack))),
     contentAlignment = Alignment.Center,
   ) {
+    // Canvas: Multi-layered cinematic backlighting
     Canvas(modifier = Modifier.fillMaxSize()) {
-      // Studio top-light warming on.
+      // 1. Studio softbox top-light warming on (Apple aesthetic)
       drawRect(
         brush = Brush.verticalGradient(
-          0f to Color.White.copy(alpha = 0.05f * lightP),
+          0f to Color.White.copy(alpha = 0.06f * lightP),
           0.45f to Color.Transparent,
         ),
       )
-      // Faint violet aura behind the mark.
-      val glowRadius = size.minDimension * 0.36f
+
+      // 2. Cinematic chromatic aura bloom behind the emblem (Netflix theatrical aesthetic)
+      val glowRadius = size.minDimension * lerp(0.30f, 0.48f, auraP)
       drawCircle(
         brush = Brush.radialGradient(
-          0f to FocusViolet.copy(alpha = glowAlpha),
-          0.65f to FocusViolet.copy(alpha = glowAlpha * 0.3f),
-          1f to Color.Transparent,
+          0.0f to FocusViolet.copy(alpha = glowAlpha),
+          0.38f to RubyCrimson.copy(alpha = glowAlpha * 0.55f),
+          0.72f to CyanElectric.copy(alpha = glowAlpha * 0.22f),
+          1.0f to Color.Transparent,
           center = center,
           radius = glowRadius,
         ),
         radius = glowRadius,
         center = center,
       )
-      // Gentle vignette: transparent heart, darkened corners. Cinema depth.
+
+      // 3. Focal core radiance (Google Material organic glow)
+      val coreRadius = size.minDimension * 0.22f
+      drawCircle(
+        brush = Brush.radialGradient(
+          0.0f to Color.White.copy(alpha = glowAlpha * 0.35f),
+          0.60f to FocusViolet.copy(alpha = glowAlpha * 0.18f),
+          1.0f to Color.Transparent,
+          center = center,
+          radius = coreRadius,
+        ),
+        radius = coreRadius,
+        center = center,
+      )
+
+      // 4. Cinema vignette: dark framing corners for theater contrast
       drawRect(
         brush = Brush.radialGradient(
           0f to Color.Transparent,
-          0.62f to Color.Transparent,
-          1f to Color.Black.copy(alpha = 0.38f),
+          0.58f to Color.Transparent,
+          1f to Color.Black.copy(alpha = 0.42f),
           center = center,
-          radius = size.maxDimension * 0.62f,
+          radius = size.maxDimension * 0.65f,
         ),
       )
     }
@@ -153,41 +228,94 @@ private fun MpviumSplashFrame(progress: Float) {
       verticalArrangement = Arrangement.Center,
       modifier = Modifier.fillMaxSize(),
     ) {
-      Image(
-        painter = painterResource(R.drawable.ic_launcher_foreground),
-        contentDescription = null,
+      // Hero Emblem with Apple-style specular light sheen
+      Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-          .size(120.dp)
+          .size(124.dp)
           .offset(y = emblemRiseDp.dp)
           .scale(emblemScale)
-          .alpha(emblemAlpha),
-      )
+          .alpha(emblemAlpha)
+          .clipToBounds(),
+      ) {
+        Image(
+          painter = painterResource(R.drawable.ic_launcher_foreground),
+          contentDescription = null,
+          modifier = Modifier.fillMaxSize(),
+        )
 
-      Spacer(modifier = Modifier.height(32.dp))
+        // Specular glint sweeping across the glyph
+        if (sheenAlpha > 0.001f) {
+          Canvas(modifier = Modifier.fillMaxSize()) {
+            val sheenProgressOffset = lerp(-size.width * 0.7f, size.width * 1.7f, sheenP)
+            rotate(degrees = -25f, pivot = center) {
+              drawRect(
+                brush = Brush.horizontalGradient(
+                  0f to Color.Transparent,
+                  0.35f to Color.White.copy(alpha = 0.08f * sheenAlpha),
+                  0.50f to Color.White.copy(alpha = 0.38f * sheenAlpha),
+                  0.65f to Color.White.copy(alpha = 0.08f * sheenAlpha),
+                  1f to Color.Transparent,
+                  startX = sheenProgressOffset - size.width * 0.35f,
+                  endX = sheenProgressOffset + size.width * 0.35f,
+                ),
+              )
+            }
+          }
+        }
+      }
 
-      // Editorial wordmark: wide-set type tightening as letters land.
+      Spacer(modifier = Modifier.height(28.dp))
+
+      // Wordmark: Bold pure-white "mpv" + frosted lavender "ium"
       Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.alpha(emblemP),
+        modifier = Modifier
+          .offset(y = wordmarkRiseDp.dp)
+          .alpha(wordmarkP),
       ) {
-        WORDMARK.forEachIndexed { index, char ->
-          val letterStart = 0.30f + index * 0.04f
-          val letterP = EnterEasing.transform(phase(progress, letterStart, letterStart + 0.22f))
-          Text(
-            text = char.toString(),
-            style = MaterialTheme.typography.headlineLarge.copy(
-              fontWeight = FontWeight.Medium,
-              fontSize = 36.sp,
-              letterSpacing = (trackingEm * 36f).sp,
-            ),
-            color = Color.White.copy(alpha = 0.92f),
-            modifier = Modifier
-              .offset(y = lerp(10f, 0f, letterP).dp)
-              .alpha(letterP),
-          )
-        }
+        Text(
+          text = buildAnnotatedString {
+            withStyle(
+              SpanStyle(
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+              )
+            ) {
+              append("mpv")
+            }
+            withStyle(
+              SpanStyle(
+                color = Color(0xFFDDD0FC),
+                fontWeight = FontWeight.Light,
+              )
+            ) {
+              append("ium")
+            }
+          },
+          style = MaterialTheme.typography.headlineLarge.copy(
+            fontSize = 38.sp,
+            letterSpacing = (trackingEm * 38f).sp,
+          ),
+        )
       }
+
+      Spacer(modifier = Modifier.height(14.dp))
+
+      // Micro-badge: tracked pro-level subtitle
+      Text(
+        text = "PRO MEDIA PLAYER",
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontWeight = FontWeight.SemiBold,
+          fontSize = 10.5.sp,
+          letterSpacing = 3.6.sp,
+        ),
+        color = Color(0xFFAAA0BF).copy(alpha = 0.75f * taglineP),
+        modifier = Modifier
+          .offset(y = taglineRiseDp.dp)
+          .alpha(taglineP),
+      )
     }
   }
 }
@@ -197,10 +325,26 @@ private fun phase(progress: Float, start: Float, end: Float): Float =
 
 private fun lerp(from: Float, to: Float, t: Float): Float = from + (to - from) * t
 
-@Preview(showBackground = true, backgroundColor = 0xFF060609)
+@Preview(name = "Splash Entrance", showBackground = true, backgroundColor = 0xFF060609)
 @Composable
-private fun MpviumSplashPreview() {
+private fun MpviumSplashPreviewEntrance() {
   MaterialTheme {
-    MpviumSplashFrame(progress = 0.7f)
+    MpviumSplashFrame(progress = 0.25f)
+  }
+}
+
+@Preview(name = "Splash Settle & Sheen", showBackground = true, backgroundColor = 0xFF060609)
+@Composable
+private fun MpviumSplashPreviewSettle() {
+  MaterialTheme {
+    MpviumSplashFrame(progress = 0.52f)
+  }
+}
+
+@Preview(name = "Splash Portal Exit", showBackground = true, backgroundColor = 0xFF060609)
+@Composable
+private fun MpviumSplashPreviewExit() {
+  MaterialTheme {
+    MpviumSplashFrame(progress = 0.94f)
   }
 }
