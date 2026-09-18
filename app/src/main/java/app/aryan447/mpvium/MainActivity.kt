@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
@@ -41,6 +42,7 @@ import app.aryan447.mpvium.utils.update.UpdateDialog
 import app.aryan447.mpvium.utils.update.UpdateViewModel
 import app.aryan447.mpvium.ui.browser.MainScreen
 import app.aryan447.mpvium.ui.onboarding.OnboardingScreen
+import app.aryan447.mpvium.ui.splash.MpviumSplashGate
 import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.MpviumTheme
 import app.aryan447.mpvium.ui.utils.LocalBackStack
@@ -71,6 +73,10 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    // System splash is a static emblem frame; dismiss it the moment the first
+    // frame draws so the choreographed in-app splash owns all motion.
+    installSplashScreen().setOnExitAnimationListener { it.remove() }
+
     super.onCreate(savedInstanceState)
 
     handleShortcutIntent(intent)
@@ -108,7 +114,9 @@ class MainActivity : ComponentActivity() {
 
       MpviumTheme {
         Surface {
-          Navigator()
+          MpviumSplashGate {
+            Navigator()
+          }
         }
       }
     }

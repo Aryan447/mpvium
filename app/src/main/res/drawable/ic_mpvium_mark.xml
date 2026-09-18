@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="68dp"
+    android:height="86dp"
+    android:viewportWidth="475"
+    android:viewportHeight="600">
+
+    <!-- Soft ambient shadow beneath the play glyph -->
+    <path
+        android:pathData="M 0.00,113.97 L 0.00,502.03 A 60.00,60.00 0 0,0 90.87,553.48 L 414.25,359.45 A 60.00,60.00 0 0,0 414.25,256.55 L 90.87,62.52 A 60.00,60.00 0 0,0 0.00,113.97 Z"
+        android:fillColor="#22000000" />
+
+    <!-- Mathematically pristine, perfectly rounded streaming play glyph -->
+    <path
+        android:pathData="M 0.00,105.97 L 0.00,494.03 A 60.00,60.00 0 0,0 90.87,545.48 L 414.25,351.45 A 60.00,60.00 0 0,0 414.25,248.55 L 90.87,54.52 A 60.00,60.00 0 0,0 0.00,105.97 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="50"
+                android:endX="450"
+                android:endY="550"
+                android:startColor="#FF416C"
+                android:centerColor="#8A2BE2"
+                android:endColor="#00D2FF" />
+        </aapt:attr>
+    </path>
+</vector>

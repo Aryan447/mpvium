@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch background. Near-black flagship canvas shared by the system
+        splash theme and the in-app splash so the handoff has no flash.
+        Separate from ic_launcher_background, which belongs to the icon. -->
+    <color name="splash_background">#060609</color>
+</resources>
