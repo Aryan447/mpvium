@@ -102,10 +102,9 @@ fun glassHazeStyle(
     GlassKind.Bar -> GlassTokens.blurRadius
   }
   val base = glassFrostColor(isDark = isDark, kind = kind)
-  val tint = if (isDark) Color.White.copy(alpha = 0.03f) else null
   return HazeStyle(
     backgroundColor = base,
-    tint = tint,
+    tint = null,
     blurRadius = blur,
   )
 }
