@@ -66,6 +66,10 @@ import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassBackdrop
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassNavigationBarItemColors
+import app.aryan447.mpvium.ui.theme.glassNavigationRailItemColors
+import app.aryan447.mpvium.ui.theme.glassRimBrush
+import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
@@ -150,7 +154,8 @@ object MainScreen : Screen {
         label = if (showLabels) ({ Text(tab.label) }) else null,
         alwaysShowLabel = showLabels,
         selected = selectedCanonicalIndex == tab.canonicalIndex,
-        onClick = { onSelectTab(tab.canonicalIndex) }
+        onClick = { onSelectTab(tab.canonicalIndex) },
+        colors = glassNavigationBarItemColors(),
       )
     }
   }
@@ -293,10 +298,11 @@ object MainScreen : Screen {
                     color = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 6.dp,
                     shadowElevation = 8.dp,
-                    border = BorderStroke(
-                      1.dp,
-                      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    ),
+                    border = if (isGlass) {
+                      BorderStroke(1.dp, glassRimBrush(isDark))
+                    } else {
+                      BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    },
                   ) {
                     NavigationBar(
                       modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -363,6 +369,7 @@ object MainScreen : Screen {
                   style = glassHazeStyle(isDark = isDark, kind = GlassKind.Card),
                   shape = RoundedCornerShape(24.dp),
                   enabled = isGlass,
+                  rim = true,
                 ),
                 containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surface,
               ) {
@@ -372,7 +379,8 @@ object MainScreen : Screen {
                     label = if (showBottomNavLabels) ({ Text(tab.label) }) else null,
                     alwaysShowLabel = showBottomNavLabels,
                     selected = selectedTabId == tab.canonicalIndex,
-                    onClick = { selectTab(tab.canonicalIndex) }
+                    onClick = { selectTab(tab.canonicalIndex) },
+                    colors = glassNavigationRailItemColors(),
                   )
                 }
               }

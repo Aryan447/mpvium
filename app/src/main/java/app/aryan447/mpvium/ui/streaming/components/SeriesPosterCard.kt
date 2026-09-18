@@ -36,11 +36,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.LocalAppTheme
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
+import app.aryan447.mpvium.ui.theme.glassRimBrush
 
 @Composable
 fun SeriesPosterCard(
@@ -89,27 +93,38 @@ private fun SeriesPosterCard(
       }),
   ) {
     // Poster (2:3 Aspect Ratio)
+    val isGlass = LocalGlass.current
+    val dark = isSystemInDarkTheme()
     Box(
       modifier = Modifier
         .fillMaxWidth()
         .aspectRatio(2f / 3f)
         .clip(RoundedCornerShape(14.dp))
         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-        .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier),
+        .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier)
+        .then(
+          if (isGlass) {
+            Modifier.border(1.dp, glassRimBrush(dark), RoundedCornerShape(14.dp))
+          } else {
+            Modifier
+          }
+        ),
     ) {
       image()
 
-      // Gradient overlay at the bottom of the poster
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .background(
-            Brush.verticalGradient(
-              0.65f to Color.Transparent,
-              1.0f to Color.Black.copy(alpha = 0.75f),
+      // Gradient overlay at the bottom of the poster: removed in Glass theme
+      if (!isGlass) {
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .background(
+              Brush.verticalGradient(
+                0.65f to Color.Transparent,
+                1.0f to Color.Black.copy(alpha = 0.75f),
+              )
             )
-          )
-      )
+        )
+      }
 
       // Rating Badge (Top-End)
       if (series.rating != null && series.rating > 0f) {

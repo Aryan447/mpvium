@@ -36,10 +36,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.LocalAppTheme
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
+import app.aryan447.mpvium.ui.theme.glassRimBrush
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -66,13 +70,22 @@ fun MoviePosterCard(
       ),
   ) {
     // Poster (2:3 Aspect Ratio)
+    val isGlass = LocalGlass.current
+    val dark = isSystemInDarkTheme()
     Box(
       modifier = Modifier
         .fillMaxWidth()
         .aspectRatio(2f / 3f)
         .clip(RoundedCornerShape(14.dp))
         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-        .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier),
+        .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier)
+        .then(
+          if (isGlass) {
+            Modifier.border(1.dp, glassRimBrush(dark), RoundedCornerShape(14.dp))
+          } else {
+            Modifier
+          }
+        ),
     ) {
       StreamingImage(
         url = movie.posterUrl,
@@ -82,17 +95,19 @@ fun MoviePosterCard(
         modifier = Modifier.fillMaxSize(),
       )
 
-      // Gradient overlay at the bottom
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .background(
-            Brush.verticalGradient(
-              0.65f to Color.Transparent,
-              1.0f to Color.Black.copy(alpha = 0.75f),
+      // Gradient overlay at the bottom: removed in Glass theme
+      if (!isGlass) {
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .background(
+              Brush.verticalGradient(
+                0.65f to Color.Transparent,
+                1.0f to Color.Black.copy(alpha = 0.75f),
+              )
             )
-          )
-      )
+        )
+      }
 
       // Rating Badge (Top-End)
       if (movie.rating != null && movie.rating > 0f) {

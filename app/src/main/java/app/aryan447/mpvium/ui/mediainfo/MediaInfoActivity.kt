@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -65,8 +66,11 @@ import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.MpviumTheme
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.utils.media.MediaInfoOps
 import kotlinx.coroutines.Dispatchers
@@ -234,9 +238,18 @@ class MediaInfoActivity : ComponentActivity() {
                       copyToClipboard(textContent!!, fileName)
                     }
                   },
+                  modifier = if (LocalGlass.current) {
+                    Modifier.size(48.dp).glassSheen(CircleShape, true)
+                  } else {
+                    Modifier
+                  },
                   colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = glassButtonContainerColor(
+                      MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                    contentColor = glassButtonContentColor(
+                      MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
                   ),
                 ) {
                   Icon(
@@ -253,9 +266,18 @@ class MediaInfoActivity : ComponentActivity() {
                       shareMediaInfo(textContent!!, fileName, fileUri)
                     }
                   },
+                  modifier = if (LocalGlass.current) {
+                    Modifier.size(48.dp).glassSheen(CircleShape, true)
+                  } else {
+                    Modifier
+                  },
                   colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = glassButtonContainerColor(
+                      MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                    contentColor = glassButtonContentColor(
+                      MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
                   ),
                 ) {
                   Icon(

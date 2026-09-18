@@ -30,8 +30,10 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.isSystemInDarkTheme
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassCardColors
+import app.aryan447.mpvium.ui.theme.glassRimStroke
 import app.aryan447.mpvium.ui.theme.spacing
 
 @SuppressLint("UnrememberedMutableState")
@@ -59,11 +61,12 @@ fun ExpandableCard(
 ) {
   val rotationState by animateFloatAsState(if (isExpanded) 0f else 180f, label = "card_rotation")
   val isGlass = LocalGlass.current
+  val dark = isSystemInDarkTheme()
   Card(
     modifier = modifier.animateContentSize(),
     colors = if (isGlass) glassCardColors() else colors,
     shape = shape,
-    border = border,
+    border = if (isGlass) glassRimStroke(dark) else border,
     elevation = elevation,
   ) {
     Row(

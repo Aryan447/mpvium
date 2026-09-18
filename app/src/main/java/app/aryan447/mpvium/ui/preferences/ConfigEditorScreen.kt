@@ -49,8 +49,11 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import java.io.File
@@ -187,11 +190,14 @@ data class ConfigEditorScreen(
             Icon(
               Icons.AutoMirrored.Default.ArrowBack,
               contentDescription = "Back",
-              tint = MaterialTheme.colorScheme.onPrimaryContainer,
+              tint = glassButtonContentColor(MaterialTheme.colorScheme.onPrimaryContainer),
               modifier =
                 Modifier
                   .clip(RoundedCornerShape(14.dp))
-                  .background(MaterialTheme.colorScheme.primaryContainer)
+                  .background(
+                    glassButtonContainerColor(MaterialTheme.colorScheme.primaryContainer),
+                  )
+                  .glassSheen(RoundedCornerShape(14.dp), isGlass)
                   .padding(8.dp),
             )
           }
@@ -200,14 +206,31 @@ data class ConfigEditorScreen(
           IconButton(
             onClick  = { saveConfig() },
             enabled  = hasUnsavedChanges,
-            modifier = Modifier.padding(horizontal = 12.dp).size(40.dp),
+            modifier = Modifier
+              .padding(horizontal = 12.dp)
+              .size(40.dp)
+              .glassSheen(RoundedCornerShape(8.dp), isGlass),
             colors   = IconButtonDefaults.iconButtonColors(
-              containerColor        = if (hasUnsavedChanges) MaterialTheme.colorScheme.primaryContainer
-                                      else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
-              contentColor          = if (hasUnsavedChanges) MaterialTheme.colorScheme.onPrimaryContainer
-                                      else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-              disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
-              disabledContentColor   = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+              containerColor        = if (hasUnsavedChanges) {
+                glassButtonContainerColor(MaterialTheme.colorScheme.primaryContainer)
+              } else {
+                glassButtonContainerColor(
+                  MaterialTheme.colorScheme.surfaceVariant,
+                ).copy(alpha = 0.38f)
+              },
+              contentColor          = if (hasUnsavedChanges) {
+                glassButtonContentColor(MaterialTheme.colorScheme.onPrimaryContainer)
+              } else {
+                glassButtonContentColor(
+                  MaterialTheme.colorScheme.onSurface,
+                ).copy(alpha = 0.38f)
+              },
+              disabledContainerColor = glassButtonContainerColor(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
+              ),
+              disabledContentColor   = glassButtonContentColor(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+              ).copy(alpha = 0.38f),
             ),
             shape = RoundedCornerShape(8.dp),
           ) {

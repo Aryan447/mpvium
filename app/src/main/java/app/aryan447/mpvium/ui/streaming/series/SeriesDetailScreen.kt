@@ -1,7 +1,9 @@
 package app.aryan447.mpvium.ui.streaming.series
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,10 +38,15 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
+import app.aryan447.mpvium.ui.theme.glassFilterChipColors
+import app.aryan447.mpvium.ui.theme.glassRimColor
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -249,17 +256,27 @@ data class SeriesDetailScreen(
                 modifier = Modifier.fillMaxSize(),
               )
 
-              // Gradient Scrim
+              // Gradient Scrim: in Glass theme, vignettes are replaced with clear liquid glass
+              val isGlass = LocalGlass.current
               Box(
                 modifier = Modifier
                   .fillMaxSize()
                   .background(
-                    Brush.verticalGradient(
-                      0.0f to Color.Black.copy(alpha = 0.35f),
-                      0.5f to Color.Black.copy(alpha = 0.40f),
-                      0.85f to MaterialTheme.colorScheme.background.copy(alpha = 0.90f),
-                      1.0f to MaterialTheme.colorScheme.background,
-                    )
+                    if (isGlass) {
+                      Brush.verticalGradient(
+                        0.0f to Color.Transparent,
+                        0.65f to Color.Transparent,
+                        0.90f to MaterialTheme.colorScheme.background.copy(alpha = 0.50f),
+                        1.0f to MaterialTheme.colorScheme.background,
+                      )
+                    } else {
+                      Brush.verticalGradient(
+                        0.0f to Color.Black.copy(alpha = 0.35f),
+                        0.5f to Color.Black.copy(alpha = 0.40f),
+                        0.85f to MaterialTheme.colorScheme.background.copy(alpha = 0.90f),
+                        1.0f to MaterialTheme.colorScheme.background,
+                      )
+                    }
                   )
               )
 
@@ -412,12 +429,18 @@ data class SeriesDetailScreen(
                   onClick = { MediaUtils.playFile(playNext.video, context, "series_detail_play") },
                   modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(48.dp)
+                    .glassSheen(RoundedCornerShape(12.dp), LocalGlass.current),
                   colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.primary),
+                    contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onPrimary),
                   ),
                   shape = RoundedCornerShape(12.dp),
+                  border = if (LocalGlass.current) {
+                    BorderStroke(1.dp, glassRimColor(isSystemInDarkTheme()))
+                  } else {
+                    null
+                  },
                 ) {
                   Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
                   Spacer(modifier = Modifier.width(8.dp))
@@ -449,7 +472,7 @@ data class SeriesDetailScreen(
                       selected = selected,
                       onClick = { selectedSeason = seasonNum },
                       label = { Text("Season $seasonNum") },
-                      colors = FilterChipDefaults.filterChipColors(
+                      colors = glassFilterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                       ),

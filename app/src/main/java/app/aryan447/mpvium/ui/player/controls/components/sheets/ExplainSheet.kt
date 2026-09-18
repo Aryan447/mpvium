@@ -42,6 +42,7 @@ import androidx.core.net.toUri
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.components.PlayerSheet
 import app.aryan447.mpvium.ui.player.PlayerViewModel
+import app.aryan447.mpvium.ui.theme.glassAssistChipColors
 import app.aryan447.mpvium.ui.theme.spacing
 
 /**
@@ -151,6 +152,7 @@ fun ExplainSheet(
                 viewModel.lookupWord(word)
               },
               label = { Text(text = word) },
+              colors = glassAssistChipColors(),
             )
           }
         }

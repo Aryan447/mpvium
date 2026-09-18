@@ -23,9 +23,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
+import app.aryan447.mpvium.ui.theme.glassFilterChipColors
+import app.aryan447.mpvium.ui.theme.glassSegmentedButtonColors
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import app.aryan447.mpvium.ui.theme.glassSliderColors
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -295,6 +297,7 @@ private fun SortOrderSelector(
           ),
         onClick = { onSortOrderChange(index == 0) },
         selected = index == selectedIndex,
+        colors = glassSegmentedButtonColors(),
         icon = {
           Icon(
             if (index == 0) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
@@ -456,6 +459,7 @@ private fun VisibilityTogglesSection(
               )
             },
             leadingIcon = null,
+            colors = glassFilterChipColors(),
           )
         }
       }
@@ -485,6 +489,7 @@ private fun GridColumnSelectorComponent(
       valueRange = gridColumnSelector.valueRange,
       steps = gridColumnSelector.steps,
       modifier = Modifier.fillMaxWidth(),
+      colors = glassSliderColors(),
     )
 
     Text(
@@ -536,6 +541,7 @@ private fun GridColumnsSection(
             valueRange = folderGridColumnSelector.valueRange,
             steps = folderGridColumnSelector.steps,
             modifier = Modifier.fillMaxWidth(),
+            colors = glassSliderColors(),
           )
           Text(
             text = "${folderGridColumnSelector.currentValue} columns",
@@ -562,6 +568,7 @@ private fun GridColumnsSection(
             valueRange = videoGridColumnSelector.valueRange,
             steps = videoGridColumnSelector.steps,
             modifier = Modifier.fillMaxWidth(),
+            colors = glassSliderColors(),
           )
           Text(
             text = "${videoGridColumnSelector.currentValue} columns",

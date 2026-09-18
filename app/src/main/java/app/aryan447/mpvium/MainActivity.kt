@@ -93,11 +93,13 @@ class MainActivity : ComponentActivity() {
       val isSystemInDarkTheme = isSystemInDarkTheme()
       val isDarkMode = dark == DarkMode.Dark || (dark == DarkMode.System && isSystemInDarkTheme)
       val isGlass = appTheme == app.aryan447.mpvium.ui.theme.AppTheme.Glass
+      val systemBarStyle = SystemBarStyle.auto(
+        lightScrim = if (isGlass) Color.Transparent.toArgb() else Color.White.toArgb(),
+        darkScrim = Color.Transparent.toArgb(),
+      ) { isDarkMode }
       enableEdgeToEdge(
-        SystemBarStyle.auto(
-          lightScrim = if (isGlass) Color.Transparent.toArgb() else Color.White.toArgb(),
-          darkScrim = Color.Transparent.toArgb(),
-        ) { isDarkMode },
+        statusBarStyle = systemBarStyle,
+        navigationBarStyle = systemBarStyle,
       )
 
       // Auto-connect to saved network connections

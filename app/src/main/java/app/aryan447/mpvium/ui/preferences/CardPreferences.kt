@@ -40,6 +40,8 @@ import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassCardColors
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassRimStroke
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 
@@ -52,18 +54,17 @@ fun PreferenceCard(
   content: @Composable ColumnScope.() -> Unit,
 ) {
   val isGlass = LocalGlass.current
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
   Card(
     modifier = modifier
       .fillMaxWidth()
-      .padding(horizontal = 16.dp, vertical = 8.dp),
+      .padding(horizontal = 16.dp, vertical = 8.dp)
+      .glassSheen(RoundedCornerShape(28.dp), isGlass),
     shape = RoundedCornerShape(28.dp),
     colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
       containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ),
-    border = if (isGlass) BorderStroke(
-      1.dp,
-      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-    ) else null,
+    border = if (isGlass) glassRimStroke(dark) else null,
     elevation = CardDefaults.cardElevation(
       defaultElevation = 0.dp,
     ),
