@@ -1,5 +1,7 @@
 package app.aryan447.mpvium.ui.theme
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
@@ -12,19 +14,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 
 /**
  * Clear Glass core kit (chrome-first).
  *
- * Current blur core: Haze 1.5.3 (Maven Central, latest).
- * The preferred true-lens library (Abdullajon1881 LiquidGlass 1.0.0) is NOT
- * yet published to Maven Central (README: "Maven Central publishing is
- * configured but not yet released"), so it cannot be a Gradle dependency
- * without breaking CI resolution. This file isolates all glass calls so the
- * lens implementation can be swapped later without touching call sites:
- * replace [glassChrome] internals with `Modifier.liquidGlass(...)` + provider.
+ * No backdrop blur: glass here is frost fill + hairline rim, deliberately NOT
+ * a live-blur lens. Live blur (Haze) smeared scrolling content behind bars
+ * and was invisible on dark surfaces, so it was removed — translucency
+ * without blur also let list text bleed through dialogs. The Haze dependency
+ * is retained (types only) in case a true-lens library lands on Maven Central
+ * later; see the progress tracker. Preferred lens candidates
+ * (Abdullajon1881 LiquidGlass 1.0.0, Haze 2.x `haze-glass` beta) are NOT
+ * yet published to Maven Central, so neither can be a Gradle dependency
+ * without breaking CI resolution.
  */
 enum class GlassKind {
   Bar,
@@ -34,17 +36,21 @@ enum class GlassKind {
 }
 
 object GlassTokens {
-  // CLEAR look: low blur + low alpha so content stays readable behind chrome.
-  // Previously 24dp/20dp read as frosted; 12dp/8dp keeps the refractive
-  // edge without milky blur.
+  // CLEAR look: low alpha so content stays readable behind chrome, with a
+  // hairline rim for definition. Dark-theme frost is white-based so glass
+  // stays visible over near-black surfaces (black-on-black was invisible).
+  // Sheets/dialogs are near-opaque veils: body text must never collide with
+  // content showing through.
   val blurRadius: Dp = 12.dp
   val chipBlurRadius: Dp = 8.dp
   val cardBlurRadius: Dp = 10.dp
   // Translucent fills — neutral black/white bases, no blue tint.
   const val lightSurfaceAlpha: Float = 0.32f
-  const val darkSurfaceAlpha: Float = 0.28f
+  const val darkSurfaceAlpha: Float = 0.22f
   const val lightCardAlpha: Float = 0.28f
-  const val darkCardAlpha: Float = 0.24f
+  const val darkCardAlpha: Float = 0.20f
+  const val lightSheetAlpha: Float = 0.68f
+  const val darkSheetAlpha: Float = 0.60f
   const val tintAlpha: Float = 0.04f
   const val rimAlpha: Float = 0.35f
   const val highlightAlpha: Float = 0.18f
@@ -57,18 +63,20 @@ val LocalGlass = compositionLocalOf { false }
 
 val GlassHazeBlurRadius: Dp = GlassTokens.blurRadius
 
+/** Retained no-op state holder (blur removed): keeps call sites unchanged. */
 @Composable
 fun rememberGlassHazeState(): HazeState = remember { HazeState() }
 
-/** Mark scrolling/content backdrop so glass above can sample it. No-op if glass off. */
+/**
+ * Former backdrop-blur source marker. Now a pass-through (no blur anywhere):
+ * kept so call sites don't churn if a lens ever returns.
+ */
 fun Modifier.glassBackdrop(
   state: HazeState,
   enabled: Boolean,
-): Modifier = composed {
-  if (enabled) hazeSource(state = state) else this
-}
+): Modifier = this
 
-/** Haze style for clear glass: translucent neutral base + light blur. */
+/** Frost fill for clear glass: style background only (no blur is applied). */
 @Composable
 fun glassHazeStyle(
   isDark: Boolean,
@@ -79,18 +87,10 @@ fun glassHazeStyle(
     GlassKind.Card, GlassKind.Sheet -> GlassTokens.cardBlurRadius
     GlassKind.Bar -> GlassTokens.blurRadius
   }
-  val alpha = when (kind) {
-    GlassKind.Card, GlassKind.Sheet ->
-      if (isDark) GlassTokens.darkCardAlpha else GlassTokens.lightCardAlpha
-    else ->
-      if (isDark) GlassTokens.darkSurfaceAlpha else GlassTokens.lightSurfaceAlpha
-  }
-  // Neutral bases: pure black in dark, white in light. No blue tint.
-  val base = if (isDark) {
-    Color.Black.copy(alpha = alpha)
-  } else {
-    Color.White.copy(alpha = alpha)
-  }
+  // White-based frost in dark theme so glass reads over black surfaces;
+  // sheets stay dark veils so dialog text never collides with show-through.
+  // (blurRadius is retained on the style but no blur modifier reads it.)
+  val base = glassFrostColor(isDark = isDark, kind = kind)
   return HazeStyle(
     backgroundColor = base,
     tint = null,
@@ -99,36 +99,64 @@ fun glassHazeStyle(
 }
 
 /**
- * Clear-glass chrome modifier: backdrop blur + translucent tint.
- * Falls back to plain translucent surface color when [enabled] is false
- * (non-glass themes must keep their existing opaque behavior at call sites).
+ * Clear-glass chrome modifier: frost fill + optional hairline rim.
+ * No backdrop blur is applied anywhere. Falls back to the call site's own
+ * container when [enabled] is false (non-glass themes must keep their
+ * existing opaque behavior at call sites).
  */
 fun Modifier.glassChrome(
   state: HazeState,
   style: HazeStyle,
   shape: RoundedCornerShape = GlassTokens.pillShape,
   enabled: Boolean,
+  rim: Boolean = false,
 ): Modifier = composed {
   if (!enabled) return@composed this
   clip(shape)
-    .hazeEffect(state = state, style = style)
+    .background(style.backgroundColor, shape)
+    .then(
+      if (rim) {
+        Modifier.border(
+          1.dp,
+          glassRimColor(androidx.compose.foundation.isSystemInDarkTheme()),
+          shape,
+        )
+      } else {
+        Modifier
+      },
+    )
 }
 
 /**
- * Frost fallback for surfaces that have no HazeState in scope (cards,
- * dialogs, sheets, dropdowns). Gives the same clear neutral translucency
- * as [glassChrome] without live blur, so glass reads consistently
- * throughout the UI even before per-screen HazeState refactors.
+ * Frost fill used by every glass surface ([glassChrome] reads it off the
+ * style; funnels below call it directly). White-based in dark theme so glass
+ * stays visible over black; sheets are dark veils so dialog text stays
+ * readable with zero background bleed.
  */
 @Composable
 fun glassFrostColor(isDark: Boolean, kind: GlassKind = GlassKind.Card): Color {
-  val alpha = when (kind) {
-    GlassKind.Chip -> if (isDark) 0.20f else 0.26f
-    GlassKind.Bar -> if (isDark) GlassTokens.darkSurfaceAlpha else GlassTokens.lightSurfaceAlpha
-    GlassKind.Card, GlassKind.Sheet ->
-      if (isDark) GlassTokens.darkCardAlpha else GlassTokens.lightCardAlpha
+  return when (kind) {
+    GlassKind.Chip -> if (isDark) {
+      Color.White.copy(alpha = 0.16f)
+    } else {
+      Color.White.copy(alpha = 0.26f)
+    }
+    GlassKind.Bar -> if (isDark) {
+      Color.White.copy(alpha = GlassTokens.darkSurfaceAlpha)
+    } else {
+      Color.White.copy(alpha = GlassTokens.lightSurfaceAlpha)
+    }
+    GlassKind.Card -> if (isDark) {
+      Color.White.copy(alpha = GlassTokens.darkCardAlpha)
+    } else {
+      Color.White.copy(alpha = GlassTokens.lightCardAlpha)
+    }
+    GlassKind.Sheet -> if (isDark) {
+      Color.Black.copy(alpha = GlassTokens.darkSheetAlpha)
+    } else {
+      Color.White.copy(alpha = GlassTokens.lightSheetAlpha)
+    }
   }
-  return if (isDark) Color.Black.copy(alpha = alpha) else Color.White.copy(alpha = alpha)
 }
 
 /** Neutral hairline rim for glass surfaces. */
@@ -159,9 +187,9 @@ fun glassPlayerAlpha(default: Float = 0.55f, glass: Float = 0.22f): Float =
   if (LocalGlass.current) glass else default
 
 /**
- * Sheet container: clear frost for Glass, standard M3 surface
+ * Sheet container: dark veil for Glass, standard M3 surface
  * otherwise. Single funnel for ModalBottomSheet / PlayerSheet / dialog
- * surfaces so sheets read as glass without per-screen Haze states.
+ * surfaces so sheets stay readable with no background bleed.
  */
 @Composable
 fun glassSheetContainerColor(fallback: Color): Color {
@@ -175,14 +203,14 @@ fun glassSheetContainerColor(fallback: Color): Color {
 fun glassMenuContainerColor(fallback: Color): Color {
   if (!LocalGlass.current) return fallback
   val dark = androidx.compose.foundation.isSystemInDarkTheme()
-  // Menus float over content: slightly more opaque than cards for readability.
-  return glassFrostColor(isDark = dark, kind = GlassKind.Card)
+  // Menus float over busy lists: sheet-grade veil so items stay readable.
+  return glassFrostColor(isDark = dark, kind = GlassKind.Sheet)
 }
 
 /**
  * Button container: clear frost for Glass, [fallback] otherwise. Single funnel
  * for hero/detail Play + Details actions sitting over backdrop art so buttons
- * read as glass without per-screen Haze states (frost-appropriate, like FABs).
+ * read as glass (frost fill + rim, no blur).
  */
 @Composable
 fun glassButtonContainerColor(fallback: Color): Color {

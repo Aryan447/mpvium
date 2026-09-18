@@ -371,6 +371,7 @@ object MainScreen : Screen {
                   style = glassHazeStyle(isDark = isDark, kind = GlassKind.Card),
                   shape = RoundedCornerShape(24.dp),
                   enabled = isGlass,
+                  rim = true,
                 ),
                 containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surface,
               ) {

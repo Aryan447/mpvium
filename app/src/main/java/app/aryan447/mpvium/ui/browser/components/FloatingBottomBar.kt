@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
@@ -71,7 +73,8 @@ fun BrowserBottomBar(
   ) {
     val isGlass = LocalGlass.current
     // Always remember the fallback so hooks stay unconditional; the shared
-    // screen state (when provided) takes precedence for live blur.
+    // screen state (when provided) takes precedence. Blur is removed: the
+    // style below only supplies the frost fill, never a blur lens.
     val fallbackHaze = rememberGlassHazeState()
     val fallbackStyle = glassHazeStyle(
       isDark = isSystemInDarkTheme(),
@@ -88,6 +91,7 @@ fun BrowserBottomBar(
           style = effectiveStyle,
           shape = RoundedCornerShape(32.dp),
           enabled = isGlass,
+          rim = true,
         ),
       shape = RoundedCornerShape(32.dp),
       color = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -103,8 +107,12 @@ fun BrowserBottomBar(
           enabled = showCopy,
           modifier = Modifier.size(50.dp),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            containerColor = glassButtonContainerColor(
+              MaterialTheme.colorScheme.secondaryContainer,
+            ),
+            contentColor = glassButtonContentColor(
+              MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
           )
         ) {
           Icon(
@@ -119,8 +127,12 @@ fun BrowserBottomBar(
           enabled = showMove,
           modifier = Modifier.size(50.dp),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            containerColor = glassButtonContainerColor(
+              MaterialTheme.colorScheme.secondaryContainer,
+            ),
+            contentColor = glassButtonContentColor(
+              MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
           )
         ) {
           Icon(
@@ -135,8 +147,12 @@ fun BrowserBottomBar(
           enabled = showRename,
           modifier = Modifier.size(50.dp),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            containerColor = glassButtonContainerColor(
+              MaterialTheme.colorScheme.secondaryContainer,
+            ),
+            contentColor = glassButtonContentColor(
+              MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
           )
         ) {
           Icon(
@@ -150,7 +166,14 @@ fun BrowserBottomBar(
           onClick = onAddToPlaylistClick,
           enabled = showAddToPlaylist,
           modifier = Modifier.size(50.dp),
-          colors = IconButtonDefaults.filledTonalIconButtonColors()
+          colors = IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = glassButtonContainerColor(
+              MaterialTheme.colorScheme.secondaryContainer,
+            ),
+            contentColor = glassButtonContentColor(
+              MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+          )
         ) {
           Icon(
             Icons.AutoMirrored.Filled.PlaylistAdd,
@@ -164,7 +187,12 @@ fun BrowserBottomBar(
           enabled = showDelete,
           modifier = Modifier.size(50.dp),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
+            // Danger signal survives glass: error hue at glass alpha.
+            containerColor = if (isGlass) {
+              MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)
+            } else {
+              MaterialTheme.colorScheme.errorContainer
+            },
             contentColor = MaterialTheme.colorScheme.onErrorContainer
           )
         ) {
