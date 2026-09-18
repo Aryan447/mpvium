@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
@@ -33,6 +34,7 @@ import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import androidx.compose.foundation.isSystemInDarkTheme
 import dev.chrisbanes.haze.HazeState
@@ -105,7 +107,7 @@ fun BrowserBottomBar(
         FilledTonalIconButton(
           onClick = onCopyClick,
           enabled = showCopy,
-          modifier = Modifier.size(50.dp),
+          modifier = Modifier.size(50.dp).glassSheen(CircleShape, isGlass),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = glassButtonContainerColor(
               MaterialTheme.colorScheme.secondaryContainer,
@@ -125,7 +127,7 @@ fun BrowserBottomBar(
         FilledTonalIconButton(
           onClick = onMoveClick,
           enabled = showMove,
-          modifier = Modifier.size(50.dp),
+          modifier = Modifier.size(50.dp).glassSheen(CircleShape, isGlass),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = glassButtonContainerColor(
               MaterialTheme.colorScheme.secondaryContainer,
@@ -145,7 +147,7 @@ fun BrowserBottomBar(
         FilledTonalIconButton(
           onClick = onRenameClick,
           enabled = showRename,
-          modifier = Modifier.size(50.dp),
+          modifier = Modifier.size(50.dp).glassSheen(CircleShape, isGlass),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = glassButtonContainerColor(
               MaterialTheme.colorScheme.secondaryContainer,
@@ -165,7 +167,7 @@ fun BrowserBottomBar(
         FilledTonalIconButton(
           onClick = onAddToPlaylistClick,
           enabled = showAddToPlaylist,
-          modifier = Modifier.size(50.dp),
+          modifier = Modifier.size(50.dp).glassSheen(CircleShape, isGlass),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = glassButtonContainerColor(
               MaterialTheme.colorScheme.secondaryContainer,
@@ -185,7 +187,7 @@ fun BrowserBottomBar(
         FilledTonalIconButton(
           onClick = onDeleteClick,
           enabled = showDelete,
-          modifier = Modifier.size(50.dp),
+          modifier = Modifier.size(50.dp).glassSheen(CircleShape, isGlass),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
             // Danger signal survives glass: error hue at glass alpha.
             containerColor = if (isGlass) {

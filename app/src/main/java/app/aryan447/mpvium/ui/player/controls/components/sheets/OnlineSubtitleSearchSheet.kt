@@ -30,7 +30,9 @@ import app.aryan447.mpvium.presentation.components.PlayerSheet
 import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.collections.immutable.ImmutableList
@@ -661,7 +663,9 @@ fun SeriesDetailsSection(
                   FilledTonalButton(
                       onClick = { seasonDropdownExpanded.value = true },
                       contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                      modifier = Modifier.height(38.dp),
+                      modifier = Modifier
+                        .height(38.dp)
+                        .glassSheen(RoundedCornerShape(8.dp), LocalGlass.current),
                       shape = RoundedCornerShape(8.dp),
                       colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = glassButtonContainerColor(
@@ -711,7 +715,9 @@ fun SeriesDetailsSection(
                       onClick = { episodeDropdownExpanded.value = true },
                       enabled = selectedSeason != null && !isFetchingEpisodes,
                       contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                      modifier = Modifier.height(38.dp),
+                      modifier = Modifier
+                        .height(38.dp)
+                        .glassSheen(RoundedCornerShape(8.dp), LocalGlass.current),
                       shape = RoundedCornerShape(8.dp),
                       colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = glassButtonContainerColor(

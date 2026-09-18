@@ -53,6 +53,7 @@ import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import java.io.File
@@ -196,6 +197,7 @@ data class ConfigEditorScreen(
                   .background(
                     glassButtonContainerColor(MaterialTheme.colorScheme.primaryContainer),
                   )
+                  .glassSheen(RoundedCornerShape(14.dp), isGlass)
                   .padding(8.dp),
             )
           }
@@ -204,7 +206,10 @@ data class ConfigEditorScreen(
           IconButton(
             onClick  = { saveConfig() },
             enabled  = hasUnsavedChanges,
-            modifier = Modifier.padding(horizontal = 12.dp).size(40.dp),
+            modifier = Modifier
+              .padding(horizontal = 12.dp)
+              .size(40.dp)
+              .glassSheen(RoundedCornerShape(8.dp), isGlass),
             colors   = IconButtonDefaults.iconButtonColors(
               containerColor        = if (hasUnsavedChanges) {
                 glassButtonContainerColor(MaterialTheme.colorScheme.primaryContainer)

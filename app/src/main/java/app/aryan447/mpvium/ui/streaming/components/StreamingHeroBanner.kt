@@ -50,6 +50,7 @@ import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassRimColor
+import app.aryan447.mpvium.ui.theme.glassSheen
 
 @Composable
 fun StreamingHeroBanner(
@@ -301,7 +302,10 @@ fun StreamingHeroBanner(
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onPlayClick()
           },
-          modifier = Modifier.weight(1f).height(44.dp),
+          modifier = Modifier
+            .weight(1f)
+            .height(44.dp)
+            .glassSheen(RoundedCornerShape(12.dp), isGlass),
           colors = ButtonDefaults.buttonColors(
             containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.primary),
             contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onPrimary),
@@ -324,7 +328,9 @@ fun StreamingHeroBanner(
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onDetailsClick()
           },
-          modifier = Modifier.height(44.dp),
+          modifier = Modifier
+            .height(44.dp)
+            .glassSheen(RoundedCornerShape(12.dp), isGlass),
           shape = RoundedCornerShape(12.dp),
           colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),

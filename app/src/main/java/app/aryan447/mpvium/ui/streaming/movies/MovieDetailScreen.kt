@@ -37,6 +37,7 @@ import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassRimColor
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -411,7 +412,8 @@ data class MovieDetailScreen(
                 onClick = { MediaUtils.playFile(currentMovie.video, context, "movie_detail_play") },
                 modifier = Modifier
                   .fillMaxWidth()
-                  .height(48.dp),
+                  .height(48.dp)
+                  .glassSheen(RoundedCornerShape(12.dp), LocalGlass.current),
                 colors = ButtonDefaults.buttonColors(
                   containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.primary),
                   contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onPrimary),

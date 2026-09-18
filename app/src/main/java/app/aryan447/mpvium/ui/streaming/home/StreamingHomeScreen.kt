@@ -56,6 +56,7 @@ import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.glassRimColor
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.glassSearchBarColors
 import androidx.compose.material3.Surface
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
@@ -219,6 +220,7 @@ object StreamingHomeScreen : Screen {
                 .clip(CircleShape)
                 .background(glassFrostColor(isDark = dark, kind = GlassKind.Chip))
                 .border(1.dp, glassRimColor(dark), CircleShape)
+                .glassSheen(CircleShape, true)
               IconButton(
                 onClick = { viewModel.refreshMetadata() },
                 modifier = if (isGlass) iconGlass else Modifier,

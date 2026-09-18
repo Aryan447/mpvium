@@ -7,7 +7,10 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
@@ -45,12 +48,15 @@ object GlassTokens {
   val chipBlurRadius: Dp = 8.dp
   val cardBlurRadius: Dp = 10.dp
   // Translucent fills — neutral black/white bases, no blue tint.
+  // Dark Chip/Bar carry a little extra milk so the gloss gradient reads.
   const val lightSurfaceAlpha: Float = 0.32f
-  const val darkSurfaceAlpha: Float = 0.22f
+  const val darkSurfaceAlpha: Float = 0.26f
   const val lightCardAlpha: Float = 0.28f
   const val darkCardAlpha: Float = 0.20f
   const val lightSheetAlpha: Float = 0.68f
   const val darkSheetAlpha: Float = 0.60f
+  const val glossBoost: Float = 0.12f
+  const val glossOverlayAlpha: Float = 0.14f
   const val tintAlpha: Float = 0.04f
   const val rimAlpha: Float = 0.35f
   const val highlightAlpha: Float = 0.18f
@@ -99,10 +105,11 @@ fun glassHazeStyle(
 }
 
 /**
- * Clear-glass chrome modifier: frost fill + optional hairline rim.
- * No backdrop blur is applied anywhere. Falls back to the call site's own
- * container when [enabled] is false (non-glass themes must keep their
- * existing opaque behavior at call sites).
+ * Clear-glass chrome modifier: gloss-gradient frost fill + optional hairline
+ * rim. The fill is brightest at the top edge and settles to the base frost
+ * below, which is what reads as curved glass. No backdrop blur is applied
+ * anywhere. Falls back to the call site's own container when [enabled] is
+ * false (non-glass themes must keep their existing opaque behavior).
  */
 fun Modifier.glassChrome(
   state: HazeState,
@@ -112,8 +119,14 @@ fun Modifier.glassChrome(
   rim: Boolean = false,
 ): Modifier = composed {
   if (!enabled) return@composed this
+  val base = style.backgroundColor
+  val gloss = Brush.verticalGradient(
+    0.0f to base.copy(alpha = (base.alpha + GlassTokens.glossBoost).coerceAtMost(0.6f)),
+    0.4f to base,
+    1.0f to base.copy(alpha = base.alpha * 0.6f),
+  )
   clip(shape)
-    .background(style.backgroundColor, shape)
+    .background(gloss, shape)
     .then(
       if (rim) {
         Modifier.border(
@@ -128,6 +141,30 @@ fun Modifier.glassChrome(
 }
 
 /**
+ * Specular gloss overlay for M3 components whose fill comes from a
+ * `*Colors` object (buttons, icon buttons) rather than [glassChrome]:
+ * draws content first, then a top-weighted white sheen clipped to [shape].
+ * Kept faint so labels stay readable; skip on body-text surfaces.
+ */
+fun Modifier.glassSheen(
+  shape: Shape,
+  enabled: Boolean,
+): Modifier = composed {
+  if (!enabled) return@composed this
+  clip(shape)
+    .drawWithContent {
+      drawContent()
+      drawRect(
+        brush = Brush.verticalGradient(
+          0.0f to Color.White.copy(alpha = GlassTokens.glossOverlayAlpha),
+          0.55f to Color.Transparent,
+        ),
+        size = size,
+      )
+    }
+}
+
+/**
  * Frost fill used by every glass surface ([glassChrome] reads it off the
  * style; funnels below call it directly). White-based in dark theme so glass
  * stays visible over black; sheets are dark veils so dialog text stays
@@ -137,7 +174,7 @@ fun Modifier.glassChrome(
 fun glassFrostColor(isDark: Boolean, kind: GlassKind = GlassKind.Card): Color {
   return when (kind) {
     GlassKind.Chip -> if (isDark) {
-      Color.White.copy(alpha = 0.16f)
+      Color.White.copy(alpha = 0.20f)
     } else {
       Color.White.copy(alpha = 0.26f)
     }

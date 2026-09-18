@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -49,8 +50,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
+import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.utils.storage.StorageVolumeUtils
 import java.io.File
@@ -463,7 +466,7 @@ private fun NavigationButtons(
   if (selectedPath != null) {
     FilledTonalIconButton(
       onClick = onBack,
-      modifier = Modifier.size(buttonSize),
+      modifier = Modifier.size(buttonSize).glassSheen(CircleShape, LocalGlass.current),
       colors = IconButtonDefaults.filledTonalIconButtonColors(
         containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
         contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
@@ -475,7 +478,7 @@ private fun NavigationButtons(
 
   FilledTonalIconButton(
     onClick = onHome,
-    modifier = Modifier.size(buttonSize),
+    modifier = Modifier.size(buttonSize).glassSheen(CircleShape, LocalGlass.current),
     colors = IconButtonDefaults.filledTonalIconButtonColors(
       containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
       contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
@@ -486,7 +489,7 @@ private fun NavigationButtons(
 
   FilledTonalIconButton(
     onClick = onSystemPicker,
-    modifier = Modifier.size(buttonSize),
+    modifier = Modifier.size(buttonSize).glassSheen(CircleShape, LocalGlass.current),
     colors = IconButtonDefaults.filledTonalIconButtonColors(
       containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.tertiaryContainer),
       contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onTertiaryContainer),
