@@ -22,13 +22,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuDefaults
+import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
+import app.aryan447.mpvium.ui.theme.glassRimBrush
+import app.aryan447.mpvium.ui.theme.glassSheen
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -153,25 +160,43 @@ fun ContinueWatchingCard(
         modifier = Modifier.fillMaxSize(),
       )
 
-      // Dark gradient overlay
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .background(
-            Brush.verticalGradient(
-              0.5f to Color.Transparent,
-              1.0f to Color.Black.copy(alpha = 0.7f),
+      // Dark gradient overlay: removed in Glass theme so artwork stays clear
+      val isGlass = LocalGlass.current
+      val dark = isSystemInDarkTheme()
+      if (!isGlass) {
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .background(
+              Brush.verticalGradient(
+                0.5f to Color.Transparent,
+                1.0f to Color.Black.copy(alpha = 0.7f),
+              )
             )
-          )
-      )
+        )
+      }
 
-      // Center Play Icon Button
+      // Center Play Icon Button (liquid glass in Glass theme)
       Box(
         modifier = Modifier
           .align(Alignment.Center)
           .size(36.dp)
           .clip(CircleShape)
-          .background(Color.Black.copy(alpha = 0.55f)),
+          .background(
+            if (isGlass) {
+              glassFrostColor(isDark = dark, kind = GlassKind.Chip)
+            } else {
+              Color.Black.copy(alpha = 0.55f)
+            }
+          )
+          .then(
+            if (isGlass) {
+              Modifier.border(1.dp, glassRimBrush(dark), CircleShape)
+            } else {
+              Modifier
+            }
+          )
+          .glassSheen(CircleShape, isGlass),
         contentAlignment = Alignment.Center,
       ) {
         Icon(

@@ -40,34 +40,34 @@ enum class GlassKind {
 }
 
 object GlassTokens {
-  // CLEAR LIQUID GLASS:
-  // Optical diffusion with crisp edges.
-  val blurRadius: Dp = 16.dp
-  val chipBlurRadius: Dp = 8.dp
-  val cardBlurRadius: Dp = 12.dp
+  // CLEAR LIQUID GLASS (NO BLUR, NO FROST):
+  // Optical crystal clarity with specular rim and liquid top-lip glint.
+  val blurRadius: Dp = 0.dp
+  val chipBlurRadius: Dp = 0.dp
+  val cardBlurRadius: Dp = 0.dp
 
   // Translucent base fills: deep crystal in dark, luminous in light
-  const val lightSurfaceAlpha: Float = 0.42f
-  const val darkSurfaceAlpha: Float = 0.40f
-  const val lightCardAlpha: Float = 0.42f
-  const val darkCardAlpha: Float = 0.35f
-  const val lightSheetAlpha: Float = 0.85f
-  const val darkSheetAlpha: Float = 0.78f
+  const val lightSurfaceAlpha: Float = 0.32f
+  const val darkSurfaceAlpha: Float = 0.28f
+  const val lightCardAlpha: Float = 0.28f
+  const val darkCardAlpha: Float = 0.22f
+  const val lightSheetAlpha: Float = 0.72f
+  const val darkSheetAlpha: Float = 0.70f
 
   // Specular rim alphas (directional light catch from overhead)
-  const val specularRimTopDark: Float = 0.45f
-  const val specularRimMidDark: Float = 0.15f
-  const val specularRimBottomDark: Float = 0.05f
+  const val specularRimTopDark: Float = 0.60f
+  const val specularRimMidDark: Float = 0.22f
+  const val specularRimBottomDark: Float = 0.06f
 
-  const val specularRimTopLight: Float = 0.70f
-  const val specularRimMidLight: Float = 0.30f
-  const val specularRimBottomLight: Float = 0.08f
+  const val specularRimTopLight: Float = 0.85f
+  const val specularRimMidLight: Float = 0.40f
+  const val specularRimBottomLight: Float = 0.10f
 
   // Internal specular reflection glint (refractive lip)
-  const val glintTopAlphaDark: Float = 0.16f
-  const val glintMidAlphaDark: Float = 0.02f
-  const val glintTopAlphaLight: Float = 0.28f
-  const val glintMidAlphaLight: Float = 0.04f
+  const val glintTopAlphaDark: Float = 0.26f
+  const val glintMidAlphaDark: Float = 0.04f
+  const val glintTopAlphaLight: Float = 0.42f
+  const val glintMidAlphaLight: Float = 0.08f
 
   val pillShape = RoundedCornerShape(32.dp)
   val cardShape = RoundedCornerShape(20.dp)
@@ -78,40 +78,37 @@ val LocalGlass = compositionLocalOf { false }
 
 val GlassHazeBlurRadius: Dp = GlassTokens.blurRadius
 
-/** State holder for Haze live backdrop blur. */
+/** State holder for glass layout compatibility. */
 @Composable
 fun rememberGlassHazeState(): HazeState = remember { HazeState() }
 
-/** Mark scrolling/content backdrop so glass chrome above can optically sample it. */
+/**
+ * In Clear Liquid Glass (blur replaced with clear glass), backdrop sampling
+ * is a lightweight pass-through: content behind the glass shines through 100%
+ * sharp and clear with zero GPU blur smearing.
+ */
 fun Modifier.glassBackdrop(
   state: HazeState,
   enabled: Boolean,
-): Modifier = composed {
-  if (enabled) hazeSource(state = state) else this
-}
+): Modifier = this
 
-/** Haze style for clear liquid glass: optical blur + crystal tinted background. */
+/** Style for clear liquid glass: optical crystal clarity without blur. */
 @Composable
 fun glassHazeStyle(
   isDark: Boolean,
   kind: GlassKind = GlassKind.Bar,
 ): HazeStyle {
-  val blur = when (kind) {
-    GlassKind.Chip -> GlassTokens.chipBlurRadius
-    GlassKind.Card, GlassKind.Sheet -> GlassTokens.cardBlurRadius
-    GlassKind.Bar -> GlassTokens.blurRadius
-  }
   val base = glassFrostColor(isDark = isDark, kind = kind)
   return HazeStyle(
     backgroundColor = base,
     tint = null,
-    blurRadius = blur,
+    blurRadius = 0.dp,
   )
 }
 
 /**
- * Clear-glass chrome modifier: live optical blur + top-lip specular glint +
- * optional directional specular rim.
+ * Clear-glass chrome modifier: crystal optical transparency +
+ * top-lip specular glint + optional directional specular rim.
  */
 fun Modifier.glassChrome(
   state: HazeState,
@@ -123,7 +120,7 @@ fun Modifier.glassChrome(
   if (!enabled) return@composed this
   val isDark = isSystemInDarkTheme()
   clip(shape)
-    .hazeEffect(state = state, style = style)
+    .background(style.backgroundColor, shape)
     .drawWithContent {
       drawContent()
       // Top-lip specular reflection (light caught in curved glass edge)
@@ -131,9 +128,9 @@ fun Modifier.glassChrome(
         brush = Brush.verticalGradient(
           0.0f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintTopAlphaDark)
           else Color.White.copy(alpha = GlassTokens.glintTopAlphaLight)),
-          0.20f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintMidAlphaDark)
+          0.18f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintMidAlphaDark)
           else Color.White.copy(alpha = GlassTokens.glintMidAlphaLight)),
-          0.55f to Color.Transparent,
+          0.50f to Color.Transparent,
         ),
         size = size,
       )
@@ -166,8 +163,10 @@ fun Modifier.glassSheen(
       drawContent()
       drawRect(
         brush = Brush.verticalGradient(
-          0.0f to (if (isDark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.28f)),
-          0.22f to (if (isDark) Color.White.copy(alpha = 0.02f) else Color.White.copy(alpha = 0.04f)),
+          0.0f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintTopAlphaDark)
+          else Color.White.copy(alpha = GlassTokens.glintTopAlphaLight)),
+          0.20f to (if (isDark) Color.White.copy(alpha = GlassTokens.glintMidAlphaDark)
+          else Color.White.copy(alpha = GlassTokens.glintMidAlphaLight)),
           0.50f to Color.Transparent,
         ),
         size = size,
@@ -185,22 +184,22 @@ fun Modifier.glassSheen(
 fun glassFrostColor(isDark: Boolean, kind: GlassKind = GlassKind.Card): Color {
   return when (kind) {
     GlassKind.Chip -> if (isDark) {
-      Color(0xFF202024).copy(alpha = 0.50f)
+      Color(0xFF1E1E24).copy(alpha = 0.45f)
     } else {
-      Color.White.copy(alpha = 0.60f)
+      Color.White.copy(alpha = 0.55f)
     }
     GlassKind.Bar -> if (isDark) {
-      Color(0xFF101014).copy(alpha = GlassTokens.darkSurfaceAlpha)
+      Color(0xFF0E0E12).copy(alpha = GlassTokens.darkSurfaceAlpha)
     } else {
       Color.White.copy(alpha = GlassTokens.lightSurfaceAlpha)
     }
     GlassKind.Card -> if (isDark) {
-      Color(0xFF16161A).copy(alpha = GlassTokens.darkCardAlpha)
+      Color(0xFF141418).copy(alpha = GlassTokens.darkCardAlpha)
     } else {
       Color.White.copy(alpha = GlassTokens.lightCardAlpha)
     }
     GlassKind.Sheet -> if (isDark) {
-      Color(0xFF121216).copy(alpha = GlassTokens.darkSheetAlpha)
+      Color(0xFF101014).copy(alpha = GlassTokens.darkSheetAlpha)
     } else {
       Color.White.copy(alpha = GlassTokens.lightSheetAlpha)
     }

@@ -256,17 +256,27 @@ data class SeriesDetailScreen(
                 modifier = Modifier.fillMaxSize(),
               )
 
-              // Gradient Scrim
+              // Gradient Scrim: in Glass theme, vignettes are replaced with clear liquid glass
+              val isGlass = LocalGlass.current
               Box(
                 modifier = Modifier
                   .fillMaxSize()
                   .background(
-                    Brush.verticalGradient(
-                      0.0f to Color.Black.copy(alpha = 0.35f),
-                      0.5f to Color.Black.copy(alpha = 0.40f),
-                      0.85f to MaterialTheme.colorScheme.background.copy(alpha = 0.90f),
-                      1.0f to MaterialTheme.colorScheme.background,
-                    )
+                    if (isGlass) {
+                      Brush.verticalGradient(
+                        0.0f to Color.Transparent,
+                        0.65f to Color.Transparent,
+                        0.90f to MaterialTheme.colorScheme.background.copy(alpha = 0.50f),
+                        1.0f to MaterialTheme.colorScheme.background,
+                      )
+                    } else {
+                      Brush.verticalGradient(
+                        0.0f to Color.Black.copy(alpha = 0.35f),
+                        0.5f to Color.Black.copy(alpha = 0.40f),
+                        0.85f to MaterialTheme.colorScheme.background.copy(alpha = 0.90f),
+                        1.0f to MaterialTheme.colorScheme.background,
+                      )
+                    }
                   )
               )
 

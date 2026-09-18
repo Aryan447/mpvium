@@ -84,31 +84,42 @@ fun StreamingHeroBanner(
       modifier = Modifier.fillMaxSize(),
     )
 
-    // Gradient Scrim overlays (top subtle, bottom heavy) + side vignette
+    // Gradient Scrim overlays: in Glass theme, vignettes are replaced with clear liquid glass
     Box(
       modifier = Modifier
         .fillMaxSize()
         .background(
-          Brush.verticalGradient(
-            0.0f to Color.Black.copy(alpha = 0.25f),
-            0.4f to Color.Black.copy(alpha = 0.40f),
-            0.8f to MaterialTheme.colorScheme.background.copy(alpha = 0.85f),
-            1.0f to MaterialTheme.colorScheme.background,
-          )
+          if (isGlass) {
+            Brush.verticalGradient(
+              0.0f to Color.Transparent,
+              0.65f to Color.Transparent,
+              0.90f to MaterialTheme.colorScheme.background.copy(alpha = 0.50f),
+              1.0f to MaterialTheme.colorScheme.background,
+            )
+          } else {
+            Brush.verticalGradient(
+              0.0f to Color.Black.copy(alpha = 0.25f),
+              0.4f to Color.Black.copy(alpha = 0.40f),
+              0.8f to MaterialTheme.colorScheme.background.copy(alpha = 0.85f),
+              1.0f to MaterialTheme.colorScheme.background,
+            )
+          }
         )
     )
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .background(
-          Brush.horizontalGradient(
-            0.0f to Color.Black.copy(alpha = 0.35f),
-            0.15f to Color.Transparent,
-            0.85f to Color.Transparent,
-            1.0f to Color.Black.copy(alpha = 0.35f),
+    if (!isGlass) {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(
+            Brush.horizontalGradient(
+              0.0f to Color.Black.copy(alpha = 0.35f),
+              0.15f to Color.Transparent,
+              0.85f to Color.Transparent,
+              1.0f to Color.Black.copy(alpha = 0.35f),
+            )
           )
-        )
-    )
+      )
+    }
 
     // Content Overlay
     Column(
