@@ -9,16 +9,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,38 +24,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.R
 import kotlinx.coroutines.launch
 
 /**
- * Flagship launch gate for mpvium.
+ * Flagship Naked-Emblem launch gate for mpvium.
  *
- * True flagship design language (Apple · Google · Netflix · YouTube · X):
- * - Supreme visual restraint: zero cartoon sunburst rays, zero cheap bloom,
- *   zero distortion.
- * - Perfectly proportioned hero mark (58dp × 72dp) with balanced editorial spacing.
- * - Pristine OLED canvas (#060609) with an ultra-faint, luxury studio top-falloff.
- * - Crisp, understated "mpvium" typography with refined letter tracking.
- * - Fast, respectful 1200ms timeline with a subtle 0.96 settle and a silk cross-dissolve.
+ * True flagship design language (Netflix · X · Apple TV):
+ * - Pure standalone naked emblem: zero text, zero slogans, zero clutter.
+ * - Mathematically pristine, perfectly proportioned play glyph (68dp × 86dp).
+ * - Pitch-black OLED canvas (#050508) with ultra-faint studio top-falloff.
+ * - Fluid motion: gentle 0.92 settle, confident stillness, and a silky
+ *   portal cross-dissolve into the app.
  */
 private const val SPLASH_TOTAL_MS = 1200
 
-// Signature Apple / Google fluid easing curves
-private val EnterEasing = CubicBezierEasing(0.2f, 0.8f, 0.2f, 1f)
+// Signature Apple / X fluid easing curves
+private val EnterEasing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)
 private val ExitEasing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
 
-private val SplashBlack = Color(0xFF060609)
+private val SplashBlack = Color(0xFF050508)
 private val SplashLift = Color(0xFF0C0A12)
-private val AuraViolet = Color(0xFF8A2BE2)
 
 @Composable
 fun MpviumSplashGate(content: @Composable () -> Unit) {
@@ -106,11 +95,11 @@ private fun MpviumSplashFrame(
   progress: Float,
   onTap: (() -> Unit)? = null,
 ) {
-  val enterP = EnterEasing.transform(phase(progress, 0.04f, 0.38f))
+  val enterP = EnterEasing.transform(phase(progress, 0.04f, 0.40f))
   val exitP = ExitEasing.transform(phase(progress, 0.76f, 1f))
 
   val frameAlpha = 1f - exitP
-  val lockupScale = lerp(0.96f, 1f, enterP)
+  val emblemScale = lerp(0.92f, 1f, enterP) * (1f + 0.12f * exitP)
 
   Box(
     modifier = Modifier
@@ -128,61 +117,25 @@ private fun MpviumSplashFrame(
       .background(Brush.verticalGradient(listOf(SplashLift, SplashBlack))),
     contentAlignment = Alignment.Center,
   ) {
-    // Subtle, high-end studio atmosphere (zero cartoon bloom)
+    // Subtle studio softbox top-light (Apple TV aesthetic)
     Canvas(modifier = Modifier.fillMaxSize()) {
-      val cx = size.width / 2f
-      val cy = size.height / 2f - 20.dp.toPx()
-
-      // 1. Studio softbox top falloff (Apple style)
       drawRect(
         brush = Brush.verticalGradient(
           0f to Color.White.copy(alpha = 0.035f * enterP),
           0.40f to Color.Transparent,
         ),
       )
-
-      // 2. Ultra-faint ambient brand violet haze (barely perceptible OLED depth)
-      val glowRadius = 110.dp.toPx()
-      drawCircle(
-        brush = Brush.radialGradient(
-          0.0f to AuraViolet.copy(alpha = 0.06f * enterP),
-          1.0f to Color.Transparent,
-          center = Offset(cx, cy),
-          radius = glowRadius,
-        ),
-        radius = glowRadius,
-        center = Offset(cx, cy),
-      )
     }
 
-    // Unified brand lockup: perfectly proportioned emblem + generous spacing + clean wordmark
-    Column(
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center,
+    // Hero Naked Emblem: perfectly centered, no text
+    Image(
+      painter = painterResource(R.drawable.ic_mpvium_mark),
+      contentDescription = null,
       modifier = Modifier
-        .fillMaxSize()
-        .offset(y = (-20).dp)
-        .scale(lockupScale)
+        .size(width = 68.dp, height = 86.dp)
+        .scale(emblemScale)
         .graphicsLayer { alpha = enterP },
-    ) {
-      Image(
-        painter = painterResource(R.drawable.ic_mpvium_mark),
-        contentDescription = null,
-        modifier = Modifier.size(width = 58.dp, height = 72.dp),
-      )
-
-      Spacer(modifier = Modifier.height(24.dp))
-
-      Text(
-        text = "mpvium",
-        style = MaterialTheme.typography.titleMedium.copy(
-          fontWeight = FontWeight.Medium,
-          fontSize = 18.sp,
-          letterSpacing = 1.4.sp,
-        ),
-        color = Color.White.copy(alpha = 0.90f),
-      )
-    }
+    )
   }
 }
 
@@ -191,10 +144,10 @@ private fun phase(progress: Float, start: Float, end: Float): Float =
 
 private fun lerp(from: Float, to: Float, t: Float): Float = from + (to - from) * t
 
-@Preview(name = "Splash Settle Preview", showBackground = true, backgroundColor = 0xFF060609)
+@Preview(name = "Splash Emblem Preview", showBackground = true, backgroundColor = 0xFF050508)
 @Composable
 private fun MpviumSplashPreview() {
   MaterialTheme {
-    MpviumSplashFrame(progress = 0.50f)
+    MpviumSplashFrame(progress = 0.55f)
   }
 }
