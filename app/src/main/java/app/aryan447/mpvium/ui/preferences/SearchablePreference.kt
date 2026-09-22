@@ -296,6 +296,13 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                titleRes = R.string.pref_player_show_vignette,
+                summaryRes = R.string.pref_player_show_vignette_summary,
+                keywords = listOf("vignette", "gradient", "scrim", "dim", "background", "controls"),
+                category = "Player",
+                screen = PlayerPreferencesScreen,
+            ))
+            add(SearchablePreference(
                 titleRes = R.string.pref_player_display_show_status_bar,
                 keywords = listOf("status bar", "navigation", "system", "show", "hide", "immersive"),
                 category = "Player",

@@ -452,6 +452,21 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.showLoadingCircle::set,
                 title = { Text(stringResource(R.string.pref_player_controls_show_loading_circle)) },
               )
+
+              PreferenceDivider()
+
+              val showVignette by preferences.showVignette.collectAsState()
+              HapticSwitchPreference(
+                value = showVignette,
+                onValueChange = preferences.showVignette::set,
+                title = { Text(stringResource(R.string.pref_player_show_vignette)) },
+                summary = {
+                  Text(
+                    text = stringResource(R.string.pref_player_show_vignette_summary),
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
             }
           }
           // Display Section
