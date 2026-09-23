@@ -182,6 +182,7 @@ fun PlayerControls(
   val playbackSpeed by MPVLib.propFloat["speed"].collectAsState()
   val doubleTapSeekAmount by viewModel.doubleTapSeekAmount.collectAsState()
   val showDoubleTapOvals by playerPreferences.showDoubleTapOvals.collectAsState()
+  val showVignette by playerPreferences.showVignette.collectAsState()
   val showSeekTime by playerPreferences.showSeekTimeWhileSeeking.collectAsState()
   var isSeeking by remember { mutableStateOf(false) }
   var resetControlsTimestamp by remember { mutableStateOf(0L) }
@@ -319,7 +320,7 @@ fun PlayerControls(
                 Pair(1f, Color.Black),
               ),
               // No vignette in the Glass theme: chrome floats clean over video.
-              alpha = if (LocalGlass.current) 0f else transparentOverlay,
+              alpha = if (LocalGlass.current || !showVignette) 0f else transparentOverlay,
             ),
       ) {
         val (topLeftControls, topRightControls) = createRefs()
