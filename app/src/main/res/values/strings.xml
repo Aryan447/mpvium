@@ -188,6 +188,13 @@
   <string name="pref_player_gestures_hold_controls_hint">Hold, swipe ◀ ▶ to pick, swipe ▲ ▼ to adjust</string>
   <string name="hold_controls_brightness">Brightness</string>
   <string name="hold_controls_volume">Volume</string>
+  <string name="hold_controls_value_brightness">Brightness %1$d%%</string>
+  <string name="hold_controls_value_volume">Volume %1$d%%</string>
+  <string name="hold_controls_value_volume_boost">Volume %1$d%% • Boost +%2$d%%</string>
+  <string name="hold_mode_switched_speed">Hold action: 2× speed</string>
+  <string name="hold_mode_switched_brightness_volume">Hold action: brightness &amp; volume</string>
+  <string name="player_button_hold_mode_speed">Hold mode: 2× speed. Activate to switch to brightness and volume.</string>
+  <string name="player_button_hold_mode_controls">Hold mode: brightness and volume. Activate to switch to 2× speed.</string>
   <string name="pref_player_controls">Controls</string>
   <string name="pref_player_controls_allow_gestures_in_panels">Allow gestures in panels</string>
   <string name="pref_player_controls_display_volume_as_percentage">Display volume as percentage</string>

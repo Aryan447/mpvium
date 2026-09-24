@@ -61,6 +61,7 @@ enum class PlayerButton(
   SKIP_RECAP(Icons.Outlined.FastForward),
   BACKGROUND_PLAYBACK(Icons.Outlined.Headset),
   EXPLAIN(Icons.Outlined.Translate),
+  HOLD_MODE_SWITCH(Icons.Outlined.SwapVert),
   NONE(Icons.Outlined.Bookmarks),
 }
 
@@ -107,5 +108,6 @@ fun getPlayerButtonLabel(button: PlayerButton): String =
     PlayerButton.SKIP_RECAP -> "Skip Recap"
     PlayerButton.BACKGROUND_PLAYBACK -> "Background Playback"
     PlayerButton.EXPLAIN -> "Explain"
+    PlayerButton.HOLD_MODE_SWITCH -> "Hold Mode"
     PlayerButton.NONE -> "None"
   }
