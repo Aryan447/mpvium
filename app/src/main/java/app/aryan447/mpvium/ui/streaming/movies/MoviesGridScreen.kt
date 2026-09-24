@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -18,11 +20,15 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,8 +59,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.MutableState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +78,7 @@ import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.browser.states.GridLoadingSkeleton
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
@@ -84,6 +92,24 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
+
+/**
+ * Quick-win sort + watch-state filter for the Movies grid.
+ * Session-persisted via rememberSaveable; a DataStore-backed
+ * version can follow the same shape in BrowserPreferences.
+ */
+enum class MovieGridSort(val label: String) {
+  Title("Title"),
+  Year("Year"),
+  Rating("Rating"),
+}
+
+enum class MovieWatchFilter(val label: String) {
+  All("All"),
+  Unwatched("Unwatched"),
+  InProgress("In progress"),
+  Watched("Watched"),
+}
 
 @Serializable
 object MoviesGridScreen : Screen {
@@ -110,6 +136,14 @@ object MoviesGridScreen : Screen {
     var isLoading by remember { mutableStateOf(true) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
+    // Ordinals (not the enums themselves) so rotation restore stays Bundle-safe.
+    var sortOrdinal by rememberSaveable { mutableIntStateOf(MovieGridSort.Title.ordinal) }
+    var sortAscending by rememberSaveable { mutableStateOf(true) }
+    var watchFilterOrdinal by rememberSaveable { mutableIntStateOf(MovieWatchFilter.All.ordinal) }
+    val sortType = MovieGridSort.entries[sortOrdinal.coerceIn(MovieGridSort.entries.indices)]
+    val watchFilter = MovieWatchFilter.entries[watchFilterOrdinal.coerceIn(MovieWatchFilter.entries.indices)]
+    var showSortMenu by remember { mutableStateOf(false) }
+    val searchFocusRequester = remember { FocusRequester() }
     var moviePendingDeletion by remember { mutableStateOf<LocalMovie?>(null) }
     var refreshKey by remember { mutableIntStateOf(0) }
     val isRefreshing = remember { mutableStateOf(false) }
@@ -171,12 +205,36 @@ object MoviesGridScreen : Screen {
       MediaLibraryEvents.changes.collect { refreshKey++ }
     }
 
-    val filteredMovies = remember(movieList, searchQuery) {
-      if (searchQuery.isBlank()) {
+    LaunchedEffect(isSearching) {
+      if (isSearching) {
+        kotlinx.coroutines.delay(100)
+        runCatching { searchFocusRequester.requestFocus() }
+      }
+    }
+
+    val filteredMovies = remember(movieList, searchQuery, sortType, sortAscending, watchFilter) {
+      val searched = if (searchQuery.isBlank()) {
         movieList
       } else {
         movieList.filter { it.title.lowercase().contains(searchQuery.lowercase()) }
       }
+      val watchFiltered = when (watchFilter) {
+        MovieWatchFilter.All -> searched
+        MovieWatchFilter.Unwatched -> searched.filter { it.progressPercentage <= 0f && !it.isWatched }
+        MovieWatchFilter.InProgress -> searched.filter { it.progressPercentage > 0f && !it.isWatched }
+        MovieWatchFilter.Watched -> searched.filter { it.isWatched }
+      }
+      val sorted = when (sortType) {
+        MovieGridSort.Title -> watchFiltered.sortedBy { it.title.lowercase() }
+        MovieGridSort.Year -> watchFiltered.sortedWith(
+          compareBy({ it.year.isNullOrBlank() }, { it.year }),
+        )
+        // Highest-rated first; the direction toggle below flips it.
+        MovieGridSort.Rating -> watchFiltered.sortedWith(
+          compareBy({ it.rating == null || it.rating <= 0f }, { -(it.rating ?: 0f) }),
+        )
+      }
+      if (sortAscending) sorted else sorted.reversed()
     }
 
     Scaffold(
@@ -203,6 +261,7 @@ object MoviesGridScreen : Screen {
                     Icon(Icons.Filled.Close, contentDescription = "Close search")
                   }
                 },
+                modifier = Modifier.focusRequester(searchFocusRequester),
               )
             },
             expanded = false,
@@ -236,6 +295,34 @@ object MoviesGridScreen : Screen {
               }
             },
             actions = {
+              Box {
+                IconButton(onClick = { showSortMenu = true }) {
+                  Icon(Icons.Filled.Sort, contentDescription = "Sort movies")
+                }
+                DropdownMenu(
+                  expanded = showSortMenu,
+                  onDismissRequest = { showSortMenu = false },
+                ) {
+                  MovieGridSort.entries.forEach { option ->
+                    DropdownMenuItem(
+                      text = { Text(option.label) },
+                      trailingIcon = if (sortType == option) {
+                        { Icon(Icons.Filled.Check, contentDescription = null) }
+                      } else {
+                        null
+                      },
+                      onClick = {
+                        sortOrdinal = option.ordinal
+                        showSortMenu = false
+                      },
+                    )
+                  }
+                  DropdownMenuItem(
+                    text = { Text(if (sortAscending) "Ascending" else "Descending") },
+                    onClick = { sortAscending = !sortAscending },
+                  )
+                }
+              }
               IconButton(onClick = { isSearching = true }) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
@@ -265,6 +352,13 @@ object MoviesGridScreen : Screen {
               filteredMovies = filteredMovies,
               searchQuery = searchQuery,
               onClearSearch = { searchQuery = "" },
+              onRescan = { refreshKey++ },
+              watchFilter = watchFilter,
+              onWatchFilterChange = { watchFilterOrdinal = it.ordinal },
+              onClearFilters = {
+                searchQuery = ""
+                watchFilterOrdinal = MovieWatchFilter.All.ordinal
+              },
               columns = columns,
               gridState = gridState,
               navigationBarHeight = navigationBarHeight,
@@ -295,6 +389,13 @@ object MoviesGridScreen : Screen {
           filteredMovies = filteredMovies,
           searchQuery = searchQuery,
           onClearSearch = { searchQuery = "" },
+          onRescan = { refreshKey++ },
+          watchFilter = watchFilter,
+          onWatchFilterChange = { watchFilterOrdinal = it.ordinal },
+          onClearFilters = {
+            searchQuery = ""
+            watchFilterOrdinal = MovieWatchFilter.All.ordinal
+          },
           columns = columns,
           gridState = gridState,
           navigationBarHeight = navigationBarHeight,
@@ -336,6 +437,10 @@ private fun MoviesGridContent(
   filteredMovies: List<LocalMovie>,
   searchQuery: String,
   onClearSearch: () -> Unit,
+  onRescan: () -> Unit,
+  watchFilter: MovieWatchFilter,
+  onWatchFilterChange: (MovieWatchFilter) -> Unit,
+  onClearFilters: () -> Unit,
   columns: Int,
   gridState: LazyGridState,
   navigationBarHeight: Dp,
@@ -350,23 +455,25 @@ private fun MoviesGridContent(
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding),
-      contentAlignment = Alignment.Center,
     ) {
-      CircularProgressIndicator()
+      GridLoadingSkeleton(columns = columns, navigationBarHeight = 0.dp)
     }
   } else if (filteredMovies.isEmpty()) {
+    val filtering = searchQuery.isNotBlank() || watchFilter != MovieWatchFilter.All
     EmptyState(
       icon = Icons.Filled.Movie,
-      title = if (searchQuery.isNotBlank()) "No movies found" else "No movies detected",
-      message = if (searchQuery.isNotBlank()) "No movies match '$searchQuery'" else "Add movie files to your device storage to see them here",
+      title = if (searchQuery.isNotBlank()) "No movies found" else if (watchFilter != MovieWatchFilter.All) "Nothing here yet" else "No movies detected",
+      message = if (searchQuery.isNotBlank()) "No movies match '$searchQuery'" else if (watchFilter != MovieWatchFilter.All) "No movies match the ${watchFilter.label.lowercase()} filter" else "Add movie files to your device storage to see them here",
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding),
-      actionLabel = if (searchQuery.isNotBlank()) "Clear search" else null,
+      actionLabel = if (searchQuery.isNotBlank()) "Clear search" else if (watchFilter != MovieWatchFilter.All) "Show all" else "Rescan library",
       onAction = if (searchQuery.isNotBlank()) {
         onClearSearch
+      } else if (watchFilter != MovieWatchFilter.All) {
+        onClearFilters
       } else {
-        null
+        onRescan
       },
     )
   } else {
@@ -391,12 +498,27 @@ private fun MoviesGridContent(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+          LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 4.dp),
+          ) {
+            items(MovieWatchFilter.entries) { filter ->
+              FilterChip(
+                selected = watchFilter == filter,
+                onClick = { onWatchFilterChange(filter) },
+                label = { Text(filter.label) },
+              )
+            }
+          }
+        }
         items(filteredMovies, key = { "grid_movie_${it.video.id}" }) { movie ->
           MoviePosterCard(
             movie = movie,
             onClick = { onMovieClick(movie) },
             onLongClick = { onMovieLongClick(movie) },
             cardWidth = 180.dp,
+            highlightQuery = searchQuery,
           )
         }
       }

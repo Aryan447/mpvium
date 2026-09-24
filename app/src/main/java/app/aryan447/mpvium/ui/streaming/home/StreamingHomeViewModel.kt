@@ -85,12 +85,23 @@ class StreamingHomeViewModel(
     loadLibrary()
   }
 
+  private var lastRemovedContinueWatching: Pair<ContinueWatchingItem, Int>? = null
+
   /**
    * Removes a show or movie from Continue Watching immediately and persists
    * the dismissal across rescans. It reappears on its own if played again.
+   * Pair with [undoRemoveFromContinueWatching] for Snackbar undo.
    */
   fun removeFromContinueWatching(item: ContinueWatchingItem) {
     val key = ContinueWatchingDismissals.keyFor(item)
+    val index = _uiState.value.continueWatching.indexOfFirst {
+      ContinueWatchingDismissals.keyFor(it) == key
+    }
+    if (index >= 0) {
+      lastRemovedContinueWatching = _uiState.value.continueWatching[index] to index
+    } else {
+      lastRemovedContinueWatching = null
+    }
     viewModelScope.launch(Dispatchers.IO) {
       runCatching { ContinueWatchingDismissals.dismiss(item) }
       _uiState.update { state ->
@@ -99,6 +110,24 @@ class StreamingHomeViewModel(
             ContinueWatchingDismissals.keyFor(it) == key
           },
         )
+      }
+    }
+  }
+
+  /** Restores the most recently dismissed Continue Watching item. */
+  fun undoRemoveFromContinueWatching() {
+    val (item, index) = lastRemovedContinueWatching ?: return
+    lastRemovedContinueWatching = null
+    viewModelScope.launch(Dispatchers.IO) {
+      runCatching { ContinueWatchingDismissals.restore(item) }
+      _uiState.update { state ->
+        if (state.continueWatching.any { ContinueWatchingDismissals.keyFor(it) == ContinueWatchingDismissals.keyFor(item) }) {
+          state
+        } else {
+          val reordered = state.continueWatching.toMutableList()
+          reordered.add(index.coerceIn(0, reordered.size), item)
+          state.copy(continueWatching = reordered)
+        }
       }
     }
   }

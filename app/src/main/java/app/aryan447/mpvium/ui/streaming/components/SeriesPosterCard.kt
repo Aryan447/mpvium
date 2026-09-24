@@ -52,6 +52,7 @@ fun SeriesPosterCard(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   cardWidth: Dp = 140.dp,
+  highlightQuery: String? = null,
 ) {
   val fallbackVideo = series.seasons.values.firstOrNull()?.firstOrNull()?.video
 
@@ -69,6 +70,7 @@ fun SeriesPosterCard(
     onClick = onClick,
     modifier = modifier,
     cardWidth = cardWidth,
+    highlightQuery = highlightQuery,
   )
 }
 
@@ -79,6 +81,7 @@ private fun SeriesPosterCard(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   cardWidth: Dp = 140.dp,
+  highlightQuery: String? = null,
 ) {
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
   val haptic = LocalHapticFeedback.current
@@ -199,8 +202,9 @@ private fun SeriesPosterCard(
     Spacer(modifier = Modifier.height(6.dp))
 
     // Series Title
-    Text(
+    HighlightedText(
       text = series.title,
+      query = highlightQuery,
       style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
       color = MaterialTheme.colorScheme.onSurface,
       maxLines = 1,

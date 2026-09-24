@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
+import app.aryan447.mpvium.ui.browser.states.InsightsLoadingSkeleton
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassChrome
@@ -117,9 +117,8 @@ object InsightsScreen : Screen {
           modifier = Modifier
             .fillMaxSize()
             .padding(innerPadding),
-          contentAlignment = Alignment.Center,
         ) {
-          CircularProgressIndicator()
+          InsightsLoadingSkeleton()
         }
       } else {
         PullRefreshBox(

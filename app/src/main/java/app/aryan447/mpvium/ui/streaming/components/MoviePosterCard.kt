@@ -53,6 +53,7 @@ fun MoviePosterCard(
   onLongClick: (() -> Unit)? = null,
   modifier: Modifier = Modifier,
   cardWidth: Dp = 140.dp,
+  highlightQuery: String? = null,
 ) {
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
   val haptic = LocalHapticFeedback.current
@@ -184,8 +185,9 @@ fun MoviePosterCard(
     Spacer(modifier = Modifier.height(6.dp))
 
     // Title
-    Text(
+    HighlightedText(
       text = movie.title,
+      query = highlightQuery,
       style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
       color = MaterialTheme.colorScheme.onSurface,
       maxLines = 1,

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MenuDefaults
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
@@ -221,6 +222,30 @@ fun ContinueWatchingCard(
             .fillMaxWidth(item.progressPercentage.coerceIn(0.02f, 1.0f))
             .background(MaterialTheme.colorScheme.primary),
         )
+      }
+
+      // Quick-dismiss button (same action as the long-press menu,
+      // without hiding it behind a gesture)
+      if (onRemove != null) {
+        IconButton(
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onRemove()
+          },
+          modifier = Modifier
+            .align(Alignment.TopStart)
+            .padding(4.dp)
+            .size(28.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.55f)),
+        ) {
+          Icon(
+            Icons.Filled.Close,
+            contentDescription = "Remove from Continue Watching",
+            tint = Color.White,
+            modifier = Modifier.size(16.dp),
+          )
+        }
       }
     }
 
