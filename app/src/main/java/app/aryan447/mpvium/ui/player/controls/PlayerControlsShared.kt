@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.ShuffleOn
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOutMap
 import androidx.compose.material.icons.filled.Flip
@@ -77,7 +78,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.PlayerViewModel
@@ -604,6 +608,38 @@ fun RenderPlayerButton(
           modifier = Modifier.size(buttonSize),
         )
       }
+    }
+
+    PlayerButton.HOLD_MODE_SWITCH -> {
+      val playerPreferences = org.koin.compose.koinInject<app.aryan447.mpvium.preferences.PlayerPreferences>()
+      val context = LocalContext.current
+      val holdMode by playerPreferences.holdGestureMode.collectAsState()
+      val isSpeedMode = holdMode == HoldGestureMode.SpeedBoost
+      ControlsButton(
+        icon = if (isSpeedMode) Icons.Default.Speed else Icons.Default.Tune,
+        onClick = {
+          val next = if (isSpeedMode) {
+            HoldGestureMode.BrightnessVolume
+          } else {
+            HoldGestureMode.SpeedBoost
+          }
+          playerPreferences.holdGestureMode.set(next)
+          viewModel.showToast(
+            context.getString(
+              if (next == HoldGestureMode.SpeedBoost) {
+                R.string.hold_mode_switched_speed
+              } else {
+                R.string.hold_mode_switched_brightness_volume
+              },
+            ),
+          )
+        },
+        title = context.getString(
+          if (isSpeedMode) R.string.player_button_hold_mode_speed else R.string.player_button_hold_mode_controls,
+        ),
+        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.size(buttonSize),
+      )
     }
 
     PlayerButton.MIRROR -> {
