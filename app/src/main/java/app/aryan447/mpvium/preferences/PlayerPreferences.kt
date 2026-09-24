@@ -6,12 +6,16 @@ import app.aryan447.mpvium.preferences.preference.getEnum
 import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.PlayerTitleMode
+import app.aryan447.mpvium.ui.player.PlayerUiMode
 import app.aryan447.mpvium.ui.player.RepeatMode
 import app.aryan447.mpvium.ui.player.VideoAspect
 
 class PlayerPreferences(
   preferenceStore: PreferenceStore,
 ) {
+  // Player interface (Classic default, Modern minimal). Custom button
+  // layouts apply to Classic only; Modern uses a fixed minimal layout.
+  val uiMode = preferenceStore.getEnum("player_ui_mode", PlayerUiMode.Classic)
   val orientation = preferenceStore.getEnum("player_orientation", PlayerOrientation.Video)
   val invertDuration = preferenceStore.getBoolean("invert_duration")
   val holdForMultipleSpeed = preferenceStore.getFloat("hold_for_multiple_speed", 2f)

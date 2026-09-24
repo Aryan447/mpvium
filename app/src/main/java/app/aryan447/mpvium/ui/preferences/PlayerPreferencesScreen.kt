@@ -24,6 +24,7 @@ import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.PlayerTitleMode
+import app.aryan447.mpvium.ui.player.PlayerUiMode
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
@@ -59,6 +60,23 @@ object PlayerPreferencesScreen : Screen {
 
           item {
             PreferenceCard {
+              val uiMode by preferences.uiMode.collectAsState()
+              ListPreference(
+                value = uiMode,
+                onValueChange = preferences.uiMode::set,
+                values = PlayerUiMode.entries,
+                valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                title = { Text(text = stringResource(id = R.string.pref_player_interface)) },
+                summary = {
+                  Text(
+                    text = stringResource(id = uiMode.titleRes),
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
               val orientation by preferences.orientation.collectAsState()
               ListPreference(
                 value = orientation,

@@ -147,6 +147,12 @@
   <string name="pref_layout_reset_summary">All customized player control layouts will be reset to default positions</string>
   <string name="pref_player">Player</string>
   <string name="pref_player_summary">Orientation, gestures and controls</string>
+  <string name="pref_player_interface">Player interface</string>
+  <string name="pref_player_interface_desc">Choose between the classic player and the new clean, modern player. Custom button layouts apply to the classic player only.</string>
+  <string name="pref_player_interface_classic">Classic</string>
+  <string name="pref_player_interface_modern">Modern</string>
+  <string name="pref_player_interface_summary_classic">Classic player (default)</string>
+  <string name="pref_player_interface_summary_modern">Modern, minimal player</string>
   <string name="pref_player_orientation">Orientation</string>
   <string name="pref_player_orientation_free">Free</string>
   <string name="pref_player_orientation_video">Video</string>
@@ -162,6 +168,14 @@
   <string name="pref_player_custom_skip_duration_summary">Duration to skip forward on custom skip button</string>
   <string name="player_skip_intro">Skip intro</string>
   <string name="player_skip_recap">Skip recap</string>
+  <string name="modern_player_desc_back">Back</string>
+  <string name="modern_player_desc_audio">Audio tracks</string>
+  <string name="modern_player_desc_subtitles">Subtitle tracks</string>
+  <string name="modern_player_desc_more">More options</string>
+  <string name="modern_player_desc_skip_back">Skip back %1$d seconds</string>
+  <string name="modern_player_desc_skip_forward">Skip forward %1$d seconds</string>
+  <string name="modern_player_desc_next">Next video</string>
+  <string name="modern_player_desc_speed">Playback speed</string>
   <string name="pref_player_seeking_title">Seeking</string>
   <string name="pref_player_close_after_eof">Close after the end of playback</string>
   <string name="pref_player_episode_header">Clean titles</string>

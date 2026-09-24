@@ -42,6 +42,13 @@ enum class HoldGestureMode(
   BrightnessVolume(R.string.pref_player_gestures_hold_action_controls),
 }
 
+enum class PlayerUiMode(
+  @StringRes val titleRes: Int,
+) {
+  Classic(R.string.pref_player_interface_classic),
+  Modern(R.string.pref_player_interface_modern),
+}
+
 enum class PlayerTitleMode(
   @StringRes val titleRes: Int,
 ) {
