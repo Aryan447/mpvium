@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,8 +60,8 @@ fun PreferenceCard(
     modifier = modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp, vertical = 8.dp)
-      .glassSheen(RoundedCornerShape(28.dp), isGlass),
-    shape = RoundedCornerShape(28.dp),
+      .glassSheen(RoundedCornerShape(20.dp), isGlass),
+    shape = RoundedCornerShape(20.dp),
     colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
       containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ),
@@ -101,9 +102,9 @@ fun PreferenceSectionHeader(
 ) {
   Text(
     text = title,
-    style = MaterialTheme.typography.labelLarge,
+    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
     color = MaterialTheme.colorScheme.primary,
-    modifier = modifier.padding(horizontal = 32.dp, vertical = 16.dp),
+    modifier = modifier.padding(horizontal = 24.dp, vertical = 12.dp),
   )
 }
 
@@ -149,7 +150,7 @@ fun SettingsTopBar(
       IconButton(onClick = { onBack?.invoke() ?: backstack.removeLastOrNull() }) {
         Icon(
           Icons.AutoMirrored.Outlined.ArrowBack,
-          contentDescription = null,
+          contentDescription = "Back",
           tint = MaterialTheme.colorScheme.onPrimaryContainer,
           modifier =
             Modifier
@@ -220,7 +221,7 @@ fun HapticSwitchPreference(
 }
 
 /**
- * A navigation row for the main settings screen: tonal icon, title, summary.
+ * A navigation row for the main settings screen: tonal icon, title, summary, chevron.
  */
 @Composable
 fun SettingsPreferenceRow(
@@ -230,27 +231,42 @@ fun SettingsPreferenceRow(
   modifier: Modifier = Modifier,
   onClick: () -> Unit,
 ) {
+  val haptic = LocalHapticFeedback.current
   Row(
     modifier =
       modifier
         .fillMaxWidth()
-        .clickable(onClick = onClick)
-        .padding(horizontal = 16.dp, vertical = 14.dp),
+        .clickable(onClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+          onClick()
+        })
+        .padding(horizontal = 16.dp, vertical = 12.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    PreferenceIconBox(icon = icon)
+    PreferenceIconBox(icon = icon, contentDescription = null)
     Spacer(modifier = Modifier.width(16.dp))
     Column(modifier = Modifier.weight(1f)) {
       Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
       )
       Text(
         text = summary,
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.outline,
+        maxLines = 2,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
       )
     }
+    Spacer(modifier = Modifier.width(8.dp))
+    Icon(
+      imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+      contentDescription = null,
+      tint = MaterialTheme.colorScheme.outlineVariant,
+      modifier = Modifier.size(24.dp),
+    )
   }
 }
