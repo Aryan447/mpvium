@@ -65,7 +65,7 @@ class AppearancePreferences(
   val bottomLeftControls =
     preferenceStore.getString(
       "bottom_left_controls",
-      "PLAYBACK_SPEED,AB_LOOP,EXPLAIN",
+      "PLAYBACK_SPEED,AB_LOOP,EXPLAIN,BOOKMARKS_CHAPTERS",
     )
 
   val portraitBottomControls =
