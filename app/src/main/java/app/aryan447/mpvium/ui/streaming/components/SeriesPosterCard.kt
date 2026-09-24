@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +44,7 @@ import app.aryan447.mpvium.ui.theme.LocalAppTheme
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 import app.aryan447.mpvium.ui.theme.glassRimBrush
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun SeriesPosterCard(
@@ -84,7 +84,7 @@ private fun SeriesPosterCard(
   highlightQuery: String? = null,
 ) {
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
 
   Column(
     modifier = modifier

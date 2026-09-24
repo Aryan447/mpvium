@@ -14,6 +14,10 @@ Source of truth for GitHub release notes.
 
 ## Unreleased
 
+### Added
+
+- Haptic feedback toggle to disable all vibrations app-wide.
+
 ### Changed
 
 - Redesigned settings: calmer cards and headers, chevron rows with haptic feedback, and quieter search entry.

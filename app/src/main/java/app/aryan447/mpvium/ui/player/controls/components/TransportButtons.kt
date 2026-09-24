@@ -33,13 +33,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.theme.controlColor
 import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 private val transportShadow =
   Brush.radialGradient(
@@ -62,7 +62,7 @@ fun PlayerTransportButton(
   size: Dp = 56.dp,
   hideBackground: Boolean = false,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   Surface(
     modifier =
       modifier
@@ -135,7 +135,7 @@ fun PlayerPillButton(
   height: Dp = 40.dp,
   content: @Composable RowScope.() -> Unit,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   Surface(
     shape = RoundedCornerShape(50),
     color =
@@ -189,7 +189,7 @@ fun PlayerPlayPauseButton(
 ) {
   val icon = AnimatedImageVector.animatedVectorResource(R.drawable.anim_play_to_pause)
   val interaction = remember { MutableInteractionSource() }
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
 
   Surface(
     modifier =

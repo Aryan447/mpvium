@@ -86,7 +86,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -123,6 +122,7 @@ import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Serializable
 object StreamingHomeScreen : Screen {
@@ -528,7 +528,7 @@ private fun CategoryChipsRow(
   onCategorySelect: (StreamingCategory) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   LazyRow(
     modifier = modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -612,7 +612,7 @@ private fun FolderQuickCard(
   folder: VideoFolder,
   onClick: () -> Unit,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   Surface(
     modifier = Modifier
       .width(160.dp)

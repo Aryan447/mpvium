@@ -18,11 +18,11 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun SliderItem(
@@ -35,7 +35,7 @@ fun SliderItem(
   min: Int = 0,
   icon: @Composable () -> Unit = {},
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
 
   Row(
     modifier =
@@ -85,7 +85,7 @@ fun SliderItem(
   min: Float = 0f,
   icon: @Composable () -> Unit = {},
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
 
   Row(
     modifier =
@@ -134,7 +134,7 @@ fun VerticalSliderItem(
   min: Int = 0,
   icon: @Composable () -> Unit = {},
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
 
   Column(
     modifier =

@@ -35,13 +35,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun SlideToUnlock(
@@ -50,7 +50,7 @@ fun SlideToUnlock(
   onDraggingChanged: (Boolean) -> Unit = {},
 ) {
   val coroutineScope = rememberCoroutineScope()
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
 
   var containerWidthPx by remember { mutableFloatStateOf(0f) }
   val sliderSize = 56.dp

@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.GlassKind
@@ -45,6 +44,7 @@ import app.aryan447.mpvium.ui.theme.glassRimStroke
 import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 /**
  * A card container for grouping related preferences, mimicking modern Android settings UI.
@@ -205,7 +205,7 @@ fun HapticSwitchPreference(
   summary: @Composable (() -> Unit)? = null,
   icon: @Composable (() -> Unit)? = null,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   me.zhanghai.compose.preference.SwitchPreference(
     value = value,
     onValueChange = {
@@ -231,7 +231,7 @@ fun SettingsPreferenceRow(
   modifier: Modifier = Modifier,
   onClick: () -> Unit,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   Row(
     modifier =
       modifier

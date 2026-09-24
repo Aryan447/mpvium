@@ -49,7 +49,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -59,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun ContinueWatchingRow(
@@ -122,7 +122,7 @@ fun ContinueWatchingCard(
   onRemove: (() -> Unit)? = null,
 ) {
   val cardWidth = 220.dp
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   var showRemoveMenu by remember { mutableStateOf(false) }
 
   Box(modifier = modifier.width(cardWidth)) {

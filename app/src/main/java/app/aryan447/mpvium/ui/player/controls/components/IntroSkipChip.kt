@@ -22,8 +22,8 @@ import app.aryan447.mpvium.ui.theme.spacing
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun IntroSkipChip(
@@ -33,7 +33,7 @@ fun IntroSkipChip(
   icon: ImageVector = Icons.Default.FastForward,
   onClick: () -> Unit = {},
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   Surface(
     onClick = {
       haptic.performHapticFeedback(HapticFeedbackType.LongPress)

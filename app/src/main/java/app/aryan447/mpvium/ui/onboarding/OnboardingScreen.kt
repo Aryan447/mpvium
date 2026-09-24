@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +47,7 @@ import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 private data class OnboardingPage(
   val icon: ImageVector,
@@ -80,7 +80,7 @@ object OnboardingScreen : Screen {
   override fun Content() {
     val backstack = LocalBackStack.current
     val preferences = koinInject<AppearancePreferences>()
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberHapticFeedback()
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState { onboardingPages.size }
     val isLastPage = pagerState.currentPage == onboardingPages.lastIndex

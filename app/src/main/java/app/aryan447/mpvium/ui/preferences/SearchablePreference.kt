@@ -47,6 +47,13 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                titleRes = R.string.pref_appearance_haptics_title,
+                summaryRes = R.string.pref_appearance_haptics_summary,
+                keywords = listOf("haptic", "haptics", "vibration", "vibrate", "feedback", "touch", "disable", "off"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
+            add(SearchablePreference(
                 titleRes = R.string.pref_appearance_show_bottom_nav_labels_title,
                 summaryRes = R.string.pref_appearance_show_bottom_nav_labels_summary,
                 keywords = listOf("bottom", "navigation", "labels", "tabs", "text", "icons", "pill", "hide"),

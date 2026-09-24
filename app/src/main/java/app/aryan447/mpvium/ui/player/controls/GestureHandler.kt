@@ -53,7 +53,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -84,6 +83,7 @@ import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 /**
  * Touches starting within this vertical distance of the current subtitle
@@ -225,7 +225,7 @@ fun GestureHandler(
   val currentMPVVolume by MPVLib.propInt["volume"].collectAsState()
   val currentBrightness by viewModel.currentBrightness.collectAsState()
   val volumeBoostingCap = audioPreferences.volumeBoostCap.get()
-  val haptics = LocalHapticFeedback.current
+  val haptics = rememberHapticFeedback()
   val coroutineScope = rememberCoroutineScope()
   // Swipes starting in the status-bar zone belong to the system
   // (notification shade, clock/battery check) — never hijack them for
