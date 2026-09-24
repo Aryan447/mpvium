@@ -100,6 +100,7 @@ import app.aryan447.mpvium.preferences.preference.minusAssign
 import app.aryan447.mpvium.ui.player.Decoder.Companion.getDecoderFromValue
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
+import app.aryan447.mpvium.ui.player.PlayerUiMode
 import app.aryan447.mpvium.ui.player.PlayerUpdates
 import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.ShaderPeekState
@@ -169,6 +170,16 @@ fun PlayerControls(
   val audioPreferences = koinInject<AudioPreferences>()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
+  val uiMode by playerPreferences.uiMode.collectAsState()
+  if (uiMode == PlayerUiMode.Modern) {
+    // Modern uses a fixed minimal layout; the Classic UI below is unchanged.
+    ModernPlayerControls(
+      viewModel = viewModel,
+      onBackPress = onBackPress,
+      modifier = modifier,
+    )
+    return
+  }
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
