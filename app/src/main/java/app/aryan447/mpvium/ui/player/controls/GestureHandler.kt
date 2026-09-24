@@ -54,8 +54,10 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `is`.xyz.mpv.MPVLib
@@ -202,6 +204,11 @@ fun GestureHandler(
   val brightnessGesture by playerPreferences.brightnessGesture.collectAsState()
   val volumeGesture by playerPreferences.volumeGesture.collectAsState()
   val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
+  // Visual chip order mirrors in RTL, so the physical side that means
+  // "brightness" flips too. Keeps the hold default and the horizontal
+  // target-switch consistent with what the pill actually shows.
+  val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+  val holdLeftIsBrightness = swapVolumeAndBrightness == isRtl
   val pinchToZoomGesture by playerPreferences.pinchToZoomGesture.collectAsState()
   val panAndZoomEnabled by playerPreferences.panAndZoomEnabled.collectAsState()
   val horizontalSwipeToSeek by playerPreferences.horizontalSwipeToSeek.collectAsState()
@@ -459,7 +466,15 @@ fun GestureHandler(
           } while (event.changes.any { it.pressed })
         }
       }
-      .pointerInput(areControlsLocked, multipleSpeedGesture, holdGestureMode, brightnessGesture, volumeGesture, swapVolumeAndBrightness) {
+      .pointerInput(
+        areControlsLocked,
+        multipleSpeedGesture,
+        holdGestureMode,
+        brightnessGesture,
+        volumeGesture,
+        swapVolumeAndBrightness,
+        holdLeftIsBrightness,
+      ) {
         if (areControlsLocked) return@pointerInput
 
         awaitEachGesture {
@@ -506,6 +521,18 @@ fun GestureHandler(
           var holdLastVolume = currentVolume
           var holdLastMPVVolume = currentMPVVolume ?: 100
           var holdLastBrightness = currentBrightness
+          // True once the user has pushed the selected target into its
+          // min/max clamp; ticks once per edge hit, resets on direction
+          // change, target switch, or gesture end.
+          var holdAtEdge = false
+          fun holdTickAtEdge(pushingPastEdge: Boolean) {
+            if (pushingPastEdge && !holdAtEdge) {
+              holdAtEdge = true
+              haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            } else if (!pushingPastEdge) {
+              holdAtEdge = false
+            }
+          }
           var subtitleDragStartSubPos = subtitlesPreferences.subPos.get()
           var lastSubtitlePos = subtitleDragStartSubPos
           val gestureAreaHeight = size.height.toFloat()
@@ -571,11 +598,16 @@ fun GestureHandler(
                 holdSelection = when {
                   brightnessGesture && !volumeGesture -> HoldControlTarget.Brightness
                   volumeGesture && !brightnessGesture -> HoldControlTarget.Volume
-                  swapVolumeAndBrightness -> {
-                    if (startPosition.x > gestureAreaWidth / 2) HoldControlTarget.Brightness else HoldControlTarget.Volume
-                  }
                   else -> {
-                    if (startPosition.x < gestureAreaWidth / 2) HoldControlTarget.Brightness else HoldControlTarget.Volume
+                    // holdLeftIsBrightness already folds in the
+                    // swapped-sides setting and the RTL mirror, so the
+                    // default always matches the pill's visual chip order.
+                    val onLeft = startPosition.x < gestureAreaWidth / 2
+                    if (onLeft == holdLeftIsBrightness) {
+                      HoldControlTarget.Brightness
+                    } else {
+                      HoldControlTarget.Volume
+                    }
                   }
                 }
                 holdPrevY = startPosition.y
@@ -587,6 +619,7 @@ fun GestureHandler(
                 holdLastVolume = holdBaseVolume
                 holdLastMPVVolume = holdBaseMPVVolume
                 holdLastBrightness = holdBaseBrightness
+                holdAtEdge = false
                 viewModel.playerUpdate.update { PlayerUpdates.HoldControls(holdSelection) }
                 if (holdSelection == HoldControlTarget.Brightness) {
                   viewModel.displayBrightnessSlider()
@@ -629,19 +662,35 @@ fun GestureHandler(
                   }
 
                   // Hold-for-controls: horizontal swipe switches the target
-                  // (left = brightness, right = volume), vertical swipe
-                  // adjusts the selected target.
+                  // toward the swiped side (mirrored in RTL to match the
+                  // pill), vertical swipe adjusts the selected target.
                   if (holdControlsActive) {
                     val currentPosition = change.position
                     val selectThreshold = (gestureAreaWidth * 0.06f).coerceAtLeast(40f)
                     val horizontalDelta = currentPosition.x - startPosition.x
+                    val leftTarget = if (holdLeftIsBrightness) {
+                      HoldControlTarget.Brightness
+                    } else {
+                      HoldControlTarget.Volume
+                    }
+                    val rightTarget = if (holdLeftIsBrightness) {
+                      HoldControlTarget.Volume
+                    } else {
+                      HoldControlTarget.Brightness
+                    }
+                    fun holdTargetEnabled(target: HoldControlTarget): Boolean =
+                      when (target) {
+                        HoldControlTarget.Brightness -> brightnessGesture
+                        HoldControlTarget.Volume -> volumeGesture
+                      }
                     val switchedTarget = when {
-                      horizontalDelta <= -selectThreshold && brightnessGesture -> HoldControlTarget.Brightness
-                      horizontalDelta >= selectThreshold && volumeGesture -> HoldControlTarget.Volume
+                      horizontalDelta <= -selectThreshold && holdTargetEnabled(leftTarget) -> leftTarget
+                      horizontalDelta >= selectThreshold && holdTargetEnabled(rightTarget) -> rightTarget
                       else -> null
                     }
                     if (switchedTarget != null && switchedTarget != holdSelection) {
                       holdSelection = switchedTarget
+                      holdAtEdge = false
                       // Re-anchor the vertical baselines so switching targets
                       // never jumps the newly selected value.
                       holdPrevY = currentPosition.y
@@ -692,6 +741,10 @@ fun GestureHandler(
                             viewModel.changeMPVVolumeTo(newMPVVolume)
                             holdLastMPVVolume = newMPVVolume
                           }
+                          holdTickAtEdge(
+                            pushingPastEdge = (movingUp && newMPVVolume >= volumeBoostingCap + 100) ||
+                              (movingDown && newMPVVolume <= 100),
+                          )
                         } else {
                           if (holdStartingY == 0f) {
                             holdMpvStartingY = 0f
@@ -709,6 +762,11 @@ fun GestureHandler(
                             viewModel.changeVolumeTo(newVolume)
                             holdLastVolume = newVolume
                           }
+                          val systemVolumeRange = viewModel.volumeRangeSteps()
+                          holdTickAtEdge(
+                            pushingPastEdge = (movingUp && newVolume > systemVolumeRange.endInclusive) ||
+                              (movingDown && newVolume < systemVolumeRange.start),
+                          )
                         }
                         viewModel.displayVolumeSlider()
                       }
@@ -727,6 +785,10 @@ fun GestureHandler(
                           viewModel.changeBrightnessTo(newBrightness)
                           holdLastBrightness = newBrightness
                         }
+                        holdTickAtEdge(
+                          pushingPastEdge = (movingUp && newBrightness >= 1f) ||
+                            (movingDown && newBrightness <= 0f),
+                        )
                         viewModel.displayBrightnessSlider()
                       }
                     }
@@ -920,6 +982,7 @@ fun GestureHandler(
                 holdPrevY = 0f
                 holdStartingY = 0f
                 holdMpvStartingY = 0f
+                holdAtEdge = false
                 if (isLongPressing) {
                   isLongPressing = false
                   viewModel.playerUpdate.update { PlayerUpdates.None }
@@ -961,6 +1024,7 @@ fun GestureHandler(
               holdPrevY = 0f
               holdStartingY = 0f
               holdMpvStartingY = 0f
+              holdAtEdge = false
               viewModel.playerUpdate.update { PlayerUpdates.None }
               return@awaitEachGesture
             }
