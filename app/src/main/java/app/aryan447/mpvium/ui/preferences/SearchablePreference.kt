@@ -163,13 +163,6 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
-                titleRes = R.string.pref_player_interface,
-                summaryRes = R.string.pref_player_interface_desc,
-                keywords = listOf("interface", "classic", "modern", "minimal", "theme", "layout", "ui", "player style"),
-                category = "Player",
-                screen = PlayerPreferencesScreen,
-            ))
-            add(SearchablePreference(
                 titleRes = R.string.pref_player_save_position_on_quit,
                 keywords = listOf("save", "position", "resume", "remember", "progress"),
                 category = "Player",
