@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.FastForward
@@ -568,6 +569,17 @@ fun RenderPlayerButton(
       ControlsButton(
         icon = Icons.Default.FastForward,
         onClick = { viewModel.seekBy(playerPreferences.customSkipDuration.get()) },
+        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.size(buttonSize),
+      )
+    }
+
+    PlayerButton.BRIGHTNESS -> {
+      // Tapping the sun icon pops the brightness slider, which stays
+      // alive while dragged (see BrightnessSlider onValueChange).
+      ControlsButton(
+        icon = Icons.Default.BrightnessMedium,
+        onClick = { viewModel.displayBrightnessSlider() },
         color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )

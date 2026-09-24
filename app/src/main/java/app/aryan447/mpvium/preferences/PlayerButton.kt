@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.outlined.Segment
 import androidx.compose.material.icons.outlined.AspectRatio
 import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.Bookmarks
+import androidx.compose.material.icons.outlined.BrightnessMedium
 import androidx.compose.material.icons.outlined.Camera
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Memory
@@ -61,6 +62,7 @@ enum class PlayerButton(
   SKIP_RECAP(Icons.Outlined.FastForward),
   BACKGROUND_PLAYBACK(Icons.Outlined.Headset),
   EXPLAIN(Icons.Outlined.Translate),
+  BRIGHTNESS(Icons.Outlined.BrightnessMedium),
   NONE(Icons.Outlined.Bookmarks),
 }
 
@@ -107,5 +109,6 @@ fun getPlayerButtonLabel(button: PlayerButton): String =
     PlayerButton.SKIP_RECAP -> "Skip Recap"
     PlayerButton.BACKGROUND_PLAYBACK -> "Background Playback"
     PlayerButton.EXPLAIN -> "Explain"
+    PlayerButton.BRIGHTNESS -> "Brightness"
     PlayerButton.NONE -> "None"
   }

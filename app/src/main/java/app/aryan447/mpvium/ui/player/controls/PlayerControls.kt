@@ -465,7 +465,19 @@ fun PlayerControls(
               top.linkTo(parent.top, spacing.larger)
               bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
             },
-        ) { BrightnessSlider(brightness, 0f..1f, seekbarStyle = brightnessSliderStyle) }
+        ) {
+          BrightnessSlider(
+            brightness,
+            0f..1f,
+            seekbarStyle = brightnessSliderStyle,
+            onValueChange = {
+              viewModel.changeBrightnessTo(it)
+              // Refresh the auto-hide timer so the slider stays up
+              // for the whole drag and dismisses shortly after release.
+              viewModel.displayBrightnessSlider()
+            },
+          )
+        }
 
         AnimatedVisibility(
           isVolumeSliderShown,

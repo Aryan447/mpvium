@@ -53,7 +53,7 @@ class AppearancePreferences(
   val topRightControls =
     preferenceStore.getString(
       "top_right_controls",
-      "AUDIO_TRACK,SUBTITLES,MORE_OPTIONS",
+      "AUDIO_TRACK,SUBTITLES,BRIGHTNESS,MORE_OPTIONS",
     )
 
   val bottomRightControls =
@@ -71,7 +71,7 @@ class AppearancePreferences(
   val portraitBottomControls =
     preferenceStore.getString(
       "portrait_bottom_controls",
-      "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP,EXPLAIN",
+      "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP,EXPLAIN,BRIGHTNESS",
     )
 
   fun parseButtons(
