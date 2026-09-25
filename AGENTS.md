@@ -27,6 +27,7 @@ production-perfect without running the relevant tests and build checks.
 - `gradle/libs.versions.toml` — dependency and plugin versions.
 - `.github/workflows/` — CI, preview, release, and deployment workflows.
 - `fastlane/metadata/` — store metadata and screenshots.
+- `CHANGELOG.md` — user-facing changelog; source of truth for release notes.
 - `docs/` — static single-page site for GitHub Pages (`index.html` only, no build).
 
 ## MediaInfo dependency
@@ -113,6 +114,11 @@ keystores, passwords, tokens, or other credentials to the repository.
    shapes, and string resources; verify alignment, insets (status,
    navigation, gesture areas), RTL mirroring, and light/dark themes
    before finishing any UI change.
+9. Update `CHANGELOG.md` after every feature addition, change, or fix.
+   Add user-facing entries under `Unreleased`, grouped by `Added`,
+   `Changed`, `Fixed`. When cutting a new stable version, rename
+   `Unreleased` to the version number and start a fresh empty
+   `Unreleased` (see `CHANGELOG.md` → How to update).
 
 ## Development without local installation
 
