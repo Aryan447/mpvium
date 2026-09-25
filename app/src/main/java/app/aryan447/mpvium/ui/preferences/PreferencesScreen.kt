@@ -45,6 +45,7 @@ object PreferencesScreen : Screen {
   @Composable
   override fun Content() {
     val backstack = LocalBackStack.current
+    val sections = settingsSections()
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(R.string.pref_preferences))
@@ -90,28 +91,7 @@ object PreferencesScreen : Screen {
             }
           }
 
-          settingsSections(
-            appearanceTitle = stringResource(id = R.string.pref_appearance_title),
-            appearanceSummary = stringResource(id = R.string.pref_appearance_summary),
-            layoutTitle = stringResource(id = R.string.pref_layout_title),
-            layoutSummary = stringResource(id = R.string.pref_layout_summary),
-            playerTitle = stringResource(id = R.string.pref_player),
-            playerSummary = stringResource(id = R.string.pref_player_summary),
-            gestureTitle = stringResource(id = R.string.pref_gesture),
-            gestureSummary = stringResource(id = R.string.pref_gesture_summary),
-            foldersTitle = stringResource(id = R.string.pref_folders_title),
-            foldersSummary = stringResource(id = R.string.pref_folders_summary),
-            decoderTitle = stringResource(id = R.string.pref_decoder),
-            decoderSummary = stringResource(id = R.string.pref_decoder_summary),
-            subtitlesTitle = stringResource(id = R.string.pref_subtitles),
-            subtitlesSummary = stringResource(id = R.string.pref_subtitles_summary),
-            audioTitle = stringResource(id = R.string.pref_audio),
-            audioSummary = stringResource(id = R.string.pref_audio_summary),
-            advancedTitle = stringResource(R.string.pref_advanced),
-            advancedSummary = stringResource(id = R.string.pref_advanced_summary),
-            aboutTitle = stringResource(id = R.string.pref_about_title),
-            aboutSummary = stringResource(id = R.string.pref_about_summary),
-          ).forEach { section ->
+          sections.forEach { section ->
             item(key = "header_${section.title}") {
               PreferenceSectionHeader(title = section.title)
             }
@@ -153,62 +133,91 @@ private data class SettingsSection(
   val rows: List<SettingsSectionRow>,
 )
 
-@Suppress("LongParameterList")
-private fun settingsSections(
-  appearanceTitle: String,
-  appearanceSummary: String,
-  layoutTitle: String,
-  layoutSummary: String,
-  playerTitle: String,
-  playerSummary: String,
-  gestureTitle: String,
-  gestureSummary: String,
-  foldersTitle: String,
-  foldersSummary: String,
-  decoderTitle: String,
-  decoderSummary: String,
-  subtitlesTitle: String,
-  subtitlesSummary: String,
-  audioTitle: String,
-  audioSummary: String,
-  advancedTitle: String,
-  advancedSummary: String,
-  aboutTitle: String,
-  aboutSummary: String,
-): List<SettingsSection> = listOf(
+@Composable
+private fun settingsSections(): List<SettingsSection> = listOf(
   SettingsSection(
     title = "UI & Appearance",
     rows = listOf(
-      SettingsSectionRow(appearanceTitle, appearanceSummary, Icons.Outlined.Palette, AppearancePreferencesScreen),
-      SettingsSectionRow(layoutTitle, layoutSummary, Icons.AutoMirrored.Outlined.ViewQuilt, PlayerControlsPreferencesScreen),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_appearance_title),
+        stringResource(id = R.string.pref_appearance_summary),
+        Icons.Outlined.Palette,
+        AppearancePreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_layout_title),
+        stringResource(id = R.string.pref_layout_summary),
+        Icons.AutoMirrored.Outlined.ViewQuilt,
+        PlayerControlsPreferencesScreen,
+      ),
     ),
   ),
   SettingsSection(
     title = "Playback & Controls",
     rows = listOf(
-      SettingsSectionRow(playerTitle, playerSummary, Icons.Outlined.PlayCircle, PlayerPreferencesScreen),
-      SettingsSectionRow(gestureTitle, gestureSummary, Icons.Outlined.Gesture, GesturePreferencesScreen),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_player),
+        stringResource(id = R.string.pref_player_summary),
+        Icons.Outlined.PlayCircle,
+        PlayerPreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_gesture),
+        stringResource(id = R.string.pref_gesture_summary),
+        Icons.Outlined.Gesture,
+        GesturePreferencesScreen,
+      ),
     ),
   ),
   SettingsSection(
     title = "File Management",
     rows = listOf(
-      SettingsSectionRow(foldersTitle, foldersSummary, Icons.Outlined.Folder, FoldersPreferencesScreen),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_folders_title),
+        stringResource(id = R.string.pref_folders_summary),
+        Icons.Outlined.Folder,
+        FoldersPreferencesScreen,
+      ),
     ),
   ),
   SettingsSection(
     title = "Media Settings",
     rows = listOf(
-      SettingsSectionRow(decoderTitle, decoderSummary, Icons.Outlined.Memory, DecoderPreferencesScreen),
-      SettingsSectionRow(subtitlesTitle, subtitlesSummary, Icons.Outlined.Subtitles, SubtitlesPreferencesScreen),
-      SettingsSectionRow(audioTitle, audioSummary, Icons.Outlined.Audiotrack, AudioPreferencesScreen),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_decoder),
+        stringResource(id = R.string.pref_decoder_summary),
+        Icons.Outlined.Memory,
+        DecoderPreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_subtitles),
+        stringResource(id = R.string.pref_subtitles_summary),
+        Icons.Outlined.Subtitles,
+        SubtitlesPreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_audio),
+        stringResource(id = R.string.pref_audio_summary),
+        Icons.Outlined.Audiotrack,
+        AudioPreferencesScreen,
+      ),
     ),
   ),
   SettingsSection(
     title = "Advanced & About",
     rows = listOf(
-      SettingsSectionRow(advancedTitle, advancedSummary, Icons.Outlined.Code, AdvancedPreferencesScreen),
-      SettingsSectionRow(aboutTitle, aboutSummary, Icons.Outlined.Info, AboutScreen),
+      SettingsSectionRow(
+        stringResource(R.string.pref_advanced),
+        stringResource(id = R.string.pref_advanced_summary),
+        Icons.Outlined.Code,
+        AdvancedPreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_about_title),
+        stringResource(id = R.string.pref_about_summary),
+        Icons.Outlined.Info,
+        AboutScreen,
+      ),
     ),
   ),
 )

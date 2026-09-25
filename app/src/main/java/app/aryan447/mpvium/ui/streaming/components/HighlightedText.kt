@@ -39,14 +39,15 @@ fun HighlightedText(
     )
     return
   }
-  val annotated = remember(text, trimmedQuery) {
+  val highlightColor = MaterialTheme.colorScheme.primary
+  val annotated = remember(text, trimmedQuery, highlightColor) {
     buildAnnotatedString {
       append(text)
       var start = text.indexOf(trimmedQuery, ignoreCase = true)
       while (start >= 0) {
         addStyle(
           style = SpanStyle(
-            color = MaterialTheme.colorScheme.primary,
+            color = highlightColor,
             fontWeight = FontWeight.Bold,
           ),
           start = start,
