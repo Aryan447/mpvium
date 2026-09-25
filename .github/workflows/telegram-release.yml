@@ -48,19 +48,23 @@ jobs:
           # Telegram caption limit is 1024 chars; keep tag + truncated notes.
           CAPTION=$(printf 'New release: %s\n\n%s' "$TAG" "$NOTES" | cut -c1-1000)
           stat "$APK_PATH"
+          # Feed the file via stdin (@-): curl's own file open() fails on
+          # this runner despite the file being present and readable, while
+          # shell redirection reads it fine.
+          APK_FILENAME=$(basename "$APK_PATH")
           if ! curl -sSL -X POST \
             "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument" \
             -F "chat_id=${CHAT_ID}" \
             -F "message_thread_id=${THREAD_ID}" \
-            -F "document=@${APK_PATH}" \
-            -F "caption=${CAPTION}"; then
+            -F "document=@-;filename=${APK_FILENAME};type=application/vnd.android.package-archive" \
+            -F "caption=${CAPTION}" < "$APK_PATH"; then
             echo "--- upload failed, dumping curl trace ---"
             curl --trace-ascii /tmp/curl-trace.txt -X POST \
               "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument" \
               -F "chat_id=${CHAT_ID}" \
               -F "message_thread_id=${THREAD_ID}" \
-              -F "document=@${APK_PATH}" \
-              -F "caption=${CAPTION}" || true
+              -F "document=@-;filename=${APK_FILENAME};type=application/vnd.android.package-archive" \
+              -F "caption=${CAPTION}" < "$APK_PATH" || true
             tail -40 /tmp/curl-trace.txt || true
             exit 1
           fi
