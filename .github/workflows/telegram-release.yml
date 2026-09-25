@@ -39,7 +39,9 @@ jobs:
 
           APK_NAME=$(basename "$APK_URL")
           echo "Downloading $APK_NAME"
-          curl -sSL "$APK_URL" -o "release/$APK_NAME"
+          curl -fSL --retry 3 --retry-all-errors "$APK_URL" -o "release/$APK_NAME"
+          ls -lh release/
+          test -s "release/$APK_NAME"
           echo "APK_PATH=release/$APK_NAME" >> "$GITHUB_ENV"
 
       - name: Send APK to Telegram
@@ -52,6 +54,8 @@ jobs:
           NOTES: ${{ github.event.release.body }}
         run: |
           set -euo pipefail
+          ls -lh "${APK_PATH}"
+          test -s "${APK_PATH}"
           # Telegram caption limit is 1024 chars; keep tag + truncated notes.
           CAPTION=$(printf 'New release: %s\n\n%s' "$TAG" "$NOTES" | cut -c1-1000)
           curl -sSL -X POST \
