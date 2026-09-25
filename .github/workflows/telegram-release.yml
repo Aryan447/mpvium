@@ -19,14 +19,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release
-          # Prefer the universal APK so Telegram gets a single installable file.
+          # Prefer arm64 (fits Telegram's 50MB Bot API upload limit; the
+          # universal APK is ~80MB and would always be rejected).
           # gh fails fast with a clear error when nothing matches.
           gh release download "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --pattern "mpvium-universal-*.apk" \
+            --pattern "mpvium-arm64-v8a-*.apk" \
             --dir release \
             --clobber
-          APK_PATH=$(ls release/mpvium-universal-*.apk | head -1)
+          APK_PATH=$(ls release/mpvium-arm64-v8a-*.apk | head -1)
           ls -lh "$APK_PATH"
           test -s "$APK_PATH"
           sha256sum "$APK_PATH"
@@ -46,9 +47,20 @@ jobs:
           test -s "${APK_PATH}"
           # Telegram caption limit is 1024 chars; keep tag + truncated notes.
           CAPTION=$(printf 'New release: %s\n\n%s' "$TAG" "$NOTES" | cut -c1-1000)
-          curl -sSL -X POST \
+          stat "$APK_PATH"
+          if ! curl -sSL -X POST \
             "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument" \
             -F "chat_id=${CHAT_ID}" \
             -F "message_thread_id=${THREAD_ID}" \
             -F "document=@${APK_PATH}" \
-            -F "caption=${CAPTION}"
+            -F "caption=${CAPTION}"; then
+            echo "--- upload failed, dumping curl trace ---"
+            curl --trace-ascii /tmp/curl-trace.txt -X POST \
+              "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument" \
+              -F "chat_id=${CHAT_ID}" \
+              -F "message_thread_id=${THREAD_ID}" \
+              -F "document=@${APK_PATH}" \
+              -F "caption=${CAPTION}" || true
+            tail -40 /tmp/curl-trace.txt || true
+            exit 1
+          fi
