@@ -18,6 +18,9 @@
   <string name="pref_appearance_amoled_mode_summary">Use pure black background for dark themes</string>
   <string name="pref_appearance_pill_nav_title">Floating pill navigation bar</string>
   <string name="pref_appearance_pill_nav_summary">Show the bottom bar as a floating rounded pill</string>
+  <string name="pref_appearance_category_haptics">Haptics</string>
+  <string name="pref_appearance_haptics_title">Haptic feedback</string>
+  <string name="pref_appearance_haptics_summary">Vibrate on taps, gestures, and toggles</string>
   <string name="pref_appearance_category_bottom_nav">Bottom navigation</string>
   <string name="pref_appearance_show_bottom_nav_labels_title">Show tab labels</string>
   <string name="pref_appearance_show_bottom_nav_labels_summary">Show text under bottom navigation icons</string>
@@ -188,6 +191,13 @@
   <string name="pref_player_gestures_hold_controls_hint">Hold, swipe ◀ ▶ to pick, swipe ▲ ▼ to adjust</string>
   <string name="hold_controls_brightness">Brightness</string>
   <string name="hold_controls_volume">Volume</string>
+  <string name="hold_controls_value_brightness">Brightness %1$d%%</string>
+  <string name="hold_controls_value_volume">Volume %1$d%%</string>
+  <string name="hold_controls_value_volume_boost">Volume %1$d%% • Boost +%2$d%%</string>
+  <string name="hold_mode_switched_speed">Hold action: 2× speed</string>
+  <string name="hold_mode_switched_brightness_volume">Hold action: brightness &amp; volume</string>
+  <string name="player_button_hold_mode_speed">Hold mode: 2× speed. Activate to switch to brightness and volume.</string>
+  <string name="player_button_hold_mode_controls">Hold mode: brightness and volume. Activate to switch to 2× speed.</string>
   <string name="pref_player_controls">Controls</string>
   <string name="pref_player_controls_allow_gestures_in_panels">Allow gestures in panels</string>
   <string name="pref_player_controls_display_volume_as_percentage">Display volume as percentage</string>

@@ -17,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,6 +37,7 @@ import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import org.koin.compose.koinInject
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Serializable
 object AppearancePreferencesScreen : Screen {
@@ -51,7 +51,7 @@ object AppearancePreferencesScreen : Screen {
 
         val darkMode by preferences.darkMode.collectAsState()
         val appTheme by preferences.appTheme.collectAsState()
-        val haptic = LocalHapticFeedback.current
+        val haptic = rememberHapticFeedback()
 
         // Determine if we're in dark mode for theme preview
         val isDarkMode = when (darkMode) {
@@ -159,6 +159,31 @@ object AppearancePreferencesScreen : Screen {
                                         color = MaterialTheme.colorScheme.outline,
                                     )
                                 },
+                            )
+                        }
+                    }
+
+                    item {
+                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_haptics))
+                    }
+
+                    item {
+                        PreferenceCard {
+                            val hapticsEnabled by preferences.enableHaptics.collectAsState()
+                            HapticSwitchPreference(
+                                value = hapticsEnabled,
+                                onValueChange = { preferences.enableHaptics.set(it) },
+                                title = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_haptics_title),
+                                    )
+                                },
+                                summary = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_haptics_summary),
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                }
                             )
                         }
                     }

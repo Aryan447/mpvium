@@ -32,4 +32,11 @@ object ContinueWatchingDismissals {
     preferenceStore.getLong(KEY_PREFIX + keyFor(item), 0L)
       .set(maxOf(System.currentTimeMillis(), item.lastPlayedTimestamp))
   }
+
+  /** Clears a dismissal so the item reappears on next load / restore. */
+  fun restore(item: ContinueWatchingItem) {
+    runCatching {
+      preferenceStore.getLong(KEY_PREFIX + keyFor(item), 0L).delete()
+    }
+  }
 }

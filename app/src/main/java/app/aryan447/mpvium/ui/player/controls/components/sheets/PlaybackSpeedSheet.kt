@@ -39,7 +39,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +65,7 @@ import org.koin.compose.koinInject
 import app.aryan447.mpvium.presentation.components.RepeatingIconButton
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun PlaybackSpeedSheet(
@@ -81,7 +81,7 @@ fun PlaybackSpeedSheet(
   modifier: Modifier = Modifier,
 ) {
   PlayerSheet(onDismissRequest = onDismissRequest) {
-    val haptic = LocalHapticFeedback.current
+    val haptic = rememberHapticFeedback()
     Column(
       modifier
         .verticalScroll(rememberScrollState())

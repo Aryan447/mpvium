@@ -20,9 +20,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Gesture
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +41,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.vector.ImageVector
+import app.aryan447.mpvium.ui.streaming.components.HighlightedText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -196,6 +207,7 @@ object SettingsSearchScreen : Screen {
                         ) { _, preference ->
                             SearchResultItem(
                                 preference = preference,
+                                query = searchQuery,
                                 onClick = {
                                     keyboardController?.hide()
                                     backstack.add(preference.screen)
@@ -212,6 +224,7 @@ object SettingsSearchScreen : Screen {
 @Composable
 private fun SearchResultItem(
     preference: SearchablePreference,
+    query: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -239,20 +252,18 @@ private fun SearchResultItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Settings,
+            PreferenceIconBox(
+                icon = searchResultIcon(preference.category),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
             )
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                HighlightedText(
                     text = titleText,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    query = query,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -275,4 +286,17 @@ private fun SearchResultItem(
             }
         }
     }
+}
+
+private fun searchResultIcon(category: String): ImageVector = when (category) {
+    "Player" -> Icons.Outlined.PlayCircle
+    "Appearance" -> Icons.Outlined.Palette
+    "Gestures" -> Icons.Outlined.Gesture
+    "Folders" -> Icons.Outlined.Folder
+    "Decoder" -> Icons.Outlined.Memory
+    "Subtitles" -> Icons.Outlined.Subtitles
+    "Audio" -> Icons.Outlined.Audiotrack
+    "Advanced" -> Icons.Outlined.Code
+    "About" -> Icons.Outlined.Info
+    else -> Icons.Outlined.Settings
 }

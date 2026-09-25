@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -18,6 +17,7 @@ import app.aryan447.mpvium.ui.player.TrackNode
 import app.aryan447.mpvium.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 sealed class SubtitleItem {
   data class Track(val node: TrackNode) : SubtitleItem()
@@ -129,7 +129,7 @@ fun SubtitleTrackRow(
   onRemove: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   val tickToggle = {
     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
     onToggle()

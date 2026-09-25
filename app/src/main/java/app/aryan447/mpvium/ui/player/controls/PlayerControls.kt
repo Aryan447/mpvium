@@ -120,6 +120,7 @@ import app.aryan447.mpvium.ui.player.controls.components.SpeedControlSlider
 import app.aryan447.mpvium.ui.player.controls.components.SubtitlePositionPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.TextPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.VolumeSlider
+import app.aryan447.mpvium.ui.player.controls.components.percentage
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.controlColor
@@ -342,6 +343,8 @@ fun PlayerControls(
         val reduceMotion by playerPreferences.reduceMotion.collectAsState()
         val volumeSliderStyle by appearancePreferences.volumeSliderStyle.collectAsState()
         val brightnessSliderStyle by appearancePreferences.brightnessSliderStyle.collectAsState()
+        val volumeMinLimit by audioPreferences.volumeMinLimit.collectAsState()
+        val volumeMaxLimit by audioPreferences.volumeMaxLimit.collectAsState()
 
         val activity = LocalActivity.current as PlayerActivity
         val aspect by viewModel.videoAspect.collectAsState()
@@ -465,7 +468,19 @@ fun PlayerControls(
               top.linkTo(parent.top, spacing.larger)
               bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
             },
-        ) { BrightnessSlider(brightness, 0f..1f, seekbarStyle = brightnessSliderStyle) }
+        ) {
+          BrightnessSlider(
+            brightness,
+            0f..1f,
+            seekbarStyle = brightnessSliderStyle,
+            onValueChange = {
+              viewModel.changeBrightnessTo(it)
+              // Refresh the auto-hide timer so the slider stays up
+              // for the whole drag and dismisses shortly after release.
+              viewModel.displayBrightnessSlider()
+            },
+          )
+        }
 
         AnimatedVisibility(
           isVolumeSliderShown,
@@ -498,8 +513,6 @@ fun PlayerControls(
         ) {
           val boostCap by audioPreferences.volumeBoostCap.collectAsState()
           val displayVolumeAsPercentage by playerPreferences.displayVolumeAsPercentage.collectAsState()
-          val volumeMinLimit by audioPreferences.volumeMinLimit.collectAsState()
-          val volumeMaxLimit by audioPreferences.volumeMaxLimit.collectAsState()
 
           // Show if boost is allowed (boostCap > 0) OR if we are currently boosted (> 100)
           val currentBoost = (mpvVolume ?: 100) - 100
@@ -559,7 +572,14 @@ fun PlayerControls(
           when (val update = currentPlayerUpdate) {
             is PlayerUpdates.MultipleSpeed -> MultipleSpeedPlayerUpdate(currentSpeed = holdForMultipleSpeed)
             is PlayerUpdates.HoldControls -> {
-              HoldControlsPlayerUpdate(selected = update.selected)
+              val volumeRange = viewModel.volumeRangeSteps(volumeMinLimit, volumeMaxLimit)
+              HoldControlsPlayerUpdate(
+                selected = update.selected,
+                // toInt (not roundToInt) to match BrightnessSlider's truncation.
+                brightnessPercent = (brightness * 100).toInt(),
+                volumePercent = (percentage(volume, volumeRange) * 100).roundToInt(),
+                volumeBoost = (mpvVolume ?: 100) - 100,
+              )
             }
             is PlayerUpdates.DynamicSpeedControl -> {
               val speedUpdate = update

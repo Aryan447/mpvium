@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ViewQuilt
 import androidx.compose.material.icons.outlined.Audiotrack
@@ -30,7 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
@@ -44,6 +45,7 @@ object PreferencesScreen : Screen {
   @Composable
   override fun Content() {
     val backstack = LocalBackStack.current
+    val sections = settingsSections()
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(R.string.pref_preferences))
@@ -56,16 +58,16 @@ object PreferencesScreen : Screen {
               .fillMaxSize()
               .padding(padding),
         ) {
-          // Search bar - full width, prominent placement
+          // Search entry - tappable field that opens full search
           item {
             Surface(
               modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .clickable { backstack.add(SettingsSearchScreen) },
-              shape = RoundedCornerShape(28.dp),
-              color = glassSheetContainerColor(MaterialTheme.colorScheme.primaryContainer),
-              tonalElevation = 2.dp,
+              shape = RoundedCornerShape(20.dp),
+              color = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainerLow),
+              tonalElevation = 0.dp,
             ) {
               Row(
                 modifier = Modifier
@@ -76,145 +78,146 @@ object PreferencesScreen : Screen {
                 Icon(
                   imageVector = Icons.Outlined.Search,
                   contentDescription = null,
-                  tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                  tint = MaterialTheme.colorScheme.outline,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                   text = stringResource(R.string.settings_search_hint),
                   style = MaterialTheme.typography.bodyLarge,
-                  fontWeight = FontWeight.SemiBold,
-                  color = MaterialTheme.colorScheme.onPrimaryContainer,
+                  color = MaterialTheme.colorScheme.outline,
+                  maxLines = 1,
                 )
               }
             }
           }
 
-          // UI & Appearance Section
-          item {
-            PreferenceSectionHeader(title = "UI & Appearance")
-          }
+          sections.forEach { section ->
+            item(key = "header_${section.title}") {
+              PreferenceSectionHeader(title = section.title)
+            }
 
-          item {
-            PreferenceCard {
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_appearance_title),
-                summary = stringResource(id = R.string.pref_appearance_summary),
-                icon = Icons.Outlined.Palette,
-                onClick = { backstack.add(AppearancePreferencesScreen) },
-              )
-
-              PreferenceDivider()
-
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_layout_title),
-                summary = stringResource(id = R.string.pref_layout_summary),
-                icon = Icons.AutoMirrored.Outlined.ViewQuilt,
-                onClick = { backstack.add(PlayerControlsPreferencesScreen) },
-              )
+            item(key = "card_${section.title}") {
+              PreferenceCard {
+                section.rows.forEachIndexed { index, row ->
+                  if (index > 0) PreferenceDivider()
+                  SettingsPreferenceRow(
+                    title = row.title,
+                    summary = row.summary,
+                    icon = row.icon,
+                    onClick = { backstack.add(row.screen) },
+                  )
+                }
+              }
             }
           }
 
-          // Playback & Controls Section
+          // Bottom breathing room above the navigation bar
           item {
-            PreferenceSectionHeader(title = "Playback & Controls")
-          }
-
-          item {
-            PreferenceCard {
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_player),
-                summary = stringResource(id = R.string.pref_player_summary),
-                icon = Icons.Outlined.PlayCircle,
-                onClick = { backstack.add(PlayerPreferencesScreen) },
-              )
-
-              PreferenceDivider()
-
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_gesture),
-                summary = stringResource(id = R.string.pref_gesture_summary),
-                icon = Icons.Outlined.Gesture,
-                onClick = { backstack.add(GesturePreferencesScreen) },
-              )
-            }
-          }
-
-          // File Management Section
-          item {
-            PreferenceSectionHeader(title = "File Management")
-          }
-
-          item {
-            PreferenceCard {
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_folders_title),
-                summary = stringResource(id = R.string.pref_folders_summary),
-                icon = Icons.Outlined.Folder,
-                onClick = { backstack.add(FoldersPreferencesScreen) },
-              )
-            }
-          }
-
-          // Media Settings Section
-          item {
-            PreferenceSectionHeader(title = "Media Settings")
-          }
-
-          item {
-            PreferenceCard {
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_decoder),
-                summary = stringResource(id = R.string.pref_decoder_summary),
-                icon = Icons.Outlined.Memory,
-                onClick = { backstack.add(DecoderPreferencesScreen) },
-              )
-
-              PreferenceDivider()
-
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_subtitles),
-                summary = stringResource(id = R.string.pref_subtitles_summary),
-                icon = Icons.Outlined.Subtitles,
-                onClick = { backstack.add(SubtitlesPreferencesScreen) },
-              )
-
-              PreferenceDivider()
-
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_audio),
-                summary = stringResource(id = R.string.pref_audio_summary),
-                icon = Icons.Outlined.Audiotrack,
-                onClick = { backstack.add(AudioPreferencesScreen) },
-              )
-            }
-          }
-
-          // Advanced & About Section
-          item {
-            PreferenceSectionHeader(title = "Advanced & About")
-          }
-
-          item {
-            PreferenceCard {
-              SettingsPreferenceRow(
-                title = stringResource(R.string.pref_advanced),
-                summary = stringResource(id = R.string.pref_advanced_summary),
-                icon = Icons.Outlined.Code,
-                onClick = { backstack.add(AdvancedPreferencesScreen) },
-              )
-
-              PreferenceDivider()
-
-              SettingsPreferenceRow(
-                title = stringResource(id = R.string.pref_about_title),
-                summary = stringResource(id = R.string.pref_about_summary),
-                icon = Icons.Outlined.Info,
-                onClick = { backstack.add(AboutScreen) },
-              )
-            }
+            Spacer(modifier = Modifier.height(24.dp))
           }
         }
       }
     }
   }
 }
+
+private data class SettingsSectionRow(
+  val title: String,
+  val summary: String,
+  val icon: ImageVector,
+  val screen: Screen,
+)
+
+private data class SettingsSection(
+  val title: String,
+  val rows: List<SettingsSectionRow>,
+)
+
+@Composable
+private fun settingsSections(): List<SettingsSection> = listOf(
+  SettingsSection(
+    title = "UI & Appearance",
+    rows = listOf(
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_appearance_title),
+        stringResource(id = R.string.pref_appearance_summary),
+        Icons.Outlined.Palette,
+        AppearancePreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_layout_title),
+        stringResource(id = R.string.pref_layout_summary),
+        Icons.AutoMirrored.Outlined.ViewQuilt,
+        PlayerControlsPreferencesScreen,
+      ),
+    ),
+  ),
+  SettingsSection(
+    title = "Playback & Controls",
+    rows = listOf(
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_player),
+        stringResource(id = R.string.pref_player_summary),
+        Icons.Outlined.PlayCircle,
+        PlayerPreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_gesture),
+        stringResource(id = R.string.pref_gesture_summary),
+        Icons.Outlined.Gesture,
+        GesturePreferencesScreen,
+      ),
+    ),
+  ),
+  SettingsSection(
+    title = "File Management",
+    rows = listOf(
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_folders_title),
+        stringResource(id = R.string.pref_folders_summary),
+        Icons.Outlined.Folder,
+        FoldersPreferencesScreen,
+      ),
+    ),
+  ),
+  SettingsSection(
+    title = "Media Settings",
+    rows = listOf(
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_decoder),
+        stringResource(id = R.string.pref_decoder_summary),
+        Icons.Outlined.Memory,
+        DecoderPreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_subtitles),
+        stringResource(id = R.string.pref_subtitles_summary),
+        Icons.Outlined.Subtitles,
+        SubtitlesPreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_audio),
+        stringResource(id = R.string.pref_audio_summary),
+        Icons.Outlined.Audiotrack,
+        AudioPreferencesScreen,
+      ),
+    ),
+  ),
+  SettingsSection(
+    title = "Advanced & About",
+    rows = listOf(
+      SettingsSectionRow(
+        stringResource(R.string.pref_advanced),
+        stringResource(id = R.string.pref_advanced_summary),
+        Icons.Outlined.Code,
+        AdvancedPreferencesScreen,
+      ),
+      SettingsSectionRow(
+        stringResource(id = R.string.pref_about_title),
+        stringResource(id = R.string.pref_about_summary),
+        Icons.Outlined.Info,
+        AboutScreen,
+      ),
+    ),
+  ),
+)

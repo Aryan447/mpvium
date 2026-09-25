@@ -52,7 +52,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,6 +69,7 @@ import app.aryan447.mpvium.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 data class PlaylistItem(
   val uri: Uri,
@@ -286,7 +286,7 @@ fun PlaylistSheet(
   }
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   val sheetWidth = if (isListMode) {
     if (LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
       640.dp

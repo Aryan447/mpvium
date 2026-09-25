@@ -16,11 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import app.aryan447.mpvium.ui.theme.spacing
 import kotlin.math.max
 import kotlin.math.min
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun TintedSliderItem(
@@ -34,7 +34,7 @@ fun TintedSliderItem(
   min: Int = 0,
   icon: @Composable () -> Unit = {},
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
 
   Row(
     modifier =

@@ -40,7 +40,13 @@ import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateReposito
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.utils.LocalHapticsEnabled
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.ui.player.controls.PlayerControls
 import app.aryan447.mpvium.ui.theme.MpviumTheme
@@ -117,6 +123,8 @@ class PlayerActivity :
   /**
    * Preferences for player settings.
    */
+  private val appearancePreferences: AppearancePreferences by inject()
+
   private val playerPreferences: PlayerPreferences by inject()
 
   /**
@@ -476,15 +484,20 @@ class PlayerActivity :
 
   private fun setupPlayerControls() {
     binding.controls.setContent {
+      val hapticsEnabled by appearancePreferences.enableHaptics.collectAsState()
       MpviumTheme {
-        PlayerControls(
-          viewModel = viewModel,
-          onBackPress = {
-            isUserFinishing = true
-            finish()
-          },
-          modifier = Modifier,
-        )
+        CompositionLocalProvider(
+          LocalHapticsEnabled provides hapticsEnabled,
+        ) {
+          PlayerControls(
+            viewModel = viewModel,
+            onBackPress = {
+              isUserFinishing = true
+              finish()
+            },
+            modifier = Modifier,
+          )
+        }
       }
     }
   }

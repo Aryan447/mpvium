@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 /**
  * Flagship Naked-Emblem launch gate for mpvium.
  *
- * True flagship design language (Netflix · X · Apple TV):
+ * True flagship design language (premium streaming style):
  * - Pure standalone naked emblem: zero text, zero slogans, zero clutter.
  * - Mathematically pristine, perfectly proportioned play glyph (68dp × 86dp).
  * - Pitch-black OLED canvas (#050508) with ultra-faint studio top-falloff.
@@ -117,7 +117,7 @@ private fun MpviumSplashFrame(
       .background(Brush.verticalGradient(listOf(SplashLift, SplashBlack))),
     contentAlignment = Alignment.Center,
   ) {
-    // Subtle studio softbox top-light (Apple TV aesthetic)
+    // Subtle studio softbox top-light
     Canvas(modifier = Modifier.fillMaxSize()) {
       drawRect(
         brush = Brush.verticalGradient(

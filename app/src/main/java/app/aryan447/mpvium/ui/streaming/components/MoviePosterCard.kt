@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -44,6 +43,7 @@ import app.aryan447.mpvium.ui.theme.LocalAppTheme
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 import app.aryan447.mpvium.ui.theme.glassRimBrush
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -53,9 +53,10 @@ fun MoviePosterCard(
   onLongClick: (() -> Unit)? = null,
   modifier: Modifier = Modifier,
   cardWidth: Dp = 140.dp,
+  highlightQuery: String? = null,
 ) {
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
 
   Column(
     modifier = modifier
@@ -184,8 +185,9 @@ fun MoviePosterCard(
     Spacer(modifier = Modifier.height(6.dp))
 
     // Title
-    Text(
+    HighlightedText(
       text = movie.title,
+      query = highlightQuery,
       style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
       color = MaterialTheme.colorScheme.onSurface,
       maxLines = 1,

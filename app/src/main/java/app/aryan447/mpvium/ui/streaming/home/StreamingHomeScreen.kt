@@ -12,12 +12,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,7 +37,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -48,6 +45,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
@@ -69,20 +69,23 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -101,6 +104,7 @@ import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.browser.states.HomeLoadingSkeleton
 import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
@@ -118,6 +122,7 @@ import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Serializable
 object StreamingHomeScreen : Screen {
@@ -138,6 +143,25 @@ object StreamingHomeScreen : Screen {
     val lifecycleOwner = LocalLifecycleOwner.current
     val isRefreshing = remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarScope = rememberCoroutineScope()
+    // Debounced search: typing stays local and only hits the
+    // ViewModel after a pause, so each keystroke can't retrigger
+    // filtering while the user is still typing.
+    var searchText by remember(state.isSearching) { mutableStateOf(state.searchQuery) }
+    val searchFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(state.isSearching) {
+      if (state.isSearching) {
+        searchText = state.searchQuery
+        delay(100)
+        runCatching { searchFocusRequester.requestFocus() }
+      }
+    }
+    LaunchedEffect(searchText) {
+      if (!state.isSearching) return@LaunchedEffect
+      delay(300)
+      if (searchText != state.searchQuery) viewModel.setSearchQuery(searchText)
+    }
 
     DisposableEffect(lifecycleOwner) {
       val observer = LifecycleEventObserver { _, event ->
@@ -148,6 +172,7 @@ object StreamingHomeScreen : Screen {
     }
 
     Scaffold(
+      snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
       topBar = {
         val isGlass = LocalGlass.current
         val glassHaze = rememberGlassHazeState()
@@ -156,8 +181,8 @@ object StreamingHomeScreen : Screen {
           SearchBar(
             inputField = {
               SearchBarDefaults.InputField(
-                query = state.searchQuery,
-                onQueryChange = { viewModel.setSearchQuery(it) },
+                query = searchText,
+                onQueryChange = { searchText = it },
                 onSearch = {},
                 expanded = false,
                 onExpandedChange = {},
@@ -168,6 +193,7 @@ object StreamingHomeScreen : Screen {
                     Icon(Icons.Filled.Close, contentDescription = "Close search")
                   }
                 },
+                modifier = Modifier.focusRequester(searchFocusRequester),
               )
             },
             expanded = false,
@@ -272,20 +298,7 @@ object StreamingHomeScreen : Screen {
       ) {
         when {
           state.isLoading && state.series.isEmpty() && state.movies.isEmpty() -> {
-            Box(
-              modifier = Modifier.fillMaxSize(),
-              contentAlignment = Alignment.Center,
-            ) {
-              Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator()
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                   text = "Scanning library & TV shows...",
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-              }
-            }
+            HomeLoadingSkeleton(modifier = Modifier.fillMaxSize())
           }
 
           state.isSearching && state.searchQuery.isNotBlank() -> {
@@ -325,6 +338,7 @@ object StreamingHomeScreen : Screen {
                       series = series,
                       onClick = { backstack.add(SeriesDetailScreen(series.id)) },
                       cardWidth = 160.dp,
+                      highlightQuery = state.searchQuery,
                     )
                   }
                 }
@@ -342,6 +356,7 @@ object StreamingHomeScreen : Screen {
                       movie = movie,
                       onClick = { MediaUtils.playFile(movie.video, context, "movie_play") },
                       cardWidth = 160.dp,
+                      highlightQuery = state.searchQuery,
                     )
                   }
                 }
@@ -355,6 +370,8 @@ object StreamingHomeScreen : Screen {
               title = "No videos detected",
               message = "Add video files to your device storage to browse them here",
               modifier = Modifier.fillMaxSize(),
+              actionLabel = "Rescan library",
+              onAction = { viewModel.refresh() },
             )
           }
 
@@ -407,7 +424,18 @@ object StreamingHomeScreen : Screen {
                       MediaUtils.playFile(item.video, context, "continue_watching")
                     },
                     onSeeAllClick = { backstack.add(RecentlyPlayedScreen) },
-                    onItemRemove = { item -> viewModel.removeFromContinueWatching(item) },
+                    onItemRemove = { item ->
+                      viewModel.removeFromContinueWatching(item)
+                      snackbarScope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                          message = "Removed from Continue Watching",
+                          actionLabel = "Undo",
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                          viewModel.undoRemoveFromContinueWatching()
+                        }
+                      }
+                    },
                   )
                   Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -500,7 +528,7 @@ private fun CategoryChipsRow(
   onCategorySelect: (StreamingCategory) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   LazyRow(
     modifier = modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -584,7 +612,7 @@ private fun FolderQuickCard(
   folder: VideoFolder,
   onClick: () -> Unit,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   Surface(
     modifier = Modifier
       .width(160.dp)

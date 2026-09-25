@@ -23,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +37,7 @@ import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.ImmutableList
 import org.koin.compose.koinInject
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun AudioTracksSheet(
@@ -119,7 +119,7 @@ fun AudioTrackRow(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   Row(
     modifier =
       modifier

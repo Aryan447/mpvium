@@ -16,6 +16,17 @@ Source of truth for GitHub release notes.
 
 ### Added
 
+- Haptic feedback toggle to disable all vibrations app-wide.
+
+### Changed
+
+- Redesigned settings: calmer cards and headers, chevron rows with haptic feedback, and quieter search entry.
+- Settings search results now show per-category icons with match highlighting.
+
+## v1.1.7
+
+### Added
+
 - Customizable bottom bar with labels toggle and selectable tabs.
 - Whitelisted-folders-only mode for folder list, file browser, and search.
 - Lua/JS Scripts section with per-script manage, custom buttons, and sync.
@@ -24,11 +35,21 @@ Source of truth for GitHub release notes.
 - Offline intro-skip cache with Wi-Fi prefetch for uncached titles.
 - TMDB posters/ratings cached until media deletion (no re-scrape on app open).
 - Episode header falls back to cached TMDB title as S2:E12 "Name" when filename has no episode name.
+- Clear Glass theme plus Forest, Rose Gold, Violet, Sapphire, Sunset, Ocean, Gruvbox, Kanagawa, Doom, and Rose Pine themes.
+- Animated cinematic splash screen.
+- Optional vignette behind player controls (default on).
+- Hold-mode switch button to flip between 2x speed and brightness/volume hold actions.
+- Chapter button in the default bottom-left player controls.
+- Skeleton shimmer placeholders across Home, Movies, Shows, and Insights.
+- Sort (Title/Year/Rating/Episodes) and watch-state filters in the Movies and Shows grids.
+- Continue Watching quick-dismiss button with Undo.
+- Search polish: autofocus, debounced results, and match highlighting.
 
 ### Changed
 
 - Refreshed app logo artwork and linked Telegram community.
 - Bottom-edge swipes no longer trigger volume/brightness gestures.
+- Single player interface: removed the experimental Modern layout and standalone brightness button (brightness stays available via gestures and slider).
 
 ### Fixed
 
@@ -36,6 +57,8 @@ Source of truth for GitHub release notes.
 - Continue Watching / playtime refreshes instantly on video exit.
 - Seekbar thumb flutter, tap-seek delay, snap-back, and post-seek stall.
 - Seek preview held until seek confirms instead of fixed-delay clear.
+- Shorter post-seek refill stall via preload/cache tuning.
+- Tablet seek freeze.
 - Folder blacklist/whitelist now respected across Home, Movies, Shows, and Insights.
 
 ## v1.1.6-preview.5

@@ -3,6 +3,8 @@ package app.aryan447.mpvium.ui.player.controls.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
@@ -23,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -32,6 +35,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -281,10 +286,42 @@ fun BrightnessSlider(
   range: ClosedFloatingPointRange<Float>,
   modifier: Modifier = Modifier,
   seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  onValueChange: ((Float) -> Unit)? = null,
 ) {
   val coercedBrightness = brightness.coerceIn(range)
+  // Latest-value holders so the drag handler below never acts on a stale
+  // reading (pointerInput keys intentionally exclude the live value so an
+  // in-progress drag is never cancelled by recomposition).
+  val latestValue by rememberUpdatedState(coercedBrightness)
+  val latestOnChange by rememberUpdatedState(onValueChange)
+  val density = LocalDensity.current
+  // Reference travel matching the bar track height: a full-height swipe
+  // spans the whole range. Drag up brightens, drag down dims.
+  val travelPx = with(density) { 120.dp.toPx() }
+  val dragModifier = if (onValueChange == null) {
+    Modifier
+  } else {
+    Modifier.pointerInput(range, travelPx) {
+      awaitEachGesture {
+        val down = awaitFirstDown()
+        var lastY = down.position.y
+        do {
+          val event = awaitPointerEvent()
+          val change = event.changes.firstOrNull() ?: break
+          if (!change.pressed) break
+          val dy = change.position.y - lastY
+          lastY = change.position.y
+          val span = range.endInclusive - range.start
+          if (span > 0f && dy != 0f) {
+            latestOnChange?.invoke((latestValue - (dy / travelPx) * span).coerceIn(range))
+          }
+          change.consume()
+        } while (event.changes.any { it.pressed })
+      }
+    }
+  }
   Surface(
-    modifier = modifier,
+    modifier = modifier.then(dragModifier),
     shape = RoundedCornerShape(20.dp),
     color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
     contentColor = MaterialTheme.colorScheme.onSurface,

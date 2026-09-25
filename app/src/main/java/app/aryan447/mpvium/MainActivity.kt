@@ -114,10 +114,15 @@ class MainActivity : ComponentActivity() {
         }
       }
 
+      val hapticsEnabled by appearancePreferences.enableHaptics.collectAsState()
       MpviumTheme {
-        Surface {
-          MpviumSplashGate {
-            Navigator()
+        CompositionLocalProvider(
+          app.aryan447.mpvium.ui.utils.LocalHapticsEnabled provides hapticsEnabled,
+        ) {
+          Surface {
+            MpviumSplashGate {
+              Navigator()
+            }
           }
         }
       }

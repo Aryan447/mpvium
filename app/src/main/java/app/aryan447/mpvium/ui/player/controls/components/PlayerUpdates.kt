@@ -1,6 +1,11 @@
 package app.aryan447.mpvium.ui.player.controls.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -33,6 +38,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.Subtitles
@@ -153,8 +160,23 @@ fun MultipleSpeedPlayerUpdate(
 @Composable
 fun HoldControlsPlayerUpdate(
   selected: HoldControlTarget,
+  brightnessPercent: Int,
+  volumePercent: Int,
+  volumeBoost: Int,
   modifier: Modifier = Modifier,
 ) {
+  val isBoosted = selected == HoldControlTarget.Volume && volumeBoost > 0
+  val valueText = when (selected) {
+    HoldControlTarget.Brightness ->
+      stringResource(R.string.hold_controls_value_brightness, brightnessPercent)
+
+    HoldControlTarget.Volume ->
+      if (isBoosted) {
+        stringResource(R.string.hold_controls_value_volume_boost, volumePercent, volumeBoost)
+      } else {
+        stringResource(R.string.hold_controls_value_volume, volumePercent)
+      }
+  }
   PlayerUpdate(
     shape = RoundedCornerShape(20.dp),
     modifier = modifier,
@@ -168,6 +190,7 @@ fun HoldControlsPlayerUpdate(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
       ) {
+        HoldSwitchChevron(Icons.AutoMirrored.Filled.KeyboardArrowLeft)
         HoldControlChip(
           label = stringResource(R.string.hold_controls_brightness),
           icon = {
@@ -190,6 +213,27 @@ fun HoldControlsPlayerUpdate(
           },
           isSelected = selected == HoldControlTarget.Volume,
         )
+        HoldSwitchChevron(Icons.AutoMirrored.Filled.KeyboardArrowRight)
+      }
+      AnimatedContent(
+        targetState = valueText,
+        transitionSpec = {
+          fadeIn(animationSpec = tween(120)) togetherWith fadeOut(animationSpec = tween(120))
+        },
+        label = "HoldControlValue",
+      ) { text ->
+        Text(
+          text = text,
+          fontFamily = FontFamily.Monospace,
+          fontWeight = FontWeight.Bold,
+          textAlign = TextAlign.Center,
+          color = if (isBoosted) {
+            MaterialTheme.colorScheme.tertiary
+          } else {
+            MaterialTheme.colorScheme.onSurface
+          },
+          style = MaterialTheme.typography.bodyMedium,
+        )
       }
       Text(
         text = stringResource(R.string.pref_player_gestures_hold_controls_hint),
@@ -199,6 +243,18 @@ fun HoldControlsPlayerUpdate(
       )
     }
   }
+}
+
+@Composable
+private fun HoldSwitchChevron(
+  icon: androidx.compose.ui.graphics.vector.ImageVector,
+) {
+  Icon(
+    imageVector = icon,
+    contentDescription = null,
+    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+    modifier = Modifier.size(16.dp),
+  )
 }
 
 @Composable

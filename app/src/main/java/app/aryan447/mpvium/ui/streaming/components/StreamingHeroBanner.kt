@@ -35,7 +35,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,6 +50,7 @@ import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.glassSheen
+import app.aryan447.mpvium.ui.utils.rememberHapticFeedback
 
 @Composable
 fun StreamingHeroBanner(
@@ -62,7 +62,7 @@ fun StreamingHeroBanner(
   val fallbackVideo = series.nextEpisodeToWatch?.video ?: series.seasons.values.firstOrNull()?.firstOrNull()?.video
   val backdropUrl = series.backdropUrl ?: series.posterUrl
   val context = LocalContext.current
-  val haptic = LocalHapticFeedback.current
+  val haptic = rememberHapticFeedback()
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
   val isGlass = LocalGlass.current
   val dark = isSystemInDarkTheme()
