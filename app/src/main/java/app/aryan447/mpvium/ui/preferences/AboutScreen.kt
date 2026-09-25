@@ -117,7 +117,7 @@ object AboutScreen : Screen {
             repeatMode = RepeatMode.Reverse,
           ),
       )
-      val cornerRadius = 28.dp
+      val cornerRadius = 24.dp
 
       Column(
         modifier =
@@ -198,7 +198,7 @@ object AboutScreen : Screen {
                     Modifier
                       .weight(1f)
                       .height(56.dp),
-                  shape = RoundedCornerShape(16.dp),
+                  shape = RoundedCornerShape(20.dp),
                   colors =
                     ButtonDefaults.buttonColors(
                       containerColor = btnContainer,
@@ -225,7 +225,7 @@ object AboutScreen : Screen {
                     Modifier
                       .weight(1f)
                       .height(56.dp),
-                  shape = RoundedCornerShape(16.dp),
+                  shape = RoundedCornerShape(20.dp),
                   colors =
                     ButtonDefaults.buttonColors(
                       containerColor = btnContainer,
@@ -251,7 +251,7 @@ object AboutScreen : Screen {
                   Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors =
                   ButtonDefaults.buttonColors(
                     containerColor = cs.secondaryContainer,

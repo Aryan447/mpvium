@@ -94,6 +94,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.streaming.model.StreamingCategory
@@ -413,6 +414,43 @@ object StreamingHomeScreen : Screen {
                 }
               }
 
+              // Up Next: next unwatched episode per show, in-progress shows first.
+              // One tap resumes the episode; artwork/progress reuse the cards.
+              if ((state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)) {
+                val upNext = remember(state.series) { buildUpNext(state.series) }
+                if (upNext.isNotEmpty()) {
+                  item {
+                    ContinueWatchingRow(
+                      items = upNext,
+                      title = "Up Next",
+                      onItemClick = { item ->
+                        MediaUtils.playFile(item.video, context, "up_next")
+                      },
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                  }
+                }
+              }
+
+              // Recently Added: newest files across shows and movies by date added.
+              if (state.selectedCategory == StreamingCategory.ALL) {
+                val recentlyAdded = remember(state.series, state.movies) {
+                  buildRecentlyAdded(state.series, state.movies)
+                }
+                if (recentlyAdded.isNotEmpty()) {
+                  item {
+                    ContinueWatchingRow(
+                      items = recentlyAdded,
+                      title = "Recently Added",
+                      onItemClick = { item ->
+                        MediaUtils.playFile(item.video, context, "recently_added")
+                      },
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                  }
+                }
+              }
+
               // TV Series Section
               if ((state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)
                 && state.series.isNotEmpty()
@@ -671,6 +709,79 @@ private fun DynamicGreetingText(
       overflow = TextOverflow.Ellipsis,
     )
   }
+}
+
+/**
+ * Next unwatched episode per show. In-progress shows (a partially watched
+ * last episode) sort first so resuming is one tap away.
+ */
+private fun buildUpNext(series: List<LocalSeries>): List<ContinueWatchingItem> =
+  series
+    .filter { it.nextEpisodeToWatch != null }
+    .sortedWith(
+      compareByDescending<LocalSeries> {
+        it.lastWatchedEpisode != null && it.lastWatchedEpisode.isWatched == false
+      }.thenBy { it.title.lowercase() },
+    )
+    .take(10)
+    .map { show ->
+      val episode = show.nextEpisodeToWatch!!
+      ContinueWatchingItem(
+        video = episode.video,
+        title = show.title,
+        subtitle = "${episode.formattedEpisodeTag} • ${episode.displayTitle}",
+        posterUrl = show.posterUrl,
+        backdropUrl = episode.stillUrl ?: show.backdropUrl,
+        playbackPositionMs = episode.playbackPositionMs,
+        totalDurationMs = episode.video.duration,
+        progressPercentage = episode.progressPercentage,
+        lastPlayedTimestamp = episode.video.dateAdded,
+        isSeries = true,
+        seriesId = show.id,
+      )
+    }
+
+/**
+ * Newest files across episodes and movies by file date-added.
+ */
+private fun buildRecentlyAdded(
+  series: List<LocalSeries>,
+  movies: List<LocalMovie>,
+): List<ContinueWatchingItem> {
+  val episodes = series.flatMap { show ->
+    show.seasons.values.flatten().map { episode ->
+      ContinueWatchingItem(
+        video = episode.video,
+        title = show.title,
+        subtitle = "${episode.formattedEpisodeTag} • ${episode.displayTitle}",
+        posterUrl = show.posterUrl,
+        backdropUrl = episode.stillUrl ?: show.backdropUrl,
+        playbackPositionMs = episode.playbackPositionMs,
+        totalDurationMs = episode.video.duration,
+        progressPercentage = episode.progressPercentage,
+        lastPlayedTimestamp = episode.video.dateAdded,
+        isSeries = true,
+        seriesId = show.id,
+      )
+    }
+  }
+  val movieItems = movies.map { movie ->
+    ContinueWatchingItem(
+      video = movie.video,
+      title = movie.title,
+      subtitle = "Movie" + (movie.year?.let { " • $it" } ?: ""),
+      posterUrl = movie.posterUrl,
+      backdropUrl = movie.backdropUrl,
+      playbackPositionMs = movie.playbackPositionMs,
+      totalDurationMs = movie.video.duration,
+      progressPercentage = movie.progressPercentage,
+      lastPlayedTimestamp = movie.video.dateAdded,
+      isSeries = false,
+    )
+  }
+  return (episodes + movieItems)
+    .sortedByDescending { it.lastPlayedTimestamp }
+    .take(12)
 }
 
 @Composable

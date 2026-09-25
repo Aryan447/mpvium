@@ -27,11 +27,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -42,8 +42,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -56,6 +58,10 @@ import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 
+/**
+ * Standalone search route. The main settings hub now embeds search inline;
+ * this screen stays for deep links and reuses the same card/tonal styling.
+ */
 @Serializable
 object SettingsSearchScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -91,8 +97,8 @@ object SettingsSearchScreen : Screen {
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Search field
-                OutlinedTextField(
+                // Search field — matches the dashboard search styling
+                TextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier
@@ -102,14 +108,14 @@ object SettingsSearchScreen : Screen {
                     placeholder = {
                         Text(
                             text = stringResource(R.string.settings_search_hint),
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Outlined.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
                     trailingIcon = {
@@ -121,19 +127,21 @@ object SettingsSearchScreen : Screen {
                             IconButton(onClick = { searchQuery = "" }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Clear,
-                                    contentDescription = "Clear",
-                                    tint = MaterialTheme.colorScheme.outline,
+                                    contentDescription = "Clear search",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(28.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
@@ -141,7 +149,7 @@ object SettingsSearchScreen : Screen {
                     ),
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Results
                 if (searchQuery.isBlank()) {
@@ -190,6 +198,15 @@ object SettingsSearchScreen : Screen {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
                     ) {
+                        item {
+                            Text(
+                                text = "${searchResults.size} result${if (searchResults.size == 1) "" else "s"}",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                            )
+                        }
                         itemsIndexed(
                             items = searchResults,
                             key = { index, pref -> "${pref.titleRes}_${pref.category}_${pref.screen}_$index".hashCode() }
@@ -201,6 +218,9 @@ object SettingsSearchScreen : Screen {
                                     backstack.add(preference.screen)
                                 }
                             )
+                        }
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
@@ -230,8 +250,15 @@ private fun SearchResultItem(
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(SettingsCardShape)
             .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surface,
+        shape = SettingsCardShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+        ),
     ) {
         Row(
             modifier = Modifier
@@ -239,12 +266,7 @@ private fun SearchResultItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Settings,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
-            )
+            PreferenceIconBox(icon = Icons.Outlined.Settings)
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -261,17 +283,14 @@ private fun SearchResultItem(
                     Text(
                         text = it,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                        maxLines = 2,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
 
-                Text(
-                    text = preference.category,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                )
+                Spacer(modifier = Modifier.height(6.dp))
+                SettingsCategoryPill(text = preference.category)
             }
         }
     }

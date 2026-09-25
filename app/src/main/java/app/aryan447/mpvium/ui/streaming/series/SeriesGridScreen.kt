@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -72,7 +73,12 @@ import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
+import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
+import app.aryan447.mpvium.ui.streaming.components.SeriesSort
+import app.aryan447.mpvium.ui.streaming.components.SeriesWatchFilter
+import app.aryan447.mpvium.ui.streaming.components.SortOption
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
@@ -165,12 +171,36 @@ object SeriesGridScreen : Screen {
       MediaLibraryEvents.changes.collect { refreshKey++ }
     }
 
-    val filteredSeries = remember(seriesList, searchQuery) {
-      if (searchQuery.isBlank()) {
+    var seriesFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
+    var seriesSortOrdinal by rememberSaveable { mutableIntStateOf(0) }
+    val seriesFilter = SeriesWatchFilter.entries[seriesFilterOrdinal.coerceIn(SeriesWatchFilter.entries.indices)]
+    val seriesSort = SeriesSort.entries[seriesSortOrdinal.coerceIn(SeriesSort.entries.indices)]
+    val seriesSortOptions = remember {
+      SeriesSort.entries.map { SortOption(it, it.label) }
+    }
+
+    val filteredSeries = remember(seriesList, searchQuery, seriesFilter, seriesSort) {
+      var result = if (searchQuery.isBlank()) {
         seriesList
       } else {
         seriesList.filter { it.title.lowercase().contains(searchQuery.lowercase()) }
       }
+      result = when (seriesFilter) {
+        SeriesWatchFilter.ALL -> result
+        SeriesWatchFilter.IN_PROGRESS -> result.filter { it.watchedEpisodesCount > 0 && !it.isCompleted }
+        SeriesWatchFilter.UNWATCHED -> result.filter { it.watchedEpisodesCount == 0 }
+        SeriesWatchFilter.FINISHED -> result.filter { it.isCompleted }
+      }
+      result = when (seriesSort) {
+        SeriesSort.NAME -> result.sortedBy { it.title.lowercase() }
+        SeriesSort.RECENTLY_ADDED -> result.sortedByDescending { series ->
+          series.seasons.values.flatten().maxOfOrNull { it.video.dateAdded } ?: Long.MIN_VALUE
+        }
+        SeriesSort.PROGRESS -> result.sortedWith(
+          compareByDescending<LocalSeries> { it.progressPercentage }.thenBy { it.title.lowercase() },
+        )
+      }
+      result
     }
 
     Scaffold(
@@ -265,6 +295,12 @@ object SeriesGridScreen : Screen {
               isRefreshing = isRefreshing,
               onRefresh = { refreshKey++ },
               refreshEnabled = atTop && !isLoading,
+              seriesFilter = seriesFilter,
+              onSeriesFilterChange = { seriesFilterOrdinal = it.ordinal },
+              seriesSort = seriesSort,
+              seriesSortOptions = seriesSortOptions,
+              onSeriesSortChange = { seriesSortOrdinal = it.ordinal },
+              totalSeriesCount = seriesList.size,
               onSeriesClick = { selectedSeriesId = it.id },
             )
           }
@@ -294,6 +330,12 @@ object SeriesGridScreen : Screen {
           isRefreshing = isRefreshing,
           onRefresh = { refreshKey++ },
           refreshEnabled = atTop && !isLoading,
+          seriesFilter = seriesFilter,
+          onSeriesFilterChange = { seriesFilterOrdinal = it.ordinal },
+          seriesSort = seriesSort,
+          seriesSortOptions = seriesSortOptions,
+          onSeriesSortChange = { seriesSortOrdinal = it.ordinal },
+          totalSeriesCount = seriesList.size,
           onSeriesClick = { backstack.add(SeriesDetailScreen(it.id)) },
         )
       }
@@ -314,6 +356,12 @@ private fun SeriesGridContent(
   isRefreshing: MutableState<Boolean>,
   onRefresh: suspend () -> Unit,
   refreshEnabled: Boolean,
+  seriesFilter: SeriesWatchFilter,
+  onSeriesFilterChange: (SeriesWatchFilter) -> Unit,
+  seriesSort: SeriesSort,
+  seriesSortOptions: List<SortOption<SeriesSort>>,
+  onSeriesSortChange: (SeriesSort) -> Unit,
+  totalSeriesCount: Int,
   onSeriesClick: (LocalSeries) -> Unit,
 ) {
   if (isLoading) {
@@ -326,18 +374,31 @@ private fun SeriesGridContent(
       CircularProgressIndicator()
     }
   } else if (filteredSeries.isEmpty()) {
+    val filteringByWatchState = seriesFilter != SeriesWatchFilter.ALL
     EmptyState(
       icon = Icons.Filled.Tv,
-      title = if (searchQuery.isNotBlank()) "No TV shows found" else "No TV shows detected",
-      message = if (searchQuery.isNotBlank()) "No TV shows match '$searchQuery'" else "Add TV shows with S01E01 or season folders to see them here",
+      title = when {
+        searchQuery.isNotBlank() -> "No TV shows found"
+        filteringByWatchState -> "No ${seriesFilter.label.lowercase()} shows"
+        else -> "No TV shows detected"
+      },
+      message = when {
+        searchQuery.isNotBlank() -> "No TV shows match '$searchQuery'"
+        filteringByWatchState -> "Try a different watch-state filter"
+        else -> "Add TV shows with S01E01 or season folders to see them here"
+      },
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding),
-      actionLabel = if (searchQuery.isNotBlank()) "Clear search" else null,
-      onAction = if (searchQuery.isNotBlank()) {
-        onClearSearch
-      } else {
-        null
+      actionLabel = when {
+        searchQuery.isNotBlank() -> "Clear search"
+        filteringByWatchState -> "Show all"
+        else -> null
+      },
+      onAction = when {
+        searchQuery.isNotBlank() -> onClearSearch
+        filteringByWatchState -> ({ onSeriesFilterChange(SeriesWatchFilter.ALL) })
+        else -> null
       },
     )
   } else {
@@ -362,6 +423,24 @@ private fun SeriesGridContent(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
+        item(span = { GridItemSpan(columns) }) {
+          Column {
+            LibraryFilterBar(
+              options = SeriesWatchFilter.entries,
+              selected = seriesFilter,
+              labelOf = { it.label },
+              onSelect = onSeriesFilterChange,
+              sorts = seriesSortOptions,
+              selectedSort = seriesSort,
+              onSortSelect = onSeriesSortChange,
+              modifier = Modifier.padding(horizontal = 4.dp),
+            )
+            LibraryResultCount(
+              shown = filteredSeries.size,
+              total = totalSeriesCount,
+            )
+          }
+        }
         items(filteredSeries, key = { "grid_series_${it.id}" }) { series ->
           SeriesPosterCard(
             series = series,

@@ -24,9 +24,13 @@ Source of truth for GitHub release notes.
 - Offline intro-skip cache with Wi-Fi prefetch for uncached titles.
 - TMDB posters/ratings cached until media deletion (no re-scrape on app open).
 - Episode header falls back to cached TMDB title as S2:E12 "Name" when filename has no episode name.
+- Home Up Next rail (next unwatched episode per show, in-progress first) and Recently Added rail across shows and movies.
+- Shows and Movies grids gain watch-state filter chips, sort menus, result counts, and filter-aware empty states.
+- Player bottom-right controls gain a Hold Gesture toggle switching between speed boost and brightness/volume (also available in the layout editor).
 
 ### Changed
 
+- Redesigned Settings as a premium expressive dashboard with gradient hero, tactile tiles, and embedded search.
 - Refreshed app logo artwork and linked Telegram community.
 - Bottom-edge swipes no longer trigger volume/brightness gestures.
 
