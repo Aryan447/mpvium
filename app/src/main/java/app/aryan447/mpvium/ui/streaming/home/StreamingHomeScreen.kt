@@ -360,6 +360,12 @@ object StreamingHomeScreen : Screen {
           }
 
           else -> {
+            // Hoisted out of the LazyListScope: remember() is @Composable and
+            // cannot be called inside LazyColumn's item DSL.
+            val upNext = remember(state.series) { buildUpNext(state.series) }
+            val recentlyAdded = remember(state.series, state.movies) {
+              buildRecentlyAdded(state.series, state.movies)
+            }
             LazyColumn(
               state = listState,
               modifier = Modifier.fillMaxSize(),
@@ -417,7 +423,6 @@ object StreamingHomeScreen : Screen {
               // Up Next: next unwatched episode per show, in-progress shows first.
               // One tap resumes the episode; artwork/progress reuse the cards.
               if ((state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)) {
-                val upNext = remember(state.series) { buildUpNext(state.series) }
                 if (upNext.isNotEmpty()) {
                   item {
                     ContinueWatchingRow(
@@ -434,9 +439,6 @@ object StreamingHomeScreen : Screen {
 
               // Recently Added: newest files across shows and movies by date added.
               if (state.selectedCategory == StreamingCategory.ALL) {
-                val recentlyAdded = remember(state.series, state.movies) {
-                  buildRecentlyAdded(state.series, state.movies)
-                }
                 if (recentlyAdded.isNotEmpty()) {
                   item {
                     ContinueWatchingRow(

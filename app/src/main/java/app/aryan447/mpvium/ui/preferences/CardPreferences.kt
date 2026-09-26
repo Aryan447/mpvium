@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -334,7 +334,7 @@ fun SettingsPreferenceRow(
       contentAlignment = Alignment.Center,
     ) {
       Icon(
-        imageVector = Icons.AutoMirrored.Outlined.ChevronRight,
+        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
         contentDescription = null,
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.size(18.dp),

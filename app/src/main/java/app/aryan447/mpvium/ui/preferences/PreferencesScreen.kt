@@ -32,7 +32,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.outlined.ViewQuilt
 import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.Clear
@@ -576,7 +576,7 @@ private fun DashboardTile(
           contentAlignment = Alignment.Center,
         ) {
           Icon(
-            imageVector = Icons.AutoMirrored.Outlined.ChevronRight,
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = null,
             tint = scheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
