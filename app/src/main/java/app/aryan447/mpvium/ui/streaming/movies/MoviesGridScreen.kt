@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -72,7 +74,12 @@ import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
+import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
+import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
+import app.aryan447.mpvium.ui.streaming.components.MovieSort
+import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
+import app.aryan447.mpvium.ui.streaming.components.SortOption
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
@@ -171,12 +178,34 @@ object MoviesGridScreen : Screen {
       MediaLibraryEvents.changes.collect { refreshKey++ }
     }
 
-    val filteredMovies = remember(movieList, searchQuery) {
-      if (searchQuery.isBlank()) {
+    var movieFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
+    var movieSortOrdinal by rememberSaveable { mutableIntStateOf(0) }
+    val movieFilter = MovieWatchFilter.entries[movieFilterOrdinal.coerceIn(MovieWatchFilter.entries.indices)]
+    val movieSort = MovieSort.entries[movieSortOrdinal.coerceIn(MovieSort.entries.indices)]
+    val movieSortOptions = remember {
+      MovieSort.entries.map { SortOption(it, it.label) }
+    }
+
+    val filteredMovies = remember(movieList, searchQuery, movieFilter, movieSort) {
+      var result = if (searchQuery.isBlank()) {
         movieList
       } else {
         movieList.filter { it.title.lowercase().contains(searchQuery.lowercase()) }
       }
+      result = when (movieFilter) {
+        MovieWatchFilter.ALL -> result
+        MovieWatchFilter.UNWATCHED -> result.filter { !it.isWatched && it.progressPercentage <= 0f }
+        MovieWatchFilter.STARTED -> result.filter { !it.isWatched && it.progressPercentage > 0f }
+        MovieWatchFilter.WATCHED -> result.filter { it.isWatched }
+      }
+      result = when (movieSort) {
+        MovieSort.NAME -> result.sortedBy { it.title.lowercase() }
+        MovieSort.RECENTLY_ADDED -> result.sortedByDescending { it.video.dateAdded }
+        MovieSort.RATING -> result.sortedByDescending { it.rating ?: -1f }
+        MovieSort.LONGEST -> result.sortedByDescending { it.video.duration }
+        MovieSort.SHORTEST -> result.sortedBy { it.video.duration }
+      }
+      result
     }
 
     Scaffold(
@@ -271,6 +300,12 @@ object MoviesGridScreen : Screen {
               isRefreshing = isRefreshing,
               onRefresh = { refreshKey++ },
               refreshEnabled = atTop && !isLoading,
+              movieFilter = movieFilter,
+              onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
+              movieSort = movieSort,
+              movieSortOptions = movieSortOptions,
+              onMovieSortChange = { movieSortOrdinal = it.ordinal },
+              totalMovieCount = movieList.size,
               onMovieClick = { selectedMovieId = it.video.id },
               onMovieLongClick = { moviePendingDeletion = it },
             )
@@ -301,6 +336,12 @@ object MoviesGridScreen : Screen {
           isRefreshing = isRefreshing,
           onRefresh = { refreshKey++ },
           refreshEnabled = atTop && !isLoading,
+          movieFilter = movieFilter,
+          onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
+          movieSort = movieSort,
+          movieSortOptions = movieSortOptions,
+          onMovieSortChange = { movieSortOrdinal = it.ordinal },
+          totalMovieCount = movieList.size,
           onMovieClick = { backstack.add(MovieDetailScreen(it.video.id, it.title)) },
           onMovieLongClick = { moviePendingDeletion = it },
         )
@@ -342,6 +383,12 @@ private fun MoviesGridContent(
   isRefreshing: MutableState<Boolean>,
   onRefresh: suspend () -> Unit,
   refreshEnabled: Boolean,
+  movieFilter: MovieWatchFilter,
+  onMovieFilterChange: (MovieWatchFilter) -> Unit,
+  movieSort: MovieSort,
+  movieSortOptions: List<SortOption<MovieSort>>,
+  onMovieSortChange: (MovieSort) -> Unit,
+  totalMovieCount: Int,
   onMovieClick: (LocalMovie) -> Unit,
   onMovieLongClick: (LocalMovie) -> Unit,
 ) {
@@ -355,18 +402,31 @@ private fun MoviesGridContent(
       CircularProgressIndicator()
     }
   } else if (filteredMovies.isEmpty()) {
+    val filteringByWatchState = movieFilter != MovieWatchFilter.ALL
     EmptyState(
       icon = Icons.Filled.Movie,
-      title = if (searchQuery.isNotBlank()) "No movies found" else "No movies detected",
-      message = if (searchQuery.isNotBlank()) "No movies match '$searchQuery'" else "Add movie files to your device storage to see them here",
+      title = when {
+        searchQuery.isNotBlank() -> "No movies found"
+        filteringByWatchState -> "No ${movieFilter.label.lowercase()} movies"
+        else -> "No movies detected"
+      },
+      message = when {
+        searchQuery.isNotBlank() -> "No movies match '$searchQuery'"
+        filteringByWatchState -> "Try a different watch-state filter"
+        else -> "Add movie files to your device storage to see them here"
+      },
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding),
-      actionLabel = if (searchQuery.isNotBlank()) "Clear search" else null,
-      onAction = if (searchQuery.isNotBlank()) {
-        onClearSearch
-      } else {
-        null
+      actionLabel = when {
+        searchQuery.isNotBlank() -> "Clear search"
+        filteringByWatchState -> "Show all"
+        else -> null
+      },
+      onAction = when {
+        searchQuery.isNotBlank() -> onClearSearch
+        filteringByWatchState -> ({ onMovieFilterChange(MovieWatchFilter.ALL) })
+        else -> null
       },
     )
   } else {
@@ -391,6 +451,24 @@ private fun MoviesGridContent(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
+        item(span = { GridItemSpan(columns) }) {
+          Column {
+            LibraryFilterBar(
+              options = MovieWatchFilter.entries,
+              selected = movieFilter,
+              labelOf = { it.label },
+              onSelect = onMovieFilterChange,
+              sorts = movieSortOptions,
+              selectedSort = movieSort,
+              onSortSelect = onMovieSortChange,
+              modifier = Modifier.padding(horizontal = 4.dp),
+            )
+            LibraryResultCount(
+              shown = filteredMovies.size,
+              total = totalMovieCount,
+            )
+          }
+        }
         items(filteredMovies, key = { "grid_movie_${it.video.id}" }) { movie ->
           MoviePosterCard(
             movie = movie,

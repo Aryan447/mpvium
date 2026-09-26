@@ -16,8 +16,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Terminal
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -233,7 +245,7 @@ object AdvancedPreferencesScreen : Screen {
         ) {
           // Backup & Restore Section
           item {
-            PreferenceSectionHeader(title = "Backup & Restore")
+            PreferenceSectionHeader(title = "Backup & Restore", count = 2)
           }
 
           item {
@@ -243,15 +255,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     text = "Export settings to an XML file",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 icon = {
-                  Icon(
-                    Icons.Outlined.FileUpload,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
+                  PreferenceIconBox(icon = Icons.Outlined.Upload)
                 },
                 onClick = {
                   exportLauncher.launch(settingsManager.getDefaultExportFilename())
@@ -265,15 +273,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     text = "Import settings from an XML file",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 icon = {
-                  Icon(
-                    Icons.Outlined.FileDownload,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
+                  PreferenceIconBox(icon = Icons.Outlined.Download)
                 },
                 onClick = {
                   importLauncher.launch(arrayOf("text/xml", "application/xml", "*/*"))
@@ -284,7 +288,7 @@ object AdvancedPreferencesScreen : Screen {
 
           // MPV Configuration Section
           item {
-            PreferenceSectionHeader(title = "MPV Configuration")
+            PreferenceSectionHeader(title = "MPV Configuration", count = 3)
           }
 
           item {
@@ -356,7 +360,7 @@ object AdvancedPreferencesScreen : Screen {
                   if (mpvConfStorageLocation.isNotBlank()) {
                     Text(
                       getSimplifiedPathFromUri(mpvConfStorageLocation),
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   }
                 },
@@ -376,17 +380,18 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_mpv_conf)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Terminal) },
                 summary = {
                   val firstLine = mpvConf.lines().firstOrNull()
                   if (firstLine != null && firstLine.isNotBlank()) {
                     Text(
                       firstLine,
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   } else {
                     Text(
                       "Tap to edit configuration",
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   }
                 },
@@ -399,17 +404,18 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_input_conf)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Tune) },
                 summary = {
                   val firstLine = inputConf.lines().firstOrNull()
                   if (firstLine != null && firstLine.isNotBlank()) {
                     Text(
                       firstLine,
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   } else {
                     Text(
                       "Tap to edit configuration",
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   }
                 },
@@ -422,7 +428,7 @@ object AdvancedPreferencesScreen : Screen {
 
           // Scripts Section
           item {
-            PreferenceSectionHeader(title = "Scripts (Lua / JS)")
+            PreferenceSectionHeader(title = "Scripts (Lua / JS)", count = 3)
           }
 
           item {
@@ -458,10 +464,11 @@ object AdvancedPreferencesScreen : Screen {
                 value = enableScripts,
                 onValueChange = preferences.enableScripts::set,
                 title = { Text("Enable scripts") },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Code) },
                 summary = {
                   Text(
                     "Load scripts from your MPV configuration directory",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -470,6 +477,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text("Manage scripts") },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Folder) },
                 summary = {
                   Text(
                     when {
@@ -477,7 +485,7 @@ object AdvancedPreferencesScreen : Screen {
                       enabledCount == 1 -> "1 script enabled"
                       else -> "$enabledCount scripts enabled"
                     },
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 onClick = { backStack.add(ManageScriptsScreen) },
@@ -487,6 +495,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text("Custom buttons") },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Layers) },
                 summary = {
                   Text(
                     if (customButtonCount == 0) {
@@ -496,7 +505,7 @@ object AdvancedPreferencesScreen : Screen {
                     } else {
                       "$customButtonCount custom buttons"
                     },
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 onClick = { backStack.add(CustomButtonsScreen) },
@@ -505,7 +514,7 @@ object AdvancedPreferencesScreen : Screen {
           }
           // History Section
           item {
-            PreferenceSectionHeader(title = "History")
+            PreferenceSectionHeader(title = "History", count = 2)
           }
 
           item {
@@ -518,10 +527,11 @@ object AdvancedPreferencesScreen : Screen {
                 value = enableRecentlyPlayed,
                 onValueChange = preferences.enableRecentlyPlayed::set,
                 title = { Text(stringResource(R.string.pref_advanced_enable_recently_played_title)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.History) },
                 summary = {
                   Text(
                     stringResource(R.string.pref_advanced_enable_recently_played_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -530,6 +540,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_clear_playback_history)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Delete) },
                 onClick = { isConfirmDialogShown = true },
               )
 
@@ -573,7 +584,7 @@ object AdvancedPreferencesScreen : Screen {
 
           // Cache Section
           item {
-            PreferenceSectionHeader(title = "Cache")
+            PreferenceSectionHeader(title = "Cache", count = 3)
           }
 
           item {
@@ -584,10 +595,11 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(text = "Clear config cache") },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Refresh) },
                 summary = {
                   Text(
                     text = "Clear the cached mpv.conf settings",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 onClick = {
@@ -613,10 +625,11 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(text = "Clear thumbnail cache") },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Storage) },
                 summary = {
                   Text(
                     text = "Delete all cached video thumbnails (will regenerate as you browse folders)",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 onClick = { isClearThumbsConfirmShown = true },
@@ -651,10 +664,11 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(text = stringResource(id = R.string.pref_advanced_clear_fonts_cache)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Description) },
                 summary = {
                   Text(
                     text = "Remove all cached subtitle fonts",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 onClick = {
@@ -688,7 +702,7 @@ object AdvancedPreferencesScreen : Screen {
 
           // Logging Section
           item {
-            PreferenceSectionHeader(title = "Logging")
+            PreferenceSectionHeader(title = "Logging", count = 2)
           }
 
           item {
@@ -701,10 +715,11 @@ object AdvancedPreferencesScreen : Screen {
                 value = verboseLogging,
                 onValueChange = preferences.verboseLogging::set,
                 title = { Text(stringResource(R.string.pref_advanced_verbose_logging_title)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.BugReport) },
                 summary = {
                   Text(
                     stringResource(R.string.pref_advanced_verbose_logging_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -713,10 +728,11 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_dump_logs_title)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Share) },
                 summary = {
                   Text(
                     stringResource(R.string.pref_advanced_dump_logs_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 onClick = {

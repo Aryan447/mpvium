@@ -4,6 +4,35 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Animation
+import androidx.compose.material.icons.outlined.AspectRatio
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.BrightnessMedium
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.Gesture
+import androidx.compose.material.icons.outlined.GpsFixed
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material.icons.outlined.PictureInPicture
+import androidx.compose.material.icons.outlined.PlaylistPlay
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.SkipNext
+import androidx.compose.material.icons.outlined.Smartphone
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Swipe
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Vignette
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.ZoomIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,9 +81,9 @@ object PlayerPreferencesScreen : Screen {
               .fillMaxSize()
               .padding(padding),
         ) {
-          // General Section
+          // Playback Section
           item {
-            PreferenceSectionHeader(title = "General")
+            PreferenceSectionHeader(title = "Playback", count = 4)
           }
 
           item {
@@ -65,11 +94,12 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.orientation::set,
                 values = PlayerOrientation.entries,
                 valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.AspectRatio) },
                 title = { Text(text = stringResource(id = R.string.pref_player_orientation)) },
                 summary = {
                   Text(
                     text = stringResource(id = orientation.titleRes),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -80,6 +110,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = savePositionOnQuit,
                 onValueChange = preferences.savePositionOnQuit::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.History) },
                 title = { Text(stringResource(R.string.pref_player_save_position_on_quit)) },
               )
 
@@ -89,6 +120,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = closeAfterEndOfVideo,
                 onValueChange = preferences.closeAfterReachingEndOfVideo::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Close) },
                 title = { Text(stringResource(id = R.string.pref_player_close_after_eof)) },
               )
 
@@ -98,6 +130,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = autoplayNextVideo,
                 onValueChange = preferences.autoplayNextVideo::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.SkipNext) },
                 title = { Text(text = "Autoplay next video") },
                 summary = {
                   Text(
@@ -105,17 +138,25 @@ object PlayerPreferencesScreen : Screen {
                       "Automatically play next video when current ends"
                     else
                       "Stay on current video when it ends",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
 
-              PreferenceDivider()
+            }
+          }
+          // Titles & Continuity Section
+          item {
+            PreferenceSectionHeader(title = "Titles & continuity", count = 3)
+          }
 
+          item {
+            PreferenceCard {
               val showEpisodeHeader by preferences.showEpisodeHeader.collectAsState()
               HapticSwitchPreference(
                 value = showEpisodeHeader,
                 onValueChange = preferences.showEpisodeHeader::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.TextFields) },
                 title = { Text(text = stringResource(R.string.pref_player_episode_header)) },
                 summary = {
                   Text(
@@ -126,7 +167,7 @@ object PlayerPreferencesScreen : Screen {
                         R.string.pref_player_episode_header_summary_off
                       },
                     ),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -140,11 +181,12 @@ object PlayerPreferencesScreen : Screen {
                   onValueChange = preferences.titleMode::set,
                   values = PlayerTitleMode.entries,
                   valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                  icon = { PreferenceIconBox(icon = Icons.Outlined.Tune) },
                   title = { Text(text = stringResource(R.string.pref_player_title_style)) },
                   summary = {
                     Text(
                       text = stringResource(id = titleMode.titleRes),
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   },
                 )
@@ -156,6 +198,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = playlistMode,
                 onValueChange = preferences.playlistMode::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.PlaylistPlay) },
                 title = { Text(text = "Enable next/previous navigation") },
                 summary = {
                   Text(
@@ -163,17 +206,25 @@ object PlayerPreferencesScreen : Screen {
                       "Show next/previous buttons for all videos in folder"
                     else
                       "Play videos individually (select multiple for playlist)",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
 
-              PreferenceDivider()
+            }
+          }
+          // Screen Section
+          item {
+            PreferenceSectionHeader(title = "Screen", count = 3)
+          }
 
+          item {
+            PreferenceCard {
               val rememberBrightness by preferences.rememberBrightness.collectAsState()
               HapticSwitchPreference(
                 value = rememberBrightness,
                 onValueChange = preferences.rememberBrightness::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.BrightnessMedium) },
                 title = { Text(text = stringResource(R.string.pref_player_remember_brightness)) },
               )
 
@@ -183,11 +234,12 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = autoPiPOnNavigation,
                 onValueChange = preferences.autoPiPOnNavigation::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.PictureInPicture) },
                 title = { Text("Auto Picture-in-Picture") },
                 summary = {
                   Text(
                     text = "Automatically enter PIP mode when pressing home or back",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -198,6 +250,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = keepScreenOnWhenPaused,
                 onValueChange = preferences.keepScreenOnWhenPaused::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Visibility) },
                 title = { Text("Keep screen on when paused") },
                 summary = {
                   Text(
@@ -205,7 +258,7 @@ object PlayerPreferencesScreen : Screen {
                       "Screen stays awake while video is paused"
                     else
                       "Screen can turn off while video is paused",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -213,7 +266,7 @@ object PlayerPreferencesScreen : Screen {
           }
           // Seeking Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_seeking_title))
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_seeking_title), count = 6)
           }
 
           item {
@@ -222,6 +275,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = showDoubleTapOvals,
                 onValueChange = preferences.showDoubleTapOvals::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Gesture) },
                 title = { Text(stringResource(R.string.show_splash_ovals_on_double_tap_to_seek)) },
               )
 
@@ -231,6 +285,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = showSeekTimeWhileSeeking,
                 onValueChange = preferences.showSeekTimeWhileSeeking::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Schedule) },
                 title = { Text(stringResource(R.string.show_time_on_double_tap_to_seek)) },
               )
 
@@ -240,6 +295,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = usePreciseSeeking,
                 onValueChange = preferences.usePreciseSeeking::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.GpsFixed) },
                 title = { Text(stringResource(R.string.pref_player_use_precise_seeking)) },
               )
 
@@ -249,13 +305,14 @@ object PlayerPreferencesScreen : Screen {
               SliderPreference(
                 value = customSkipDuration.toFloat(),
                 onValueChange = { preferences.customSkipDuration.set(it.roundToInt()) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.FastForward) },
                 title = { Text(stringResource(R.string.pref_player_custom_skip_duration_title)) },
                 valueRange = 5f..180f,
                 summary = {
                    val summaryText = stringResource(R.string.pref_player_custom_skip_duration_summary)
                    Text(
                      "$summaryText ($customSkipDuration s)",
-                     color = MaterialTheme.colorScheme.outline,
+                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                    )
                 },
                 onSliderValueChange = { preferences.customSkipDuration.set(it.roundToInt()) },
@@ -268,9 +325,10 @@ object PlayerPreferencesScreen : Screen {
               SliderPreference(
                 value = skipIntroDuration.toFloat(),
                 onValueChange = { preferences.skipIntroDuration.set(it.roundToInt()) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.SkipNext) },
                 title = { Text("Skip intro duration") },
                 valueRange = 5f..300f,
-                summary = { Text("Skip forward $skipIntroDuration s", color = MaterialTheme.colorScheme.outline) },
+                summary = { Text("Skip forward $skipIntroDuration s", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 onSliderValueChange = { preferences.skipIntroDuration.set(it.roundToInt()) },
                 sliderValue = skipIntroDuration.toFloat(),
               )
@@ -281,9 +339,10 @@ object PlayerPreferencesScreen : Screen {
               SliderPreference(
                 value = skipRecapDuration.toFloat(),
                 onValueChange = { preferences.skipRecapDuration.set(it.roundToInt()) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Replay) },
                 title = { Text("Skip recap duration") },
                 valueRange = 5f..300f,
-                summary = { Text("Skip forward $skipRecapDuration s", color = MaterialTheme.colorScheme.outline) },
+                summary = { Text("Skip forward $skipRecapDuration s", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 onSliderValueChange = { preferences.skipRecapDuration.set(it.roundToInt()) },
                 sliderValue = skipRecapDuration.toFloat(),
               )
@@ -291,7 +350,7 @@ object PlayerPreferencesScreen : Screen {
           }
           // Gestures Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures))
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 6)
           }
 
           item {
@@ -300,6 +359,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = brightnessGesture,
                 onValueChange = preferences.brightnessGesture::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.BrightnessMedium) },
                 title = { Text(stringResource(R.string.pref_player_gestures_brightness)) },
               )
 
@@ -309,6 +369,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = volumeGesture,
                 onValueChange = preferences.volumeGesture::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.VolumeUp) },
                 title = { Text(stringResource(R.string.pref_player_gestures_volume)) },
               )
 
@@ -318,6 +379,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = pinchToZoomGesture,
                 onValueChange = preferences.pinchToZoomGesture::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.ZoomIn) },
                 title = { Text(stringResource(R.string.pref_player_gestures_pinch_to_zoom)) },
               )
 
@@ -327,6 +389,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = horizontalSwipeToSeek,
                 onValueChange = preferences.horizontalSwipeToSeek::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Swipe) },
                 title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_to_seek)) },
               )
 
@@ -336,13 +399,14 @@ object PlayerPreferencesScreen : Screen {
               SliderPreference(
                 value = horizontalSwipeSensitivity,
                 onValueChange = { preferences.horizontalSwipeSensitivity.set(it.toFixed(3)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Speed) },
                 title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_sensitivity)) },
                 valueRange = 0.020f..0.1f,
                 summary = {
                   val sensitivityPercent = (horizontalSwipeSensitivity * 1000).toInt()
                   Text(
                     "Current: ${sensitivityPercent}/100 (${if (sensitivityPercent < 30) "Low" else if (sensitivityPercent < 55) "Medium" else "High"})",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 onSliderValueChange = { preferences.horizontalSwipeSensitivity.set(it.toFixed(3)) },
@@ -357,11 +421,12 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.holdGestureMode::set,
                 values = HoldGestureMode.entries,
                 valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.TouchApp) },
                 title = { Text(stringResource(R.string.pref_player_gestures_hold_action)) },
                 summary = {
                   Text(
                     text = stringResource(id = holdGestureMode.titleRes),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -373,7 +438,8 @@ object PlayerPreferencesScreen : Screen {
                 SliderPreference(
                   value = holdForMultipleSpeed,
                   onValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
-                  title = { Text(stringResource(R.string.pref_player_gestures_hold_for_multiple_speed)) },
+                  icon = { PreferenceIconBox(icon = Icons.Outlined.Timer) },
+                title = { Text(stringResource(R.string.pref_player_gestures_hold_for_multiple_speed)) },
                   valueRange = 0f..6f,
                   summary = {
                     Text(
@@ -382,7 +448,7 @@ object PlayerPreferencesScreen : Screen {
                       } else {
                         "%.2fx".format(holdForMultipleSpeed)
                       },
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   },
                   onSliderValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
@@ -395,11 +461,12 @@ object PlayerPreferencesScreen : Screen {
                 HapticSwitchPreference(
                   value = showDynamicSpeedOverlay,
                   onValueChange = preferences.showDynamicSpeedOverlay::set,
-                  title = { Text("Dynamic Speed Overlay") },
+                  icon = { PreferenceIconBox(icon = Icons.Outlined.Bolt) },
+                title = { Text("Dynamic Speed Overlay") },
                   summary = {
                     Text(
                       "Show advance overlay for speed control during long press and swipe",
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   }
                 )
@@ -410,7 +477,7 @@ object PlayerPreferencesScreen : Screen {
                   summary = {
                     Text(
                       text = stringResource(R.string.pref_player_gestures_hold_controls_hint),
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   },
                 )
@@ -419,7 +486,7 @@ object PlayerPreferencesScreen : Screen {
           }
           // Controls Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_controls))
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_controls), count = 4)
           }
 
           item {
@@ -428,6 +495,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = allowGesturesInPanels,
                 onValueChange = preferences.allowGesturesInPanels::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Layers) },
                 title = {
                   Text(
                     text = stringResource(id = R.string.pref_player_controls_allow_gestures_in_panels),
@@ -441,6 +509,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = swapVolumeAndBrightness,
                 onValueChange = preferences.swapVolumeAndBrightness::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.SwapHoriz) },
                 title = { Text(stringResource(R.string.swap_the_volume_and_brightness_slider)) },
               )
 
@@ -450,6 +519,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = showLoadingCircle,
                 onValueChange = preferences.showLoadingCircle::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Refresh) },
                 title = { Text(stringResource(R.string.pref_player_controls_show_loading_circle)) },
               )
 
@@ -459,11 +529,12 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = showVignette,
                 onValueChange = preferences.showVignette::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Vignette) },
                 title = { Text(stringResource(R.string.pref_player_show_vignette)) },
                 summary = {
                   Text(
                     text = stringResource(R.string.pref_player_show_vignette_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -471,7 +542,7 @@ object PlayerPreferencesScreen : Screen {
           }
           // Display Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_display))
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_display), count = 3)
           }
 
           item {
@@ -480,6 +551,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = showSystemStatusBar,
                 onValueChange = preferences.showSystemStatusBar::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Smartphone) },
                 title = { Text(stringResource(R.string.pref_player_display_show_status_bar)) },
               )
 
@@ -489,6 +561,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = showSystemNavigationBar,
                 onValueChange = preferences.showSystemNavigationBar::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.PhoneAndroid) },
                 title = { Text("Show navigation bar with controls") },
               )
 
@@ -498,6 +571,7 @@ object PlayerPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = reduceMotion,
                 onValueChange = preferences.reduceMotion::set,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Animation) },
                 title = { Text(stringResource(R.string.pref_player_display_reduce_player_animation)) },
               )
             }

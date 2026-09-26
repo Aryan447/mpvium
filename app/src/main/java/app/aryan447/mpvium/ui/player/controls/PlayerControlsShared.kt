@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.ShuffleOn
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOutMap
 import androidx.compose.material.icons.filled.Flip
@@ -78,6 +79,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.PlayerViewModel
@@ -784,6 +786,33 @@ fun RenderPlayerButton(
         icon = Icons.Default.Headset,
         onClick = { activity.triggerBackgroundPlayback() },
         color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.size(buttonSize),
+      )
+    }
+
+    PlayerButton.HOLD_GESTURE_TOGGLE -> {
+      val playerPreferences = org.koin.compose.koinInject<app.aryan447.mpvium.preferences.PlayerPreferences>()
+      val holdGestureMode by playerPreferences.holdGestureMode.collectAsState()
+      val isSpeedBoost = holdGestureMode == app.aryan447.mpvium.ui.player.HoldGestureMode.SpeedBoost
+      ControlsButton(
+        icon = if (isSpeedBoost) Icons.Default.Speed else Icons.Default.SwapVert,
+        onClick = {
+          playerPreferences.holdGestureMode.set(
+            if (isSpeedBoost) {
+              app.aryan447.mpvium.ui.player.HoldGestureMode.BrightnessVolume
+            } else {
+              app.aryan447.mpvium.ui.player.HoldGestureMode.SpeedBoost
+            },
+          )
+        },
+        title = if (isSpeedBoost) "Hold for speed boost" else "Hold for brightness / volume",
+        color = if (isSpeedBoost) {
+          MaterialTheme.colorScheme.primary
+        } else if (hideBackground) {
+          controlColor
+        } else {
+          MaterialTheme.colorScheme.onSurface
+        },
         modifier = Modifier.size(buttonSize),
       )
     }

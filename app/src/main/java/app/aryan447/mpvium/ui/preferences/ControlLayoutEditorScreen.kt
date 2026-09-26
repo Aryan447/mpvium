@@ -233,12 +233,12 @@ data class ControlLayoutEditorScreen(
                          modifier = Modifier
                              .fillMaxWidth()
                              .height(120.dp),
-                         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                         color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                         border = BorderStroke(
-                             1.dp,
-                             MaterialTheme.colorScheme.outlineVariant
-                         ),
+                          shape = SettingsCardShape,
+                          color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                          border = BorderStroke(
+                              1.dp,
+                              MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                          ),
                      ) {
                          androidx.compose.foundation.layout.Column(
                              modifier = Modifier.fillMaxSize(),
@@ -298,7 +298,7 @@ data class ControlLayoutEditorScreen(
                                        Modifier
                                    }
                                ),
-                           shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp), // Match chip border radius
+                            shape = SettingsTileShape, // Match chip border radius
                            shadowElevation = elevation.dp,
                            color = Color.Transparent
                        ) {
@@ -323,7 +323,7 @@ data class ControlLayoutEditorScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                  androidx.compose.material3.Card(
                      modifier = Modifier.fillMaxWidth(),
-                     shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                     shape = SettingsCardShape,
                      colors = androidx.compose.material3.CardDefaults.cardColors(
                          containerColor = MaterialTheme.colorScheme.surfaceContainer
                      ),
@@ -385,9 +385,9 @@ private fun IconsLegend() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 24.dp, bottom = 8.dp),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        shape = SettingsCardShape,
         colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
     ) {
         androidx.compose.foundation.layout.Column(

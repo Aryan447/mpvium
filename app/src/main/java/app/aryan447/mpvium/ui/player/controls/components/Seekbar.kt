@@ -196,7 +196,7 @@ fun SeekbarWithTimers(
   durationTimerOnCLick: () -> Unit,
   chapters: ImmutableList<Segment>,
   paused: Boolean,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Standard,
   loopStart: Float? = null,
   loopEnd: Float? = null,
   modifier: Modifier = Modifier,
@@ -405,6 +405,18 @@ fun SeekbarWithTimers(
             // Touch handled by parent overlay (single gesture handler).
             onSeek = { },
             onSeekFinished = { },
+            loopStart = loopStart,
+            loopEnd = loopEnd,
+          )
+        }
+        SeekbarStyle.Slim, SeekbarStyle.NeonGlow, SeekbarStyle.Segmented, SeekbarStyle.RetroBlocky -> {
+          StyledSeekbar(
+            position = if (isUserInteracting) userPosition else animatedPosition.value,
+            duration = duration,
+            chapters = chapters,
+            isScrubbing = isUserInteracting,
+            seekbarStyle = seekbarStyle,
+            // Touch handled by parent overlay (single gesture handler).
             loopStart = loopStart,
             loopEnd = loopEnd,
           )
@@ -1058,6 +1070,232 @@ fun StandardSeekbar(
             }
         )
     }
+
+/**
+ * Parameter-driven seekbar track backing the Slim, Neon glow, Segmented and
+ * Retro blocky styles. Same non-interactive Slider shell as [StandardSeekbar]:
+ * the parent touch overlay is the single gesture handler, so this visual
+ * stays disabled and only draws the track + thumb.
+ */
+@Composable
+private fun StyledSeekbar(
+    position: Float,
+    duration: Float,
+    chapters: ImmutableList<Segment>,
+    isScrubbing: Boolean = false,
+    seekbarStyle: SeekbarStyle,
+    loopStart: Float? = null,
+    loopEnd: Float? = null,
+    modifier: Modifier = Modifier,
+) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val interactionSource = remember { MutableInteractionSource() }
+
+    // Thicken the track while scrubbing so the finger's target stays visible.
+    val scrubThickness by animateFloatAsState(
+        targetValue = if (isScrubbing) 1.5f else 1f,
+        animationSpec = tween(durationMillis = 150, easing = LinearEasing),
+        label = "styledScrubThickness",
+    )
+
+    val isBlocky = seekbarStyle == SeekbarStyle.RetroBlocky
+    val isSegmented = seekbarStyle == SeekbarStyle.Segmented
+    val isGlow = seekbarStyle == SeekbarStyle.NeonGlow
+    val baseTrackHeight = when (seekbarStyle) {
+        SeekbarStyle.Slim -> 2.dp
+        SeekbarStyle.NeonGlow -> 6.dp
+        SeekbarStyle.Segmented -> 8.dp
+        SeekbarStyle.RetroBlocky -> 12.dp
+        else -> 4.dp
+    }
+    val trackHeightDp = baseTrackHeight * scrubThickness
+    // Neon halo needs vertical headroom around the core track.
+    val glowPadding = if (isGlow) 8.dp else 0.dp
+    val canvasHeightDp = trackHeightDp + glowPadding * 2
+
+    val thumbSize = when (seekbarStyle) {
+        SeekbarStyle.Slim -> 8.dp
+        SeekbarStyle.NeonGlow -> 12.dp
+        SeekbarStyle.Segmented -> 12.dp
+        SeekbarStyle.RetroBlocky -> 10.dp
+        else -> 12.dp
+    }
+    val thumbShape = if (isBlocky) RoundedCornerShape(2.dp) else CircleShape
+
+    Slider(
+        value = position,
+        onValueChange = {},
+        valueRange = 0f..duration.coerceAtLeast(0.1f),
+        modifier = modifier.fillMaxWidth(),
+        enabled = false,
+        interactionSource = interactionSource,
+        track = { sliderState ->
+            val disabledAlpha = 0.3f
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(canvasHeightDp),
+            ) {
+                val min = sliderState.valueRange.start
+                val max = sliderState.valueRange.endInclusive
+                val range = (max - min).takeIf { it > 0f } ?: 1f
+
+                val playedFraction = ((sliderState.value - min) / range).coerceIn(0f, 1f)
+                val playedPx = size.width * playedFraction
+
+                val glowPaddingPx = glowPadding.toPx()
+                val coreHeight = size.height - glowPaddingPx * 2f
+                val coreTop = glowPaddingPx
+                val coreBottom = glowPaddingPx + coreHeight
+
+                val outerRadius = if (isBlocky) 0f else coreHeight / 2f
+                val innerRadius = if (isBlocky) 0f else 2.dp.toPx()
+                val chapterGapHalf = 1.dp.toPx()
+
+                val chapterGaps = if (chapters.isNotEmpty()) {
+                    chapters.mapNotNull { chapter ->
+                        val chapterStart = chapter.start
+                        if (chapterStart > min && chapterStart < max) {
+                            val chapterFraction = ((chapterStart - min) / range).coerceIn(0f, 1f)
+                            val chapterPx = size.width * chapterFraction
+                            (chapterPx - chapterGapHalf) to (chapterPx + chapterGapHalf)
+                        } else null
+                    }
+                } else emptyList()
+
+                // Fixed-interval ticks for the Segmented style.
+                val tickGaps = if (isSegmented && size.width > 0f) {
+                    val stepPx = 24.dp.toPx()
+                    val tickHalf = 1.dp.toPx()
+                    generateSequence(stepPx) { it + stepPx }
+                        .takeWhile { it < size.width - 1f }
+                        .map { (it - tickHalf) to (it + tickHalf) }
+                        .toList()
+                } else emptyList()
+                val allGaps = chapterGaps + tickGaps
+
+                fun drawSegment(startX: Float, endX: Float, top: Float, bottom: Float, color: Color) {
+                    if (endX - startX < 0.5f || bottom - top < 0.5f) return
+
+                    val path = Path()
+                    val leftRadius = if (startX <= 0.5f) outerRadius else innerRadius
+                    val rightRadius = if (endX >= size.width - 0.5f) outerRadius else innerRadius
+                    path.addRoundRect(
+                        androidx.compose.ui.geometry.RoundRect(
+                            left = startX,
+                            top = top,
+                            right = endX,
+                            bottom = bottom,
+                            topLeftCornerRadius = androidx.compose.ui.geometry.CornerRadius(leftRadius),
+                            bottomLeftCornerRadius = androidx.compose.ui.geometry.CornerRadius(leftRadius),
+                            topRightCornerRadius = androidx.compose.ui.geometry.CornerRadius(rightRadius),
+                            bottomRightCornerRadius = androidx.compose.ui.geometry.CornerRadius(rightRadius)
+                        )
+                    )
+                    drawPath(path, color)
+                }
+
+                fun drawRangeWithGaps(
+                    rangeStart: Float,
+                    rangeEnd: Float,
+                    top: Float,
+                    bottom: Float,
+                    gaps: List<Pair<Float, Float>>,
+                    color: Color
+                ) {
+                    if (rangeEnd <= rangeStart) return
+                    val relevantGaps = gaps
+                        .filter { (gStart, gEnd) -> gEnd > rangeStart && gStart < rangeEnd }
+                        .sortedBy { it.first }
+
+                    var currentPos = rangeStart
+                    for ((gStart, gEnd) in relevantGaps) {
+                        val segmentEnd = gStart.coerceAtMost(rangeEnd)
+                        if (segmentEnd > currentPos) {
+                            drawSegment(currentPos, segmentEnd, top, bottom, color)
+                        }
+                        currentPos = gEnd.coerceAtLeast(currentPos)
+                    }
+                    if (currentPos < rangeEnd) {
+                        drawSegment(currentPos, rangeEnd, top, bottom, color)
+                    }
+                }
+
+                // Neon halo: widening low-alpha passes behind the played core.
+                if (isGlow && playedPx > 0.5f) {
+                    drawSegment(0f, playedPx, 0f, size.height, primaryColor.copy(alpha = 0.10f))
+                    val midInset = glowPaddingPx / 2f
+                    drawSegment(0f, playedPx, midInset, size.height - midInset, primaryColor.copy(alpha = 0.18f))
+                }
+
+                // 1. Unplayed Background
+                drawRangeWithGaps(playedPx, size.width, coreTop, coreBottom, allGaps, primaryColor.copy(alpha = disabledAlpha))
+
+                // 2. Played
+                if (playedPx > 0) {
+                    drawRangeWithGaps(0f, playedPx, coreTop, coreBottom, allGaps, primaryColor)
+                }
+
+                // 3. A-B Loop Indicators
+                if (loopStart != null || loopEnd != null) {
+                    val loopColor = Color(0xFFFFB300) // Amber/Gold color for loop
+                    val markerWidth = 2.dp.toPx()
+
+                    if (loopStart != null) {
+                        val startPx = (loopStart / duration).coerceIn(0f, 1f) * size.width
+                        drawLine(
+                            color = loopColor,
+                            start = Offset(startPx, coreTop),
+                            end = Offset(startPx, coreBottom),
+                            strokeWidth = markerWidth
+                        )
+                    }
+
+                    if (loopEnd != null) {
+                        val endPx = (loopEnd / duration).coerceIn(0f, 1f) * size.width
+                        drawLine(
+                            color = loopColor,
+                            start = Offset(endPx, coreTop),
+                            end = Offset(endPx, coreBottom),
+                            strokeWidth = markerWidth
+                        )
+                    }
+
+                    if (loopStart != null && loopEnd != null) {
+                        val minPx = (minOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width
+                        val maxPx = (maxOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width
+                        drawRect(
+                            color = loopColor.copy(alpha = 0.3f),
+                            topLeft = Offset(minPx, coreTop),
+                            size = Size(maxPx - minPx, coreBottom - coreTop)
+                        )
+                    }
+                }
+            }
+        },
+        thumb = {
+            Box(
+                contentAlignment = Alignment.Center,
+            ) {
+                if (isGlow) {
+                    Box(
+                        modifier = Modifier
+                            .width(thumbSize + 12.dp)
+                            .height(thumbSize + 12.dp)
+                            .background(primaryColor.copy(alpha = 0.25f), CircleShape)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .width(thumbSize)
+                        .height(thumbSize)
+                        .background(primaryColor, thumbShape)
+                )
+            }
+        }
+    )
+}
 
 @Preview
 @Composable

@@ -9,10 +9,22 @@ import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -69,7 +82,7 @@ object DecoderPreferencesScreen : Screen {
               .padding(padding),
         ) {
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_decoder))
+            PreferenceSectionHeader(title = "Decoder", count = 2)
           }
 
           item {
@@ -80,11 +93,12 @@ object DecoderPreferencesScreen : Screen {
                 value = currentProfile,
                 onValueChange = { preferences.profile.set(it.value) },
                 values = MPVProfile.entries,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Settings) },
                 title = { Text(stringResource(R.string.pref_decoder_profile_title)) },
                 summary = {
                   Text(
                     currentProfile.displayName,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -97,15 +111,23 @@ object DecoderPreferencesScreen : Screen {
                 onValueChange = {
                   preferences.tryHWDecoding.set(it)
                 },
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Memory) },
                 title = { Text(stringResource(R.string.pref_decoder_try_hw_dec_title)) },
               )
+            }
+          }
 
-              PreferenceDivider()
+          item {
+            PreferenceSectionHeader(title = "GPU", count = 2)
+          }
 
+          item {
+            PreferenceCard {
               val gpuNext by preferences.gpuNext.collectAsState()
               val useVulkan by preferences.useVulkan.collectAsState() // Added to check Vulkan state
               HapticSwitchPreference(
                 value = gpuNext,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Speed) },
                 onValueChange = { enabled ->
                     if (enabled && !gpuNext && !useVulkan) { // Only show warning if Vulkan is disabled
                         showGpuNextWarning = true
@@ -120,7 +142,7 @@ object DecoderPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_decoder_gpu_next_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -176,6 +198,7 @@ object DecoderPreferencesScreen : Screen {
               // val useVulkan by preferences.useVulkan.collectAsState() // Moved up for gpuNext logic
               HapticSwitchPreference(
                 value = useVulkan,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Dns) },
                 onValueChange = { enabled ->
                   preferences.useVulkan.set(enabled)
                   // When Vulkan is disabled, ensure Anime4K and GPU Next are not both enabled
@@ -202,18 +225,26 @@ object DecoderPreferencesScreen : Screen {
                 },
               )
 
-              PreferenceDivider()
+            }
+          }
 
+          item {
+            PreferenceSectionHeader(title = "Post-processing", count = 4)
+          }
+
+          item {
+            PreferenceCard {
               val debanding by preferences.debanding.collectAsState()
               ListPreference(
                 value = debanding,
                 onValueChange = { preferences.debanding.set(it) },
                 values = Debanding.entries,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Tune) },
                 title = { Text(stringResource(R.string.pref_decoder_debanding_title)) },
                 summary = {
                   Text(
                     debanding.name,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -223,6 +254,7 @@ object DecoderPreferencesScreen : Screen {
               val useYUV420p by preferences.useYUV420P.collectAsState()
               HapticSwitchPreference(
                 value = useYUV420p,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Layers) },
                 onValueChange = {
                   preferences.useYUV420P.set(it)
                 },
@@ -230,7 +262,7 @@ object DecoderPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_decoder_yuv420p_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -240,6 +272,7 @@ object DecoderPreferencesScreen : Screen {
               val enableAnime4K by preferences.enableAnime4K.collectAsState()
               HapticSwitchPreference(
                 value = enableAnime4K,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Refresh) },
                 onValueChange = { enabled ->
                     preferences.enableAnime4K.set(enabled)
                     if (enabled && !useVulkan) { // Only disable GPU Next if Vulkan is disabled
@@ -251,18 +284,28 @@ object DecoderPreferencesScreen : Screen {
                   Column {
                     Text(
                       stringResource(R.string.pref_anime4k_summary),
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Text(
-                      text = "github.com/bloc97/Anime4K",
-                      color = MaterialTheme.colorScheme.primary,
-                      style = MaterialTheme.typography.bodySmall,
-                      textDecoration = TextDecoration.Underline,
+                    Row(
+                      verticalAlignment = Alignment.CenterVertically,
                       modifier = Modifier.clickable {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/bloc97/Anime4K"))
                         context.startActivity(intent)
                       }
-                    )
+                    ) {
+                      PreferenceIconBox(
+                        icon = Icons.Outlined.OpenInNew,
+                        boxSize = 28.dp,
+                        iconSize = 16.dp,
+                      )
+                      Spacer(modifier = Modifier.width(8.dp))
+                      Text(
+                        text = "github.com/bloc97/Anime4K",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodySmall,
+                        textDecoration = TextDecoration.Underline,
+                      )
+                    }
                   }
                 },
               )
@@ -272,12 +315,13 @@ object DecoderPreferencesScreen : Screen {
               val shaderPeekSuggest by preferences.shaderPeekSuggest.collectAsState()
               HapticSwitchPreference(
                 value = shaderPeekSuggest,
+                icon = { PreferenceIconBox(icon = Icons.Outlined.Visibility) },
                 onValueChange = { preferences.shaderPeekSuggest.set(it) },
                 title = { Text(stringResource(R.string.pref_decoder_shader_peek_title)) },
                 summary = {
                   Text(
                     stringResource(R.string.pref_decoder_shader_peek_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )

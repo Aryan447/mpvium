@@ -3,7 +3,7 @@ package app.aryan447.mpvium.ui.preferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,11 +27,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -44,18 +43,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 
+/**
+ * Standalone search route. The main settings hub now embeds search inline;
+ * this screen stays for deep links and reuses the same card/tonal styling.
+ */
 @Serializable
 object SettingsSearchScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +71,7 @@ object SettingsSearchScreen : Screen {
         val focusRequester = remember { FocusRequester() }
 
         var searchQuery by rememberSaveable { mutableStateOf("") }
+        var searchFocused by remember { mutableStateOf(false) }
 
         val searchResults by remember(searchQuery) {
             derivedStateOf {
@@ -91,25 +96,32 @@ object SettingsSearchScreen : Screen {
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Search field
-                OutlinedTextField(
+                // Search field — matches the dashboard search styling
+                TextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .onFocusChanged { searchFocused = it.isFocused }
+                        .border(
+                            width = 1.5.dp,
+                            color = if (searchFocused || searchQuery.isNotEmpty()) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(28.dp),
+                        ),
                     placeholder = {
                         Text(
                             text = stringResource(R.string.settings_search_hint),
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Outlined.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
                     trailingIcon = {
@@ -121,19 +133,21 @@ object SettingsSearchScreen : Screen {
                             IconButton(onClick = { searchQuery = "" }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Clear,
-                                    contentDescription = "Clear",
-                                    tint = MaterialTheme.colorScheme.outline,
+                                    contentDescription = "Clear search",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(28.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
@@ -141,7 +155,7 @@ object SettingsSearchScreen : Screen {
                     ),
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Results
                 if (searchQuery.isBlank()) {
@@ -155,13 +169,13 @@ object SettingsSearchScreen : Screen {
                                 imageVector = Icons.Outlined.Search,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = stringResource(R.string.settings_search_hint),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.outline,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -176,13 +190,13 @@ object SettingsSearchScreen : Screen {
                                 imageVector = Icons.Outlined.Settings,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = stringResource(R.string.settings_search_no_results),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.outline,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -190,11 +204,20 @@ object SettingsSearchScreen : Screen {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
                     ) {
+                        item {
+                            Text(
+                                text = "${searchResults.size} result${if (searchResults.size == 1) "" else "s"}",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                            )
+                        }
                         itemsIndexed(
                             items = searchResults,
                             key = { index, pref -> "${pref.titleRes}_${pref.category}_${pref.screen}_$index".hashCode() }
                         ) { _, preference ->
-                            SearchResultItem(
+                            SettingsSearchResultRow(
                                 preference = preference,
                                 onClick = {
                                     keyboardController?.hide()
@@ -202,76 +225,11 @@ object SettingsSearchScreen : Screen {
                                 }
                             )
                         }
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchResultItem(
-    preference: SearchablePreference,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val titleText = if (preference.titleRes != null) {
-        stringResource(preference.titleRes)
-    } else {
-        preference.title ?: ""
-    }
-
-    val summaryText = if (preference.summaryRes != null) {
-        stringResource(preference.summaryRes)
-    } else {
-        preference.summary
-    }
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Settings,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = titleText,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                summaryText?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-
-                Text(
-                    text = preference.category,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                )
             }
         }
     }

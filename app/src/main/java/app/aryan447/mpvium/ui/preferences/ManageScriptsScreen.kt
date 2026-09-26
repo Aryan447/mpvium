@@ -3,23 +3,28 @@ package app.aryan447.mpvium.ui.preferences
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AdvancedPreferences
@@ -115,7 +121,7 @@ object ManageScriptsScreen : Screen {
           title = "Manage scripts",
           actions = {
             IconButton(onClick = { importLauncher.launch(arrayOf("*/*")) }) {
-              Icon(Icons.Default.Add, contentDescription = "Import script")
+              Icon(Icons.Outlined.Add, contentDescription = "Import script")
             }
           },
         )
@@ -127,6 +133,9 @@ object ManageScriptsScreen : Screen {
             .fillMaxSize()
             .padding(padding),
         ) {
+          item {
+            PreferenceSectionHeader(title = "Scripts", count = scriptFiles.size)
+          }
           if (scriptFiles.isEmpty()) {
             item {
               PreferenceCard {
@@ -135,9 +144,10 @@ object ManageScriptsScreen : Screen {
                   summary = {
                     Text(
                       "Copy .lua or .js files into the scripts folder of your MPV configuration directory, or tap + to import.",
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   },
+                  icon = { PreferenceIconBox(icon = Icons.Outlined.Code) },
                   onClick = {},
                 )
               }
@@ -147,50 +157,65 @@ object ManageScriptsScreen : Screen {
               PreferenceCard {
                 scriptFiles.forEachIndexed { index, file ->
                   val checked = file.name !in disabledScripts
+                  val statusText =
+                    if (!scriptsEnabled) "Scripts disabled"
+                    else if (checked) "Enabled" else "Disabled"
                   Row(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                   ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                      Text(
-                        text = file.name,
-                        style = MaterialTheme.typography.titleMedium,
-                      )
-                      Text(
-                        text =
-                          if (!scriptsEnabled) "Scripts disabled"
-                          else if (checked) "Enabled" else "Disabled",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                      )
-                    }
-                    Switch(
-                      checked = checked,
-                      enabled = scriptsEnabled,
-                      onCheckedChange = { on ->
+                    HapticSwitchPreference(
+                      value = checked,
+                      onValueChange = { on ->
                         val updated = disabledScripts.toMutableSet()
                         if (on) updated.remove(file.name) else updated.add(file.name)
                         preferences.disabledScripts.set(updated)
                       },
-                    )
-                    IconButton(
-                      onClick = {
-                        scope.launch(Dispatchers.IO) {
-                          file.delete()
-                          val updated = disabledScripts.toMutableSet().apply { remove(file.name) }
-                          withContext(Dispatchers.Main) {
-                            preferences.disabledScripts.set(updated)
-                            refreshTick++
-                          }
-                        }
+                      title = { Text(text = file.name) },
+                      modifier = Modifier.weight(1f),
+                      enabled = scriptsEnabled,
+                      summary = {
+                        Text(
+                          text = statusText,
+                          color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                       },
+                      icon = {
+                        PreferenceIconBox(
+                          icon =
+                            if (file.extension.lowercase() == "js") {
+                              Icons.Outlined.Terminal
+                            } else {
+                              Icons.Outlined.Code
+                            },
+                        )
+                      },
+                    )
+                    Box(
+                      modifier = Modifier
+                        .padding(end = 16.dp)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .clickable(
+                          onClick = {
+                            scope.launch(Dispatchers.IO) {
+                              file.delete()
+                              val updated = disabledScripts.toMutableSet().apply { remove(file.name) }
+                              withContext(Dispatchers.Main) {
+                                preferences.disabledScripts.set(updated)
+                                refreshTick++
+                              }
+                            }
+                          },
+                        ),
+                      contentAlignment = Alignment.Center,
                     ) {
                       Icon(
-                        Icons.Default.Delete,
+                        Icons.Outlined.Delete,
                         contentDescription = "Delete ${file.name}",
                         tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp),
                       )
                     }
                   }
@@ -207,7 +232,7 @@ object ManageScriptsScreen : Screen {
                 Text(
                   "Changes apply on next playback.",
                   style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.outline,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
               }
             }

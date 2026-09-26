@@ -1,20 +1,27 @@
 package app.aryan447.mpvium.ui.preferences
 
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -31,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -106,7 +114,7 @@ object CustomButtonsScreen : Screen {
             Text(
               "Runs inside the player as an mpv command. Use script bindings such as script-binding stats/display-stats-toggle.",
               style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.outline,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           }
         },
@@ -142,7 +150,7 @@ object CustomButtonsScreen : Screen {
           title = "Custom buttons",
           actions = {
             IconButton(onClick = ::openAdd) {
-              Icon(Icons.Default.Add, contentDescription = "Add button")
+              Icon(Icons.Outlined.Add, contentDescription = "Add button")
             }
           },
         )
@@ -154,6 +162,9 @@ object CustomButtonsScreen : Screen {
             .fillMaxSize()
             .padding(padding),
         ) {
+          item {
+            PreferenceSectionHeader(title = "Buttons", count = buttons.size)
+          }
           if (buttons.isEmpty()) {
             item {
               PreferenceCard {
@@ -162,43 +173,69 @@ object CustomButtonsScreen : Screen {
                   summary = {
                     Text(
                       "Create script-powered player buttons, e.g. a stats toggle or a chapter skip.",
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   },
+                  icon = { PreferenceIconBox(icon = Icons.Outlined.PlayArrow) },
                   onClick = ::openAdd,
                 )
               }
             }
           } else {
-            items(buttons, key = { it.id }) { button ->
+            item {
               PreferenceCard {
-                Row(
-                  modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                  verticalAlignment = Alignment.CenterVertically,
-                ) {
-                  Column(modifier = Modifier.weight(1f)) {
-                    Text(button.title, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                      button.code,
-                      style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                      color = MaterialTheme.colorScheme.outline,
-                      maxLines = 2,
-                    )
-                  }
-                  IconButton(onClick = { openEdit(button) }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit ${button.title}")
-                  }
-                  IconButton(
-                    onClick = { saveButtons(buttons.filterNot { it.id == button.id }) },
+                buttons.forEachIndexed { index, button ->
+                  Row(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                   ) {
-                    Icon(
-                      Icons.Default.Delete,
-                      contentDescription = "Delete ${button.title}",
-                      tint = MaterialTheme.colorScheme.error,
-                    )
+                    PreferenceIconBox(icon = Icons.Outlined.PlayArrow)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                      Text(button.title, style = MaterialTheme.typography.titleMedium)
+                      Text(
+                        button.code,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                      )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                      modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .clickable(onClick = { openEdit(button) }),
+                      contentAlignment = Alignment.Center,
+                    ) {
+                      Icon(
+                        Icons.Outlined.Edit,
+                        contentDescription = "Edit ${button.title}",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                      )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                      modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .clickable(onClick = { saveButtons(buttons.filterNot { it.id == button.id }) }),
+                      contentAlignment = Alignment.Center,
+                    ) {
+                      Icon(
+                        Icons.Outlined.Delete,
+                        contentDescription = "Delete ${button.title}",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp),
+                      )
+                    }
                   }
+                  if (index < buttons.lastIndex) PreferenceDivider()
                 }
               }
             }
