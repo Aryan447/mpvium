@@ -664,64 +664,13 @@ private fun DashboardSearchResults(
       items = results,
       key = { "${it.titleRes}_${it.category}_${it.screen}" },
     ) { preference ->
-      EmbeddedSearchResultRow(
+      SettingsSearchResultRow(
         preference = preference,
         onClick = { onOpen(preference) },
       )
     }
     item {
       Spacer(modifier = Modifier.height(16.dp))
-    }
-  }
-}
-
-@Composable
-private fun EmbeddedSearchResultRow(
-  preference: SearchablePreference,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-) {
-  val scheme = MaterialTheme.colorScheme
-  val titleText = preference.titleRes?.let { stringResource(it) } ?: preference.title.orEmpty()
-  val summaryText = preference.summaryRes?.let { stringResource(it) } ?: preference.summary
-  Surface(
-    modifier = modifier
-      .fillMaxWidth()
-      .padding(horizontal = 16.dp, vertical = 4.dp)
-      .clip(SettingsCardShape)
-      .clickable(onClick = onClick),
-    shape = SettingsCardShape,
-    color = scheme.surfaceContainer,
-    border = BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.4f)),
-  ) {
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 12.dp),
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      PreferenceIconBox(icon = Icons.Outlined.Settings)
-      Spacer(modifier = Modifier.width(16.dp))
-      Column(modifier = Modifier.weight(1f)) {
-        Text(
-          text = titleText,
-          style = MaterialTheme.typography.bodyLarge,
-          fontWeight = FontWeight.SemiBold,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-        )
-        if (!summaryText.isNullOrBlank()) {
-          Text(
-            text = summaryText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = scheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-          )
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        SettingsCategoryPill(text = preference.category)
-      }
     }
   }
 }

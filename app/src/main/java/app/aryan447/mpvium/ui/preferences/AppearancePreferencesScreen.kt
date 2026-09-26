@@ -6,6 +6,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Cloud
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.NewReleases
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Smartphone
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.WrapText
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,7 +84,7 @@ object AppearancePreferencesScreen : Screen {
                         .padding(padding),
                 ) {
                     item {
-                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_theme))
+                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_theme), count = 5)
                     }
 
                     item {
@@ -111,6 +122,7 @@ object AppearancePreferencesScreen : Screen {
                                 onValueChange = { newValue ->
                                     preferences.amoledMode.set(newValue)
                                 },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.DarkMode) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_amoled_mode_title)) },
                                 summary = {
                                     Text(
@@ -119,7 +131,7 @@ object AppearancePreferencesScreen : Screen {
                                         } else {
                                             stringResource(id = R.string.pref_appearance_amoled_mode_summary)
                                         },
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
                                 enabled = darkMode != DarkMode.Light && appTheme != AppTheme.Glass
@@ -134,11 +146,12 @@ object AppearancePreferencesScreen : Screen {
                                 onValueChange = { newValue ->
                                     preferences.pillNavigationBar.set(newValue)
                                 },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.Smartphone) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_pill_nav_title)) },
                                 summary = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_pill_nav_summary),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
                             )
@@ -152,11 +165,12 @@ object AppearancePreferencesScreen : Screen {
                                 onValueChange = { newValue ->
                                     preferences.showBottomNavLabels.set(newValue)
                                 },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.TextFields) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_title)) },
                                 summary = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_summary),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
                             )
@@ -164,7 +178,7 @@ object AppearancePreferencesScreen : Screen {
                     }
 
                     item {
-                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_bottom_nav))
+                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_bottom_nav), count = app.aryan447.mpvium.ui.browser.MainTab.entries.size)
                     }
 
                     item {
@@ -173,7 +187,7 @@ object AppearancePreferencesScreen : Screen {
                             Text(
                                 text = stringResource(id = R.string.pref_appearance_bottom_nav_tabs_summary),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             )
                             app.aryan447.mpvium.ui.browser.MainTab.entries.forEachIndexed { tabIndex, tab ->
@@ -190,6 +204,7 @@ object AppearancePreferencesScreen : Screen {
                                             preferences.bottomNavTabs.set(updated)
                                         }
                                     },
+                                    icon = { PreferenceIconBox(icon = tab.icon) },
                                     title = { Text(text = tab.label) },
                                     enabled = canToggle,
                                 )
@@ -201,7 +216,7 @@ object AppearancePreferencesScreen : Screen {
                     }
 
                     item {
-                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_file_browser))
+                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_file_browser), count = 7)
                     }
 
                     item {
@@ -210,6 +225,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = unlimitedNameLines,
                                 onValueChange = { preferences.unlimitedNameLines.set(it) },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.WrapText) },
                                 title = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_title),
@@ -218,7 +234,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_summary),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             )
@@ -229,6 +245,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = showUnplayedOldVideoLabel,
                                 onValueChange = { preferences.showUnplayedOldVideoLabel.set(it) },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.NewReleases) },
                                 title = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_title),
@@ -237,7 +254,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_summary),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             )
@@ -248,6 +265,7 @@ object AppearancePreferencesScreen : Screen {
                             SliderPreference(
                                 value = unplayedOldVideoDays.toFloat(),
                                 onValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.Schedule) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_title)) },
                                 valueRange = 1f..30f,
                                 summary = {
@@ -256,7 +274,7 @@ object AppearancePreferencesScreen : Screen {
                                             id = R.string.pref_appearance_unplayed_old_video_days_summary,
                                             unplayedOldVideoDays,
                                         ),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
                                 onSliderValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
@@ -270,13 +288,14 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = autoScrollToLastPlayed,
                                 onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.ArrowDownward) },
                                 title = {
                                     Text(text = stringResource(R.string.pref_appearance_auto_scroll_title))
                                 },
                                 summary = {
                                     Text(
                                         text = stringResource(R.string.pref_appearance_auto_scroll_summary),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             )
@@ -289,6 +308,7 @@ object AppearancePreferencesScreen : Screen {
                                 onValueChange = { browserPreferences.watchedThreshold.set(it.roundToInt()) },
                                 sliderValue = watchedThreshold.toFloat(),
                                 onSliderValueChange = { browserPreferences.watchedThreshold.set(it.roundToInt()) },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.CheckCircle) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_title)) },
                                 valueRange = 50f..100f,
                                 valueSteps = 9,
@@ -298,7 +318,7 @@ object AppearancePreferencesScreen : Screen {
                                             id = R.string.pref_appearance_watched_threshold_summary,
                                             watchedThreshold,
                                         ),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
                             )
@@ -309,6 +329,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = tapThumbnailToSelect,
                                 onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.TouchApp) },
                                 title = {
                                     Text(
                                         text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title),
@@ -317,7 +338,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = {
                                     Text(
                                         text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             )
@@ -328,6 +349,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = showNetworkThumbnails,
                                 onValueChange = { preferences.showNetworkThumbnails.set(it) },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.Cloud) },
                                 title = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_title),
@@ -336,7 +358,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_summary),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             )
@@ -344,7 +366,7 @@ object AppearancePreferencesScreen : Screen {
                     }
 
                     item {
-                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_home))
+                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_home), count = 1)
                     }
 
                     item {
@@ -353,6 +375,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = showFeaturedHero,
                                 onValueChange = { preferences.showFeaturedHero.set(it) },
+                                icon = { PreferenceIconBox(icon = Icons.Outlined.Movie) },
                                 title = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_show_featured_hero_title),
@@ -361,7 +384,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_show_featured_hero_summary),
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             )
