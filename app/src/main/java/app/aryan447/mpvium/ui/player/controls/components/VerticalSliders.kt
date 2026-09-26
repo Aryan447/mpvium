@@ -58,7 +58,7 @@ fun VerticalSlider(
   modifier: Modifier = Modifier,
   overflowValue: Float? = null,
   overflowRange: ClosedFloatingPointRange<Float>? = null,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Standard,
 ) {
   VerticalBar(
     fraction = percentage(value.coerceIn(range), range),
@@ -80,7 +80,7 @@ fun VerticalSlider(
   modifier: Modifier = Modifier,
   overflowValue: Int? = null,
   overflowRange: ClosedRange<Int>? = null,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Standard,
 ) {
   VerticalBar(
     fraction = percentage(value.coerceIn(range), range),
@@ -115,6 +115,10 @@ private fun VerticalBar(
     SeekbarStyle.Standard -> StandardVerticalBar(animatedFraction, animatedOverflow, modifier)
     SeekbarStyle.Wavy -> WavyVerticalBar(animatedFraction, animatedOverflow, modifier)
     SeekbarStyle.Thick -> ThickVerticalBar(animatedFraction, animatedOverflow, modifier)
+    SeekbarStyle.Slim -> SlimVerticalBar(animatedFraction, animatedOverflow, modifier)
+    SeekbarStyle.NeonGlow -> NeonGlowVerticalBar(animatedFraction, animatedOverflow, modifier)
+    SeekbarStyle.Segmented -> SegmentedVerticalBar(animatedFraction, animatedOverflow, modifier)
+    SeekbarStyle.RetroBlocky -> RetroBlockyVerticalBar(animatedFraction, animatedOverflow, modifier)
   }
 }
 
@@ -275,12 +279,220 @@ private fun WavyVerticalBar(
   }
 }
 
+/**
+ * Extra-thin minimal bar: 2dp track with a small dot thumb.
+ */
+@Composable
+private fun SlimVerticalBar(
+  fraction: Float,
+  overflowFraction: Float,
+  modifier: Modifier = Modifier,
+) {
+  val primary = MaterialTheme.colorScheme.primary
+  val overflowColor = MaterialTheme.colorScheme.errorContainer
+  Canvas(modifier = modifier.height(120.dp).width(24.dp)) {
+    val trackWidth = 2.dp.toPx()
+    val centerX = size.width / 2f
+    val levelY = size.height * (1f - fraction)
+    drawRoundRect(
+      color = primary.copy(alpha = 0.3f),
+      topLeft = Offset(centerX - trackWidth / 2f, 0f),
+      size = Size(trackWidth, size.height),
+      cornerRadius = androidx.compose.ui.geometry.CornerRadius(trackWidth / 2f),
+    )
+    val playedHeight = size.height - levelY
+    if (playedHeight > 0.5f) {
+      drawRoundRect(
+        color = primary,
+        topLeft = Offset(centerX - trackWidth / 2f, levelY),
+        size = Size(trackWidth, playedHeight),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(trackWidth / 2f),
+      )
+    }
+    if (overflowFraction > 0f) {
+      val overflowHeight = size.height * overflowFraction
+      if (overflowHeight > 0.5f) {
+        drawRoundRect(
+          color = overflowColor,
+          topLeft = Offset(centerX - trackWidth / 2f, size.height - overflowHeight),
+          size = Size(trackWidth, overflowHeight),
+          cornerRadius = androidx.compose.ui.geometry.CornerRadius(trackWidth / 2f),
+        )
+      }
+    }
+    drawCircle(
+      color = primary,
+      radius = 2.5.dp.toPx(),
+      center = Offset(centerX, levelY.coerceIn(0f, size.height)),
+    )
+  }
+}
+
+/**
+ * Glowing bar: halo passes behind the played core, halo thumb.
+ */
+@Composable
+private fun NeonGlowVerticalBar(
+  fraction: Float,
+  overflowFraction: Float,
+  modifier: Modifier = Modifier,
+) {
+  val primary = MaterialTheme.colorScheme.primary
+  val overflowColor = MaterialTheme.colorScheme.errorContainer
+  Canvas(modifier = modifier.height(120.dp).width(24.dp)) {
+    val trackWidth = 6.dp.toPx()
+    val haloExtra = 8.dp.toPx()
+    val centerX = size.width / 2f
+    val levelY = (size.height * (1f - fraction)).coerceIn(0f, size.height)
+    val playedHeight = size.height - levelY
+
+    fun barRect(width: Float, topY: Float, height: Float, color: Color) {
+      if (height < 0.5f || width < 0.5f) return
+      drawRoundRect(
+        color = color,
+        topLeft = Offset(centerX - width / 2f, topY),
+        size = Size(width, height),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(width / 2f),
+      )
+    }
+
+    // Unplayed track (no halo).
+    barRect(trackWidth, 0f, size.height, primary.copy(alpha = 0.3f))
+    if (playedHeight > 0.5f) {
+      // Halo passes behind the played core.
+      barRect(trackWidth + haloExtra, levelY, playedHeight, primary.copy(alpha = 0.10f))
+      barRect(trackWidth + haloExtra / 2f, levelY, playedHeight, primary.copy(alpha = 0.18f))
+      barRect(trackWidth, levelY, playedHeight, primary)
+    }
+    if (overflowFraction > 0f) {
+      val overflowHeight = size.height * overflowFraction
+      barRect(trackWidth, size.height - overflowHeight, overflowHeight, overflowColor)
+    }
+    // Thumb with halo.
+    val thumbY = levelY.coerceIn(0f, size.height)
+    drawCircle(color = primary.copy(alpha = 0.25f), radius = 10.dp.toPx(), center = Offset(centerX, thumbY))
+    drawCircle(color = primary, radius = 6.dp.toPx(), center = Offset(centerX, thumbY))
+  }
+}
+
+/**
+ * Segmented bar: horizontal tick gaps at fixed intervals.
+ */
+@Composable
+private fun SegmentedVerticalBar(
+  fraction: Float,
+  overflowFraction: Float,
+  modifier: Modifier = Modifier,
+) {
+  val primary = MaterialTheme.colorScheme.primary
+  val overflowColor = MaterialTheme.colorScheme.errorContainer
+  Canvas(modifier = modifier.height(120.dp).width(24.dp)) {
+    val trackWidth = 8.dp.toPx()
+    val centerX = size.width / 2f
+    val levelY = (size.height * (1f - fraction)).coerceIn(0f, size.height)
+    val radius = trackWidth / 2f
+
+    // Tick positions from top to bottom.
+    val stepPx = 12.dp.toPx()
+    val tickHalf = 1.dp.toPx()
+    val ticks = generateSequence(stepPx) { it + stepPx }
+      .takeWhile { it < size.height - 1f }
+      .map { (it - tickHalf) to (it + tickHalf) }
+      .toList()
+
+    fun drawCells(top: Float, bottom: Float, color: Color) {
+      if (bottom - top < 0.5f) return
+      var cursor = top
+      for ((tickTop, tickBottom) in ticks) {
+        if (tickBottom <= top || tickTop >= bottom) continue
+        if (tickTop > cursor) {
+          drawRoundRect(
+            color = color,
+            topLeft = Offset(centerX - trackWidth / 2f, cursor),
+            size = Size(trackWidth, tickTop - cursor),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius),
+          )
+        }
+        cursor = maxOf(cursor, tickBottom)
+      }
+      if (bottom > cursor) {
+        drawRoundRect(
+          color = color,
+          topLeft = Offset(centerX - trackWidth / 2f, cursor),
+          size = Size(trackWidth, bottom - cursor),
+          cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius),
+        )
+      }
+    }
+
+    drawCells(0f, levelY, primary.copy(alpha = 0.3f))
+    drawCells(levelY, size.height, primary)
+    if (overflowFraction > 0f) {
+      drawCells(size.height * (1f - overflowFraction), size.height, overflowColor)
+    }
+    drawCircle(
+      color = primary,
+      radius = 7.dp.toPx(),
+      center = Offset(centerX, levelY.coerceIn(0f, size.height)),
+    )
+  }
+}
+
+/**
+ * Chunky rectangular bar: square corners, block thumb.
+ */
+@Composable
+private fun RetroBlockyVerticalBar(
+  fraction: Float,
+  overflowFraction: Float,
+  modifier: Modifier = Modifier,
+) {
+  val primary = MaterialTheme.colorScheme.primary
+  val overflowColor = MaterialTheme.colorScheme.errorContainer
+  Canvas(modifier = modifier.height(120.dp).width(24.dp)) {
+    val trackWidth = 12.dp.toPx()
+    val centerX = size.width / 2f
+    val levelY = (size.height * (1f - fraction)).coerceIn(0f, size.height)
+
+    drawRect(
+      color = primary.copy(alpha = 0.3f),
+      topLeft = Offset(centerX - trackWidth / 2f, 0f),
+      size = Size(trackWidth, size.height),
+    )
+    val playedHeight = size.height - levelY
+    if (playedHeight > 0.5f) {
+      drawRect(
+        color = primary,
+        topLeft = Offset(centerX - trackWidth / 2f, levelY),
+        size = Size(trackWidth, playedHeight),
+      )
+    }
+    if (overflowFraction > 0f) {
+      val overflowHeight = size.height * overflowFraction
+      if (overflowHeight > 0.5f) {
+        drawRect(
+          color = overflowColor,
+          topLeft = Offset(centerX - trackWidth / 2f, size.height - overflowHeight),
+          size = Size(trackWidth, overflowHeight),
+        )
+      }
+    }
+    val thumbHalf = 5.dp.toPx()
+    val thumbY = levelY.coerceIn(0f, size.height)
+    drawRect(
+      color = primary,
+      topLeft = Offset(centerX - thumbHalf, (thumbY - thumbHalf).coerceAtLeast(0f)),
+      size = Size(thumbHalf * 2f, thumbHalf * 2f),
+    )
+  }
+}
+
 @Composable
 fun BrightnessSlider(
   brightness: Float,
   range: ClosedFloatingPointRange<Float>,
   modifier: Modifier = Modifier,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Standard,
 ) {
   val coercedBrightness = brightness.coerceIn(range)
   Surface(
@@ -327,7 +539,7 @@ fun VolumeSlider(
   boostRange: ClosedRange<Int>?,
   modifier: Modifier = Modifier,
   displayAsPercentage: Boolean = false,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Standard,
 ) {
   val percentage = (percentage(volume, range) * 100).roundToInt()
   Surface(

@@ -22,7 +22,7 @@ class AppearancePreferences(
   preferenceStore: PreferenceStore,
 ) {
   val darkMode = preferenceStore.getEnum("dark_mode", DarkMode.System)
-  val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Dynamic)
+  val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Default)
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
   val pillNavigationBar = preferenceStore.getBoolean("pill_navigation_bar", true)
   val showBottomNavLabels = preferenceStore.getBoolean("show_bottom_nav_labels", true)
@@ -38,9 +38,9 @@ class AppearancePreferences(
   val unplayedOldVideoDays = preferenceStore.getInt("unplayed_old_video_days", 7)
   val showNetworkThumbnails = preferenceStore.getBoolean("show_network_thumbnails", false)
   val showFeaturedHero = preferenceStore.getBoolean("show_featured_hero", true)
-  val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Thick)
-  val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Thick)
-  val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Thick)
+  val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Standard)
+  val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Standard)
+  val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Standard)
 
   val topLeftControls =
     preferenceStore.getString(
