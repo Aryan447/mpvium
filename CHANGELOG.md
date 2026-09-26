@@ -27,10 +27,14 @@ Source of truth for GitHub release notes.
 - Home Up Next rail (next unwatched episode per show, in-progress first) and Recently Added rail across shows and movies.
 - Shows and Movies grids gain watch-state filter chips, sort menus, result counts, and filter-aware empty states.
 - Player bottom-right controls gain a Hold Gesture toggle switching between speed boost and brightness/volume (also available in the layout editor).
+- Four new seekbar styles (Slim, Neon glow, Segmented, Retro blocky) for the seekbar, volume slider, and brightness slider, with live previews in the picker.
 
 ### Changed
 
 - Redesigned Settings as a premium expressive dashboard with gradient hero, tactile tiles, and embedded search.
+- Extended the premium styling to every sub-settings screen: icon rows, section counts, grouped cards, and a unified search-result row.
+- Default app theme is now Default instead of Dynamic on fresh installs.
+- Default seekbar, volume, and brightness slider styles are now Standard on fresh installs.
 - Refreshed app logo artwork and linked Telegram community.
 - Bottom-edge swipes no longer trigger volume/brightness gestures.
 
