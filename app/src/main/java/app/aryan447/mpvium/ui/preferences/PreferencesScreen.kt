@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -67,7 +66,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -119,7 +117,6 @@ object PreferencesScreen : Screen {
     val isSearching = query.isNotBlank()
 
     val sections = rememberDashboardSections()
-    val totalDestinations = remember(sections) { sections.sumOf { it.entries.size } }
 
     Scaffold(
       topBar = {
@@ -149,13 +146,6 @@ object PreferencesScreen : Screen {
             LazyColumn(
               modifier = Modifier.fillMaxSize(),
             ) {
-              item {
-                DashboardHero(
-                  destinations = totalDestinations,
-                  modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
-              }
-
               sections.forEach { section ->
                 item {
                   PreferenceSectionHeader(
@@ -289,136 +279,6 @@ private fun rememberDashboardSections(): List<DashboardSection> {
         ),
       ),
     )
-  }
-}
-
-/**
- * Premium hero: layered primary→tertiary gradient, decorative translucent
- * orbs, glass icon medallion, and a destination-count pill.
- */
-@Composable
-private fun DashboardHero(
-  destinations: Int,
-  modifier: Modifier = Modifier,
-) {
-  val scheme = MaterialTheme.colorScheme
-  val isGlass = LocalGlass.current
-  val dark = androidx.compose.foundation.isSystemInDarkTheme()
-  Card(
-    modifier = modifier
-      .fillMaxWidth()
-      .glassSheen(SettingsCardShape, isGlass),
-    shape = SettingsCardShape,
-    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-    border = if (isGlass) glassRimStroke(dark) else BorderStroke(
-      1.dp,
-      scheme.outlineVariant.copy(alpha = 0.4f),
-    ),
-    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-  ) {
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .background(
-          Brush.linearGradient(
-            colors = listOf(
-              scheme.primaryContainer,
-              scheme.tertiaryContainer,
-              scheme.secondaryContainer,
-            ),
-          ),
-        ),
-    ) {
-      // Decorative orbs for depth.
-      Box(
-        modifier = Modifier
-          .size(180.dp)
-          .offset(x = 120.dp, y = (-70).dp)
-          .clip(CircleShape)
-          .background(Color.White.copy(alpha = 0.14f))
-          .align(Alignment.TopEnd),
-      )
-      Box(
-        modifier = Modifier
-          .size(120.dp)
-          .offset(x = 60.dp, y = 40.dp)
-          .clip(CircleShape)
-          .background(Color.White.copy(alpha = 0.10f))
-          .align(Alignment.TopEnd),
-      )
-      // Top gloss.
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(64.dp)
-          .background(
-            Brush.verticalGradient(
-              colors = listOf(
-                Color.White.copy(alpha = 0.16f),
-                Color.Transparent,
-              ),
-            ),
-          )
-          .align(Alignment.TopCenter),
-      )
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        Box(
-          modifier = Modifier
-            .size(56.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.22f))
-            .border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape),
-          contentAlignment = Alignment.Center,
-        ) {
-          Icon(
-            imageVector = Icons.Outlined.Settings,
-            contentDescription = null,
-            tint = scheme.onPrimaryContainer,
-            modifier = Modifier.size(28.dp),
-          )
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-          Text(
-            text = stringResource(R.string.pref_preferences),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold,
-            color = scheme.onPrimaryContainer,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-          )
-          Spacer(modifier = Modifier.height(6.dp))
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-              shape = CircleShape,
-              color = scheme.primary.copy(alpha = 0.9f),
-            ) {
-              Text(
-                text = "$destinations destinations",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = scheme.onPrimary,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-              )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-              text = "Search to jump in",
-              style = MaterialTheme.typography.bodySmall,
-              fontWeight = FontWeight.Medium,
-              color = scheme.onPrimaryContainer.copy(alpha = 0.85f),
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis,
-            )
-          }
-        }
-      }
-    }
   }
 }
 
