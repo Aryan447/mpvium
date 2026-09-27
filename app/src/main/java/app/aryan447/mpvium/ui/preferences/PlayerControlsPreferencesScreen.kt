@@ -1,6 +1,6 @@
 package app.aryan447.mpvium.ui.preferences
 
-// import androidx.compose.material.icons.outlined.VideoLabel // No longer needed here
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,21 +8,26 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -38,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
@@ -49,8 +53,8 @@ import app.aryan447.mpvium.preferences.SeekbarStyle
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
-import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -110,7 +114,7 @@ object PlayerControlsPreferencesScreen : Screen {
         ) {
           // Landscape Controls Section
           item {
-            PreferenceSectionHeader(title = "Landscape Controls")
+            PreferenceSectionHeader(title = "Landscape Controls", count = 3)
           }
 
           item {
@@ -147,7 +151,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Portrait Controls Section
           item {
-            PreferenceSectionHeader(title = "Portrait Controls")
+            PreferenceSectionHeader(title = "Portrait Controls", count = 1)
           }
 
           item {
@@ -166,7 +170,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Seekbar Section
           item {
-            PreferenceSectionHeader(title = "Seekbar Style")
+            PreferenceSectionHeader(title = "Seekbar Style", count = SeekbarStyle.entries.size)
           }
 
           item {
@@ -179,7 +183,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Volume Slider Style Section
           item {
-            PreferenceSectionHeader(title = "Volume Slider Style")
+            PreferenceSectionHeader(title = "Volume Slider Style", count = SeekbarStyle.entries.size)
           }
 
           item {
@@ -192,7 +196,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Brightness Slider Style Section
           item {
-            PreferenceSectionHeader(title = "Brightness Slider Style")
+            PreferenceSectionHeader(title = "Brightness Slider Style", count = SeekbarStyle.entries.size)
           }
 
           item {
@@ -205,7 +209,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Appearance Section
           item {
-            PreferenceSectionHeader(title = "Appearance")
+            PreferenceSectionHeader(title = "Appearance", count = 2)
           }
 
           item {
@@ -221,6 +225,7 @@ object PlayerControlsPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = hidePlayerButtonsBackground,
                 onValueChange = { appearancePrefs.hidePlayerButtonsBackground.set(it) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.VisibilityOff) },
                 title = {
                   Text(
                     text = stringResource(id = R.string.pref_appearance_hide_player_buttons_background_title),
@@ -253,6 +258,7 @@ object PlayerControlsPreferencesScreen : Screen {
                     AnnotatedString("$value ms")
                   }
                 },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Timer) },
                 title = { Text(text = stringResource(R.string.pref_player_display_hide_player_control_time)) },
                 summary = {
                   Text(
@@ -329,21 +335,92 @@ object PlayerControlsPreferencesScreen : Screen {
       modifier =
         Modifier
           .fillMaxWidth()
-          .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-      // Apply padding to Row - minimal padding for tighter appearance
-      verticalAlignment = Alignment.CenterVertically, // Align items vertically
+          .clickable(onClick = onClick)
+          .padding(horizontal = 16.dp, vertical = 12.dp),
+      verticalAlignment = Alignment.CenterVertically,
     ) {
       Text(
         text = title,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.weight(1f), // Text takes all available space, pushing button to end
+        modifier = Modifier.weight(1f),
       )
-      IconButton(onClick = onClick) {
+      Box(
+        modifier = Modifier
+          .size(28.dp)
+          .background(
+            MaterialTheme.colorScheme.surfaceContainerHighest,
+            CircleShape,
+          ),
+        contentAlignment = Alignment.Center,
+      ) {
         Icon(
           imageVector = Icons.Outlined.Edit,
           contentDescription = "Edit $title",
           tint = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.size(18.dp),
+        )
+      }
+    }
+  }
+
+  private fun sliderStyleHint(style: SeekbarStyle): String =
+    when (style) {
+      SeekbarStyle.Standard -> "Classic thin track"
+      SeekbarStyle.Wavy -> "Playful squiggle"
+      SeekbarStyle.Thick -> "Bold full-height bar"
+    }
+
+  @Composable
+  private fun SliderStylePreview(style: SeekbarStyle) {
+    val scheme = MaterialTheme.colorScheme
+    val trackHeight = when (style) {
+      SeekbarStyle.Standard -> 4.dp
+      SeekbarStyle.Wavy -> 4.dp
+      SeekbarStyle.Thick -> 16.dp
+    }
+    val thumbSize = when (style) {
+      SeekbarStyle.Standard -> 6.dp
+      SeekbarStyle.Wavy -> 6.dp
+      SeekbarStyle.Thick -> 8.dp
+    }
+    Box(
+      modifier = Modifier.size(width = 64.dp, height = 28.dp),
+      contentAlignment = Alignment.Center,
+    ) {
+      Box(
+        modifier = Modifier
+          .width(64.dp)
+          .height(trackHeight)
+          .background(
+            scheme.primary.copy(alpha = 0.3f),
+            RoundedCornerShape(50),
+          ),
+      )
+      Box(
+        modifier = Modifier
+          .width(64.dp)
+          .height(trackHeight),
+        contentAlignment = Alignment.CenterStart,
+      ) {
+        Box(
+          modifier = Modifier
+            .fillMaxWidth(0.6f)
+            .height(trackHeight)
+            .background(scheme.primary, RoundedCornerShape(50)),
+        )
+      }
+      Box(
+        modifier = Modifier
+          .width(64.dp)
+          .height(28.dp),
+        contentAlignment = Alignment.CenterStart,
+      ) {
+        Box(
+          modifier = Modifier
+            .padding(start = 64.dp * 0.6f - thumbSize / 2f)
+            .size(thumbSize)
+            .background(scheme.primary, CircleShape),
         )
       }
     }
@@ -360,22 +437,32 @@ object PlayerControlsPreferencesScreen : Screen {
   ) {
     PreferenceCard {
       SeekbarStyle.entries.forEachIndexed { index, style ->
-        ListItem(
-          headlineContent = {
-            Text(text = style.name)
-          },
-          trailingContent = {
-            RadioButton(
-              selected = selected == style,
-              onClick = null
-            )
-          },
-          colors = androidx.compose.material3.ListItemDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-          ),
+        Row(
           modifier = Modifier
+            .fillMaxWidth()
             .clickable { onSelect(style) }
-        )
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          SliderStylePreview(style = style)
+          Spacer(modifier = Modifier.width(16.dp))
+          Column(modifier = Modifier.weight(1f)) {
+            Text(
+              text = style.name,
+              style = MaterialTheme.typography.bodyLarge,
+              color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+              text = sliderStyleHint(style),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          RadioButton(
+            selected = selected == style,
+            onClick = null,
+          )
+        }
         if (index < SeekbarStyle.entries.size - 1) {
           PreferenceDivider()
         }
@@ -401,7 +488,7 @@ object PlayerControlsPreferencesScreen : Screen {
         Text(
           "None", // TODO: strings
           style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.outline,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
       } else {
         buttons.forEach { button ->

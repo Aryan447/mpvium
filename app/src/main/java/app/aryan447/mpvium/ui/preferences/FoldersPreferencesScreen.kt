@@ -2,10 +2,9 @@ package app.aryan447.mpvium.ui.preferences
 
 import android.app.Application
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,27 +15,30 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.FolderOff
-import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.CreateNewFolder
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.FolderOff
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MenuDefaults
-import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
-import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,24 +50,30 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.media.model.VideoFolder
-import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.FoldersPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
-import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
 import app.aryan447.mpvium.ui.browser.selection.SelectionState
 import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
 @Serializable
@@ -95,188 +103,198 @@ object FoldersPreferencesScreen : Screen {
     val blacklistedFoldersList = remember(blacklistedFolders) { blacklistedFolders.toList() }
     val whitelistedFoldersList = remember(whitelistedFolders) { whitelistedFolders.toList() }
 
+    val inBlacklistSelection = selectionState.isInSelectionMode
+    val inWhitelistSelection = whitelistSelectionState.isInSelectionMode
+    val inSelectionMode = inBlacklistSelection || inWhitelistSelection
+    // Blacklist takes precedence if both lists somehow end up in selection mode.
+    val activeIsBlacklist = inBlacklistSelection
+    val activeSelection = if (activeIsBlacklist) selectionState else whitelistSelectionState
+    val activeTotal = if (activeIsBlacklist) blacklistedFoldersList.size else whitelistedFoldersList.size
+
     Scaffold(
       topBar = {
-        BrowserTopBar(
-          title = stringResource(R.string.pref_folders_title),
-          isInSelectionMode = selectionState.isInSelectionMode,
-          selectedCount = selectionState.selectedCount,
-          totalCount = blacklistedFoldersList.size,
-          onCancelSelection = { selectionState = selectionState.clear() },
-          onBackClick = backstack::removeLastOrNull,
-          onDeleteClick = {
-            val updated = blacklistedFolders.toMutableSet().apply {
-              removeAll(selectionState.selectedIds)
-            }
-            preferences.blacklistedFolders.set(updated)
-            selectionState = selectionState.clear()
+        SettingsTopBar(
+          title = if (inSelectionMode) {
+            stringResource(R.string.selected_items, activeSelection.selectedCount, activeTotal)
+          } else {
+            stringResource(R.string.pref_folders_title)
           },
-          onSelectAll = {
-            selectionState = selectionState.selectAll(blacklistedFoldersList)
-          },
-          onInvertSelection = {
-            selectionState = selectionState.invertSelection(blacklistedFoldersList)
-          },
-          onDeselectAll = {
-            selectionState = selectionState.clear()
-          },
-          additionalActions = {
-            if (!selectionState.isInSelectionMode && blacklistedFolders.isNotEmpty()) {
+          actions = {
+            if (inSelectionMode) {
+              var showMenu by remember { mutableStateOf(false) }
               IconButton(
-                onClick = { showClearAllDialog = true },
-                modifier = Modifier.padding(horizontal = 2.dp),
+                onClick = {
+                  if (activeIsBlacklist) {
+                    val updated = blacklistedFolders.toMutableSet().apply {
+                      removeAll(activeSelection.selectedIds)
+                    }
+                    preferences.blacklistedFolders.set(updated)
+                    selectionState = selectionState.clear()
+                  } else {
+                    val updated = whitelistedFolders.toMutableSet().apply {
+                      removeAll(activeSelection.selectedIds)
+                    }
+                    preferences.whitelistedFolders.set(updated)
+                    whitelistSelectionState = whitelistSelectionState.clear()
+                  }
+                },
               ) {
                 Icon(
-                  Icons.Outlined.Restore,
-                  contentDescription = stringResource(R.string.pref_folders_clear_all),
-                  modifier = Modifier.size(28.dp),
+                  imageVector = Icons.Outlined.Delete,
+                  contentDescription = stringResource(R.string.delete),
                   tint = MaterialTheme.colorScheme.error,
                 )
               }
+              Box {
+                IconButton(onClick = { showMenu = true }) {
+                  Icon(
+                    imageVector = Icons.Outlined.MoreVert,
+                    contentDescription = stringResource(R.string.selection_options),
+                  )
+                }
+                DropdownMenu(
+                  expanded = showMenu,
+                  onDismissRequest = { showMenu = false },
+                  containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
+                ) {
+                  DropdownMenuItem(
+                    text = { Text(stringResource(R.string.select_all)) },
+                    onClick = {
+                      if (activeIsBlacklist) {
+                        selectionState = selectionState.selectAll(blacklistedFoldersList)
+                      } else {
+                        whitelistSelectionState = whitelistSelectionState.selectAll(whitelistedFoldersList)
+                      }
+                      showMenu = false
+                    },
+                  )
+                  DropdownMenuItem(
+                    text = { Text(stringResource(R.string.invert_selection)) },
+                    onClick = {
+                      if (activeIsBlacklist) {
+                        selectionState = selectionState.invertSelection(blacklistedFoldersList)
+                      } else {
+                        whitelistSelectionState = whitelistSelectionState.invertSelection(whitelistedFoldersList)
+                      }
+                      showMenu = false
+                    },
+                  )
+                  DropdownMenuItem(
+                    text = { Text(stringResource(R.string.deselect_all)) },
+                    onClick = {
+                      if (activeIsBlacklist) {
+                        selectionState = selectionState.clear()
+                      } else {
+                        whitelistSelectionState = whitelistSelectionState.clear()
+                      }
+                      showMenu = false
+                    },
+                  )
+                }
+              }
             }
           },
-          useRemoveIcon = true,
+          onBack = {
+            if (inSelectionMode) {
+              selectionState = selectionState.clear()
+              whitelistSelectionState = whitelistSelectionState.clear()
+            } else {
+              backstack.removeLastOrNull()
+            }
+          },
         )
       },
     ) { padding ->
-      Column(
-        modifier = Modifier
-          .fillMaxSize()
-          .padding(padding)
-          .verticalScroll(rememberScrollState())
-          .padding(16.dp),
-      ) {
-        if (!selectionState.isInSelectionMode && !whitelistSelectionState.isInSelectionMode) {
-          Text(
-            text = stringResource(R.string.pref_folders_summary),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-
-          Spacer(modifier = Modifier.height(16.dp))
-
-          // Whitelist-only mode toggle
-          Card(
-            modifier = Modifier.fillMaxWidth(),
-          ) {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                  preferences.whitelistOnlyEnabled.set(!whitelistOnlyEnabled)
-                }
-                .padding(16.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Column(modifier = Modifier.weight(1f)) {
-                Text(
-                  text = stringResource(R.string.pref_folders_whitelist_only_title),
-                  style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                  text = stringResource(R.string.pref_folders_whitelist_only_summary),
-                  style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-              }
-              androidx.compose.material3.Switch(
-                checked = whitelistOnlyEnabled,
-                onCheckedChange = { preferences.whitelistOnlyEnabled.set(it) },
+      ProvidePreferenceLocals {
+        LazyColumn(
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(padding),
+        ) {
+          if (!inSelectionMode) {
+            item {
+              Text(
+                text = stringResource(R.string.pref_folders_summary),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
               )
             }
           }
 
-          Spacer(modifier = Modifier.height(16.dp))
-
-          // Whitelist section
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            Text(
-              text = stringResource(R.string.pref_folders_whitelist_title),
-              style = MaterialTheme.typography.titleMedium,
-              fontWeight = FontWeight.Bold,
-            )
-            if (whitelistedFolders.isNotEmpty() && !whitelistSelectionState.isInSelectionMode) {
-              IconButton(onClick = { showClearWhitelistDialog = true }) {
-                Icon(
-                  Icons.Outlined.Restore,
-                  contentDescription = stringResource(R.string.pref_folders_clear_all_whitelist),
-                  modifier = Modifier.size(24.dp),
-                  tint = MaterialTheme.colorScheme.error,
-                )
-              }
+          item {
+            PreferenceCard {
+              HapticSwitchPreference(
+                value = whitelistOnlyEnabled,
+                onValueChange = { preferences.whitelistOnlyEnabled.set(it) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Visibility) },
+                title = { Text(stringResource(R.string.pref_folders_whitelist_only_title)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_folders_whitelist_only_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+              )
             }
           }
 
-          if (whitelistedFolders.isEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-              Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                  text = stringResource(R.string.pref_folders_whitelist_empty_title),
-                  style = MaterialTheme.typography.titleSmall,
-                )
-                Text(
-                  text = stringResource(R.string.pref_folders_whitelist_empty_message),
-                  style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+          item {
+            FolderSectionHeader(
+              title = stringResource(R.string.pref_folders_whitelist_title),
+              count = whitelistedFoldersList.size,
+              showClear = whitelistedFolders.isNotEmpty() && !inSelectionMode,
+              clearContentDescription = stringResource(R.string.pref_folders_clear_all_whitelist),
+              onClear = { showClearWhitelistDialog = true },
+            )
+          }
+
+          if (whitelistedFoldersList.isEmpty()) {
+            item {
+              PreferenceCard {
+                Column(modifier = Modifier.padding(16.dp)) {
+                  Text(
+                    text = stringResource(R.string.pref_folders_whitelist_empty_title),
+                    style = MaterialTheme.typography.titleSmall,
+                  )
+                  Text(
+                    text = stringResource(R.string.pref_folders_whitelist_empty_message),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                }
               }
             }
           } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-              whitelistedFoldersList.forEach { folderPath ->
-                BlacklistedFolderItem(
-                  folderPath = folderPath,
-                  isSelected = whitelistSelectionState.isSelected(folderPath),
-                  isInSelectionMode = whitelistSelectionState.isInSelectionMode,
-                  onRemove = {
-                    val updated = whitelistedFolders.toMutableSet().apply { remove(folderPath) }
-                    preferences.whitelistedFolders.set(updated)
-                  },
-                  onLongClick = {
-                    whitelistSelectionState = whitelistSelectionState.toggle(folderPath)
-                  },
-                  onClick = {
-                    if (whitelistSelectionState.isInSelectionMode) {
+            item {
+              PreferenceCard {
+                whitelistedFoldersList.forEachIndexed { index, folderPath ->
+                  if (index > 0) PreferenceDivider()
+                  FolderRow(
+                    folderPath = folderPath,
+                    icon = Icons.Outlined.FolderOpen,
+                    selected = whitelistSelectionState.isSelected(folderPath),
+                    inSelectionMode = inWhitelistSelection,
+                    onToggleSelect = {
                       whitelistSelectionState = whitelistSelectionState.toggle(folderPath)
-                    }
-                  },
-                )
-              }
-            }
-            if (whitelistSelectionState.isInSelectionMode) {
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-              ) {
-                TextButton(
-                  onClick = {
-                    val updated = whitelistedFolders.toMutableSet().apply {
-                      removeAll(whitelistSelectionState.selectedIds)
-                    }
-                    preferences.whitelistedFolders.set(updated)
-                    whitelistSelectionState = whitelistSelectionState.clear()
-                  },
-                ) {
-                  Text(stringResource(R.string.delete))
-                }
-                TextButton(onClick = { whitelistSelectionState = whitelistSelectionState.clear() }) {
-                  Text(stringResource(R.string.generic_cancel))
+                    },
+                    onEnterSelection = {
+                      whitelistSelectionState = whitelistSelectionState.toggle(folderPath)
+                    },
+                    onRemove = {
+                      val updated = whitelistedFolders.toMutableSet().apply { remove(folderPath) }
+                      preferences.whitelistedFolders.set(updated)
+                    },
+                  )
                 }
               }
             }
           }
 
-          Spacer(modifier = Modifier.height(8.dp))
-
-          Card(
-            modifier = Modifier
-              .fillMaxWidth()
-              .clickable {
+          item {
+            AddFolderCard(
+              label = stringResource(R.string.pref_folders_add_folder_whitelist),
+              onClick = {
                 showAddWhitelistDialog = true
                 isWhitelistLoading = true
                 coroutineScope.launch(Dispatchers.IO) {
@@ -287,93 +305,75 @@ object FoldersPreferencesScreen : Screen {
                   }
                 }
               },
-            colors = CardDefaults.cardColors(
-              containerColor = MaterialTheme.colorScheme.primaryContainer,
-            ),
-          ) {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-              horizontalArrangement = Arrangement.Center,
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Icon(
-                imageVector = Icons.Default.Folder,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-              )
-              Spacer(modifier = Modifier.padding(8.dp))
-              Text(
-                text = stringResource(R.string.pref_folders_add_folder_whitelist),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-              )
-            }
+            )
           }
 
-          Spacer(modifier = Modifier.height(16.dp))
+          item {
+            FolderSectionHeader(
+              title = stringResource(R.string.pref_folders_blacklist),
+              count = blacklistedFoldersList.size,
+              showClear = blacklistedFolders.isNotEmpty() && !inSelectionMode,
+              clearContentDescription = stringResource(R.string.pref_folders_clear_all),
+              onClear = { showClearAllDialog = true },
+            )
+          }
 
-          Text(
-            text = stringResource(R.string.pref_folders_blacklist),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-          )
           if (whitelistOnlyEnabled) {
-            Text(
-              text = stringResource(R.string.pref_folders_whitelist_only_ignore_blacklist),
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        if (blacklistedFolders.isEmpty()) {
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .height(200.dp),
-            contentAlignment = Alignment.Center,
-          ) {
-            EmptyState(
-              icon = Icons.Filled.FolderOff,
-              title = stringResource(R.string.pref_folders_empty_title),
-              message = stringResource(R.string.pref_folders_empty_message),
-            )
-          }
-        } else {
-          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            blacklistedFoldersList.forEach { folderPath ->
-              BlacklistedFolderItem(
-                folderPath = folderPath,
-                isSelected = selectionState.isSelected(folderPath),
-                isInSelectionMode = selectionState.isInSelectionMode,
-                onRemove = {
-                  val updated = blacklistedFolders.toMutableSet().apply { remove(folderPath) }
-                  preferences.blacklistedFolders.set(updated)
-                },
-                onLongClick = {
-                  selectionState = selectionState.toggle(folderPath)
-                },
-                onClick = {
-                  if (selectionState.isInSelectionMode) {
-                    selectionState = selectionState.toggle(folderPath)
-                  }
-                },
+            item {
+              Text(
+                text = stringResource(R.string.pref_folders_whitelist_only_ignore_blacklist),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp),
               )
             }
           }
-        }
 
-        if (!selectionState.isInSelectionMode) {
-          Spacer(modifier = Modifier.height(16.dp))
+          if (blacklistedFoldersList.isEmpty()) {
+            item {
+              Box(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(200.dp),
+                contentAlignment = Alignment.Center,
+              ) {
+                EmptyState(
+                  icon = androidx.compose.material.icons.filled.FolderOff,
+                  title = stringResource(R.string.pref_folders_empty_title),
+                  message = stringResource(R.string.pref_folders_empty_message),
+                )
+              }
+            }
+          } else {
+            item {
+              PreferenceCard {
+                blacklistedFoldersList.forEachIndexed { index, folderPath ->
+                  if (index > 0) PreferenceDivider()
+                  FolderRow(
+                    folderPath = folderPath,
+                    icon = Icons.Outlined.FolderOff,
+                    selected = selectionState.isSelected(folderPath),
+                    inSelectionMode = inBlacklistSelection,
+                    onToggleSelect = {
+                      selectionState = selectionState.toggle(folderPath)
+                    },
+                    onEnterSelection = {
+                      selectionState = selectionState.toggle(folderPath)
+                    },
+                    onRemove = {
+                      val updated = blacklistedFolders.toMutableSet().apply { remove(folderPath) }
+                      preferences.blacklistedFolders.set(updated)
+                    },
+                  )
+                }
+              }
+            }
+          }
 
-          Card(
-            modifier = Modifier
-              .fillMaxWidth()
-              .clickable {
+          item {
+            AddFolderCard(
+              label = stringResource(R.string.pref_folders_add_folder),
+              onClick = {
                 showAddDialog = true
                 isLoading = true
                 coroutineScope.launch(Dispatchers.IO) {
@@ -384,29 +384,11 @@ object FoldersPreferencesScreen : Screen {
                   }
                 }
               },
-            colors = CardDefaults.cardColors(
-              containerColor = MaterialTheme.colorScheme.primaryContainer,
-            ),
-          ) {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-              horizontalArrangement = Arrangement.Center,
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Icon(
-                imageVector = Icons.Default.Folder,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-              )
-              Spacer(modifier = Modifier.padding(8.dp))
-              Text(
-                text = stringResource(R.string.pref_folders_add_folder),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-              )
-            }
+            )
+          }
+
+          item {
+            Spacer(modifier = Modifier.height(16.dp))
           }
         }
       }
@@ -488,69 +470,155 @@ object FoldersPreferencesScreen : Screen {
   }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BlacklistedFolderItem(
-  folderPath: String,
-  isSelected: Boolean,
-  isInSelectionMode: Boolean,
-  onRemove: () -> Unit,
-  onLongClick: () -> Unit,
-  onClick: () -> Unit,
+private fun FolderSectionHeader(
+  title: String,
+  count: Int,
+  showClear: Boolean,
+  clearContentDescription: String,
+  onClear: () -> Unit,
+  modifier: Modifier = Modifier,
 ) {
+  Row(
+    modifier = modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    PreferenceSectionHeader(
+      title = title,
+      count = count,
+      modifier = Modifier.weight(1f),
+    )
+    if (showClear) {
+      IconButton(
+        onClick = onClear,
+        modifier = Modifier.padding(end = 16.dp),
+      ) {
+        Icon(
+          imageVector = Icons.Outlined.Restore,
+          contentDescription = clearContentDescription,
+          tint = MaterialTheme.colorScheme.error,
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun AddFolderCard(
+  label: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val haptic = LocalHapticFeedback.current
+  val scheme = MaterialTheme.colorScheme
   Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-      containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-      } else {
-        MaterialTheme.colorScheme.surfaceVariant
+    modifier = modifier
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp, vertical = 8.dp)
+      .clickable {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        onClick()
       },
+    shape = SettingsCardShape,
+    colors = CardDefaults.cardColors(
+      containerColor = scheme.primaryContainer,
     ),
   ) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .combinedClickable(
-          onClick = onClick,
-          onLongClick = onLongClick,
-        )
         .padding(16.dp),
-      horizontalArrangement = Arrangement.SpaceBetween,
+      horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      Row(
-        modifier = Modifier.weight(1f),
-        verticalAlignment = Alignment.CenterVertically,
+      Icon(
+        imageVector = Icons.Outlined.CreateNewFolder,
+        contentDescription = null,
+        tint = scheme.onPrimaryContainer,
+      )
+      Spacer(modifier = Modifier.width(8.dp))
+      Text(
+        text = label,
+        style = MaterialTheme.typography.titleMedium,
+        color = scheme.onPrimaryContainer,
+      )
+    }
+  }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FolderRow(
+  folderPath: String,
+  icon: ImageVector,
+  selected: Boolean,
+  inSelectionMode: Boolean,
+  onToggleSelect: () -> Unit,
+  onEnterSelection: () -> Unit,
+  onRemove: () -> Unit,
+) {
+  val haptic = LocalHapticFeedback.current
+  val scheme = MaterialTheme.colorScheme
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .background(
+        color = if (selected) scheme.primaryContainer else Color.Transparent,
+      )
+      .combinedClickable(
+        onClick = {
+          if (inSelectionMode) onToggleSelect()
+        },
+        onLongClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+          onEnterSelection()
+        },
+      )
+      .padding(horizontal = 16.dp, vertical = 12.dp),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    PreferenceIconBox(icon = icon)
+    Spacer(modifier = Modifier.width(16.dp))
+    Column(modifier = Modifier.weight(1f)) {
+      Text(
+        text = folderPath.substringAfterLast('/'),
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+      )
+      Text(
+        text = folderPath,
+        style = MaterialTheme.typography.bodySmall,
+        color = scheme.onSurfaceVariant,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+      )
+    }
+    Spacer(modifier = Modifier.width(8.dp))
+    if (inSelectionMode) {
+      Checkbox(
+        checked = selected,
+        onCheckedChange = null,
+      )
+    } else {
+      Box(
+        modifier = Modifier
+          .size(28.dp)
+          .clip(CircleShape)
+          .background(scheme.surfaceContainerHighest)
+          .clickable {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onRemove()
+          },
+        contentAlignment = Alignment.Center,
       ) {
-        if (isInSelectionMode) {
-          Checkbox(
-            checked = isSelected,
-            onCheckedChange = null,
-            modifier = Modifier.padding(end = 8.dp),
-          )
-        }
-        Column {
-          Text(
-            text = folderPath.substringAfterLast('/'),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-          )
-          Text(
-            text = folderPath,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        }
-      }
-      if (!isInSelectionMode) {
-        IconButton(onClick = onRemove) {
-          Icon(
-            imageVector = Icons.Default.RemoveCircle,
-            contentDescription = stringResource(R.string.delete),
-            tint = MaterialTheme.colorScheme.error,
-          )
-        }
+        Icon(
+          imageVector = Icons.Outlined.Close,
+          contentDescription = stringResource(R.string.delete),
+          tint = scheme.onSurfaceVariant,
+          modifier = Modifier.size(18.dp),
+        )
       }
     }
   }
@@ -713,4 +781,3 @@ private suspend fun scanAllVideoFolders(context: Application): List<VideoFolder>
       context = context
     )
 }
-

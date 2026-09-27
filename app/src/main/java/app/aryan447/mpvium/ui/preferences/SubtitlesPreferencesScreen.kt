@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,11 +17,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.Accessibility
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Fullscreen
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.VpnKey
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,8 +57,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
@@ -54,17 +72,16 @@ import app.aryan447.mpvium.repository.wyzie.WyzieEncodings
 import app.aryan447.mpvium.repository.wyzie.WyzieFormats
 import app.aryan447.mpvium.repository.wyzie.WyzieLanguages
 import app.aryan447.mpvium.repository.wyzie.WyzieSources
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.utils.media.CustomFontEntry
 import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
 import app.aryan447.mpvium.utils.media.copyFontsFromDirectory
 import app.aryan447.mpvium.utils.media.loadCustomFontEntries
-import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import com.github.k1rakishou.fsaf.FileManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import androidx.compose.ui.text.AnnotatedString
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -156,7 +173,7 @@ object SubtitlesPreferencesScreen : Screen {
         ) {
           // === GENERAL SECTION ===
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.general))
+            PreferenceSectionHeader(title = stringResource(R.string.general), count = 7)
           }
 
           item {
@@ -172,14 +189,17 @@ object SubtitlesPreferencesScreen : Screen {
                   if (preferredLanguages.isNotBlank()) {
                     Text(
                       preferredLanguages,
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   } else {
                     Text(
                       stringResource(R.string.not_set_video_default),
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   }
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Translate)
                 },
                 textField = { value, onValueChange, _ ->
                   Column {
@@ -208,8 +228,11 @@ object SubtitlesPreferencesScreen : Screen {
                 summary = {
                   Text(
                     explainLanguageDisplayName(explainTranslationLang),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Language)
                 },
               )
 
@@ -223,8 +246,11 @@ object SubtitlesPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_subtitles_autoload_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Download)
                 },
               )
 
@@ -238,8 +264,11 @@ object SubtitlesPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.player_sheets_sub_override_ass_subtitle),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.TextFields)
                 },
               )
 
@@ -253,8 +282,11 @@ object SubtitlesPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.player_sheets_sub_scale_by_window_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Fullscreen)
                 },
               )
 
@@ -268,8 +300,11 @@ object SubtitlesPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_subtitles_persist_pos_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Save)
                 },
               )
 
@@ -288,6 +323,8 @@ object SubtitlesPreferencesScreen : Screen {
                   verticalAlignment = Alignment.CenterVertically,
                   horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
+                  PreferenceIconBox(icon = Icons.Outlined.Folder)
+                  Spacer(modifier = Modifier.width(16.dp))
                   // Left side: Title + summary
                   Column(
                     modifier = Modifier.weight(1f),
@@ -371,7 +408,7 @@ object SubtitlesPreferencesScreen : Screen {
 
           // === ONLINE SUBTITLE SECTION ===
           item {
-            PreferenceSectionHeader(title = "Subtitle Search")
+            PreferenceSectionHeader(title = "Subtitle Search", count = 6)
           }
 
           item {
@@ -383,21 +420,28 @@ object SubtitlesPreferencesScreen : Screen {
                   .clickable { saveLocationPicker.launch(null) }
                   .padding(vertical = 16.dp, horizontal = 16.dp),
               ) {
-                Column {
-                  Text(
-                    stringResource(R.string.pref_subtitles_save_location),
-                    style = MaterialTheme.typography.titleMedium,
-                  )
-                  val folderPath = if (subtitleSaveFolder.isBlank()) {
-                    stringResource(R.string.not_set_video_default)
-                  } else {
-                    Uri.parse(subtitleSaveFolder).path ?: subtitleSaveFolder
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically,
+                ) {
+                  PreferenceIconBox(icon = Icons.Outlined.FolderOpen)
+                  Spacer(modifier = Modifier.width(16.dp))
+                  Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                      stringResource(R.string.pref_subtitles_save_location),
+                      style = MaterialTheme.typography.titleMedium,
+                    )
+                    val folderPath = if (subtitleSaveFolder.isBlank()) {
+                      stringResource(R.string.not_set_video_default)
+                    } else {
+                      Uri.parse(subtitleSaveFolder).path ?: subtitleSaveFolder
+                    }
+                    Text(
+                      text = folderPath,
+                      style = MaterialTheme.typography.bodyMedium,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                   }
-                  Text(
-                    text = folderPath,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  )
                 }
               }
 
@@ -405,8 +449,6 @@ object SubtitlesPreferencesScreen : Screen {
 
               var showClearDialog by remember { mutableStateOf(false) }
               val scope = androidx.compose.runtime.rememberCoroutineScope()
-
-              PreferenceDivider()
 
               // Wyzie Sources
               MultiChoicePreference(
@@ -417,12 +459,15 @@ object SubtitlesPreferencesScreen : Screen {
                   } else {
                     wyzieSources.mapNotNull { WyzieSources.ALL[it] }.joinToString(", ")
                   }
-                  Text(summaryText, color = MaterialTheme.colorScheme.outline)
+                  Text(summaryText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 },
                 values = WyzieSources.ALL,
                 selectedValues = wyzieSources,
                 onValuesChange = { preferences.wyzieSources.set(it) },
-                hasAllOption = true
+                hasAllOption = true,
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.CloudDownload)
+                },
               )
 
               PreferenceDivider()
@@ -437,12 +482,15 @@ object SubtitlesPreferencesScreen : Screen {
                   } else {
                     subdlLanguages.mapNotNull { WyzieLanguages.ALL[it] }.joinToString(", ")
                   }
-                  Text(summaryText, color = MaterialTheme.colorScheme.outline)
+                  Text(summaryText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 },
                 values = WyzieLanguages.SORTED,
                 selectedValues = subdlLanguages,
                 onValuesChange = { preferences.subdlLanguages.set(it) },
-                hasAllOption = true
+                hasAllOption = true,
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Translate)
+                },
               )
 
               PreferenceDivider()
@@ -464,11 +512,20 @@ object SubtitlesPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                   )
-                  Icon(
-                    imageVector = if (showAdvanced) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
+                  Box(
+                    modifier = Modifier
+                      .size(28.dp)
+                      .clip(CircleShape)
+                      .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    contentAlignment = Alignment.Center,
+                  ) {
+                    Icon(
+                      imageVector = if (showAdvanced) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                      contentDescription = null,
+                      tint = MaterialTheme.colorScheme.primary,
+                      modifier = Modifier.size(18.dp),
+                    )
+                  }
                 }
 
                 if (showAdvanced) {
@@ -477,7 +534,15 @@ object SubtitlesPreferencesScreen : Screen {
                       value = wyzieHearingImpaired,
                       onValueChange = { preferences.wyzieHearingImpaired.set(it) },
                       title = { Text("Hearing-impaired friendly") },
-                      summary = { Text("Only show subtitles optimized for hearing impaired") }
+                      summary = {
+                        Text(
+                          "Only show subtitles optimized for hearing impaired",
+                          color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                      },
+                      icon = {
+                        PreferenceRowIcon(icon = Icons.Outlined.Accessibility)
+                      },
                     )
 
                     PreferenceDivider()
@@ -490,12 +555,15 @@ object SubtitlesPreferencesScreen : Screen {
                         } else {
                           wyzieFormats.mapNotNull { WyzieFormats.ALL[it] }.joinToString(", ")
                         }
-                        Text(summaryText, color = MaterialTheme.colorScheme.outline)
+                        Text(summaryText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                       },
                       values = WyzieFormats.ALL,
                       selectedValues = wyzieFormats,
                       onValuesChange = { preferences.wyzieFormats.set(it) },
-                      hasAllOption = true
+                      hasAllOption = true,
+                      icon = {
+                        PreferenceRowIcon(icon = Icons.Outlined.Description)
+                      },
                     )
 
                     PreferenceDivider()
@@ -508,12 +576,15 @@ object SubtitlesPreferencesScreen : Screen {
                         } else {
                           wyzieEncodings.mapNotNull { WyzieEncodings.ALL[it] }.joinToString(", ")
                         }
-                        Text(summaryText, color = MaterialTheme.colorScheme.outline)
+                        Text(summaryText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                       },
                       values = WyzieEncodings.ALL,
                       selectedValues = wyzieEncodings,
                       onValuesChange = { preferences.wyzieEncodings.set(it) },
-                      hasAllOption = true
+                      hasAllOption = true,
+                      icon = {
+                        PreferenceRowIcon(icon = Icons.Outlined.Code)
+                      },
                     )
 
                     Spacer(modifier = Modifier.size(16.dp))
@@ -525,9 +596,17 @@ object SubtitlesPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_subtitles_clear_downloads), color = MaterialTheme.colorScheme.error) },
-                summary = { Text(stringResource(R.string.pref_subtitles_clear_downloads_summary)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_subtitles_clear_downloads_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
                 onClick = { showClearDialog = true },
-                enabled = subtitleSaveFolder.isNotBlank()
+                enabled = subtitleSaveFolder.isNotBlank(),
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Delete)
+                },
               )
 
               if (showClearDialog) {
@@ -579,17 +658,20 @@ object SubtitlesPreferencesScreen : Screen {
                   if (wyzieApiKey.isBlank()) {
                     Text(
                       "Fallback for Wyzie. Primary is Stremio (keyless). Get free key at store.wyzie.io/redeem",
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                       style = MaterialTheme.typography.bodySmall
                     )
                   } else {
                     Text(
                       "Key set (${wyzieApiKey.take(4)}****)",
-                      color = MaterialTheme.colorScheme.outline
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                   }
                 },
                 textToValue = { it },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.VpnKey)
+                },
                 textField = { value, onValueChange, _ ->
                   TextField(
                     value = value,
@@ -673,14 +755,16 @@ fun MultiChoicePreference(
   values: Map<String, String>,
   selectedValues: Set<String>,
   onValuesChange: (Set<String>) -> Unit,
-  hasAllOption: Boolean = false
+  hasAllOption: Boolean = false,
+  icon: @Composable (() -> Unit)? = null,
 ) {
   var showDialog by remember { mutableStateOf(false) }
 
   Preference(
     title = title,
     summary = summary,
-    onClick = { showDialog = true }
+    onClick = { showDialog = true },
+    icon = icon,
   )
 
   if (showDialog) {

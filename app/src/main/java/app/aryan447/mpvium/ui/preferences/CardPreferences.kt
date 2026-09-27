@@ -10,14 +10,16 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -253,6 +256,35 @@ fun PreferenceIconBox(
 }
 
 /**
+ * Icon for library-preference rows: the tonal [PreferenceIconBox] plus a
+ * guaranteed 16.dp trailing gap. The preference library lays its `icon`
+ * slot out with no gap, so a bare [PreferenceIconBox] collides with the
+ * title text — always use this wrapper in `icon = { ... }` slots.
+ * Custom-built rows (which manage their own Row + Spacer) keep using
+ * [PreferenceIconBox] directly.
+ */
+@Composable
+fun PreferenceRowIcon(
+  icon: ImageVector,
+  modifier: Modifier = Modifier,
+  contentDescription: String? = null,
+  container: Color? = null,
+  content: Color? = null,
+  boxSize: androidx.compose.ui.unit.Dp = 44.dp,
+  iconSize: androidx.compose.ui.unit.Dp = 24.dp,
+) {
+  PreferenceIconBox(
+    icon = icon,
+    modifier = modifier.padding(end = 16.dp),
+    contentDescription = contentDescription,
+    container = container,
+    content = content,
+    boxSize = boxSize,
+    iconSize = iconSize,
+  )
+}
+
+/**
  * A switch preference row that plays a haptic tick on toggle.
  * Same API as the underlying library switch.
  */
@@ -365,5 +397,61 @@ fun SettingsCategoryPill(
       overflow = TextOverflow.Ellipsis,
       modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
     )
+  }
+}
+
+/**
+ * Shared search result row used by the dashboard embedded search and the
+ * standalone search screen: tonal Surface card, tonal icon, title, summary,
+ * and a category pill.
+ */
+@Composable
+fun SettingsSearchResultRow(
+  preference: SearchablePreference,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val scheme = MaterialTheme.colorScheme
+  val titleText = preference.titleRes?.let { stringResource(it) } ?: preference.title.orEmpty()
+  val summaryText = preference.summaryRes?.let { stringResource(it) } ?: preference.summary
+  Surface(
+    modifier = modifier
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp, vertical = 4.dp)
+      .clip(SettingsCardShape)
+      .clickable(onClick = onClick),
+    shape = SettingsCardShape,
+    color = scheme.surfaceContainer,
+    border = BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.4f)),
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 12.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      PreferenceIconBox(icon = Icons.Outlined.Settings)
+      Spacer(modifier = Modifier.width(16.dp))
+      Column(modifier = Modifier.weight(1f)) {
+        Text(
+          text = titleText,
+          style = MaterialTheme.typography.bodyLarge,
+          fontWeight = FontWeight.SemiBold,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+        )
+        if (!summaryText.isNullOrBlank()) {
+          Text(
+            text = summaryText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = scheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+          )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        SettingsCategoryPill(text = preference.category)
+      }
+    }
   }
 }
