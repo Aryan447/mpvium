@@ -17,13 +17,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.FolderOff
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Restore
@@ -338,7 +340,7 @@ object FoldersPreferencesScreen : Screen {
                 contentAlignment = Alignment.Center,
               ) {
                 EmptyState(
-                  icon = androidx.compose.material.icons.filled.FolderOff,
+                  icon = Icons.Filled.Folder,
                   title = stringResource(R.string.pref_folders_empty_title),
                   message = stringResource(R.string.pref_folders_empty_message),
                 )
@@ -351,7 +353,7 @@ object FoldersPreferencesScreen : Screen {
                   if (index > 0) PreferenceDivider()
                   FolderRow(
                     folderPath = folderPath,
-                    icon = Icons.Outlined.FolderOff,
+                    icon = Icons.Outlined.Folder,
                     selected = selectionState.isSelected(folderPath),
                     inSelectionMode = inBlacklistSelection,
                     onToggleSelect = {
