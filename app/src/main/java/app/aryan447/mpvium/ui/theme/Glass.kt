@@ -347,26 +347,26 @@ fun glassAssistChipColors(): androidx.compose.material3.ChipColors {
 }
 
 /**
- * Bottom-nav item colors: frost indicator pill + contrast selected icon/label
- * for Glass, M3 defaults otherwise. The indicator sits on the already-glass
- * bar, so frost-on-frost keeps the pill readable as a glass highlight.
+ * Expressive short-nav item colors: frost indicator pill + contrast selected
+ * icon/label for Glass, M3 Expressive defaults otherwise (including the
+ * expressive secondary active label).
  */
 @Composable
-fun glassNavigationBarItemColors(): androidx.compose.material3.NavigationBarItemColors {
-  if (!LocalGlass.current) return androidx.compose.material3.NavigationBarItemDefaults.colors()
+fun glassShortNavigationBarItemColors(): androidx.compose.material3.NavigationItemColors {
+  if (!LocalGlass.current) return androidx.compose.material3.ShortNavigationBarItemDefaults.colors()
   val dark = isSystemInDarkTheme()
-  return androidx.compose.material3.NavigationBarItemDefaults.colors(
+  return androidx.compose.material3.ShortNavigationBarItemDefaults.colors(
     selectedIconColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
     ),
     selectedTextColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
     ),
-    indicatorColor = if (dark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.65f),
+    selectedIndicatorColor = if (dark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.65f),
   )
 }
 
-/** Rail twin of [glassNavigationBarItemColors]. */
+/** Navigation-rail item colors: same frost treatment as the dock. */
 @Composable
 fun glassNavigationRailItemColors(): androidx.compose.material3.NavigationRailItemColors {
   if (!LocalGlass.current) return androidx.compose.material3.NavigationRailItemDefaults.colors()

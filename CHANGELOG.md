@@ -32,6 +32,7 @@ Source of truth for GitHub release notes.
 
 - Redesigned Settings as a premium expressive dashboard with tactile tiles and embedded search.
 - Extended the premium styling to every sub-settings screen: icon rows, section counts, grouped cards, and a unified search-result row.
+- Bottom dock rebuilt on Material 3 Expressive's short navigation bar with expressive defaults.
 - Refreshed app logo artwork and linked Telegram community.
 - Bottom-edge swipes no longer trigger volume/brightness gestures.
 
