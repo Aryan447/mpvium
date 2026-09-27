@@ -103,6 +103,21 @@ const entries = [
       .
     </p>
 
+    <section
+      id="wn-latest"
+      hidden
+      class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6"
+    >
+      <h2 class="text-xl font-extrabold text-[var(--primary)]">
+        <span id="wn-tag"></span>
+        <span
+          id="wn-date"
+          class="ml-2 align-middle text-xs font-bold uppercase tracking-wider text-[var(--muted)]"
+        ></span>
+      </h2>
+      <div id="wn-body" class="mt-2"></div>
+    </section>
+
     {
       entries.map((e) => (
         <section class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
@@ -124,4 +139,59 @@ const entries = [
     }
   </div>
   <div class="h-10"></div>
+
+  <script is:inline>
+    (function () {
+      function esc(s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+      // Fetches the latest stable release so this page updates itself
+      // with every release — no site edits needed.
+      fetch("https://api.github.com/repos/aryan447/mpvium/releases/latest")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rel) {
+          if (!rel || !rel.body) return;
+          var card = document.getElementById("wn-latest");
+          if (!card) return;
+          document.getElementById("wn-tag").textContent = rel.tag_name;
+          try {
+            document.getElementById("wn-date").textContent =
+              new Date(rel.published_at).toLocaleDateString(undefined, {
+                year: "numeric", month: "short", day: "numeric",
+              });
+          } catch (e) {}
+          var html = "", inList = false, para = [];
+          function flushPara() {
+            if (para.length) { html += '<p class="mb-2 text-[15px]">' + para.join("<br>") + "</p>"; para = []; }
+          }
+          function closeList() {
+            if (inList) { html += "</ul>"; inList = false; }
+          }
+          rel.body.split("\n").forEach(function (raw) {
+            var line = raw.trim();
+            var h = line.match(/^#{2,3}\s+(.*)/);
+            if (h) {
+              closeList(); flushPara();
+              html += '<h3 class="mt-4 text-sm font-bold uppercase tracking-wider text-[var(--muted)]">' + esc(h[1]) + "</h3>";
+              return;
+            }
+            var b = line.match(/^[-*]\s+(.*)/);
+            if (b) {
+              flushPara();
+              if (!inList) { html += '<ul class="mt-2 list-disc space-y-1.5 pl-5 text-[15px]">'; inList = true; }
+              html += "<li>" + esc(b[1]) + "</li>";
+              return;
+            }
+            if (line === "") { closeList(); flushPara(); return; }
+            para.push(esc(line));
+          });
+          closeList(); flushPara();
+          document.getElementById("wn-body").innerHTML = html;
+          card.hidden = false;
+        })
+        .catch(function () {});
+    })();
+  </script>
 </BaseLayout>
