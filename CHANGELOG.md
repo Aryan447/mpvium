@@ -43,6 +43,7 @@ Source of truth for GitHub release notes.
 - Seekbar thumb flutter, tap-seek delay, snap-back, and post-seek stall.
 - Seek preview held until seek confirms instead of fixed-delay clear.
 - Folder blacklist/whitelist now respected across Home, Movies, Shows, and Insights.
+- Player Layout slider previews now match the real seekbar (thin/Thick shapes, true Wavy squiggle) with vertical previews for volume/brightness.
 
 ## v1.1.6-preview.5
 
