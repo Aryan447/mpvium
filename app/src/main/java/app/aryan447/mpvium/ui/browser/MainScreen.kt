@@ -258,6 +258,7 @@ object MainScreen : Screen {
 
       Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = Color.Transparent,
         bottomBar = {
           if (!isWide) {
             AnimatedVisibility(
