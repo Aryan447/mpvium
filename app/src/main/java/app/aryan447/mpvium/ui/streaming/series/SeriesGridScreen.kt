@@ -265,8 +265,7 @@ object SeriesGridScreen : Screen {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
             },
-            colors = if (isGlass) TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-              else TopAppBarDefaults.topAppBarColors(),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             modifier = Modifier.glassChrome(
               state = glassHaze,
               style = glassStyle,
