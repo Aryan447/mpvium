@@ -9,15 +9,26 @@ import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -28,10 +39,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
@@ -55,6 +66,7 @@ object DecoderPreferencesScreen : Screen {
     val preferences = koinInject<DecoderPreferences>()
     val context = LocalContext.current
     val isVulkanSupported = remember { VulkanUtils.isVulkanSupported(context) }
+    val useVulkan by preferences.useVulkan.collectAsState()
     var showGpuNextWarning by remember { mutableStateOf(false) }
     Scaffold(
       topBar = {
@@ -69,7 +81,7 @@ object DecoderPreferencesScreen : Screen {
               .padding(padding),
         ) {
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_decoder))
+            PreferenceSectionHeader(title = stringResource(R.string.pref_decoder), count = 2)
           }
 
           item {
@@ -80,11 +92,12 @@ object DecoderPreferencesScreen : Screen {
                 value = currentProfile,
                 onValueChange = { preferences.profile.set(it.value) },
                 values = MPVProfile.entries,
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Settings) },
                 title = { Text(stringResource(R.string.pref_decoder_profile_title)) },
                 summary = {
                   Text(
                     currentProfile.displayName,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -97,13 +110,19 @@ object DecoderPreferencesScreen : Screen {
                 onValueChange = {
                   preferences.tryHWDecoding.set(it)
                 },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Memory) },
                 title = { Text(stringResource(R.string.pref_decoder_try_hw_dec_title)) },
               )
+            }
+          }
 
-              PreferenceDivider()
+          item {
+            PreferenceSectionHeader(title = "GPU", count = 2)
+          }
 
+          item {
+            PreferenceCard {
               val gpuNext by preferences.gpuNext.collectAsState()
-              val useVulkan by preferences.useVulkan.collectAsState() // Added to check Vulkan state
               HapticSwitchPreference(
                 value = gpuNext,
                 onValueChange = { enabled ->
@@ -116,11 +135,12 @@ object DecoderPreferencesScreen : Screen {
                         }
                     }
                 },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Speed) },
                 title = { Text(stringResource(R.string.pref_decoder_gpu_next_title)) },
                 summary = {
                   Text(
                     stringResource(R.string.pref_decoder_gpu_next_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -173,7 +193,7 @@ object DecoderPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              // val useVulkan by preferences.useVulkan.collectAsState() // Moved up for gpuNext logic
+              // val useVulkan by preferences.useVulkan.collectAsState() // Moved to Content() top-level for cross-card access
               HapticSwitchPreference(
                 value = useVulkan,
                 onValueChange = { enabled ->
@@ -189,6 +209,7 @@ object DecoderPreferencesScreen : Screen {
                   }
                 },
                 enabled = isVulkanSupported,
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Dns) },
                 title = { Text(stringResource(R.string.pref_decoder_vulkan_title) + " (Experimental)") },
                 summary = {
                   Text(
@@ -201,19 +222,26 @@ object DecoderPreferencesScreen : Screen {
                   )
                 },
               )
+            }
+          }
 
-              PreferenceDivider()
+          item {
+            PreferenceSectionHeader(title = "Post-processing", count = 4)
+          }
 
+          item {
+            PreferenceCard {
               val debanding by preferences.debanding.collectAsState()
               ListPreference(
                 value = debanding,
                 onValueChange = { preferences.debanding.set(it) },
                 values = Debanding.entries,
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Tune) },
                 title = { Text(stringResource(R.string.pref_decoder_debanding_title)) },
                 summary = {
                   Text(
                     debanding.name,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -226,11 +254,12 @@ object DecoderPreferencesScreen : Screen {
                 onValueChange = {
                   preferences.useYUV420P.set(it)
                 },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Layers) },
                 title = { Text(stringResource(R.string.pref_decoder_yuv420p_title)) },
                 summary = {
                   Text(
                     stringResource(R.string.pref_decoder_yuv420p_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )
@@ -247,25 +276,38 @@ object DecoderPreferencesScreen : Screen {
                     }
                 },
                 title = { Text(stringResource(R.string.pref_anime4k_title)) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Refresh) },
                 summary = {
-                  Column {
-                    Text(
-                      stringResource(R.string.pref_anime4k_summary),
-                      color = MaterialTheme.colorScheme.outline,
-                    )
-                    Text(
-                      text = "github.com/bloc97/Anime4K",
-                      color = MaterialTheme.colorScheme.primary,
-                      style = MaterialTheme.typography.bodySmall,
-                      textDecoration = TextDecoration.Underline,
-                      modifier = Modifier.clickable {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/bloc97/Anime4K"))
-                        context.startActivity(intent)
-                      }
-                    )
-                  }
+                  Text(
+                    stringResource(R.string.pref_anime4k_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
                 },
               )
+
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/bloc97/Anime4K"))
+                    context.startActivity(intent)
+                  }
+                  .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+              ) {
+                PreferenceIconBox(
+                  icon = Icons.Outlined.OpenInNew,
+                  boxSize = 32.dp,
+                  iconSize = 18.dp,
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                  text = "github.com/bloc97/Anime4K",
+                  color = MaterialTheme.colorScheme.primary,
+                  style = MaterialTheme.typography.bodySmall,
+                  textDecoration = TextDecoration.Underline,
+                )
+              }
 
               PreferenceDivider()
 
@@ -273,11 +315,12 @@ object DecoderPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = shaderPeekSuggest,
                 onValueChange = { preferences.shaderPeekSuggest.set(it) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Visibility) },
                 title = { Text(stringResource(R.string.pref_decoder_shader_peek_title)) },
                 summary = {
                   Text(
                     stringResource(R.string.pref_decoder_shader_peek_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
               )

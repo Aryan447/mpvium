@@ -18,12 +18,15 @@ import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +48,7 @@ import app.aryan447.mpvium.ui.onboarding.OnboardingScreen
 import app.aryan447.mpvium.ui.splash.MpviumSplashGate
 import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.MpviumTheme
+import app.aryan447.mpvium.ui.theme.themeGlow
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import com.google.accompanist.permissions.PermissionStatus
@@ -115,9 +119,13 @@ class MainActivity : ComponentActivity() {
       }
 
       MpviumTheme {
-        Surface {
-          MpviumSplashGate {
-            Navigator()
+        // Flat background is replaced by the theme-reactive bottom glow so every
+        // tab inherits it from one layer instead of each screen painting its own.
+        Surface(color = Color.Transparent) {
+          Box(modifier = Modifier.fillMaxSize().themeGlow()) {
+            MpviumSplashGate {
+              Navigator()
+            }
           }
         }
       }

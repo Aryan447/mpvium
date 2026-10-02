@@ -16,12 +16,23 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.Terminal
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -52,10 +63,10 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.ConfirmDialog
 import app.aryan447.mpvium.presentation.crash.CrashActivity
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.OpenDocumentTreeContract
-import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import java.io.File
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.outputStream
@@ -233,7 +244,7 @@ object AdvancedPreferencesScreen : Screen {
         ) {
           // Backup & Restore Section
           item {
-            PreferenceSectionHeader(title = "Backup & Restore")
+            PreferenceSectionHeader(title = "Backup & Restore", count = 2)
           }
 
           item {
@@ -243,15 +254,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     text = "Export settings to an XML file",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 icon = {
-                  Icon(
-                    Icons.Outlined.FileUpload,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
+                  PreferenceRowIcon(icon = Icons.Outlined.FileUpload)
                 },
                 onClick = {
                   exportLauncher.launch(settingsManager.getDefaultExportFilename())
@@ -265,15 +272,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     text = "Import settings from an XML file",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
                 icon = {
-                  Icon(
-                    Icons.Outlined.FileDownload,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                  )
+                  PreferenceRowIcon(icon = Icons.Outlined.FileDownload)
                 },
                 onClick = {
                   importLauncher.launch(arrayOf("text/xml", "application/xml", "*/*"))
@@ -284,7 +287,7 @@ object AdvancedPreferencesScreen : Screen {
 
           // MPV Configuration Section
           item {
-            PreferenceSectionHeader(title = "MPV Configuration")
+            PreferenceSectionHeader(title = "MPV Configuration", count = 3)
           }
 
           item {
@@ -356,7 +359,7 @@ object AdvancedPreferencesScreen : Screen {
                   if (mpvConfStorageLocation.isNotBlank()) {
                     Text(
                       getSimplifiedPathFromUri(mpvConfStorageLocation),
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   }
                 },
@@ -381,14 +384,17 @@ object AdvancedPreferencesScreen : Screen {
                   if (firstLine != null && firstLine.isNotBlank()) {
                     Text(
                       firstLine,
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   } else {
                     Text(
                       "Tap to edit configuration",
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   }
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Terminal)
                 },
                 onClick = {
                   backStack.add(ConfigEditorScreen(ConfigEditorScreen.ConfigType.MPV_CONF))
@@ -404,14 +410,17 @@ object AdvancedPreferencesScreen : Screen {
                   if (firstLine != null && firstLine.isNotBlank()) {
                     Text(
                       firstLine,
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   } else {
                     Text(
                       "Tap to edit configuration",
-                      color = MaterialTheme.colorScheme.outline,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   }
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Tune)
                 },
                 onClick = {
                   backStack.add(ConfigEditorScreen(ConfigEditorScreen.ConfigType.INPUT_CONF))
@@ -422,7 +431,7 @@ object AdvancedPreferencesScreen : Screen {
 
           // Scripts Section
           item {
-            PreferenceSectionHeader(title = "Scripts (Lua / JS)")
+            PreferenceSectionHeader(title = "Scripts (Lua / JS)", count = 3)
           }
 
           item {
@@ -461,8 +470,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     "Load scripts from your MPV configuration directory",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Code)
                 },
               )
 
@@ -477,8 +489,11 @@ object AdvancedPreferencesScreen : Screen {
                       enabledCount == 1 -> "1 script enabled"
                       else -> "$enabledCount scripts enabled"
                     },
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Folder)
                 },
                 onClick = { backStack.add(ManageScriptsScreen) },
               )
@@ -496,8 +511,11 @@ object AdvancedPreferencesScreen : Screen {
                     } else {
                       "$customButtonCount custom buttons"
                     },
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Edit)
                 },
                 onClick = { backStack.add(CustomButtonsScreen) },
               )
@@ -505,7 +523,7 @@ object AdvancedPreferencesScreen : Screen {
           }
           // History Section
           item {
-            PreferenceSectionHeader(title = "History")
+            PreferenceSectionHeader(title = "History", count = 2)
           }
 
           item {
@@ -521,8 +539,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_advanced_enable_recently_played_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.History)
                 },
               )
 
@@ -530,6 +551,9 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_clear_playback_history)) },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Delete)
+                },
                 onClick = { isConfirmDialogShown = true },
               )
 
@@ -573,7 +597,7 @@ object AdvancedPreferencesScreen : Screen {
 
           // Cache Section
           item {
-            PreferenceSectionHeader(title = "Cache")
+            PreferenceSectionHeader(title = "Cache", count = 3)
           }
 
           item {
@@ -587,8 +611,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     text = "Clear the cached mpv.conf settings",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Refresh)
                 },
                 onClick = {
                   scope.launch(Dispatchers.IO) {
@@ -616,8 +643,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     text = "Delete all cached video thumbnails (will regenerate as you browse folders)",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Storage)
                 },
                 onClick = { isClearThumbsConfirmShown = true },
               )
@@ -654,8 +684,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     text = "Remove all cached subtitle fonts",
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Description)
                 },
                 onClick = {
                   scope.launch(Dispatchers.IO) {
@@ -688,7 +721,7 @@ object AdvancedPreferencesScreen : Screen {
 
           // Logging Section
           item {
-            PreferenceSectionHeader(title = "Logging")
+            PreferenceSectionHeader(title = "Logging", count = 2)
           }
 
           item {
@@ -704,8 +737,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_advanced_verbose_logging_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.BugReport)
                 },
               )
 
@@ -716,8 +752,11 @@ object AdvancedPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_advanced_dump_logs_summary),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Share)
                 },
                 onClick = {
                   scope.launch(Dispatchers.IO) {

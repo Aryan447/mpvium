@@ -7,6 +7,24 @@ export interface Feature {
 
 export const features: Feature[] = [
   {
+    title: "Auto-Categorized Library",
+    description:
+      "Your files sorted into Shows & Movies automatically — posters, Up Next and Recently Added rails included.",
+    icon: '<rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/><path d="M6 6.4v2.4l2-1.2z"/>',
+  },
+  {
+    title: "Auto Skip Intro & Recap",
+    description:
+      "One-tap skip buttons in the player, plus an offline cache that skips intros for you.",
+    icon: '<path d="M5 6l7 6-7 6z"/><path d="M13 6l7 6-7 6z"/>',
+  },
+  {
+    title: "Explain Button",
+    description:
+      "Tap any word in the dialogue for dictionary lookups and Wikipedia explanations.",
+    icon: '<path d="M4 5h9M8.5 3v2c0 3.5-2 6.5-4.5 8"/><path d="M6 9c1 2.5 3 4.5 5.5 5.5"/><path d="M13 21l4.5-9L22 21M14.8 17h5.4"/>',
+  },
+  {
     title: "Modern Material 3 UI",
     description: "Expressive light & dark themes, intuitive browsing.",
     icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>',

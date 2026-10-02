@@ -6,9 +6,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.Headset
+import androidx.compose.material.icons.outlined.PlaylistPlay
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.VolumeOff
+import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -19,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AudioChannels
 import app.aryan447.mpvium.preferences.AudioPreferences
@@ -53,7 +58,7 @@ object AudioPreferencesScreen : Screen {
               .padding(padding),
         ) {
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_audio))
+            PreferenceSectionHeader(title = "Language", count = 1)
           }
 
           item {
@@ -63,17 +68,18 @@ object AudioPreferencesScreen : Screen {
             value = preferredLanguages,
             onValueChange = { preferences.preferredLanguages.set(it) },
             textToValue = { it },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.Translate) },
             title = { Text(stringResource(R.string.pref_preferred_languages)) },
             summary = {
                 if (preferredLanguages.isNotBlank()) {
                   Text(
                     preferredLanguages,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 } else {
                   Text(
                     stringResource(R.string.not_set_video_default),
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 }
               },
@@ -88,17 +94,25 @@ object AudioPreferencesScreen : Screen {
               }
             },
           )
+            }
+          }
 
-          PreferenceDivider()
+          item {
+            PreferenceSectionHeader(title = "Output", count = 4)
+          }
+
+          item {
+            PreferenceCard {
           val audioPitchCorrection by preferences.audioPitchCorrection.collectAsState()
           HapticSwitchPreference(
             value = audioPitchCorrection,
             onValueChange = { preferences.audioPitchCorrection.set(it) },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.Tune) },
             title = { Text(stringResource(R.string.pref_audio_pitch_correction_title)) },
             summary = {
               Text(
                 stringResource(R.string.pref_audio_pitch_correction_summary),
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             },
           )
@@ -108,11 +122,12 @@ object AudioPreferencesScreen : Screen {
           HapticSwitchPreference(
             value = volumeNormalization,
             onValueChange = { preferences.volumeNormalization.set(it) },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.GraphicEq) },
             title = { Text(stringResource(R.string.pref_audio_volume_normalization_title)) },
             summary = {
               Text(
                 stringResource(R.string.pref_audio_volume_normalization_summary),
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             },
           )
@@ -122,6 +137,7 @@ object AudioPreferencesScreen : Screen {
           HapticSwitchPreference(
             value = automaticBackgroundPlayback,
             onValueChange = { preferences.automaticBackgroundPlayback.set(it) },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.PlaylistPlay) },
             title = { Text(stringResource(R.string.background_playback_title)) },
           )
 
@@ -132,20 +148,29 @@ object AudioPreferencesScreen : Screen {
             onValueChange = { preferences.audioChannels.set(it) },
             values = AudioChannels.entries,
             valueToText = { AnnotatedString(context.getString(it.title)) },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.Headset) },
             title = { Text(text = stringResource(id = R.string.pref_audio_channels)) },
             summary = {
               Text(
                 text = context.getString(audioChannel.title),
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             },
           )
+            }
+          }
 
-          PreferenceDivider()
+          item {
+            PreferenceSectionHeader(title = "Volume", count = 4)
+          }
+
+          item {
+            PreferenceCard {
           val volumeBoostCap by preferences.volumeBoostCap.collectAsState()
           SliderPreference(
             value = volumeBoostCap.toFloat(),
             onValueChange = { preferences.volumeBoostCap.set(it.toInt()) },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeUp) },
             title = { Text(stringResource(R.string.pref_audio_volume_boost_cap)) },
             valueRange = 0f..200f,
             summary = {
@@ -155,7 +180,7 @@ object AudioPreferencesScreen : Screen {
                 } else {
                   volumeBoostCap.toString()
                 },
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             },
             onSliderValueChange = { preferences.volumeBoostCap.set(it.toInt()) },
@@ -167,13 +192,14 @@ object AudioPreferencesScreen : Screen {
           SliderPreference(
             value = volumeStep.toFloat(),
             onValueChange = { preferences.volumeStep.set(it.toInt()) },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.Settings) },
             title = { Text(stringResource(R.string.pref_audio_volume_step_title)) },
             valueRange = 1f..5f,
             valueSteps = 3,
             summary = {
               Text(
                 stringResource(R.string.pref_audio_volume_step_summary, volumeStep),
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             },
             onSliderValueChange = { preferences.volumeStep.set(it.toInt()) },
@@ -185,12 +211,13 @@ object AudioPreferencesScreen : Screen {
           SliderPreference(
             value = volumeMinLimit.toFloat(),
             onValueChange = { preferences.volumeMinLimit.set(it.toInt()) },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeOff) },
             title = { Text(stringResource(R.string.pref_audio_volume_min_limit_title)) },
             valueRange = 0f..100f,
             summary = {
               Text(
                 stringResource(R.string.pref_audio_volume_min_limit_summary, volumeMinLimit),
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             },
             onSliderValueChange = { preferences.volumeMinLimit.set(it.toInt()) },
@@ -202,12 +229,13 @@ object AudioPreferencesScreen : Screen {
           SliderPreference(
             value = volumeMaxLimit.toFloat(),
             onValueChange = { preferences.volumeMaxLimit.set(it.toInt()) },
+            icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeUp) },
             title = { Text(stringResource(R.string.pref_audio_volume_max_limit_title)) },
             valueRange = 0f..100f,
             summary = {
               Text(
                 stringResource(R.string.pref_audio_volume_max_limit_summary, volumeMaxLimit),
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             },
             onSliderValueChange = { preferences.volumeMaxLimit.set(it.toInt()) },
