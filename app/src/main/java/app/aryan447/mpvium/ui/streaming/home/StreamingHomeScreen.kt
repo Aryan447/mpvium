@@ -149,6 +149,7 @@ object StreamingHomeScreen : Screen {
     }
 
     Scaffold(
+      containerColor = Color.Transparent,
       topBar = {
         val isGlass = LocalGlass.current
         val glassHaze = rememberGlassHazeState()

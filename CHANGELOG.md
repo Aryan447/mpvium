@@ -16,6 +16,7 @@ Source of truth for GitHub release notes.
 
 ### Added
 
+- Ambient theme glow rising from the bottom of the app, tinted to match the active theme.
 - Customizable bottom bar with labels toggle and selectable tabs.
 - Whitelisted-folders-only mode for folder list, file browser, and search.
 - Lua/JS Scripts section with per-script manage, custom buttons, and sync.

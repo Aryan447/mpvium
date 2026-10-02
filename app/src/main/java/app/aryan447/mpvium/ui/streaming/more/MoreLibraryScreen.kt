@@ -69,6 +69,7 @@ object MoreLibraryScreen : Screen {
     val glassStyle = glassHazeStyle(isDark = isSystemInDarkTheme(), kind = GlassKind.Bar)
 
     Scaffold(
+      containerColor = Color.Transparent,
       topBar = {
         TopAppBar(
           title = {
