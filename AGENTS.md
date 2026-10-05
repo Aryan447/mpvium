@@ -126,3 +126,18 @@ GitHub Actions is the preferred fallback when the local machine lacks Android
 SDK, NDK, CMake, or network access. Push the project and inspect the workflow
 under the repository's **Actions** tab. Download generated APKs from the
 workflow's **Artifacts** section.
+
+
+# What's New
+
+Source of truth for GitHub release notes.
+
+## How to update
+
+1. Add new user-facing changes under `Unreleased` while you work.
+2. When tagging a preview (`v*-preview*`) or release (`v*`), rename
+   `Unreleased` to the new version and add a fresh empty `Unreleased`.
+3. Keep entries short and user-facing. Group by `Added`, `Changed`, `Fixed`.
+4. Paste the version section into the GitHub release body (checksums are
+   added automatically by the release workflows).
+
