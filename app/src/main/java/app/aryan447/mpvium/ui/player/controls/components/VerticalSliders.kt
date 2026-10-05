@@ -58,7 +58,7 @@ fun VerticalSlider(
   modifier: Modifier = Modifier,
   overflowValue: Float? = null,
   overflowRange: ClosedFloatingPointRange<Float>? = null,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
 ) {
   VerticalBar(
     fraction = percentage(value.coerceIn(range), range),
@@ -80,7 +80,7 @@ fun VerticalSlider(
   modifier: Modifier = Modifier,
   overflowValue: Int? = null,
   overflowRange: ClosedRange<Int>? = null,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
 ) {
   VerticalBar(
     fraction = percentage(value.coerceIn(range), range),
@@ -280,7 +280,7 @@ fun BrightnessSlider(
   brightness: Float,
   range: ClosedFloatingPointRange<Float>,
   modifier: Modifier = Modifier,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
 ) {
   val coercedBrightness = brightness.coerceIn(range)
   Surface(
@@ -327,7 +327,7 @@ fun VolumeSlider(
   boostRange: ClosedRange<Int>?,
   modifier: Modifier = Modifier,
   displayAsPercentage: Boolean = false,
-  seekbarStyle: SeekbarStyle = SeekbarStyle.Thick,
+  seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
 ) {
   val percentage = (percentage(volume, range) * 100).roundToInt()
   Surface(

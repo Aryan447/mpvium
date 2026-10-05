@@ -64,6 +64,7 @@ fun ContinueWatchingRow(
   items: List<ContinueWatchingItem>,
   onItemClick: (ContinueWatchingItem) -> Unit,
   modifier: Modifier = Modifier,
+  title: String = "Continue Watching",
   onSeeAllClick: (() -> Unit)? = null,
   onItemRemove: ((ContinueWatchingItem) -> Unit)? = null,
 ) {
@@ -79,7 +80,7 @@ fun ContinueWatchingRow(
       horizontalArrangement = Arrangement.SpaceBetween,
     ) {
       Text(
-        text = "Continue Watching",
+        text = title,
         style = MaterialTheme.typography.titleLarge.copy(
           fontWeight = FontWeight.Bold,
           letterSpacing = (-0.3).sp,

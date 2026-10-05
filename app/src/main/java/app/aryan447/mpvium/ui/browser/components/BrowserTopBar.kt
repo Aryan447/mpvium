@@ -194,13 +194,7 @@ private fun NormalTopBar(
 
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
-      containerColor = if (isGlass) {
-        Color.Transparent
-      } else if (MaterialTheme.colorScheme.background == Color.Black) {
-        Color.Black
-      } else {
-        MaterialTheme.colorScheme.surfaceContainerLow
-      },
+      containerColor = Color.Transparent,
       titleContentColor = MaterialTheme.colorScheme.onSurface,
     ),
     title = {
@@ -361,13 +355,7 @@ private fun SelectionTopBar(
 
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
-      containerColor = if (isGlass) {
-        Color.Transparent
-      } else if (MaterialTheme.colorScheme.background == Color.Black) {
-        Color.Black
-      } else {
-        MaterialTheme.colorScheme.surfaceContainer
-      },
+      containerColor = Color.Transparent,
     ),
     title = {
       Row(

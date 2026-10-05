@@ -18,7 +18,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,10 +26,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarArrangement
+import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -66,7 +66,7 @@ import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassBackdrop
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
-import app.aryan447.mpvium.ui.theme.glassNavigationBarItemColors
+import app.aryan447.mpvium.ui.theme.glassShortNavigationBarItemColors
 import app.aryan447.mpvium.ui.theme.glassNavigationRailItemColors
 import app.aryan447.mpvium.ui.theme.glassRimBrush
 import app.aryan447.mpvium.ui.theme.glassRimColor
@@ -142,20 +142,19 @@ object MainScreen : Screen {
   }
 
   @Composable
-  private fun RowScope.BottomNavItems(
+  private fun BottomNavItems(
     navItems: List<MainTab>,
     selectedCanonicalIndex: Int,
     showLabels: Boolean,
     onSelectTab: (Int) -> Unit,
   ) {
     navItems.forEach { tab ->
-      NavigationBarItem(
+      ShortNavigationBarItem(
         icon = { Icon(tab.icon, contentDescription = tab.label) },
         label = if (showLabels) ({ Text(tab.label) }) else null,
-        alwaysShowLabel = showLabels,
         selected = selectedCanonicalIndex == tab.canonicalIndex,
         onClick = { onSelectTab(tab.canonicalIndex) },
-        colors = glassNavigationBarItemColors(),
+        colors = glassShortNavigationBarItemColors(),
       )
     }
   }
@@ -259,6 +258,7 @@ object MainScreen : Screen {
 
       Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = Color.Transparent,
         bottomBar = {
           if (!isWide) {
             AnimatedVisibility(
@@ -304,11 +304,11 @@ object MainScreen : Screen {
                       BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     },
                   ) {
-                    NavigationBar(
+                    ShortNavigationBar(
                       modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                       containerColor = Color.Transparent,
-                      tonalElevation = 0.dp,
                       windowInsets = WindowInsets(0, 0, 0, 0),
+                      arrangement = ShortNavigationBarArrangement.EqualWeight,
                     ) {
                       BottomNavItems(
                         navItems = navItems,
@@ -320,7 +320,7 @@ object MainScreen : Screen {
                   }
                 }
               } else {
-                NavigationBar(
+                ShortNavigationBar(
                   modifier = Modifier
                     .clip(
                       RoundedCornerShape(
@@ -342,7 +342,8 @@ object MainScreen : Screen {
                       enabled = isGlass,
                     ),
                   containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
-                  tonalElevation = 3.dp
+                  windowInsets = WindowInsets(0, 0, 0, 0),
+                  arrangement = ShortNavigationBarArrangement.EqualWeight,
                 ) {
                   BottomNavItems(
                     navItems = navItems,
