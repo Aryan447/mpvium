@@ -36,6 +36,8 @@ Source of truth for GitHub release notes.
 - Bottom dock rebuilt on Material 3 Expressive's short navigation bar with expressive defaults.
 - Refreshed app logo artwork and linked Telegram community.
 - Bottom-edge swipes no longer trigger volume/brightness gestures.
+- Wavy is now the default style for the seekbar, volume, and brightness sliders.
+- Default (not Dynamic) is now the default app theme.
 
 ### Fixed
 
