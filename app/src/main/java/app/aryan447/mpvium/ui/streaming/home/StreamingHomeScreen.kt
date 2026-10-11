@@ -93,6 +93,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.HomeSection
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
@@ -136,6 +137,14 @@ object StreamingHomeScreen : Screen {
     val state by viewModel.uiState.collectAsState()
     val appearancePreferences = koinInject<AppearancePreferences>()
     val showFeaturedHero by appearancePreferences.showFeaturedHero.collectAsState()
+    val homeSectionOrder by appearancePreferences.homeSectionOrder.collectAsState()
+    val showContinueWatching by appearancePreferences.showContinueWatching.collectAsState()
+    val showUpNext by appearancePreferences.showUpNext.collectAsState()
+    val showRecentlyAdded by appearancePreferences.showRecentlyAdded.collectAsState()
+    val showShowsSection by appearancePreferences.showShowsSection.collectAsState()
+    val showMoviesSection by appearancePreferences.showMoviesSection.collectAsState()
+    val showFoldersSection by appearancePreferences.showFoldersSection.collectAsState()
+    val homeSections = remember(homeSectionOrder) { HomeSection.parseOrder(homeSectionOrder) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val isRefreshing = remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -381,148 +390,167 @@ object StreamingHomeScreen : Screen {
                 )
               }
 
-              // Featured Hero Spotlight Banner (shown in ALL or SERIES mode;
-              // hideable via Appearance > Home for a denser start screen)
-              if (showFeaturedHero && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)) {
-                state.heroSeries?.let { hero ->
-                  item {
-                    StreamingHeroBanner(
-                      series = hero,
-                      onPlayClick = {
-                        val videoToPlay = hero.nextEpisodeToWatch?.video
-                          ?: hero.seasons.values.firstOrNull()?.firstOrNull()?.video
-                        if (videoToPlay != null) {
-                          MediaUtils.playFile(videoToPlay, context, "hero_play")
+              // Home sections in user order (Appearance > Home). A hidden
+              // section stays hidden everywhere, including category filters.
+              homeSections.forEach { section ->
+                when (section) {
+                  HomeSection.FEATURED -> {
+                    // Featured Hero Spotlight Banner (shown in ALL or SERIES mode)
+                    if (showFeaturedHero && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)) {
+                      state.heroSeries?.let { hero ->
+                        item(key = "home_featured") {
+                          StreamingHeroBanner(
+                            series = hero,
+                            onPlayClick = {
+                              val videoToPlay = hero.nextEpisodeToWatch?.video
+                                ?: hero.seasons.values.firstOrNull()?.firstOrNull()?.video
+                              if (videoToPlay != null) {
+                                MediaUtils.playFile(videoToPlay, context, "hero_play")
+                              }
+                            },
+                            onDetailsClick = {
+                              backstack.add(SeriesDetailScreen(hero.id))
+                            },
+                          )
+                          Spacer(modifier = Modifier.height(16.dp))
                         }
-                      },
-                      onDetailsClick = {
-                        backstack.add(SeriesDetailScreen(hero.id))
-                      },
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                  }
-                }
-              }
-
-              // Continue Watching Row
-              if ((state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.CONTINUE_WATCHING)
-                && state.continueWatching.isNotEmpty()
-              ) {
-                item {
-                  ContinueWatchingRow(
-                    items = state.continueWatching,
-                    onItemClick = { item ->
-                      MediaUtils.playFile(item.video, context, "continue_watching")
-                    },
-                    onSeeAllClick = { backstack.add(RecentlyPlayedScreen) },
-                    onItemRemove = { item -> viewModel.removeFromContinueWatching(item) },
-                  )
-                  Spacer(modifier = Modifier.height(24.dp))
-                }
-              }
-
-              // Up Next: next unwatched episode per show, in-progress shows first.
-              // One tap resumes the episode; artwork/progress reuse the cards.
-              if ((state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)) {
-                if (upNext.isNotEmpty()) {
-                  item {
-                    ContinueWatchingRow(
-                      items = upNext,
-                      title = "Up Next",
-                      onItemClick = { item ->
-                        MediaUtils.playFile(item.video, context, "up_next")
-                      },
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                  }
-                }
-              }
-
-              // Recently Added: newest files across shows and movies by date added.
-              if (state.selectedCategory == StreamingCategory.ALL) {
-                if (recentlyAdded.isNotEmpty()) {
-                  item {
-                    ContinueWatchingRow(
-                      items = recentlyAdded,
-                      title = "Recently Added",
-                      onItemClick = { item ->
-                        MediaUtils.playFile(item.video, context, "recently_added")
-                      },
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                  }
-                }
-              }
-
-              // TV Series Section
-              if ((state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)
-                && state.series.isNotEmpty()
-              ) {
-                item {
-                  SectionHeader(
-                    title = "Shows",
-                    badge = "${state.series.size}",
-                    onSeeAllClick = { backstack.add(SeriesGridScreen) },
-                  )
-                  LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                  ) {
-                    items(state.series, key = { "series_${it.id}" }) { series ->
-                      SeriesPosterCard(
-                        series = series,
-                        onClick = { backstack.add(SeriesDetailScreen(series.id)) },
-                      )
+                      }
                     }
                   }
-                  Spacer(modifier = Modifier.height(24.dp))
-                }
-              }
 
-              // Movies Section
-              if ((state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.MOVIES)
-                && state.movies.isNotEmpty()
-              ) {
-                item {
-                  SectionHeader(
-                    title = "Movies & Videos",
-                    badge = "${state.movies.size}",
-                    onSeeAllClick = { backstack.add(MoviesGridScreen) },
-                  )
-                  LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                  ) {
-                    items(state.movies, key = { "movie_${it.video.id}" }) { movie ->
-                      MoviePosterCard(
-                        movie = movie,
-                        onClick = { backstack.add(MovieDetailScreen(movie.video.id, movie.title)) },
-                      )
+                  HomeSection.CONTINUE_WATCHING -> {
+                    // Continue Watching Row
+                    if (showContinueWatching && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.CONTINUE_WATCHING)
+                      && state.continueWatching.isNotEmpty()
+                    ) {
+                      item(key = "home_continue_watching") {
+                        ContinueWatchingRow(
+                          items = state.continueWatching,
+                          onItemClick = { item ->
+                            MediaUtils.playFile(item.video, context, "continue_watching")
+                          },
+                          onSeeAllClick = { backstack.add(RecentlyPlayedScreen) },
+                          onItemRemove = { item -> viewModel.removeFromContinueWatching(item) },
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                      }
                     }
                   }
-                  Spacer(modifier = Modifier.height(24.dp))
-                }
-              }
 
-              // Storage Folders Section (Quick Access)
-              if (state.selectedCategory == StreamingCategory.ALL && state.folders.isNotEmpty()) {
-                item {
-                  SectionHeader(
-                    title = "Browse Folders",
-                    badge = "${state.folders.size}",
-                    onSeeAllClick = null,
-                  )
-                  LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                  ) {
-                    items(state.folders, key = { "folder_${it.bucketId}" }) { folder ->
-                      FolderQuickCard(
-                        folder = folder,
-                        onClick = {
-                          backstack.add(VideoListScreen(folder.bucketId, folder.name))
-                        },
-                      )
+                  HomeSection.UP_NEXT -> {
+                    // Up Next: next unwatched episode per show, in-progress shows first.
+                    // One tap resumes the episode; artwork/progress reuse the cards.
+                    if (showUpNext && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)) {
+                      if (upNext.isNotEmpty()) {
+                        item(key = "home_up_next") {
+                          ContinueWatchingRow(
+                            items = upNext,
+                            title = "Up Next",
+                            onItemClick = { item ->
+                              MediaUtils.playFile(item.video, context, "up_next")
+                            },
+                          )
+                          Spacer(modifier = Modifier.height(24.dp))
+                        }
+                      }
+                    }
+                  }
+
+                  HomeSection.RECENTLY_ADDED -> {
+                    // Recently Added: newest files across shows and movies by date added.
+                    if (showRecentlyAdded && state.selectedCategory == StreamingCategory.ALL) {
+                      if (recentlyAdded.isNotEmpty()) {
+                        item(key = "home_recently_added") {
+                          ContinueWatchingRow(
+                            items = recentlyAdded,
+                            title = "Recently Added",
+                            onItemClick = { item ->
+                              MediaUtils.playFile(item.video, context, "recently_added")
+                            },
+                          )
+                          Spacer(modifier = Modifier.height(24.dp))
+                        }
+                      }
+                    }
+                  }
+
+                  HomeSection.SHOWS -> {
+                    // TV Series Section
+                    if (showShowsSection && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)
+                      && state.series.isNotEmpty()
+                    ) {
+                      item(key = "home_shows") {
+                        SectionHeader(
+                          title = "Shows",
+                          badge = "${state.series.size}",
+                          onSeeAllClick = { backstack.add(SeriesGridScreen) },
+                        )
+                        LazyRow(
+                          contentPadding = PaddingValues(horizontal = 16.dp),
+                          horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                          items(state.series, key = { "series_${it.id}" }) { series ->
+                            SeriesPosterCard(
+                              series = series,
+                              onClick = { backstack.add(SeriesDetailScreen(series.id)) },
+                            )
+                          }
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                      }
+                    }
+                  }
+
+                  HomeSection.MOVIES -> {
+                    // Movies Section
+                    if (showMoviesSection && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.MOVIES)
+                      && state.movies.isNotEmpty()
+                    ) {
+                      item(key = "home_movies") {
+                        SectionHeader(
+                          title = "Movies & Videos",
+                          badge = "${state.movies.size}",
+                          onSeeAllClick = { backstack.add(MoviesGridScreen) },
+                        )
+                        LazyRow(
+                          contentPadding = PaddingValues(horizontal = 16.dp),
+                          horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                          items(state.movies, key = { "movie_${it.video.id}" }) { movie ->
+                            MoviePosterCard(
+                              movie = movie,
+                              onClick = { backstack.add(MovieDetailScreen(movie.video.id, movie.title)) },
+                            )
+                          }
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                      }
+                    }
+                  }
+
+                  HomeSection.FOLDERS -> {
+                    // Storage Folders Section (Quick Access)
+                    if (showFoldersSection && state.selectedCategory == StreamingCategory.ALL && state.folders.isNotEmpty()) {
+                      item(key = "home_folders") {
+                        SectionHeader(
+                          title = "Browse Folders",
+                          badge = "${state.folders.size}",
+                          onSeeAllClick = null,
+                        )
+                        LazyRow(
+                          contentPadding = PaddingValues(horizontal = 16.dp),
+                          horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                          items(state.folders, key = { "folder_${it.bucketId}" }) { folder ->
+                            FolderQuickCard(
+                              folder = folder,
+                              onClick = {
+                                backstack.add(VideoListScreen(folder.bucketId, folder.name))
+                              },
+                            )
+                          }
+                        }
+                      }
                     }
                   }
                 }

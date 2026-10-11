@@ -1,3 +1,9 @@
+## Unreleased
+
+### Added
+
+- Home sections can be reordered and toggled (featured banner, Continue Watching, Up Next, Recently Added, Shows, Movies, folders) in Appearance > Home.
+
 ## v1.2.0
 
 ### Added

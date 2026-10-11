@@ -2,34 +2,55 @@ package app.aryan447.mpvium.ui.preferences
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.Tv
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material.icons.outlined.WrapText
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.HomeSection
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
 import app.aryan447.mpvium.preferences.MultiChoiceSegmentedButton
@@ -373,34 +394,131 @@ object AppearancePreferencesScreen : Screen {
                     item {
                         PreferenceSectionHeader(
                             title = stringResource(id = R.string.pref_appearance_category_home),
-                            count = 1,
+                            count = HomeSection.entries.size,
                         )
                     }
 
                     item {
                         PreferenceCard {
-                            val showFeaturedHero by preferences.showFeaturedHero.collectAsState()
-                            HapticSwitchPreference(
-                                value = showFeaturedHero,
-                                onValueChange = { preferences.showFeaturedHero.set(it) },
-                                icon = { PreferenceRowIcon(icon = Icons.Outlined.Movie) },
-                                title = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_show_featured_hero_title),
-                                    )
-                                },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_show_featured_hero_summary),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
+                            Text(
+                                text = stringResource(id = R.string.pref_appearance_home_sections_summary),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             )
+                            val orderRaw by preferences.homeSectionOrder.collectAsState()
+                            val order = remember(orderRaw) { HomeSection.parseOrder(orderRaw) }
+                            val showFeaturedHero by preferences.showFeaturedHero.collectAsState()
+                            val showContinueWatching by preferences.showContinueWatching.collectAsState()
+                            val showUpNext by preferences.showUpNext.collectAsState()
+                            val showRecentlyAdded by preferences.showRecentlyAdded.collectAsState()
+                            val showShowsSection by preferences.showShowsSection.collectAsState()
+                            val showMoviesSection by preferences.showMoviesSection.collectAsState()
+                            val showFoldersSection by preferences.showFoldersSection.collectAsState()
+                            fun isVisible(section: HomeSection): Boolean = when (section) {
+                                HomeSection.FEATURED -> showFeaturedHero
+                                HomeSection.CONTINUE_WATCHING -> showContinueWatching
+                                HomeSection.UP_NEXT -> showUpNext
+                                HomeSection.RECENTLY_ADDED -> showRecentlyAdded
+                                HomeSection.SHOWS -> showShowsSection
+                                HomeSection.MOVIES -> showMoviesSection
+                                HomeSection.FOLDERS -> showFoldersSection
+                            }
+                            order.forEachIndexed { index, section ->
+                                PreferenceDivider()
+                                HomeSectionRow(
+                                    title = section.title,
+                                    icon = homeSectionIcon(section),
+                                    visible = isVisible(section),
+                                    onVisibleChange = { preferences.setHomeSectionVisible(section, it) },
+                                    canMoveUp = index > 0,
+                                    canMoveDown = index < order.lastIndex,
+                                    onMoveUp = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        preferences.moveHomeSection(section, -1)
+                                    },
+                                    onMoveDown = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        preferences.moveHomeSection(section, 1)
+                                    },
+                                )
+                            }
+                            PreferenceDivider()
+                            TextButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    preferences.resetHomeSections()
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                            ) {
+                                Text(text = stringResource(id = R.string.pref_layout_reset_default))
+                            }
                         }
                     }
 
                 }
             }
         }
+    }
+}
+
+private fun homeSectionIcon(section: HomeSection): ImageVector =
+    when (section) {
+        HomeSection.FEATURED -> Icons.Outlined.Movie
+        HomeSection.CONTINUE_WATCHING -> Icons.Outlined.History
+        HomeSection.UP_NEXT -> Icons.Outlined.SkipNext
+        HomeSection.RECENTLY_ADDED -> Icons.Outlined.NewReleases
+        HomeSection.SHOWS -> Icons.Outlined.Tv
+        HomeSection.MOVIES -> Icons.Outlined.VideoLibrary
+        HomeSection.FOLDERS -> Icons.Outlined.Folder
+    }
+
+@Composable
+private fun HomeSectionRow(
+    title: String,
+    icon: ImageVector,
+    visible: Boolean,
+    onVisibleChange: (Boolean) -> Unit,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PreferenceIconBox(icon = icon)
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onMoveUp, enabled = canMoveUp) {
+            Icon(
+                Icons.Filled.KeyboardArrowUp,
+                contentDescription = stringResource(id = R.string.pref_appearance_home_section_move_up),
+            )
+        }
+        IconButton(onClick = onMoveDown, enabled = canMoveDown) {
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                contentDescription = stringResource(id = R.string.pref_appearance_home_section_move_down),
+            )
+        }
+        Switch(
+            checked = visible,
+            onCheckedChange = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onVisibleChange(it)
+            },
+        )
     }
 }
