@@ -59,23 +59,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
+import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
+import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
+import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.MovieSort
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
@@ -103,6 +109,12 @@ object MoviesGridScreen : Screen {
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
+    val foldersPreferences = koinInject<FoldersPreferences>()
+    // Library-sources hint (issue #87): surface Settings → Folders without
+    // adding setup steps.
+    val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
+    val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
+    val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
     val navigationBarHeight = LocalNavigationBarHeight.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -306,6 +318,9 @@ object MoviesGridScreen : Screen {
               movieSortOptions = movieSortOptions,
               onMovieSortChange = { movieSortOrdinal = it.ordinal },
               totalMovieCount = movieList.size,
+              libraryFiltered = libraryFiltered,
+              whitelistCount = whitelistedFolders.size,
+              onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onMovieClick = { selectedMovieId = it.video.id },
               onMovieLongClick = { moviePendingDeletion = it },
             )
@@ -342,6 +357,9 @@ object MoviesGridScreen : Screen {
           movieSortOptions = movieSortOptions,
           onMovieSortChange = { movieSortOrdinal = it.ordinal },
           totalMovieCount = movieList.size,
+          libraryFiltered = libraryFiltered,
+          whitelistCount = whitelistedFolders.size,
+          onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onMovieClick = { backstack.add(MovieDetailScreen(it.video.id, it.title)) },
           onMovieLongClick = { moviePendingDeletion = it },
         )
@@ -389,6 +407,9 @@ private fun MoviesGridContent(
   movieSortOptions: List<SortOption<MovieSort>>,
   onMovieSortChange: (MovieSort) -> Unit,
   totalMovieCount: Int,
+  libraryFiltered: Boolean,
+  whitelistCount: Int,
+  onManageLibrarySources: () -> Unit,
   onMovieClick: (LocalMovie) -> Unit,
   onMovieLongClick: (LocalMovie) -> Unit,
 ) {
@@ -413,6 +434,7 @@ private fun MoviesGridContent(
       message = when {
         searchQuery.isNotBlank() -> "No movies match '$searchQuery'"
         filteringByWatchState -> "Try a different watch-state filter"
+        libraryFiltered -> stringResource(R.string.library_sources_banner_message)
         else -> "Add movie files to your device storage to see them here"
       },
       modifier = Modifier
@@ -421,11 +443,13 @@ private fun MoviesGridContent(
       actionLabel = when {
         searchQuery.isNotBlank() -> "Clear search"
         filteringByWatchState -> "Show all"
+        libraryFiltered -> stringResource(R.string.library_sources_empty_action)
         else -> null
       },
       onAction = when {
         searchQuery.isNotBlank() -> onClearSearch
         filteringByWatchState -> ({ onMovieFilterChange(MovieWatchFilter.ALL) })
+        libraryFiltered -> onManageLibrarySources
         else -> null
       },
     )
@@ -451,6 +475,14 @@ private fun MoviesGridContent(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
+        if (libraryFiltered) {
+          item(span = { GridItemSpan(columns) }) {
+            LibrarySourcesBanner(
+              whitelistCount = whitelistCount,
+              onManageClick = onManageLibrarySources,
+            )
+          }
+        }
         item(span = { GridItemSpan(columns) }) {
           Column {
             LibraryFilterBar(
