@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fixed
+
+- Manual "Mark as New" now always restores the red NEW badge, even for older videos.
+
 ## v1.2.0
 
 ### Added
