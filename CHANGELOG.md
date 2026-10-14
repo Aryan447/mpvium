@@ -1,3 +1,13 @@
+## Unreleased
+
+### Added
+
+- Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
+
+### Fixed
+
+- Vertical volume/brightness swipes no longer use a stale starting volume, so consecutive and fast swipes no longer feel stuck or need repeating.
+
 ## v1.2.0
 
 ### Added
