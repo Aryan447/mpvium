@@ -60,21 +60,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
+import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
+import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesSort
 import app.aryan447.mpvium.ui.streaming.components.SeriesWatchFilter
@@ -98,6 +104,12 @@ object SeriesGridScreen : Screen {
     val backstack = LocalBackStack.current
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val foldersPreferences = koinInject<FoldersPreferences>()
+    // Library-sources hint (issue #87): surface Settings → Folders without
+    // adding setup steps.
+    val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
+    val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
+    val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
     val navigationBarHeight = LocalNavigationBarHeight.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -301,6 +313,9 @@ object SeriesGridScreen : Screen {
               seriesSortOptions = seriesSortOptions,
               onSeriesSortChange = { seriesSortOrdinal = it.ordinal },
               totalSeriesCount = seriesList.size,
+              libraryFiltered = libraryFiltered,
+              whitelistCount = whitelistedFolders.size,
+              onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onSeriesClick = { selectedSeriesId = it.id },
             )
           }
@@ -336,6 +351,9 @@ object SeriesGridScreen : Screen {
           seriesSortOptions = seriesSortOptions,
           onSeriesSortChange = { seriesSortOrdinal = it.ordinal },
           totalSeriesCount = seriesList.size,
+          libraryFiltered = libraryFiltered,
+          whitelistCount = whitelistedFolders.size,
+          onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onSeriesClick = { backstack.add(SeriesDetailScreen(it.id)) },
         )
       }
@@ -362,6 +380,9 @@ private fun SeriesGridContent(
   seriesSortOptions: List<SortOption<SeriesSort>>,
   onSeriesSortChange: (SeriesSort) -> Unit,
   totalSeriesCount: Int,
+  libraryFiltered: Boolean,
+  whitelistCount: Int,
+  onManageLibrarySources: () -> Unit,
   onSeriesClick: (LocalSeries) -> Unit,
 ) {
   if (isLoading) {
@@ -385,6 +406,7 @@ private fun SeriesGridContent(
       message = when {
         searchQuery.isNotBlank() -> "No TV shows match '$searchQuery'"
         filteringByWatchState -> "Try a different watch-state filter"
+        libraryFiltered -> stringResource(R.string.library_sources_banner_message)
         else -> "Add TV shows with S01E01 or season folders to see them here"
       },
       modifier = Modifier
@@ -393,11 +415,13 @@ private fun SeriesGridContent(
       actionLabel = when {
         searchQuery.isNotBlank() -> "Clear search"
         filteringByWatchState -> "Show all"
+        libraryFiltered -> stringResource(R.string.library_sources_empty_action)
         else -> null
       },
       onAction = when {
         searchQuery.isNotBlank() -> onClearSearch
         filteringByWatchState -> ({ onSeriesFilterChange(SeriesWatchFilter.ALL) })
+        libraryFiltered -> onManageLibrarySources
         else -> null
       },
     )
@@ -423,6 +447,14 @@ private fun SeriesGridContent(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
+        if (libraryFiltered) {
+          item(span = { GridItemSpan(columns) }) {
+            LibrarySourcesBanner(
+              whitelistCount = whitelistCount,
+              onManageClick = onManageLibrarySources,
+            )
+          }
+        }
         item(span = { GridItemSpan(columns) }) {
           Column {
             LibraryFilterBar(

@@ -1157,22 +1157,21 @@ private fun SearchResultsContent(
 }
 
 /**
- * Applies blacklist / whitelist-only rules to album search results.
+ * Applies blacklist-only rules to album search results.
+ * The Folders tab is full-storage (issue #87): the whitelist-only library
+ * filter never applies here.
  */
 private fun filterSearchResults(
   results: List<FileSystemItem>,
   foldersPreferences: FoldersPreferences,
 ): List<FileSystemItem> {
-  val whitelist = foldersPreferences.whitelistedFolders.get()
   val blacklist = foldersPreferences.blacklistedFolders.get()
-  val whitelistOnly = foldersPreferences.whitelistOnlyEnabled.get()
-  if (!whitelistOnly && blacklist.isEmpty()) return results
-  if (whitelistOnly && whitelist.isEmpty()) return results
+  if (blacklist.isEmpty()) return results
   return results.filter { item ->
     when (item) {
       is FileSystemItem.Folder ->
-        app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
-          item.path, whitelist, blacklist, whitelistOnly,
+        app.aryan447.mpvium.preferences.FolderVisibility.isBrowserVisible(
+          item.path, blacklist,
         )
       is FileSystemItem.VideoFile -> {
         val parent = try {
@@ -1180,8 +1179,8 @@ private fun filterSearchResults(
         } catch (_: Exception) {
           item.path
         }
-        app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
-          parent, whitelist, blacklist, whitelistOnly,
+        app.aryan447.mpvium.preferences.FolderVisibility.isBrowserVisible(
+          parent, blacklist,
         )
       }
     }

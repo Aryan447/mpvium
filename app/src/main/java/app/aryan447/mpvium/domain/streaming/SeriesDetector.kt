@@ -34,6 +34,10 @@ data class DetectedMediaLibrary(
 
 /**
  * Scans all device storage to detect TV Series, Seasons, Episodes, and Movies.
+ *
+ * Library scope (issue #87): the whitelist-only filter applies here (Home,
+ * Shows, Movies, Insights). The Folders/Files full-storage browsers ignore
+ * the whitelist and apply only the blacklist.
  */
 class SeriesDetector(
   private val context: Context,

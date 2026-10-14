@@ -1,3 +1,17 @@
+## Unreleased
+
+### Added
+
+- Library-sources hint on Home, Shows and Movies when the whitelist filter is active, with one-tap access to Settings → Folders.
+
+### Changed
+
+- Whitelist-only mode now filters only the Home, Shows and Movies library. Folders and Files always show full storage (blacklist still applies).
+
+### Fixed
+
+- Whitelisted library no longer hides folders such as DCIM in the Folders and Files browsers and their searches.
+
 ## v1.2.0
 
 ### Added
