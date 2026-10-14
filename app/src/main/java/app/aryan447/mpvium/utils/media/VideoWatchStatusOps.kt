@@ -13,7 +13,7 @@ import org.koin.java.KoinJavaComponent.inject
  * - [LAST_PLAYED]: highlight the video as recently played without changing its
  *   watched flag or resume position.
  * - [NEW]: drop all playback history so the video shows as unplayed
- *   (eligible for the NEW badge when recently added).
+ *   and force the NEW badge even for older files.
  * - [FINISHED]: mark the video as watched and clear any resume position.
  * - [CLEARED]: remove highlight/resume state and leave a neutral unplayed
  *   record so no status badge is shown.
@@ -28,9 +28,11 @@ enum class ManualWatchStatus {
 /**
  * Applies manual watch-status overrides to videos.
  *
- * Only uses the existing [PlaybackStateEntity] / recently-played tables, so no
- * database migration is needed. Callers should refresh their lists afterwards;
- * [markVideos] already emits [MediaLibraryEvents.notifyChanged] once per batch.
+ * Uses the existing [PlaybackStateEntity] / recently-played tables plus a
+ * lightweight file-path set in SharedPreferences for manual "Mark as New"
+ * overrides, so no database migration is needed. Callers should refresh
+ * their lists afterwards; [markVideos] already emits
+ * [MediaLibraryEvents.notifyChanged] once per batch.
  */
 object VideoWatchStatusOps {
   private const val TAG = "VideoWatchStatusOps"
@@ -38,6 +40,50 @@ object VideoWatchStatusOps {
 
   private val playbackRepository: PlaybackStateRepository by inject(PlaybackStateRepository::class.java)
   private val recentlyPlayedRepository: RecentlyPlayedRepository by inject(RecentlyPlayedRepository::class.java)
+  private val browserPreferences: app.aryan447.mpvium.preferences.BrowserPreferences by inject(
+    app.aryan447.mpvium.preferences.BrowserPreferences::class.java,
+  )
+
+  /**
+   * Returns true when [filePath] was manually marked as New and is still
+   * unplayed. Callers must also check that no playback record exists; playing
+   * the video (or any other manual status) clears the override.
+   */
+  fun isManuallyMarkedNew(filePath: String): Boolean {
+    if (filePath.isBlank()) return false
+    return try {
+      browserPreferences.manualNewVideos.get().contains(filePath)
+    } catch (_: Exception) {
+      false
+    }
+  }
+
+  /**
+   * Snapshot of all manually-marked-New file paths.
+   */
+  fun getManualNewPaths(): Set<String> {
+    return try {
+      browserPreferences.manualNewVideos.get().toSet()
+    } catch (_: Exception) {
+      emptySet()
+    }
+  }
+
+  /**
+   * Removes [filePath] from the manual-New set, e.g. when the video gains
+   * playback history through normal playback.
+   */
+  fun clearManualNew(filePath: String) {
+    if (filePath.isBlank()) return
+    try {
+      val current = browserPreferences.manualNewVideos.get()
+      if (current.contains(filePath)) {
+        browserPreferences.manualNewVideos.set(current - filePath)
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to clear manual-new for $filePath: ${e.message}")
+    }
+  }
 
   /**
    * Applies [status] to every video, returning how many succeeded.
@@ -86,6 +132,7 @@ object VideoWatchStatusOps {
     if (existing == null) {
       playbackRepository.upsert(neutralState(video, existing = null))
     }
+    clearManualNew(video.path)
     recentlyPlayedRepository.addRecentlyPlayed(
       filePath = video.path,
       fileName = video.displayName,
@@ -100,9 +147,21 @@ object VideoWatchStatusOps {
   }
 
   private suspend fun markAsNew(video: Video) {
-    // Fully unplayed: eligible for the NEW badge when recently added.
+    // Fully unplayed + forced NEW badge, regardless of the file's age.
+    // Deleting history alone only shows NEW for recently-added files, so also
+    // record a manual override that VideoCard and folder counts honor.
     playbackRepository.deleteByTitle(video.displayName)
     recentlyPlayedRepository.deleteByFilePath(video.path)
+    try {
+      if (video.path.isNotBlank()) {
+        val current = browserPreferences.manualNewVideos.get()
+        if (!current.contains(video.path)) {
+          browserPreferences.manualNewVideos.set(current + video.path)
+        }
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to persist manual-new for ${video.displayName}: ${e.message}")
+    }
     Log.d(TAG, "✓ Marked as new: ${video.displayName}")
   }
 
@@ -131,6 +190,7 @@ object VideoWatchStatusOps {
           hasBeenWatched = true,
         )
     playbackRepository.upsert(finished)
+    clearManualNew(video.path)
     Log.d(TAG, "✓ Marked as finished: ${video.displayName}")
   }
 
@@ -138,6 +198,7 @@ object VideoWatchStatusOps {
     // Plain unplayed record (no highlight, no resume, no NEW badge).
     playbackRepository.upsert(neutralState(video, playbackRepository.getVideoDataByTitle(video.displayName)))
     recentlyPlayedRepository.deleteByFilePath(video.path)
+    clearManualNew(video.path)
     Log.d(TAG, "✓ Cleared status: ${video.displayName}")
   }
 
