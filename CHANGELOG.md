@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fixed
+
+- WebDAV browsing on servers that mark video files as collections (e.g. Torbox): `.mkv` entries without a folder href now show as playable videos with size, listings filter self by href instead of dropping the first entry, and paths with spaces/unicode are percent-encoded for listing, playback, and seeking.
+
 ## v1.2.0
 
 ### Added

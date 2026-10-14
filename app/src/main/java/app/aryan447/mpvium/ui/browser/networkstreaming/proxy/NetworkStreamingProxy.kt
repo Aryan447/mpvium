@@ -627,9 +627,16 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
   private suspend fun getStreamWithOffsetWebDAV(streamInfo: StreamInfo, offset: Long): InputStream? {
     try {
       val protocol = if (streamInfo.connection.useHttps) "https" else "http"
-      val cleanBasePath = streamInfo.connection.path.trimEnd('/')
-      val cleanFilePath = if (streamInfo.filePath.startsWith("/")) streamInfo.filePath else "/${streamInfo.filePath}"
-      val url = "$protocol://${streamInfo.connection.host}:${streamInfo.connection.port}$cleanBasePath$cleanFilePath"
+      // Percent-encode each segment: filePath is a decoded logical path and may
+      // contain spaces/unicode (e.g. Torbox tag folders). Raw concatenation
+      // produces an invalid OkHttp URL and breaks seeking/playback.
+      val baseSegments = streamInfo.connection.path.split('/').filter { it.isNotEmpty() }
+        .map { android.net.Uri.encode(it) }
+      val fileSegments = streamInfo.filePath.split('/').filter { it.isNotEmpty() }
+        .map { android.net.Uri.encode(it.substringBefore('?').substringBefore('#')) }
+      val encodedBase = if (baseSegments.isEmpty()) "" else "/" + baseSegments.joinToString("/")
+      val encodedFile = if (fileSegments.isEmpty()) "" else "/" + fileSegments.joinToString("/")
+      val url = "$protocol://${streamInfo.connection.host}:${streamInfo.connection.port}$encodedBase$encodedFile"
 
       Log.d(TAG, "WebDAV stream request - Protocol: $protocol, URL: $url")
 
