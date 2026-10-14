@@ -101,6 +101,13 @@ object SearchablePreferences {
                 category = "Appearance",
                 screen = AppearancePreferencesScreen,
             ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_appearance_category_home,
+                summaryRes = R.string.pref_appearance_home_sections_summary,
+                keywords = listOf("home", "sections", "reorder", "order", "continue watching", "up next", "recently added", "hide", "show", "customize"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
 
             // Layout preferences
             add(SearchablePreference(
