@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fixed
+
+- Edit network connection no longer shows the saved password; leave blank to keep it, type a new one to change it. Password input is now masked in add/edit dialogs.
+
 ## v1.2.0
 
 ### Added
