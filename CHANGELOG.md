@@ -1,3 +1,13 @@
+## Unreleased
+
+### Added
+
+- Manual "Mark as" watch status on Home Continue Watching / Up Next / Recently Added (long-press), series episodes (long-press) and whole shows, movie details, and Recently Played selection.
+
+### Fixed
+
+- Watched threshold setting (e.g. 90%) now honored in Continue Watching, Up Next, widget, and playlist instead of staying stuck at 95%.
+
 ## v1.2.0
 
 ### Added
