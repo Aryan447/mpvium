@@ -98,6 +98,7 @@ class PlayerViewModel(
   private val explainRepository: app.aryan447.mpvium.repository.explain.ExplainRepository by inject()
   private val decoderPreferences: app.aryan447.mpvium.preferences.DecoderPreferences by inject()
   private val anime4kManager: app.aryan447.mpvium.domain.anime4k.Anime4KManager by inject()
+  private val browserPreferences: app.aryan447.mpvium.preferences.BrowserPreferences by inject()
 
   // Playlist items for the playlist sheet
   private val _playlistItems = kotlinx.coroutines.flow.MutableStateFlow<List<app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem>>(emptyList())
@@ -1982,6 +1983,9 @@ class PlayerViewModel(
       // Try to get from cache first (synchronized access)
       val cacheKey = uri.toString()
       val (durationStr, resolutionStr) = synchronized(metadataCache) { metadataCache[cacheKey] } ?: ("" to "")
+      val watchedThresholdPercent = runCatching {
+        browserPreferences.watchedThreshold.get().coerceIn(1, 100).toFloat()
+      }.getOrDefault(95f)
 
       app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem(
         uri = uri,
@@ -1990,7 +1994,7 @@ class PlayerViewModel(
         isPlaying = isCurrentlyPlaying,
         path = path,
         progressPercent = if (isCurrentlyPlaying) currentProgress else 0f,
-        isWatched = isCurrentlyPlaying && currentProgress >= 95f,
+        isWatched = isCurrentlyPlaying && currentProgress >= watchedThresholdPercent,
         duration = durationStr,
         resolution = resolutionStr,
       )
