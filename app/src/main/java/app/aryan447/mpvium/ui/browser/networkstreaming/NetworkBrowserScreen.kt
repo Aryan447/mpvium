@@ -314,6 +314,7 @@ private fun NetworkBrowserContent(
     }
   }
 }
+}
 
 private val NETWORK_VIDEO_EXTENSIONS = setOf(
   "mp4", "m4v", "mkv", "mk3d", "avi", "mov", "wmv", "flv", "webm",
@@ -324,5 +325,4 @@ private val NETWORK_VIDEO_EXTENSIONS = setOf(
 private fun isVideoExtension(fileName: String): Boolean {
   val ext = fileName.substringBefore('?').substringBefore('#').substringAfterLast('.', "").lowercase()
   return ext in NETWORK_VIDEO_EXTENSIONS
-}
 }
