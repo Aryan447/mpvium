@@ -1,3 +1,9 @@
+## Unreleased
+
+### Changed
+
+- Auto check for updates on startup is now enabled by default.
+
 ## v1.2.0
 
 ### Added
