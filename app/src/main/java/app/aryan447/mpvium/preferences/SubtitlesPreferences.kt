@@ -47,6 +47,7 @@ class SubtitlesPreferences(
 
   val subdlApiKey = preferenceStore.getString("subdl_api_key", "")
   val wyzieApiKey = preferenceStore.getString("wyzie_api_key", "")
+  val subsourceApiKey = preferenceStore.getString("subsource_api_key", "")
   val subtitleSaveFolder = preferenceStore.getString("sub_save_folder", "")
   val subdlLanguages = preferenceStore.getStringSet("subdl_languages", setOf("en"))
 

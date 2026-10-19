@@ -462,14 +462,14 @@ object SearchablePreferences {
             add(SearchablePreference(
                 titleRes = R.string.pref_subtitles,
                 summaryRes = R.string.pref_subtitles_summary,
-                keywords = listOf("subtitles", "subs", "language", "fonts", "text", "wyzie", "subdl"),
+                keywords = listOf("subtitles", "subs", "language", "fonts", "text", "wyzie", "subdl", "subsource"),
                 category = "Subtitles",
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
                 titleRes = R.string.pref_subtitle_search_title,
                 summaryRes = R.string.pref_subtitle_search_summary,
-                keywords = listOf("subtitle", "search", "online", "download", "wyzie", "subdl", "subs"),
+                keywords = listOf("subtitle", "search", "online", "download", "wyzie", "subdl", "subs", "subsource"),
                 category = "Subtitles",
                 screen = SubtitlesPreferencesScreen,
             ))

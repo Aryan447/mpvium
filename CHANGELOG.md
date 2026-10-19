@@ -1,3 +1,9 @@
+## Unreleased
+
+### Added
+
+- SubSource support in online subtitle search: add your SubSource API key in Settings → Subtitles to include SubSource results, downloaded subtitles are unzipped automatically.
+
 ## v1.2.0
 
 ### Added
