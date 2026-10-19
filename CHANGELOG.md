@@ -1,3 +1,9 @@
+## Unreleased
+
+### Changed
+
+- Updated the bundled mpv-android library to v0.0.3 (mpv `v0.41.0-1042-g7e4cb538a`).
+
 ## v1.2.0
 
 ### Added
