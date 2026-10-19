@@ -1,3 +1,17 @@
+## Unreleased
+
+### Added
+
+- Clean titles now apply to movies too, showing the movie name and release year in the player.
+
+### Changed
+
+- The clean-title setting now describes shows and movies, and the "Episode only" style is now "Episode/title only".
+
+### Fixed
+
+- Clean show titles no longer include trailing release-group tags such as `-edge2020`.
+
 ## v1.2.0
 
 ### Added

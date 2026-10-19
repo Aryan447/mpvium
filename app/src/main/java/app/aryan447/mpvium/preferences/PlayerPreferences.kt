@@ -72,7 +72,7 @@ class PlayerPreferences(
   // New: autoplay next video when current file ends
   val autoplayNextVideo = preferenceStore.getBoolean("autoplay_next_video", true)
 
-  // Master toggle for clean titles. When off, the raw filename is shown.
+  // Master toggle for clean titles on shows and movies. When off, the raw filename is shown.
   val showEpisodeHeader = preferenceStore.getBoolean("show_episode_header", true)
 
   // Clean title style, shown when the master toggle is on. Single line is the default.
