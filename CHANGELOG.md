@@ -4,6 +4,10 @@
 
 - SubSource support in online subtitle search: add your SubSource API key in Settings → Subtitles to include SubSource results, downloaded subtitles are unzipped automatically.
 
+### Fixed
+
+- VOBSUB/DVD and other bitmap subtitles now scale correctly: they keep their aspect ratio on anamorphic video instead of being stretched, and always follow the Scale and Position sliders.
+
 ## v1.2.0
 
 ### Added
