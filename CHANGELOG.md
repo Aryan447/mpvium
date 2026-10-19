@@ -1,3 +1,13 @@
+## Unreleased
+
+### Added
+
+- Default decoder setting with Auto, SW, HW, and HW+ options.
+
+### Changed
+
+- Hardware decoding now defaults to HW instead of HW+.
+
 ## v1.2.0
 
 ### Added

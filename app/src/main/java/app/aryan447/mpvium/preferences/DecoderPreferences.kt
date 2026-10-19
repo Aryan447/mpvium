@@ -3,12 +3,13 @@ package app.aryan447.mpvium.preferences
 import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
 import app.aryan447.mpvium.ui.player.Debanding
+import app.aryan447.mpvium.ui.player.Decoder
 
 class DecoderPreferences(
   preferenceStore: PreferenceStore,
 ) {
   val profile = preferenceStore.getString("mpv_profile", "fast")
-  val tryHWDecoding = preferenceStore.getBoolean("try_hw_dec", true)
+  val defaultDecoder = preferenceStore.getEnum("default_decoder", Decoder.HW)
   val gpuNext = preferenceStore.getBoolean("gpu_next")
   val useVulkan = preferenceStore.getBoolean("use_vulkan", false)
   val useYUV420P = preferenceStore.getBoolean("use_yuv420p", false)
@@ -32,4 +33,14 @@ class DecoderPreferences(
   val anime4kQuality = preferenceStore.getString("anime4k_quality", "FAST")
   // Shader Peek: suggest Upscale chip for low-res videos. Off by default.
   val shaderPeekSuggest = preferenceStore.getBoolean("shader_peek_suggest", false)
+
+  init {
+    // Preserve the old "Try hardware decoding" choice for existing installs.
+    if (!defaultDecoder.isSet()) {
+      val legacyTryHWDecoding = preferenceStore.getBoolean("try_hw_dec", true)
+      if (legacyTryHWDecoding.isSet() && !legacyTryHWDecoding.get()) {
+        defaultDecoder.set(Decoder.SW)
+      }
+    }
+  }
 }

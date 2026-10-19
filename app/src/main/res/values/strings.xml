@@ -222,7 +222,13 @@
   <string name="pref_decoder">Decoder</string>
   <string name="pref_decoder_summary">Hardware decoding, pixel format, debanding</string>
   <string name="pref_decoder_profile_title">MPV Profile</string>
-  <string name="pref_decoder_try_hw_dec_title">Try hardware decoding</string>
+  <string name="pref_decoder_default_title">Default decoder</string>
+  <string name="pref_decoder_default_summary">Decoder used when a video starts</string>
+  <string name="decoder_option_auto_summary">Let mpv choose the decoder automatically</string>
+  <string name="decoder_option_auto_copy_summary">Automatic copy-back decoding</string>
+  <string name="decoder_option_sw_summary">Software decoding (most compatible, uses more CPU)</string>
+  <string name="decoder_option_hw_summary">Hardware decoding (recommended)</string>
+  <string name="decoder_option_hw_plus_summary">Direct hardware decoding (lowest overhead, less compatible)</string>
   <string name="pref_decoder_gpu_next_title">Use gpu-next</string>
   <string name="pref_decoder_gpu_next_summary">A new rendering backend</string>
   <string name="pref_decoder_gpu_next_enable_title">Enable gpu-next?</string>

@@ -104,11 +104,8 @@ class MPVView(
       MPVLib.setOptionString("gpu-context", "androidvk")
     }
 
-    // Set hwdec with fallback order: HW+ (mediacodec) -> HW (mediacodec-copy) -> SW (no)
-    MPVLib.setOptionString(
-      "hwdec",
-      if (decoderPreferences.tryHWDecoding.get()) "mediacodec,mediacodec-copy,no" else "no",
-    )
+    // Initial decoder from settings. HW falls back to SW; HW+ also tries direct output first.
+    MPVLib.setOptionString("hwdec", decoderPreferences.defaultDecoder.get().defaultHwdec)
     MPVLib.setOptionString("hwdec-codecs", "all")
 
     if (decoderPreferences.useYUV420P.get()) {
