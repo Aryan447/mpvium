@@ -1,3 +1,9 @@
+## Unreleased
+
+### Changed
+
+- Intro/recap skip lookups now use TheIntroDB API v4, ahead of the v2/v3 shutdown.
+
 ## v1.2.0
 
 ### Added
