@@ -142,7 +142,9 @@ object MoviesGridScreen : Screen {
         // Remaining movies reuse their cache with no re-scrape.
         runCatching {
           metadataRepository.pruneStaleMetadata(
-            presentMovieTitles = detected.movies.map { it.title }.toSet(),
+            presentMovieKeys = detected.movies.map {
+              StreamingMetadataRepository.movieKeyFor(it.title, it.year)
+            }.toSet(),
           )
         }
         movieList = detected.movies

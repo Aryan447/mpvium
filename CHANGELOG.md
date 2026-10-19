@@ -1,3 +1,13 @@
+## Unreleased
+
+### Fixed
+
+- Movie and show posters now use a stricter TMDb match: title similarity, original title and release year are scored, movie/show types are never mixed, and uncertain matches no longer attach a wrong cover.
+- Filenames with year-like title numbers (1917, 2012, Blade Runner 2049) keep the number in the title, and folders such as "Spider-Man" are no longer mistaken for season folders.
+- Bare episode names (`S01E01.mkv`, `Episode 1.mkv`, `01.mkv`) and generic movie files (`movie.mkv`) now take their title from the show/movie folder, so their covers resolve correctly.
+- Non-Latin movie and show titles no longer collapse into one library entry, metadata cache key, or shared poster.
+- Existing automatic poster matches are refreshed once after upgrading; user-picked matches are kept.
+
 ## v1.2.0
 
 ### Added
