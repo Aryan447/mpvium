@@ -69,6 +69,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.preferences.SeriesSort
+import app.aryan447.mpvium.preferences.StreamingPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
@@ -76,7 +79,6 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
-import app.aryan447.mpvium.ui.streaming.components.SeriesSort
 import app.aryan447.mpvium.ui.streaming.components.SeriesWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
@@ -96,6 +98,7 @@ object SeriesGridScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
+    val streamingPreferences = koinInject<StreamingPreferences>()
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val navigationBarHeight = LocalNavigationBarHeight.current
@@ -172,9 +175,8 @@ object SeriesGridScreen : Screen {
     }
 
     var seriesFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
-    var seriesSortOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val seriesFilter = SeriesWatchFilter.entries[seriesFilterOrdinal.coerceIn(SeriesWatchFilter.entries.indices)]
-    val seriesSort = SeriesSort.entries[seriesSortOrdinal.coerceIn(SeriesSort.entries.indices)]
+    val seriesSort by streamingPreferences.seriesSort.collectAsState()
     val seriesSortOptions = remember {
       SeriesSort.entries.map { SortOption(it, it.label) }
     }
@@ -299,7 +301,7 @@ object SeriesGridScreen : Screen {
               onSeriesFilterChange = { seriesFilterOrdinal = it.ordinal },
               seriesSort = seriesSort,
               seriesSortOptions = seriesSortOptions,
-              onSeriesSortChange = { seriesSortOrdinal = it.ordinal },
+              onSeriesSortChange = { streamingPreferences.seriesSort.set(it) },
               totalSeriesCount = seriesList.size,
               onSeriesClick = { selectedSeriesId = it.id },
             )
@@ -334,7 +336,7 @@ object SeriesGridScreen : Screen {
           onSeriesFilterChange = { seriesFilterOrdinal = it.ordinal },
           seriesSort = seriesSort,
           seriesSortOptions = seriesSortOptions,
-          onSeriesSortChange = { seriesSortOrdinal = it.ordinal },
+          onSeriesSortChange = { streamingPreferences.seriesSort.set(it) },
           totalSeriesCount = seriesList.size,
           onSeriesClick = { backstack.add(SeriesDetailScreen(it.id)) },
         )

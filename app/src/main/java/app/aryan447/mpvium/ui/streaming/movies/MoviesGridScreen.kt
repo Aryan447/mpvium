@@ -69,6 +69,9 @@ import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
+import app.aryan447.mpvium.preferences.MovieSort
+import app.aryan447.mpvium.preferences.StreamingPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
@@ -77,7 +80,6 @@ import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
-import app.aryan447.mpvium.ui.streaming.components.MovieSort
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
@@ -100,6 +102,7 @@ object MoviesGridScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
+    val streamingPreferences = koinInject<StreamingPreferences>()
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
@@ -179,9 +182,8 @@ object MoviesGridScreen : Screen {
     }
 
     var movieFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
-    var movieSortOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val movieFilter = MovieWatchFilter.entries[movieFilterOrdinal.coerceIn(MovieWatchFilter.entries.indices)]
-    val movieSort = MovieSort.entries[movieSortOrdinal.coerceIn(MovieSort.entries.indices)]
+    val movieSort by streamingPreferences.movieSort.collectAsState()
     val movieSortOptions = remember {
       MovieSort.entries.map { SortOption(it, it.label) }
     }
@@ -304,7 +306,7 @@ object MoviesGridScreen : Screen {
               onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
               movieSort = movieSort,
               movieSortOptions = movieSortOptions,
-              onMovieSortChange = { movieSortOrdinal = it.ordinal },
+              onMovieSortChange = { streamingPreferences.movieSort.set(it) },
               totalMovieCount = movieList.size,
               onMovieClick = { selectedMovieId = it.video.id },
               onMovieLongClick = { moviePendingDeletion = it },
@@ -340,7 +342,7 @@ object MoviesGridScreen : Screen {
           onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
           movieSort = movieSort,
           movieSortOptions = movieSortOptions,
-          onMovieSortChange = { movieSortOrdinal = it.ordinal },
+          onMovieSortChange = { streamingPreferences.movieSort.set(it) },
           totalMovieCount = movieList.size,
           onMovieClick = { backstack.add(MovieDetailScreen(it.video.id, it.title)) },
           onMovieLongClick = { moviePendingDeletion = it },

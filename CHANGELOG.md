@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fixed
+
+- Shows and Movies sort choices now persist across app restarts.
+
 ## v1.2.0
 
 ### Added
