@@ -1,3 +1,13 @@
+## Unreleased
+
+### Added
+
+- Speed-adaptive horizontal swipe seeking, on by default with a toggle under Player gestures: short drags stay precise while longer or faster swipes cover minutes instead of seconds in one sweep.
+
+### Changed
+
+- A horizontal swipe can no longer land exactly on the end of the video, so overshooting a swipe can't close the player through "Close after the end of playback".
+
 ## v1.2.0
 
 ### Added

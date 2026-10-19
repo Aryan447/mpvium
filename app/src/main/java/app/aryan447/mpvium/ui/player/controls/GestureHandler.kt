@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -81,6 +82,7 @@ import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.sign
 import kotlin.math.sqrt
 
 /**
@@ -103,6 +105,102 @@ private const val SubtitleTouchMinSlopPx = 48f
  * keep their existing feel.
  */
 private const val HORIZONTAL_SEEK_REFERENCE_WIDTH_PX = 820f
+
+/**
+ * Seconds the accelerating term adds at a full gesture-width drag, before the
+ * speed gain. Linear-only response still covers the first
+ * [SWIPE_SEEK_ACCEL_ENGAGE_FRACTION] of the drag, so careful seeking keeps the
+ * exact per-pixel sensitivity from the preference; past the engage point the
+ * response ramps up so a single sweep can cover minutes instead of seconds —
+ * the same idea as VLC's bi-cubic swipe progression, but engaged later so the
+ * fine end stays usable.
+ */
+private const val SWIPE_SEEK_ACCEL_SECONDS = 300f
+
+/**
+ * Exponent of the accelerating term. 2.5 is gentle near the engage point
+ * (precision survives) while still ramping hard enough at the far end.
+ */
+private const val SWIPE_SEEK_ACCEL_EXPONENT = 2.5f
+
+/**
+ * Fraction of the gesture width below which the mapping is exactly the linear
+ * per-pixel response: dragging up to 12% of the width behaves identically to
+ * the flat implementation. This is what keeps short, precise drags unaffected.
+ */
+private const val SWIPE_SEEK_ACCEL_ENGAGE_FRACTION = 0.12f
+
+/**
+ * Finger speed bounds, in gesture widths per second, for the speed gain: at or
+ * below [SWIPE_SEEK_SPEED_DEADZONE] the drag counts as deliberate and gets no
+ * gain, at or above [SWIPE_SEEK_SPEED_FULL_AT] it counts as a flick and gets
+ * the full [SWIPE_SEEK_SPEED_GAIN].
+ *
+ * The gain only ever scales the accelerating term, which is zero below the
+ * engage fraction — so velocity noise can never make precise drags jumpy.
+ */
+private const val SWIPE_SEEK_SPEED_DEADZONE = 0.5f
+private const val SWIPE_SEEK_SPEED_FULL_AT = 1.5f
+private const val SWIPE_SEEK_SPEED_GAIN = 1f
+
+/**
+ * Never let a swipe land exactly on the video's end: mpv reports EOF there and
+ * "close after the end of playback" (on by default) would tear the player down
+ * instead of leaving the last second on screen. With the accelerated range,
+ * overshooting into the end while dragging is a normal thing to do. The
+ * seekbar and double-tap seeks keep their existing exact-end behaviour.
+ */
+private const val SWIPE_SEEK_EOF_GUARD_SECONDS = 1f
+
+/**
+ * Speed multiplier for the accelerating term: 1 for deliberate drags, up to
+ * 1 + [SWIPE_SEEK_SPEED_GAIN] for flicks. [speedFraction] is the finger speed
+ * in gesture widths per second.
+ */
+private fun swipeSeekSpeedGain(speedFraction: Float): Float {
+  if (SWIPE_SEEK_SPEED_GAIN <= 0f) return 1f
+  val ramp = (speedFraction - SWIPE_SEEK_SPEED_DEADZONE) /
+    (SWIPE_SEEK_SPEED_FULL_AT - SWIPE_SEEK_SPEED_DEADZONE)
+  return 1f + SWIPE_SEEK_SPEED_GAIN * ramp.coerceIn(0f, 1f)
+}
+
+/**
+ * Maps a signed drag distance, as a fraction of the gesture width, to a seek
+ * offset in seconds.
+ *
+ * Three zones, all functions of finger position, so the mapping stays
+ * reversible: dragging back to where the gesture started always returns to the
+ * starting position.
+ *
+ * - up to [SWIPE_SEEK_ACCEL_ENGAGE_FRACTION]: pure [secondsPerWidth] per unit
+ *   fraction, i.e. the original flat behaviour — careful seeking is unchanged;
+ * - beyond it: the accelerating term ramps in smoothly from zero and reaches
+ *   [SWIPE_SEEK_ACCEL_SECONDS] at a full-width drag;
+ * - the accelerating term is scaled by [speedGain] (1..1+[SWIPE_SEEK_SPEED_GAIN]),
+ *   so the same distance seeks more when swiped fast, while the fine zone above
+ *   is untouched by velocity.
+ *
+ * Pass [adaptive] = false for the legacy flat mapping (accelerating term off).
+ */
+private fun swipeSeekSeconds(
+  fraction: Float,
+  secondsPerWidth: Float,
+  speedGain: Float,
+  adaptive: Boolean,
+): Float {
+  val linear = secondsPerWidth * fraction
+  if (!adaptive) return linear
+
+  val magnitude = abs(fraction)
+  if (magnitude <= SWIPE_SEEK_ACCEL_ENGAGE_FRACTION) return linear
+
+  val ramp = (magnitude - SWIPE_SEEK_ACCEL_ENGAGE_FRACTION) /
+    (1f - SWIPE_SEEK_ACCEL_ENGAGE_FRACTION)
+  val accelerated = SWIPE_SEEK_ACCEL_SECONDS *
+    ramp.coerceIn(0f, 1f).pow(SWIPE_SEEK_ACCEL_EXPONENT) *
+    speedGain
+  return linear + sign(fraction) * accelerated
+}
 
 /**
  * Vertical video rect (top offset, height in px) inside the touch
@@ -206,6 +304,7 @@ fun GestureHandler(
   val panAndZoomEnabled by playerPreferences.panAndZoomEnabled.collectAsState()
   val horizontalSwipeToSeek by playerPreferences.horizontalSwipeToSeek.collectAsState()
   val horizontalSwipeSensitivity by playerPreferences.horizontalSwipeSensitivity.collectAsState()
+  val horizontalSwipeAcceleration by playerPreferences.horizontalSwipeAcceleration.collectAsState()
   var isLongPressing by remember { mutableStateOf(false) }
   var isDynamicSpeedControlActive by remember { mutableStateOf(false) }
   var dynamicSpeedStartX by remember { mutableStateOf(0f) }
@@ -1163,7 +1262,13 @@ fun GestureHandler(
           } while (event.changes.any { it.pressed })
         }
       }
-      .pointerInput(horizontalSwipeToSeek, areControlsLocked, gesturePreferences, isVerticalGestureActive) {
+      .pointerInput(
+        horizontalSwipeToSeek,
+        areControlsLocked,
+        gesturePreferences,
+        isVerticalGestureActive,
+        horizontalSwipeAcceleration,
+      ) {
         if (!horizontalSwipeToSeek || areControlsLocked || isVerticalGestureActive) return@pointerInput
 
         awaitEachGesture {
@@ -1178,6 +1283,17 @@ fun GestureHandler(
           var wasPlayerAlreadyPaused = false
           // Use the sensitivity preference instead of hardcoded value
           val seekSensitivity = horizontalSwipeSensitivity
+          // Seconds covered by the linear term at a full gesture-width drag.
+          val secondsPerWidth = seekSensitivity * HORIZONTAL_SEEK_REFERENCE_WIDTH_PX
+          // Platform fling estimator (same one Compose uses for scrolling):
+          // gives a stable horizontal speed from the last ~100ms of samples
+          // instead of chasing per-event jitter.
+          val velocityTracker = VelocityTracker()
+          velocityTracker.addPosition(down.uptimeMillis, down.position)
+          // Peak, not instantaneous, speed: a gesture's speed class only ever
+          // ratchets up, so the preview can't walk backwards when the finger
+          // slows down or stops while still touching the screen.
+          var peakSpeedFraction = 0f
 
           do {
             val event = awaitPointerEvent()
@@ -1190,6 +1306,7 @@ fun GestureHandler(
                   val deltaX = currentPosition.x - startPosition.x
                   val deltaY = currentPosition.y - startPosition.y
                   val timeSinceStart = System.currentTimeMillis() - startTime
+                  velocityTracker.addPosition(change.uptimeMillis, currentPosition)
 
                   // Tablet-specific responsive swipe gesture vs standard phone gesture.
                   // The width-scaled sensitivity (reference/actual) already normalizes
@@ -1234,12 +1351,33 @@ fun GestureHandler(
                     // wide screens hypersensitive, throwing the seekbar preview
                     // across the track on small finger movements.
                     val gestureWidthPx = size.width.toFloat().coerceAtLeast(1f)
-                    val widthScale = HORIZONTAL_SEEK_REFERENCE_WIDTH_PX / gestureWidthPx
+                    // Finger speed in gesture widths per second, peak-latched for
+                    // this gesture so the gain only ever rises (see
+                    // swipeSeekSeconds).
+                    val speedFraction = abs(velocityTracker.calculateVelocity().x) / gestureWidthPx
+                    peakSpeedFraction = maxOf(peakSpeedFraction, speedFraction)
                     // Calculate seek amount based on horizontal movement
-                    val seekAmount = deltaX * seekSensitivity * widthScale
+                    val seekAmount = swipeSeekSeconds(
+                      fraction = deltaX / gestureWidthPx,
+                      secondsPerWidth = secondsPerWidth,
+                      speedGain = swipeSeekSpeedGain(peakSpeedFraction),
+                      adaptive = horizontalSwipeAcceleration,
+                    )
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
                     val maxDuration = duration?.toFloat() ?: 0f
-                    val clampedPosition = targetPosition.coerceAtMost(maxDuration)
+                    // Stop just short of the very end: landing on it makes mpv
+                    // report EOF and "close after the end of playback" would
+                    // exit the player mid-swipe. Never clamps below the position
+                    // the gesture started from, so the guard itself can't seek
+                    // backwards when the video is already on its last second.
+                    val seekCeiling = if (maxDuration > 0f) {
+                      (maxDuration - SWIPE_SEEK_EOF_GUARD_SECONDS)
+                        .coerceAtLeast(initialVideoPosition)
+                        .coerceAtMost(maxDuration)
+                    } else {
+                      maxDuration
+                    }
+                    val clampedPosition = targetPosition.coerceAtMost(seekCeiling)
                     lastClampedPosition = clampedPosition
 
                     // Quantize to whole seconds with rounding (not truncation) so tiny
