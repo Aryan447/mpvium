@@ -176,6 +176,8 @@
   <string name="pref_player_gestures_brightness">Brightness gestures</string>
   <string name="pref_player_gestures_volume">Volume gestures</string>
   <string name="pref_player_gestures_pinch_to_zoom">Pinch to zoom</string>
+  <string name="pref_player_gestures_pinch_to_resize_subtitles">Pinch to resize subtitles</string>
+  <string name="pref_player_gestures_pinch_to_resize_subtitles_summary">Pinch on subtitles to change their size; two-finger double-tap to reset</string>
   <string name="pref_player_gestures_horizontal_swipe_to_seek">Horizontal swipe to seek</string>
   <string name="pref_player_gestures_horizontal_swipe_to_seek_summary">Swipe left or right on screen to seek forward or backward</string>
   <string name="pref_player_gestures_horizontal_swipe_sensitivity">Horizontal swipe sensitivity</string>
@@ -346,6 +348,9 @@
   <string name="subtitle_double_tap_to_reset">Double-tap subtitle to reset position</string>
   <string name="subtitle_position_format">Subtitles: %d</string>
   <string name="subtitle_position_reset">Subtitles reset (%d)</string>
+  <string name="subtitle_size_format">Subtitles: %d%%</string>
+  <string name="subtitle_size_reset">Subtitle size reset (%d%%)</string>
+  <string name="subtitle_size_double_tap_to_reset">Two-finger double-tap to reset size</string>
   <string name="player_sheets_sub_typography_card_title">Typography</string>
   <string name="player_sheets_sub_typography_font">Font</string>
   <string name="player_sheets_sub_typography_font_size">Font size</string>
