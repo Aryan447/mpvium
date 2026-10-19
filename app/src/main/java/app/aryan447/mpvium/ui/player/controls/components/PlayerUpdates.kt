@@ -22,7 +22,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -39,7 +38,7 @@ import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.ui.graphics.Shape
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.player.HoldControlTarget
-import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 
 @Composable
@@ -48,15 +47,16 @@ fun PlayerUpdate(
   shape: Shape = CircleShape,
   content: @Composable () -> Unit = {},
 ) {
+  val colors = LocalPlayerColors.current
   Surface(
     shape = shape,
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-    contentColor = MaterialTheme.colorScheme.onSurface,
+    color = colors.controlFill,
+    contentColor = colors.controlContent,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border = BorderStroke(
       1.dp,
-      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+      colors.controlBorder,
     ),
     modifier = modifier
       .heightIn(min = 45.dp)
@@ -80,6 +80,7 @@ fun SubtitlePositionPlayerUpdate(
   isReset: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
+  val colors = LocalPlayerColors.current
   PlayerUpdate(
     shape = RoundedCornerShape(20.dp),
     modifier = modifier,
@@ -97,7 +98,7 @@ fun SubtitlePositionPlayerUpdate(
           Icons.Default.Subtitles,
           contentDescription = null,
           modifier = Modifier.size(16.dp),
-          tint = MaterialTheme.colorScheme.primary,
+          tint = colors.accent,
         )
         Text(
           text = if (isReset) {
@@ -108,14 +109,14 @@ fun SubtitlePositionPlayerUpdate(
           fontFamily = FontFamily.Monospace,
           fontWeight = FontWeight.Bold,
           textAlign = TextAlign.Center,
-          color = MaterialTheme.colorScheme.onSurface,
+          color = colors.controlContent,
           style = MaterialTheme.typography.bodyMedium,
         )
       }
       if (!isReset) {
         Text(
           text = stringResource(R.string.subtitle_double_tap_to_reset),
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          color = colors.controlContent.copy(alpha = 0.7f),
           style = MaterialTheme.typography.labelSmall,
           textAlign = TextAlign.Center,
         )
@@ -130,13 +131,14 @@ fun TextPlayerUpdate(
   text: String,
   modifier: Modifier = Modifier,
 ) {
+  val colors = LocalPlayerColors.current
   PlayerUpdate(modifier) {
     Text(
       text = text,
       fontFamily = FontFamily.Monospace,
       fontWeight = FontWeight.Bold,
       textAlign = TextAlign.Center,
-      color = MaterialTheme.colorScheme.onSurface,
+      color = colors.controlContent,
       style = MaterialTheme.typography.bodyMedium,
     )
   }
@@ -193,7 +195,7 @@ fun HoldControlsPlayerUpdate(
       }
       Text(
         text = stringResource(R.string.pref_player_gestures_hold_controls_hint),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = LocalPlayerColors.current.controlContent.copy(alpha = 0.7f),
         style = MaterialTheme.typography.labelSmall,
         textAlign = TextAlign.Center,
       )
@@ -208,15 +210,16 @@ private fun HoldControlChip(
   isSelected: Boolean,
   modifier: Modifier = Modifier,
 ) {
+  val colors = LocalPlayerColors.current
   val containerColor = if (isSelected) {
-    MaterialTheme.colorScheme.primary
+    colors.accent
   } else {
-    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
+    colors.controlContent.copy(alpha = 0.12f)
   }
   val contentColor = if (isSelected) {
-    MaterialTheme.colorScheme.onPrimary
+    colors.accentContent
   } else {
-    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+    colors.controlContent.copy(alpha = 0.75f)
   }
   Row(
     verticalAlignment = Alignment.CenterVertically,
@@ -251,6 +254,7 @@ fun SeekPlayerUpdate(
   seekDelta: String,
   modifier: Modifier = Modifier,
 ) {
+  val colors = LocalPlayerColors.current
   PlayerUpdate(modifier) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
@@ -260,7 +264,7 @@ fun SeekPlayerUpdate(
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = colors.controlContent,
       )
 
       Text(
@@ -269,7 +273,7 @@ fun SeekPlayerUpdate(
         fontWeight = FontWeight.Normal,
         textAlign = TextAlign.Center,
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        color = colors.controlContent.copy(alpha = 0.7f),
       )
     }
   }

@@ -73,6 +73,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.preferences.SeekbarStyle
 import dev.vivvvek.seeker.Segment
@@ -821,7 +822,7 @@ fun VideoTimer(
         )
         .wrapContentHeight(Alignment.CenterVertically),
     text = Utils.prettyTime(value.toInt(), isInverted),
-    color = Color.White,
+    color = LocalPlayerColors.current.timerContent,
     textAlign = TextAlign.Center,
   )
 }

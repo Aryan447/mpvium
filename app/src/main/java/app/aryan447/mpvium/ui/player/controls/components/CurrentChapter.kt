@@ -29,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,8 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
-import app.aryan447.mpvium.ui.theme.controlColor
-import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
@@ -51,6 +49,7 @@ fun CurrentChapter(
   onClick: () -> Unit = {},
 ) {
   val appearancePreferences = koinInject<AppearancePreferences>()
+  val colors = LocalPlayerColors.current
 
   Surface(
     modifier =
@@ -60,16 +59,13 @@ fun CurrentChapter(
         .clip(RoundedCornerShape(50))
         .clickable(onClick = onClick),
     shape = RoundedCornerShape(50),
-    color =
-        MaterialTheme.colorScheme.surfaceContainer.copy(
-          alpha = glassPlayerAlpha(),
-        ),
-    contentColor = MaterialTheme.colorScheme.onSurface,
+    color = colors.controlFill,
+    contentColor = colors.controlContent,
     tonalElevation = 0.dp,
     border =
         BorderStroke(
           1.dp,
-          MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+          colors.controlBorder,
         ),
   ) {
     AnimatedContent(
@@ -98,7 +94,7 @@ fun CurrentChapter(
           style = MaterialTheme.typography.bodyMedium,
           maxLines = 1,
           overflow = TextOverflow.Clip,
-          color = MaterialTheme.colorScheme.primary,
+          color = colors.accent,
         )
         currentChapter.name.let {
           Text(
@@ -106,7 +102,7 @@ fun CurrentChapter(
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = colors.controlContent,
             overflow = TextOverflow.Clip,
           )
           Text(
@@ -116,7 +112,7 @@ fun CurrentChapter(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             fontFamily = FontFamily.Monospace,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = colors.controlContent,
             modifier = Modifier.basicMarquee(),
           )
         }

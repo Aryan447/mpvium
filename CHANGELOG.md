@@ -1,3 +1,9 @@
+## Unreleased
+
+### Added
+
+- "Full player colors" toggle (Player Layout > Appearance, on by default) that dresses the player overlay in the app theme's colors: button and pill fills, active controls, play/pause, timers and skip chips. Turn it off to keep the current look, where only the seekbar, volume and brightness sliders use the theme accent.
+
 ## v1.2.0
 
 ### Added

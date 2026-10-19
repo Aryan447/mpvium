@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
-import app.aryan447.mpvium.ui.theme.LocalGlass
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 import org.koin.compose.koinInject
 
@@ -42,14 +42,22 @@ fun ControlsButton(
   onLongClick: () -> Unit = {},
   title: String? = null,
   color: Color? = null,
+  active: Boolean = false,
 ) {
   val interactionSource = remember { MutableInteractionSource() }
   val appearancePreferences = koinInject<AppearancePreferences>()
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
-  // Glass keeps control chips clear over video (was 0.35 frosted).
-  val isGlass = LocalGlass.current
+  val colors = LocalPlayerColors.current
 
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  val contentColor =
+    color
+      ?: when {
+        active && hideBackground -> colors.activeOnVideoContent
+        active -> colors.activeContent
+        hideBackground -> colors.onVideoContent
+        else -> colors.controlContent
+      }
   Surface(
     modifier =
       modifier
@@ -64,28 +72,21 @@ fun ControlsButton(
           indication = ripple(),
         ),
     shape = CircleShape,
-    color = if (hideBackground) {
-      Color.Transparent
-    } else {
-      MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (isGlass) 0.22f else 0.55f)
-    },
-    contentColor = color ?: MaterialTheme.colorScheme.onSurface,
+    color =
+      when {
+        hideBackground -> Color.Transparent
+        active -> colors.activeFill
+        else -> colors.controlFill
+      },
+    contentColor = contentColor,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
-    border =
-      if (hideBackground) {
-        null
-      } else {
-        BorderStroke(
-          1.dp,
-          MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-        )
-      },
+    border = if (hideBackground) null else BorderStroke(1.dp, colors.controlBorder),
   ) {
     Icon(
       imageVector = icon,
       contentDescription = title,
-      tint = color ?: MaterialTheme.colorScheme.onSurface,
+      tint = contentColor,
       modifier =
         Modifier
           .padding(MaterialTheme.spacing.small)

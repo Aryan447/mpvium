@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.SeekbarStyle
-import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 import kotlin.math.roundToInt
 
@@ -283,14 +283,15 @@ fun BrightnessSlider(
   seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
 ) {
   val coercedBrightness = brightness.coerceIn(range)
+  val colors = LocalPlayerColors.current
   Surface(
     modifier = modifier,
     shape = RoundedCornerShape(20.dp),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-    contentColor = MaterialTheme.colorScheme.onSurface,
+    color = colors.controlFill,
+    contentColor = colors.controlContent,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+    border = BorderStroke(1.dp, colors.controlBorder),
   ) {
     Column(
       modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
@@ -330,14 +331,15 @@ fun VolumeSlider(
   seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
 ) {
   val percentage = (percentage(volume, range) * 100).roundToInt()
+  val colors = LocalPlayerColors.current
   Surface(
     modifier = modifier,
     shape = RoundedCornerShape(20.dp),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-    contentColor = MaterialTheme.colorScheme.onSurface,
+    color = colors.controlFill,
+    contentColor = colors.controlContent,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+    border = BorderStroke(1.dp, colors.controlBorder),
   ) {
     Column(
       modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),

@@ -37,8 +37,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
-import app.aryan447.mpvium.ui.theme.controlColor
-import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 
 private val transportShadow =
@@ -63,6 +62,8 @@ fun PlayerTransportButton(
   hideBackground: Boolean = false,
 ) {
   val haptic = LocalHapticFeedback.current
+  val colors = LocalPlayerColors.current
+  val contentColor = if (hideBackground) colors.onVideoContent else colors.controlContent
   Surface(
     modifier =
       modifier
@@ -85,16 +86,16 @@ fun PlayerTransportButton(
     shape = CircleShape,
     color =
       if (!hideBackground) {
-        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha())
+        colors.controlFill
       } else {
         Color.Transparent
       },
-    contentColor = MaterialTheme.colorScheme.onSurface,
+    contentColor = contentColor,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
       if (!hideBackground) {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        BorderStroke(1.dp, colors.controlBorder)
       } else {
         null
       },
@@ -104,13 +105,9 @@ fun PlayerTransportButton(
       contentDescription = contentDescription,
       tint =
         if (enabled) {
-          if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
+          contentColor
         } else {
-          if (hideBackground) {
-            controlColor.copy(alpha = 0.38f)
-          } else {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-          }
+          contentColor.copy(alpha = 0.38f)
         },
       modifier =
         Modifier
@@ -136,22 +133,23 @@ fun PlayerPillButton(
   content: @Composable RowScope.() -> Unit,
 ) {
   val haptic = LocalHapticFeedback.current
+  val colors = LocalPlayerColors.current
   Surface(
     shape = RoundedCornerShape(50),
     color =
       if (hideBackground) {
         Color.Transparent
       } else {
-        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha())
+        colors.controlFill
       },
-    contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+    contentColor = if (hideBackground) colors.onVideoContent else colors.controlContent,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
       if (hideBackground) {
         null
       } else {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        BorderStroke(1.dp, colors.controlBorder)
       },
     modifier =
       modifier
@@ -190,6 +188,7 @@ fun PlayerPlayPauseButton(
   val icon = AnimatedImageVector.animatedVectorResource(R.drawable.anim_play_to_pause)
   val interaction = remember { MutableInteractionSource() }
   val haptic = LocalHapticFeedback.current
+  val colors = LocalPlayerColors.current
 
   Surface(
     modifier =
@@ -214,16 +213,16 @@ fun PlayerPlayPauseButton(
     shape = CircleShape,
     color =
       if (!hideBackground) {
-        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha())
+        colors.playPauseFill
       } else {
         Color.Transparent
       },
-    contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+    contentColor = if (hideBackground) colors.onVideoContent else colors.playPauseContent,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
       if (!hideBackground) {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        BorderStroke(1.dp, colors.controlBorder)
       } else {
         null
       },

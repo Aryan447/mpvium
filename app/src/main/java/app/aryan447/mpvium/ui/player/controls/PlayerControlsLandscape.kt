@@ -37,8 +37,6 @@ import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
-import app.aryan447.mpvium.ui.theme.controlColor
-import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 
@@ -53,6 +51,7 @@ fun TopLeftPlayerControlsLandscape(
 ) {
   val playlistModeEnabled = viewModel.hasPlaylistSupport()
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  val colors = LocalPlayerColors.current
 
   Row(
     modifier = Modifier.width(IntrinsicSize.Max),
@@ -62,7 +61,6 @@ fun TopLeftPlayerControlsLandscape(
     ControlsButton(
       icon = Icons.AutoMirrored.Default.ArrowBack,
       onClick = onBackPress,
-      color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
       modifier = Modifier.size(45.dp),
     )
 
@@ -83,26 +81,11 @@ fun TopLeftPlayerControlsLandscape(
     ) {
       Surface(
         shape = RoundedCornerShape(50),
-        color =
-          if (hideBackground) {
-            Color.Transparent
-          } else {
-            MaterialTheme.colorScheme.surfaceContainer.copy(
-              alpha = glassPlayerAlpha(),
-            )
-          },
-        contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+        color = if (hideBackground) Color.Transparent else colors.controlFill,
+        contentColor = if (hideBackground) colors.onVideoContent else colors.controlContent,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        border =
-          if (hideBackground) {
-            null
-          } else {
-            BorderStroke(
-              1.dp,
-              MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-            )
-          },
+        border = if (hideBackground) null else BorderStroke(1.dp, colors.controlBorder),
       ) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
@@ -121,14 +104,14 @@ fun TopLeftPlayerControlsLandscape(
               maxLines = 1,
               overflow = TextOverflow.Visible,
               fontFamily = FontFamily.Monospace,
-              color = MaterialTheme.colorScheme.primary,
+              color = if (hideBackground) colors.onVideoContent else colors.accent,
             )
             Text(
               text = Typography.bullet.toString(),
               textAlign = androidx.compose.ui.text.style.TextAlign.Center,
               style = MaterialTheme.typography.bodyMedium,
               maxLines = 1,
-              color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+              color = if (hideBackground) colors.onVideoContent else colors.controlContent,
               overflow = TextOverflow.Clip,
             )
           }
@@ -142,7 +125,7 @@ fun TopLeftPlayerControlsLandscape(
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = FontFamily.Monospace,
-                color = (if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface)
+                color = (if (hideBackground) colors.onVideoContent else colors.controlContent)
                   .copy(alpha = 0.7f),
               )
               Text(
@@ -151,7 +134,7 @@ fun TopLeftPlayerControlsLandscape(
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily.Monospace,
-                color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                color = if (hideBackground) colors.onVideoContent else colors.controlContent,
               )
             } else {
               Text(
@@ -160,7 +143,7 @@ fun TopLeftPlayerControlsLandscape(
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily.Monospace,
-                color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                color = if (hideBackground) colors.onVideoContent else colors.controlContent,
               )
             }
           }
