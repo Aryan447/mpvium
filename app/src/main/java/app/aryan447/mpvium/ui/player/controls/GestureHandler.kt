@@ -47,8 +47,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
@@ -164,6 +166,58 @@ private fun isSubtitleTouch(
   ) <= tolerance
 }
 
+/**
+ * Wider subtitle band used by the two-finger resize gesture. The single-finger
+ * band stays deliberately tight for hold-to-drag and position reset; two
+ * fingers need a little more room to land comfortably around the text.
+ */
+private const val SubtitleScaleTouchToleranceFraction = 0.12f
+private const val SubtitleScaleTouchMinSlopPx = 64f
+
+/** Limits for the pinch-driven subtitle scale factor. */
+private const val SubtitleScaleMin = 0.25f
+private const val SubtitleScaleMax = 5f
+
+/** Two-finger double-tap tuning. */
+private const val SubtitleTwoFingerTapMaxDurationMs = 300L
+private const val SubtitleTwoFingerTapMaxStartGapMs = 200L
+private const val SubtitleDoubleTapWindowMs = 350L
+
+/** Persists two-finger tap bookkeeping across separate gestures. */
+private class SubtitleTwoFingerTapTracker {
+  var lastTapTimeMs = 0L
+  var lastTapX = 0f
+  var lastTapY = 0f
+
+  fun clear() {
+    lastTapTimeMs = 0L
+  }
+}
+
+private fun isSubtitleScaleTouch(
+  y: Float,
+  containerWidth: Float,
+  containerHeight: Float,
+  videoAspect: Double?,
+  currentSubPos: Int,
+): Boolean {
+  if (containerHeight <= 0f) return false
+  val (_, videoHeight) = videoRectTopAndHeight(containerWidth, containerHeight, videoAspect)
+  val tolerance = (videoHeight * SubtitleScaleTouchToleranceFraction).coerceAtLeast(SubtitleScaleTouchMinSlopPx)
+  return kotlin.math.abs(
+    y - subtitleYInContainer(containerWidth, containerHeight, videoAspect, currentSubPos),
+  ) <= tolerance
+}
+
+/** True when mpv is currently showing a primary or secondary subtitle track. */
+private fun hasVisibleSubtitleTrack(): Boolean {
+  val primarySid = MPVLib.getPropertyInt("sid") ?: 0
+  val secondarySid = MPVLib.getPropertyInt("secondary-sid") ?: 0
+  val primaryVisible = MPVLib.getPropertyBoolean("sub-visibility") ?: true
+  val secondaryVisible = MPVLib.getPropertyBoolean("secondary-sub-visibility") ?: true
+  return (primarySid > 0 && primaryVisible) || (secondarySid > 0 && secondaryVisible)
+}
+
 @Suppress("CyclomaticComplexMethod", "MultipleEmitters")
 @Composable
 fun GestureHandler(
@@ -203,6 +257,7 @@ fun GestureHandler(
   val volumeGesture by playerPreferences.volumeGesture.collectAsState()
   val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
   val pinchToZoomGesture by playerPreferences.pinchToZoomGesture.collectAsState()
+  val pinchToResizeSubtitles by playerPreferences.pinchToResizeSubtitles.collectAsState()
   val panAndZoomEnabled by playerPreferences.panAndZoomEnabled.collectAsState()
   val horizontalSwipeToSeek by playerPreferences.horizontalSwipeToSeek.collectAsState()
   val horizontalSwipeSensitivity by playerPreferences.horizontalSwipeSensitivity.collectAsState()
@@ -249,6 +304,9 @@ fun GestureHandler(
   var pendingSingleTapPosition by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
   val doubleTapTimeout = 300L
   val multiTapContinueWindow = 650L
+
+  // Two-finger tap bookkeeping for the subtitle resize reset gesture.
+  val subtitleTwoFingerTapTracker = remember { SubtitleTwoFingerTapTracker() }
 
   // Multi-tap seeking state
   var lastSeekRegion by remember { mutableStateOf<String?>(null) }
@@ -319,10 +377,24 @@ fun GestureHandler(
           // Track for potential drag
           var isDrag = false
           var wasConsumedByTapGesture = false
+          var hadMultiplePointers = false
 
           do {
             val event = awaitPointerEvent()
             val pointer = event.changes.firstOrNull { it.id == down.id } ?: break
+
+            // Any two-finger gesture belongs to pinch-to-zoom or subtitle
+            // resize. Never let one of its fingers register as a single tap
+            // (which would toggle controls or reset subtitle position).
+            if (event.changes.size > 1) {
+              hadMultiplePointers = true
+              pendingSingleTapRegion = null
+              pendingSingleTapPosition = null
+              if (tapCount == 1) {
+                tapCount = 0
+                lastTapRegion = null
+              }
+            }
 
             // Check if this is a drag (not a tap)
             val distance = sqrt(
@@ -337,7 +409,7 @@ fun GestureHandler(
 
             if (!pointer.pressed) {
               // Pointer lifted - this is a tap if it wasn't a drag
-              if (!isDrag && !wasConsumedByTapGesture) {
+              if (!isDrag && !hadMultiplePointers && !wasConsumedByTapGesture && !pointer.isConsumed) {
                 val timeSinceLastTap = downTime - lastTapTime
                 val positionChange = sqrt(
                   (downPosition.x - lastTapPosition.x) * (downPosition.x - lastTapPosition.x) +
@@ -995,8 +1067,8 @@ fun GestureHandler(
           }
         }
       }
-      .pointerInput(pinchToZoomGesture, panAndZoomEnabled, areControlsLocked, isVerticalGestureActive) {
-        if (!pinchToZoomGesture || areControlsLocked || isVerticalGestureActive) return@pointerInput
+      .pointerInput(pinchToZoomGesture, pinchToResizeSubtitles, panAndZoomEnabled, areControlsLocked, isVerticalGestureActive) {
+        if ((!pinchToZoomGesture && !pinchToResizeSubtitles) || areControlsLocked || isVerticalGestureActive) return@pointerInput
 
         // Helper: get video display dimensions at 1x (how mpv fits the video to screen)
         fun videoDisplaySize(): Pair<Float, Float> {
@@ -1034,7 +1106,34 @@ fun GestureHandler(
           )
         }
 
+        val subtitleTapSlopPx = 24.dp.toPx()
+        val subtitleScaleActivationPx = 12.dp.toPx()
+        val subtitleDoubleTapMaxDistancePx = 64.dp.toPx()
+
         awaitEachGesture {
+          val firstDown = awaitFirstDown(requireUnconsumed = false)
+          val firstPointerId = firstDown.id
+          val firstStart = firstDown.position
+          val gestureStartTime = System.currentTimeMillis()
+
+          // null until both fingers are down, then true for subtitle resize
+          // and false for the existing video pinch-to-zoom path.
+          var subtitleMode: Boolean? = null
+          var subtitleStartScale = 1f
+          var subtitleScale = 1f
+          var subtitleStartDist = 0f
+          var subtitleScaleStarted = false
+          var subtitleLastPercent = -1
+          var subtitleHapticBucket = -1
+          var secondPointerId: PointerId? = null
+          var secondStart = Offset.Zero
+          var secondDownTime = 0L
+          var tapMidX = 0f
+          var tapMidY = 0f
+          var tapCandidate = true
+          var maxConcurrentPointers = 0
+          var maxPointerMovement = 0f
+
           var zoom = 0f
           var gestureStarted = false
           var prevDist = 0f
@@ -1042,11 +1141,44 @@ fun GestureHandler(
           var prevMidY = 0f
           val panSmooth = floatArrayOf(0f, 0f, 0f) // smoothX, smoothY, initialized
 
-          awaitFirstDown(requireUnconsumed = false)
-
           do {
             val event = awaitPointerEvent()
             val pressed = event.changes.filter { it.pressed }
+            if (pressed.isEmpty()) break
+
+            maxConcurrentPointers = maxOf(maxConcurrentPointers, pressed.size)
+            if (pressed.size > 2) tapCandidate = false
+
+            // Capture the second finger as soon as it lands so movement
+            // tracking can resolve both pointers' start positions.
+            if (secondPointerId == null && pressed.size == 2) {
+              val second = pressed.firstOrNull { it.id != firstPointerId }
+              if (second != null) {
+                secondPointerId = second.id
+                secondStart = second.position
+                secondDownTime = System.currentTimeMillis()
+                tapMidX = (pressed[0].position.x + pressed[1].position.x) / 2f
+                tapMidY = (pressed[0].position.y + pressed[1].position.y) / 2f
+              }
+            }
+
+            // Track movement from each finger's landing point. A small,
+            // short-lived two-finger touch is a tap, not a pinch.
+            if (tapCandidate) {
+              pressed.forEach { change ->
+                val start = when (change.id) {
+                  firstPointerId -> firstStart
+                  secondPointerId -> secondStart
+                  else -> null
+                }
+                if (start == null) {
+                  tapCandidate = false
+                } else {
+                  maxPointerMovement = maxOf(maxPointerMovement, (change.position - start).getDistance())
+                  if (maxPointerMovement > subtitleTapSlopPx) tapCandidate = false
+                }
+              }
+            }
 
             if (pressed.size == 2) {
               val p1 = pressed[0].position
@@ -1057,41 +1189,153 @@ fun GestureHandler(
               val midX = (p1.x + p2.x) / 2f
               val midY = (p1.y + p2.y) / 2f
 
-              if (prevDist == 0f) {
-                // First frame — capture baseline
-                prevDist = dist
-                zoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f
-                prevMidX = midX
-                prevMidY = midY
-              } else {
-                // Activate on significant pinch movement
-                if (!gestureStarted && abs(dist - prevDist) > 5f) {
-                  gestureStarted = true
-                  viewModel.playerUpdate.update { PlayerUpdates.VideoZoom }
+              if (subtitleMode == null) {
+                // First frame with both fingers down: decide once whether
+                // this gesture targets subtitles or the video.
+                val currentSubPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+                val subtitleTouch = pinchToResizeSubtitles &&
+                  hasVisibleSubtitleTrack() &&
+                  isSubtitleScaleTouch(
+                    midY,
+                    size.width.toFloat(),
+                    size.height.toFloat(),
+                    currentVideoAspect(),
+                    currentSubPos,
+                  )
+                subtitleMode = subtitleTouch
+
+                if (subtitleTouch) {
+                  subtitleStartScale = MPVLib.getPropertyDouble("sub-scale")?.toFloat()
+                    ?: subtitlesPreferences.subScale.get()
+                  subtitleScale = subtitleStartScale
+                  subtitleStartDist = dist.coerceAtLeast(1f)
+                  subtitleLastPercent = (subtitleScale * 100).roundToInt()
+                  subtitleHapticBucket = subtitleLastPercent / 10
+                } else {
+                  prevDist = dist
+                  zoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f
+                  prevMidX = midX
+                  prevMidY = midY
                 }
-
-                if (gestureStarted) {
-                  // Per-frame zoom: small delta from previous distance → naturally smooth
-                  val zoomDelta = ln((dist / prevDist).toDouble()).toFloat() * 1.2f
-                  zoom = (zoom + zoomDelta).coerceIn(-1f, 3f)
-                  viewModel.setVideoZoom(zoom)
-
-                  // Simultaneous pan while pinching
-                  if (panAndZoomEnabled) {
-                    applyPan(midX - prevMidX, midY - prevMidY, 2f.pow(zoom), panSmooth)
-                  }
-                }
-
-                prevDist = dist
-                prevMidX = midX
-                prevMidY = midY
               }
 
-              pressed.forEach { it.consume() }
+              if (subtitleMode == true) {
+                if (!subtitleScaleStarted &&
+                  abs(dist - subtitleStartDist) > subtitleScaleActivationPx
+                ) {
+                  subtitleScaleStarted = true
+                }
+
+                if (subtitleScaleStarted) {
+                  val newScale = (subtitleStartScale.coerceAtLeast(0.01f) * (dist / subtitleStartDist))
+                    .coerceIn(SubtitleScaleMin, SubtitleScaleMax)
+                  if (abs(newScale - subtitleScale) > 0.001f) {
+                    subtitleScale = newScale
+                    MPVLib.setPropertyFloat("sub-scale", newScale)
+                    val percent = (newScale * 100).roundToInt()
+                    if (percent != subtitleLastPercent) {
+                      subtitleLastPercent = percent
+                      viewModel.playerUpdate.update { PlayerUpdates.SubtitleScale(percent) }
+                    }
+                    val bucket = percent / 10
+                    if (bucket != subtitleHapticBucket) {
+                      subtitleHapticBucket = bucket
+                      haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                  }
+                }
+                pressed.forEach { it.consume() }
+              } else if (pinchToZoomGesture) {
+                if (prevDist == 0f) {
+                  // First frame — capture baseline
+                  prevDist = dist
+                  zoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f
+                  prevMidX = midX
+                  prevMidY = midY
+                } else {
+                  // Activate on significant pinch movement
+                  if (!gestureStarted && abs(dist - prevDist) > 5f) {
+                    gestureStarted = true
+                    viewModel.playerUpdate.update { PlayerUpdates.VideoZoom }
+                  }
+
+                  if (gestureStarted) {
+                    // Per-frame zoom: small delta from previous distance → naturally smooth
+                    val zoomDelta = ln((dist / prevDist).toDouble()).toFloat() * 1.2f
+                    zoom = (zoom + zoomDelta).coerceIn(-1f, 3f)
+                    viewModel.setVideoZoom(zoom)
+
+                    // Simultaneous pan while pinching
+                    if (panAndZoomEnabled) {
+                      applyPan(midX - prevMidX, midY - prevMidY, 2f.pow(zoom), panSmooth)
+                    }
+                  }
+
+                  prevDist = dist
+                  prevMidX = midX
+                  prevMidY = midY
+                }
+
+                pressed.forEach { it.consume() }
+              }
+            } else if (pressed.size < 2 && subtitleMode != null) {
+              break
             } else if (pressed.size < 2 && prevDist != 0f) {
               break
             }
           } while (event.changes.any { it.pressed })
+
+          if (subtitleMode == true) {
+            val tracker = subtitleTwoFingerTapTracker
+            if (subtitleScaleStarted) {
+              // Persist once when the pinch ends, not on every frame.
+              if (abs(subtitleScale - subtitlesPreferences.subScale.get()) > 0.001f) {
+                subtitlesPreferences.subScale.set(subtitleScale)
+              }
+              tracker.clear()
+            } else {
+              val now = System.currentTimeMillis()
+              val duration = now - gestureStartTime
+              val startGap = secondDownTime - gestureStartTime
+              val isValidTap = tapCandidate &&
+                maxConcurrentPointers == 2 &&
+                secondPointerId != null &&
+                duration <= SubtitleTwoFingerTapMaxDurationMs &&
+                startGap in 0..SubtitleTwoFingerTapMaxStartGapMs &&
+                maxPointerMovement <= subtitleTapSlopPx
+
+              if (isValidTap) {
+                val distanceFromLastTap = if (tracker.lastTapTimeMs > 0L) {
+                  sqrt(
+                    (tapMidX - tracker.lastTapX) * (tapMidX - tracker.lastTapX) +
+                    (tapMidY - tracker.lastTapY) * (tapMidY - tracker.lastTapY),
+                  )
+                } else {
+                  Float.MAX_VALUE
+                }
+                val elapsedSinceLastTap = now - tracker.lastTapTimeMs
+                val isDoubleTap = tracker.lastTapTimeMs > 0L &&
+                  elapsedSinceLastTap in 0..SubtitleDoubleTapWindowMs &&
+                  distanceFromLastTap <= subtitleDoubleTapMaxDistancePx
+
+                if (isDoubleTap) {
+                  tracker.clear()
+                  MPVLib.setPropertyFloat("sub-scale", 1f)
+                  subtitlesPreferences.subScale.set(1f)
+                  haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                  viewModel.playerUpdate.update {
+                    PlayerUpdates.SubtitleScale(100, isReset = true)
+                  }
+                } else {
+                  tracker.lastTapTimeMs = now
+                  tracker.lastTapX = tapMidX
+                  tracker.lastTapY = tapMidY
+                }
+              } else {
+                tracker.clear()
+              }
+            }
+          }
         }
       }
       // Single-finger pan (only when Pan & Zoom enabled and zoomed in)
