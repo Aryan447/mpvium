@@ -9,6 +9,8 @@
 - Player zoom and playback-speed sheets now group their actions with Material 3 Expressive button groups that expand the pressed action and overflow when space is tight.
 - Home category filters and Shows/Movies watch-state filters now use connected expressive toggle groups that morph the selected filter into a pill.
 - Screen and tab navigation now uses expressive fade-through transitions driven by the Material motion scheme instead of fixed tween slides.
+- The ambient theme glow now uses a shorter, layered bloom over the resolved theme background; AMOLED setups fade into true black instead of grey.
+- The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
 
 ## v1.2.0
 

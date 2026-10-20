@@ -775,8 +775,8 @@ private fun GridContent(
         end = 8.dp,
         bottom = navigationBarHeight
       ),
-      horizontalArrangement = Arrangement.spacedBy(4.dp),
-      verticalArrangement = Arrangement.spacedBy(4.dp),
+      horizontalArrangement = Arrangement.spacedBy(6.dp),
+      verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
       items(folders.size) { index ->
         val folder = folders[index]
@@ -802,6 +802,7 @@ private fun GridContent(
           },
           newVideoCount = newCount,
           isGridMode = true,
+          expressive = true,
         )
       }
     }
@@ -847,6 +848,7 @@ private fun ListContent(
         end = 8.dp,
         bottom = navigationBarHeight
       ),
+      verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
       items(folders) { folder ->
         val isRecentlyPlayed = recentlyPlayedFilePath?.let { filePath ->
@@ -871,6 +873,7 @@ private fun ListContent(
           },
           newVideoCount = newCount,
           isGridMode = false,
+          expressive = true,
         )
       }
     }
