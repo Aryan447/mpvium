@@ -11,6 +11,7 @@
 - Screen and tab navigation now uses expressive fade-through transitions driven by the Material motion scheme instead of fixed tween slides.
 - The ambient theme glow now uses a shorter, layered bloom over the resolved theme background; AMOLED setups fade into true black instead of grey.
 - The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
+- Onboarding now has scroll-reactive pages, shape-changing icon tiles, spring-driven progress dots, a fading skip action, and an animated primary button with press feedback.
 
 ## v1.2.0
 
