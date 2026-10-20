@@ -73,6 +73,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -104,6 +105,7 @@ import app.aryan447.mpvium.domain.streaming.model.StreamingCategory
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
+import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
@@ -122,6 +124,10 @@ import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.LocalAppTheme
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 
@@ -158,6 +164,8 @@ object StreamingHomeScreen : Screen {
     val lifecycleOwner = LocalLifecycleOwner.current
     val isRefreshing = remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    var markAsTarget by remember { mutableStateOf<ContinueWatchingItem?>(null) }
 
     DisposableEffect(lifecycleOwner) {
       val observer = LifecycleEventObserver { _, event ->
@@ -467,6 +475,7 @@ object StreamingHomeScreen : Screen {
                           },
                           onSeeAllClick = { backstack.add(RecentlyPlayedScreen) },
                           onItemRemove = { item -> viewModel.removeFromContinueWatching(item) },
+                          onMarkAsClick = { item -> markAsTarget = item },
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                       }
@@ -485,6 +494,7 @@ object StreamingHomeScreen : Screen {
                             onItemClick = { item ->
                               MediaUtils.playFile(item.video, context, "up_next")
                             },
+                            onMarkAsClick = { item -> markAsTarget = item },
                           )
                           Spacer(modifier = Modifier.height(24.dp))
                         }
@@ -503,6 +513,7 @@ object StreamingHomeScreen : Screen {
                             onItemClick = { item ->
                               MediaUtils.playFile(item.video, context, "recently_added")
                             },
+                            onMarkAsClick = { item -> markAsTarget = item },
                           )
                           Spacer(modifier = Modifier.height(24.dp))
                         }
@@ -595,6 +606,34 @@ object StreamingHomeScreen : Screen {
           }
         }
       }
+
+      // Manual watch status (issue #94): long-press a card -> Mark as… ->
+      // Finished clears it from Continue Watching and advances Up Next.
+      // MediaLibraryEvents from VideoWatchStatusOps triggers a rescan.
+      MarkAsDialog(
+        isOpen = markAsTarget != null,
+        selectedCount = 1,
+        onDismiss = { markAsTarget = null },
+        onSelect = { status ->
+          val target = markAsTarget
+          markAsTarget = null
+          if (target != null) {
+            coroutineScope.launch(Dispatchers.IO) {
+              val applied = VideoWatchStatusOps.markVideo(target.video, status)
+              withContext(Dispatchers.Main) {
+                android.widget.Toast.makeText(
+                  context,
+                  context.getString(
+                    if (applied) app.aryan447.mpvium.R.string.mark_as_updated
+                    else app.aryan447.mpvium.R.string.mark_as_failed,
+                  ),
+                  android.widget.Toast.LENGTH_SHORT,
+                ).show()
+              }
+            }
+          }
+        },
+      )
     }
   }
 }

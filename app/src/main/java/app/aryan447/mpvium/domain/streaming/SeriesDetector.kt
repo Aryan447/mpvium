@@ -10,6 +10,7 @@ import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.FolderVisibility
 import app.aryan447.mpvium.preferences.FoldersPreferences
 import app.aryan447.mpvium.repository.MediaFileRepository
@@ -44,9 +45,10 @@ class SeriesDetector(
   private val database: MpviumDatabase,
 ) : KoinComponent {
   private val foldersPreferences: FoldersPreferences by inject()
+  private val browserPreferences: BrowserPreferences by inject()
   companion object {
     private const val TAG = "SeriesDetector"
-    private const val WATCHED_PERCENTAGE_THRESHOLD = 0.95f
+    private const val DEFAULT_WATCHED_PERCENTAGE_THRESHOLD = 0.95f
     private const val MAX_FALLBACK_EPISODE_DURATION_MS = 90 * 60 * 1000L
     private val SEASON_FOLDER_REGEX = Regex("""(?:Season|S|Series|Specials)\s*(\d{1,2})?""", RegexOption.IGNORE_CASE)
     private val EPISODE_NUM_REGEX = Regex("""(?:^|[^\d])(?:E|EP|Episode|#)?\s*(\d{1,4})(?:[^\d]|$)""", RegexOption.IGNORE_CASE)
@@ -57,6 +59,12 @@ class SeriesDetector(
       val whitelist = foldersPreferences.whitelistedFolders.get()
       val blacklist = foldersPreferences.blacklistedFolders.get()
       val whitelistOnly = foldersPreferences.whitelistOnlyEnabled.get()
+      // User-configurable watched threshold (50-100%). Continue Watching and
+      // Up Next must honor the same value used when saving playback state,
+      // otherwise e.g. 90% stays stuck in Continue Watching (issue #94).
+      val watchedThreshold = runCatching {
+        browserPreferences.watchedThreshold.get().coerceIn(1, 100) / 100f
+      }.getOrDefault(DEFAULT_WATCHED_PERCENTAGE_THRESHOLD)
       val folders = MediaFileRepository.getAllVideoFolders(context).filter { folder ->
         FolderVisibility.isFolderVisible(folder.path, whitelist, blacklist, whitelistOnly)
       }
@@ -103,7 +111,7 @@ class SeriesDetector(
         val positionMs = (playbackState?.lastPosition ?: 0) * 1000L
         val durationMs = video.duration
         val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-        val isWatched = (playbackState?.hasBeenWatched == true) || (progress >= WATCHED_PERCENTAGE_THRESHOLD)
+        val isWatched = (playbackState?.hasBeenWatched == true) || (progress >= watchedThreshold)
 
         // Check if video is TV series or movie
         var isTvSeries = parsed.type == "tv" || parsed.season != null || parsed.episode != null
@@ -165,7 +173,7 @@ class SeriesDetector(
           rawSeriesMap.getOrPut(normalizedSeriesId) { mutableListOf() }.add(Pair(episode, video))
 
           // Continue Watching for in-progress series episode
-          if (positionMs > 10_000L && !isWatched && progress < WATCHED_PERCENTAGE_THRESHOLD) {
+          if (positionMs > 10_000L && !isWatched && progress < watchedThreshold) {
             val remainingMins = (durationMs - positionMs) / (1000 * 60)
             val episodeTag = episode.formattedEpisodeTag
             val subtitleText = if (remainingMins > 0) "$episodeTag • ${remainingMins}m remaining" else episodeTag
@@ -202,7 +210,7 @@ class SeriesDetector(
           detectedMovies.add(movie)
 
           // Continue Watching for in-progress movie
-          if (positionMs > 10_000L && !isWatched && progress < WATCHED_PERCENTAGE_THRESHOLD) {
+          if (positionMs > 10_000L && !isWatched && progress < watchedThreshold) {
             val remainingMins = (durationMs - positionMs) / (1000 * 60)
             continueWatchingList.add(
               ContinueWatchingItem(

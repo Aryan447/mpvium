@@ -73,6 +73,7 @@ import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.cards.FolderCard
 import app.aryan447.mpvium.ui.browser.cards.VideoCard
 import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
+import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.ui.browser.playlist.PlaylistDetailScreen
 import app.aryan447.mpvium.ui.browser.selection.rememberSelectionManager
 import app.aryan447.mpvium.ui.browser.sheets.PlayLinkSheet
@@ -85,7 +86,10 @@ import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import my.nanihadesuka.compose.LazyColumnScrollbar
 import my.nanihadesuka.compose.LazyVerticalGridScrollbar
@@ -108,6 +112,7 @@ object RecentlyPlayedScreen : Screen {
     val isLoading by viewModel.isLoading.collectAsState()
     val deleteDialogOpen = rememberSaveable { mutableStateOf(false) }
     val deleteFilesCheckbox = rememberSaveable { mutableStateOf(false) }
+    val markAsDialogOpen = rememberSaveable { mutableStateOf(false) }
     val advancedPreferences = koinInject<AdvancedPreferences>()
     val enableRecentlyPlayed by advancedPreferences.enableRecentlyPlayed.collectAsState()
     val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
@@ -194,6 +199,10 @@ object RecentlyPlayedScreen : Screen {
 
     Scaffold(
         topBar = {
+          // Mark as is only meaningful for videos, not playlist entries.
+          val selectedVideos = selectionManager.getSelectedItems()
+            .filterIsInstance<RecentlyPlayedItem.VideoItem>()
+            .map { it.video }
           BrowserTopBar(
             title = "Recently Played",
             isInSelectionMode = selectionManager.isInSelectionMode,
@@ -213,6 +222,11 @@ object RecentlyPlayedScreen : Screen {
             onInvertSelection = { selectionManager.invertSelection() },
             onDeselectAll = { selectionManager.clear() },
             onDeleteClick = { deleteDialogOpen.value = true },
+            onMarkAsClick = if (selectedVideos.isNotEmpty()) {
+              { markAsDialogOpen.value = true }
+            } else {
+              null
+            },
           )
         },
       floatingActionButton = {
@@ -436,6 +450,36 @@ object RecentlyPlayedScreen : Screen {
         isOpen = showLinkDialog.value,
         onDismiss = { showLinkDialog.value = false },
         onPlayLink = { url -> MediaUtils.playFile(url, context, "play_link") },
+      )
+
+      // Mark as (manual watch status) dialog — videos only
+      MarkAsDialog(
+        isOpen = markAsDialogOpen.value,
+        selectedCount = selectionManager.getSelectedItems()
+          .filterIsInstance<RecentlyPlayedItem.VideoItem>().size,
+        onDismiss = { markAsDialogOpen.value = false },
+        onSelect = { status ->
+          markAsDialogOpen.value = false
+          val selected = selectionManager.getSelectedItems()
+            .filterIsInstance<RecentlyPlayedItem.VideoItem>()
+            .map { it.video }
+          if (selected.isNotEmpty()) {
+            coroutineScope.launch(Dispatchers.IO) {
+              val applied = VideoWatchStatusOps.markVideos(selected, status)
+              withContext(Dispatchers.Main) {
+                android.widget.Toast.makeText(
+                  context,
+                  context.getString(
+                    if (applied > 0) app.aryan447.mpvium.R.string.mark_as_updated
+                    else app.aryan447.mpvium.R.string.mark_as_failed,
+                  ),
+                  android.widget.Toast.LENGTH_SHORT,
+                ).show()
+                selectionManager.clear()
+              }
+            }
+          }
+        },
       )
     }
   }
