@@ -37,7 +37,10 @@ import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -81,7 +84,7 @@ import org.koin.compose.koinInject
 @Serializable
 object AboutScreen : Screen {
   @Suppress("DEPRECATION")
-  @OptIn(ExperimentalMaterial3Api::class)
+  @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
   @Composable
   override fun Content() {
     val context = LocalContext.current
@@ -370,6 +373,7 @@ object AboutScreen : Screen {
             PreferenceSectionHeader(title = "Updates")
             PreferenceCard {
               val isAutoUpdateEnabled by updateViewModel.isAutoUpdateEnabled.collectAsState()
+              val isCheckingForUpdate = updateState is UpdateViewModel.UpdateState.Loading
               HapticSwitchPreference(
                 value = isAutoUpdateEnabled,
                 onValueChange = { updateViewModel.toggleAutoUpdate(it) },
@@ -397,6 +401,7 @@ object AboutScreen : Screen {
                 Button(
                   onClick = { updateViewModel.checkForUpdate(manual = true) },
                   modifier = Modifier.fillMaxWidth().height(50.dp),
+                  enabled = !isCheckingForUpdate,
                   shape = SettingsTileShape,
                   colors = ButtonDefaults.buttonColors(
                     containerColor = cs.secondaryContainer,
@@ -404,9 +409,19 @@ object AboutScreen : Screen {
                   ),
                   elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
                 ) {
-                  Icon(Icons.Outlined.CheckCircle, null, modifier = Modifier.size(18.dp))
+                  if (isCheckingForUpdate) {
+                    LoadingIndicator(
+                      modifier = Modifier.size(18.dp),
+                      color = LocalContentColor.current,
+                    )
+                  } else {
+                    Icon(Icons.Outlined.CheckCircle, null, modifier = Modifier.size(18.dp))
+                  }
                   Spacer(Modifier.width(8.dp))
-                  Text("Check for Updates Now", fontWeight = FontWeight.SemiBold)
+                  Text(
+                    text = stringResource(R.string.check_for_updates_now),
+                    fontWeight = FontWeight.SemiBold,
+                  )
                 }
               }
             }

@@ -23,13 +23,16 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -56,8 +60,11 @@ import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 
 val SettingsCardShape = RoundedCornerShape(28.dp)
-val SettingsTileShape = RoundedCornerShape(24.dp)
-private val IconBoxShape = RoundedCornerShape(18.dp)
+val SettingsTileCorner = 24.dp
+val SettingsTilePressedCorner = 32.dp
+val SettingsTileShape = RoundedCornerShape(SettingsTileCorner)
+val SettingsIconBoxCorner = 18.dp
+private val IconBoxShape = RoundedCornerShape(SettingsIconBoxCorner)
 
 /**
  * Premium card container for grouped preferences.
@@ -153,6 +160,31 @@ fun PreferenceSectionHeader(
 }
 
 /**
+ * Circular back affordance shared by the settings top bars.
+ */
+@Composable
+private fun SettingsBackButton(onBack: (() -> Unit)?) {
+  val backstack = LocalBackStack.current
+  IconButton(onClick = { onBack?.invoke() ?: backstack.removeLastOrNull() }) {
+    Box(
+      modifier = Modifier
+        .size(40.dp)
+        .clip(CircleShape)
+        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        .padding(8.dp),
+      contentAlignment = Alignment.Center,
+    ) {
+      Icon(
+        Icons.AutoMirrored.Outlined.ArrowBack,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.size(20.dp),
+      )
+    }
+  }
+}
+
+/**
  * Shared top app bar for all settings screens: bold title, circular back button.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -164,7 +196,6 @@ fun SettingsTopBar(
   actions: @Composable () -> Unit = {},
   onBack: (() -> Unit)? = null,
 ) {
-  val backstack = LocalBackStack.current
   val isGlass = LocalGlass.current
   val glassHaze = rememberGlassHazeState()
   val glassStyle = glassHazeStyle(
@@ -178,8 +209,8 @@ fun SettingsTopBar(
       shape = RoundedCornerShape(0.dp),
       enabled = isGlass,
     ),
-    colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-      containerColor = if (isGlass) androidx.compose.ui.graphics.Color.Transparent
+    colors = TopAppBarDefaults.topAppBarColors(
+      containerColor = if (isGlass) Color.Transparent
       else MaterialTheme.colorScheme.surface,
     ),
     title = {
@@ -192,26 +223,62 @@ fun SettingsTopBar(
         overflow = TextOverflow.Ellipsis,
       )
     },
-    navigationIcon = {
-      IconButton(onClick = { onBack?.invoke() ?: backstack.removeLastOrNull() }) {
-        Box(
-          modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .padding(8.dp),
-          contentAlignment = Alignment.Center,
-        ) {
-          Icon(
-            Icons.AutoMirrored.Outlined.ArrowBack,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(20.dp),
-          )
-        }
-      }
-    },
+    navigationIcon = { SettingsBackButton(onBack) },
     actions = { actions() },
+    scrollBehavior = scrollBehavior,
+  )
+}
+
+/**
+ * Expressive hero top bar for the settings dashboard: title and subtitle
+ * collapse into the small bar while the content scrolls.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun SettingsFlexibleTopBar(
+  title: String,
+  subtitle: String,
+  modifier: Modifier = Modifier,
+  scrollBehavior: TopAppBarScrollBehavior? = null,
+  onBack: (() -> Unit)? = null,
+) {
+  val isGlass = LocalGlass.current
+  val glassHaze = rememberGlassHazeState()
+  val glassStyle = glassHazeStyle(
+    isDark = androidx.compose.foundation.isSystemInDarkTheme(),
+    kind = GlassKind.Bar,
+  )
+  MediumFlexibleTopAppBar(
+    modifier = modifier.glassChrome(
+      state = glassHaze,
+      style = glassStyle,
+      shape = RoundedCornerShape(0.dp),
+      enabled = isGlass,
+    ),
+    colors = TopAppBarDefaults.topAppBarColors(
+      containerColor = if (isGlass) Color.Transparent
+      else MaterialTheme.colorScheme.surface,
+      scrolledContainerColor = if (isGlass) Color.Transparent
+      else MaterialTheme.colorScheme.surface,
+      titleContentColor = MaterialTheme.colorScheme.onSurface,
+      subtitleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    ),
+    title = {
+      Text(
+        text = title,
+        fontWeight = FontWeight.ExtraBold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+      )
+    },
+    subtitle = {
+      Text(
+        text = subtitle,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+      )
+    },
+    navigationIcon = { SettingsBackButton(onBack) },
     scrollBehavior = scrollBehavior,
   )
 }
@@ -230,6 +297,7 @@ fun PreferenceIconBox(
   content: Color? = null,
   boxSize: androidx.compose.ui.unit.Dp = 44.dp,
   iconSize: androidx.compose.ui.unit.Dp = 24.dp,
+  shape: Shape = IconBoxShape,
 ) {
   val scheme = MaterialTheme.colorScheme
   val base = container ?: scheme.primaryContainer
@@ -237,7 +305,7 @@ fun PreferenceIconBox(
     modifier =
       modifier
         .size(boxSize)
-        .clip(IconBoxShape)
+        .clip(shape)
         .background(
           Brush.verticalGradient(
             colors = listOf(base, base.copy(alpha = 0.72f)),

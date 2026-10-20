@@ -1,3 +1,10 @@
+## Unreleased
+
+### Changed
+
+- Settings dashboard now has a flexible, collapsing top app bar and tiles whose corners morph on press.
+- Settings now use Material 3 Expressive controls: connected toggle buttons for choices, plus morphing loading indicators for font loading and update checks.
+
 ## v1.2.0
 
 ### Added

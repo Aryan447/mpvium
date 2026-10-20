@@ -2,8 +2,8 @@ package app.aryan447.mpvium.ui.preferences
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -46,6 +46,8 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +56,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -69,6 +73,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -102,6 +107,7 @@ private data class DashboardSection(
 
 @Serializable
 object PreferencesScreen : Screen {
+  @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
   @Composable
   override fun Content() {
     val backstack = LocalBackStack.current
@@ -116,17 +122,25 @@ object PreferencesScreen : Screen {
     val isSearching = query.isNotBlank()
 
     val sections = rememberDashboardSections()
+    val topAppBarState = rememberTopAppBarState()
+    val scrollBehavior =
+      TopAppBarDefaults.exitUntilCollapsedScrollBehavior(state = topAppBarState)
 
     Scaffold(
       topBar = {
-        SettingsTopBar(title = stringResource(R.string.pref_preferences))
+        SettingsFlexibleTopBar(
+          title = stringResource(R.string.pref_preferences),
+          subtitle = stringResource(R.string.pref_preferences_subtitle),
+          scrollBehavior = scrollBehavior,
+        )
       },
     ) { padding ->
       ProvidePreferenceLocals {
         Column(
           modifier = Modifier
             .fillMaxSize()
-            .padding(padding),
+            .padding(padding)
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         ) {
           DashboardSearchField(
             query = query,
@@ -372,8 +386,10 @@ private fun DashboardGrid(
 
 /**
  * Premium tile: hairline border, gradient icon medallion, chevron
- * affordance, and a springy press-scale for tactile feedback.
+ * affordance, and expressive press feedback: the tile and its medallion
+ * morph their corner shapes while the surface springs inward.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DashboardTile(
   entry: DashboardEntry,
@@ -388,15 +404,26 @@ private fun DashboardTile(
   val pressed by interaction.collectIsPressedAsState()
   val scale by animateFloatAsState(
     targetValue = if (pressed) 0.965f else 1f,
-    animationSpec = spring(stiffness = 420f, dampingRatio = 0.72f),
+    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
     label = "tilePress",
   )
+  val tileCorner by animateDpAsState(
+    targetValue = if (pressed) SettingsTilePressedCorner else SettingsTileCorner,
+    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+    label = "tileCorner",
+  )
+  val iconCorner by animateDpAsState(
+    targetValue = if (pressed) 52.dp / 2 else SettingsIconBoxCorner,
+    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+    label = "tileIconCorner",
+  )
+  val tileShape = RoundedCornerShape(tileCorner)
   Card(
     modifier = modifier
       .heightIn(min = 168.dp)
       .graphicsLayer(scaleX = scale, scaleY = scale)
-      .glassSheen(SettingsTileShape, isGlass)
-      .clip(SettingsTileShape)
+      .glassSheen(tileShape, isGlass)
+      .clip(tileShape)
       .clickable(
         interactionSource = interaction,
         indication = null,
@@ -405,7 +432,7 @@ private fun DashboardTile(
           onClick()
         },
       ),
-    shape = SettingsTileShape,
+    shape = tileShape,
     colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
       containerColor = scheme.surfaceContainer,
     ),
@@ -425,6 +452,7 @@ private fun DashboardTile(
           content = entry.content(),
           boxSize = 52.dp,
           iconSize = 28.dp,
+          shape = RoundedCornerShape(iconCorner),
         )
         Spacer(modifier = Modifier.weight(1f))
         Box(
