@@ -99,18 +99,31 @@ private const val SubtitleTouchToleranceFraction = 0.075f
 private const val SubtitleTouchMinSlopPx = 48f
 
 /**
- * Reference gesture width (px) that the horizontal swipe-seek sensitivity is
- * calibrated against: a 1080p phone's swipe area (screen minus the 96dp
- * gesture padding). Raw pixel deltas would make wide tablet screens
- * hypersensitive, so deltas are scaled by reference / actual width: the same
- * swipe fraction always seeks the same amount on every device, while phones
- * keep their existing feel.
+ * Physical length (dp) that horizontal swipe seeking is calibrated against:
+ * roughly the usable swipe area of a phone (screen minus the 96dp gesture
+ * padding). Drag distance is measured in multiples of this length rather than
+ * as a fraction of the actual screen.
+ *
+ * Screen-relative normalization kept the same full-screen swipe seeking the
+ * same amount everywhere, but a tablet is physically so wide that the
+ * accelerating range and the speed gain sat beyond a comfortable thumb swipe:
+ * covering minutes took several times the finger travel it takes on a phone.
+ * Fixed physical units keep the fine zone, the acceleration and the flick gain
+ * equally reachable on phones, foldables and tablets.
  */
-private const val HORIZONTAL_SEEK_REFERENCE_WIDTH_PX = 820f
+private const val HORIZONTAL_SEEK_REFERENCE_WIDTH_DP = 300f
 
 /**
- * Seconds the accelerating term adds at a full gesture-width drag, before the
- * speed gain. Linear-only response still covers the first
+ * Pixels the sensitivity preference is calibrated against (a 1080p phone's
+ * swipe area). Keeping it independent of the device density preserves the
+ * existing linear sensitivity, while [HORIZONTAL_SEEK_REFERENCE_WIDTH_DP]
+ * defines how far a finger must travel for one full reference width.
+ */
+private const val HORIZONTAL_SEEK_SENSITIVITY_REFERENCE_PX = 820f
+
+/**
+ * Seconds the accelerating term adds at a full reference-width drag, before
+ * the speed gain. Linear-only response still covers the first
  * [SWIPE_SEEK_ACCEL_ENGAGE_FRACTION] of the drag, so careful seeking keeps the
  * exact per-pixel sensitivity from the preference; past the engage point the
  * response ramps up so a single sweep can cover minutes instead of seconds —
@@ -126,14 +139,15 @@ private const val SWIPE_SEEK_ACCEL_SECONDS = 300f
 private const val SWIPE_SEEK_ACCEL_EXPONENT = 2.5f
 
 /**
- * Fraction of the gesture width below which the mapping is exactly the linear
- * per-pixel response: dragging up to 12% of the width behaves identically to
- * the flat implementation. This is what keeps short, precise drags unaffected.
+ * Fraction of the reference width below which the mapping is exactly the
+ * linear per-pixel response: dragging up to 12% of a reference width (~36dp)
+ * behaves identically to the flat implementation. This is what keeps short,
+ * precise drags unaffected and equally controllable on every screen size.
  */
 private const val SWIPE_SEEK_ACCEL_ENGAGE_FRACTION = 0.12f
 
 /**
- * Finger speed bounds, in gesture widths per second, for the speed gain: at or
+ * Finger speed bounds, in reference widths per second, for the speed gain: at or
  * below [SWIPE_SEEK_SPEED_DEADZONE] the drag counts as deliberate and gets no
  * gain, at or above [SWIPE_SEEK_SPEED_FULL_AT] it counts as a flick and gets
  * the full [SWIPE_SEEK_SPEED_GAIN].
@@ -157,7 +171,7 @@ private const val SWIPE_SEEK_EOF_GUARD_SECONDS = 1f
 /**
  * Speed multiplier for the accelerating term: 1 for deliberate drags, up to
  * 1 + [SWIPE_SEEK_SPEED_GAIN] for flicks. [speedFraction] is the finger speed
- * in gesture widths per second.
+ * in reference widths per second.
  */
 private fun swipeSeekSpeedGain(speedFraction: Float): Float {
   if (SWIPE_SEEK_SPEED_GAIN <= 0f) return 1f
@@ -167,7 +181,7 @@ private fun swipeSeekSpeedGain(speedFraction: Float): Float {
 }
 
 /**
- * Maps a signed drag distance, as a fraction of the gesture width, to a seek
+ * Maps a signed drag distance, as a fraction of the reference width, to a seek
  * offset in seconds.
  *
  * Three zones, all functions of finger position, so the mapping stays
@@ -177,7 +191,7 @@ private fun swipeSeekSpeedGain(speedFraction: Float): Float {
  * - up to [SWIPE_SEEK_ACCEL_ENGAGE_FRACTION]: pure [secondsPerWidth] per unit
  *   fraction, i.e. the original flat behaviour — careful seeking is unchanged;
  * - beyond it: the accelerating term ramps in smoothly from zero and reaches
- *   [SWIPE_SEEK_ACCEL_SECONDS] at a full-width drag;
+ *   [SWIPE_SEEK_ACCEL_SECONDS] at a full reference-width drag;
  * - the accelerating term is scaled by [speedGain] (1..1+[SWIPE_SEEK_SPEED_GAIN]),
  *   so the same distance seeks more when swiped fast, while the fine zone above
  *   is untouched by velocity.
@@ -1520,6 +1534,8 @@ fun GestureHandler(
         gesturePreferences,
         isVerticalGestureActive,
         horizontalSwipeAcceleration,
+        horizontalSwipeSensitivity,
+        density,
       ) {
         if (!horizontalSwipeToSeek || areControlsLocked || isVerticalGestureActive) return@pointerInput
 
@@ -1535,8 +1551,15 @@ fun GestureHandler(
           var wasPlayerAlreadyPaused = false
           // Use the sensitivity preference instead of hardcoded value
           val seekSensitivity = horizontalSwipeSensitivity
-          // Seconds covered by the linear term at a full gesture-width drag.
-          val secondsPerWidth = seekSensitivity * HORIZONTAL_SEEK_REFERENCE_WIDTH_PX
+          // Seconds covered by the linear term at a full reference-width drag.
+          val secondsPerWidth =
+            seekSensitivity * HORIZONTAL_SEEK_SENSITIVITY_REFERENCE_PX
+          // Fixed physical length the drag is measured in. A tablet is much
+          // wider than a phone, so normalizing by the actual gesture width put
+          // the accelerating range and the speed gain beyond a normal thumb
+          // swipe and made seeking feel slow on large screens.
+          val referenceWidthPx =
+            with(density) { HORIZONTAL_SEEK_REFERENCE_WIDTH_DP.dp.toPx() }
           // Platform fling estimator (same one Compose uses for scrolling):
           // gives a stable horizontal speed from the last ~100ms of samples
           // instead of chasing per-event jitter.
@@ -1561,13 +1584,13 @@ fun GestureHandler(
                   velocityTracker.addPosition(change.uptimeMillis, currentPosition)
 
                   // Tablet-specific responsive swipe gesture vs standard phone gesture.
-                  // The width-scaled sensitivity (reference/actual) already normalizes
-                  // seek distance per swipe, so the pixel gate must not be absurdly low:
-                  // an ordinary tap (touch slop ~8dp, often >18px on high-density
-                  // tablets) could previously fire the swipe-seek, which transiently
-                  // pauses, exact-seeks and resumes — the reported "video pauses/
-                  // freezes ~0.5-1s after a seek lands" on tablets. Require a real
-                  // swipe: past slop, clear horizontal dominance, and a short time gate.
+                  // Seek distance is normalized by physical finger travel, so the
+                  // pixel gate must not be absurdly low: an ordinary tap (touch slop
+                  // ~8dp, often >18px on high-density tablets) could previously fire
+                  // the swipe-seek, which transiently pauses, exact-seeks and resumes
+                  // — the reported "video pauses/freezes ~0.5-1s after a seek lands"
+                  // on tablets. Require a real swipe: past slop, clear horizontal
+                  // dominance, and a short time gate.
                   val horizontalSlopPx = with(density) { 24.dp.toPx() }
                   val isGestureTriggered = if (isTablet) {
                     abs(deltaX) > horizontalSlopPx && abs(deltaX) > abs(deltaY) * 1.6f && timeSinceStart > 80L
@@ -1598,19 +1621,18 @@ fun GestureHandler(
                   }
 
                   if (gestureType == "horizontal_seek" && hasStartedSeeking) {
-                    // Normalize by gesture width so the same swipe fraction seeks
-                    // the same amount on phones and tablets. Raw pixel deltas made
-                    // wide screens hypersensitive, throwing the seekbar preview
-                    // across the track on small finger movements.
-                    val gestureWidthPx = size.width.toFloat().coerceAtLeast(1f)
-                    // Finger speed in gesture widths per second, peak-latched for
-                    // this gesture so the gain only ever rises (see
-                    // swipeSeekSeconds).
-                    val speedFraction = abs(velocityTracker.calculateVelocity().x) / gestureWidthPx
+                    // Finger speed in reference widths per second, peak-latched
+                    // for this gesture so the gain only ever rises (see
+                    // swipeSeekSeconds). Same physical flick speed on a phone
+                    // and a tablet now earns the same gain.
+                    val speedFraction =
+                      abs(velocityTracker.calculateVelocity().x) / referenceWidthPx
                     peakSpeedFraction = maxOf(peakSpeedFraction, speedFraction)
-                    // Calculate seek amount based on horizontal movement
+                    // Calculate seek amount based on horizontal movement,
+                    // measured in fixed physical lengths instead of screen
+                    // fractions (see HORIZONTAL_SEEK_REFERENCE_WIDTH_DP).
                     val seekAmount = swipeSeekSeconds(
-                      fraction = deltaX / gestureWidthPx,
+                      fraction = deltaX / referenceWidthPx,
                       secondsPerWidth = secondsPerWidth,
                       speedGain = swipeSeekSpeedGain(peakSpeedFraction),
                       adaptive = horizontalSwipeAcceleration,
