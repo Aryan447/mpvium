@@ -91,8 +91,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.FoldersPreferences
 import app.aryan447.mpvium.preferences.HomeSection
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
@@ -106,6 +108,7 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
+import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.StreamingHeroBanner
@@ -113,6 +116,7 @@ import app.aryan447.mpvium.ui.streaming.movies.MovieDetailScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesDetailScreen
 import app.aryan447.mpvium.ui.browser.recentlyplayed.RecentlyPlayedScreen
+import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.LocalAppTheme
@@ -136,6 +140,7 @@ object StreamingHomeScreen : Screen {
     )
     val state by viewModel.uiState.collectAsState()
     val appearancePreferences = koinInject<AppearancePreferences>()
+    val foldersPreferences = koinInject<FoldersPreferences>()
     val showFeaturedHero by appearancePreferences.showFeaturedHero.collectAsState()
     val homeSectionOrder by appearancePreferences.homeSectionOrder.collectAsState()
     val showContinueWatching by appearancePreferences.showContinueWatching.collectAsState()
@@ -145,6 +150,11 @@ object StreamingHomeScreen : Screen {
     val showMoviesSection by appearancePreferences.showMoviesSection.collectAsState()
     val showFoldersSection by appearancePreferences.showFoldersSection.collectAsState()
     val homeSections = remember(homeSectionOrder) { HomeSection.parseOrder(homeSectionOrder) }
+    // Library-sources hint (issue #87): surface Settings → Folders without
+    // adding setup steps.
+    val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
+    val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
+    val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
     val lifecycleOwner = LocalLifecycleOwner.current
     val isRefreshing = remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -364,8 +374,22 @@ object StreamingHomeScreen : Screen {
             EmptyState(
               icon = Icons.Filled.Movie,
               title = "No videos detected",
-              message = "Add video files to your device storage to browse them here",
+              message = if (libraryFiltered) {
+                context.getString(R.string.library_sources_banner_message)
+              } else {
+                "Add video files to your device storage to browse them here"
+              },
               modifier = Modifier.fillMaxSize(),
+              actionLabel = if (libraryFiltered) {
+                context.getString(R.string.library_sources_empty_action)
+              } else {
+                null
+              },
+              onAction = if (libraryFiltered) {
+                { backstack.add(FoldersPreferencesScreen) }
+              } else {
+                null
+              },
             )
           }
 
@@ -388,6 +412,18 @@ object StreamingHomeScreen : Screen {
                   onCategorySelect = { viewModel.setCategory(it) },
                   modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                 )
+              }
+
+              // Library-sources hint (issue #87): one-tap entry to
+              // Settings → Folders when the library is filtered.
+              if (libraryFiltered) {
+                item {
+                  LibrarySourcesBanner(
+                    whitelistCount = whitelistedFolders.size,
+                    onManageClick = { backstack.add(FoldersPreferencesScreen) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                  )
+                }
               }
 
               // Home sections in user order (Appearance > Home). A hidden

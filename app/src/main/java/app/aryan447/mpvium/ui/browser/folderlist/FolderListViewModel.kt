@@ -115,20 +115,18 @@ class FolderListViewModel(
       }
     }
 
-    // Filter folders based on blacklist / whitelist-only mode
+    // Folders tab is the full-storage browser (issue #87): only the blacklist
+    // applies here. The whitelist-only library filter stays scoped to
+    // Home / Shows / Movies / Insights via SeriesDetector.
     viewModelScope.launch {
       combine(
         _allVideoFolders,
         foldersPreferences.blacklistedFolders.changes(),
-        foldersPreferences.whitelistedFolders.changes(),
-        foldersPreferences.whitelistOnlyEnabled.changes(),
-      ) { folders, blacklist, whitelist, whitelistOnly ->
+      ) { folders, blacklist ->
         folders.filter { folder ->
-          app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
+          app.aryan447.mpvium.preferences.FolderVisibility.isBrowserVisible(
             folderPath = folder.path,
-            whitelist = whitelist,
             blacklist = blacklist,
-            whitelistOnly = whitelistOnly,
           )
         }
       }.collectLatest { filteredFolders ->
