@@ -4,6 +4,7 @@
 
 - Settings dashboard now has a flexible, collapsing top app bar and tiles whose corners morph on press.
 - Settings now use Material 3 Expressive controls: connected toggle buttons for choices, plus morphing loading indicators for font loading and update checks.
+- Single-choice settings now open one shared expressive picker sheet with connected, animated selection rows instead of stock list dialogs.
 
 ## v1.2.0
 

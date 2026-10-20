@@ -42,7 +42,6 @@ import app.aryan447.mpvium.ui.player.SingleActionGesture
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.FooterPreference
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
@@ -80,7 +79,7 @@ object GesturePreferencesScreen : Screen {
           val predefinedValues = listOf(3, 5, 10, 15, 20, 25, 30)
           val isCustomValue = !predefinedValues.contains(doubleTapSeekDuration)
 
-          ListPreference(
+          ExpressiveListPreference(
             value = if (isCustomValue) -1 else doubleTapSeekDuration,
             onValueChange = { newValue ->
               if (newValue == -1) {
@@ -159,7 +158,7 @@ object GesturePreferencesScreen : Screen {
           val doubleTapSeekAreaWidth by preferences.doubleTapSeekAreaWidth.collectAsState()
           val seekAreaValues = listOf(20, 25, 30, 35, 40, 45)
 
-          ListPreference(
+          ExpressiveListPreference(
             value = doubleTapSeekAreaWidth,
             onValueChange = { preferences.doubleTapSeekAreaWidth.set(it) },
             values = seekAreaValues,
@@ -177,7 +176,7 @@ object GesturePreferencesScreen : Screen {
           PreferenceDivider()
 
           val leftDoubleTap by preferences.leftSingleActionGesture.collectAsState()
-          ListPreference(
+          ExpressiveListPreference(
             value = leftDoubleTap,
             onValueChange = { preferences.leftSingleActionGesture.set(it) },
             values = SingleActionGesture.entries,
@@ -193,7 +192,7 @@ object GesturePreferencesScreen : Screen {
           PreferenceDivider()
 
           val centerDoubleTap by preferences.centerSingleActionGesture.collectAsState()
-          ListPreference(
+          ExpressiveListPreference(
             value = centerDoubleTap,
             onValueChange = { preferences.centerSingleActionGesture.set(it) },
             values =
@@ -221,7 +220,7 @@ object GesturePreferencesScreen : Screen {
           PreferenceDivider()
 
           val rightDoubleTap by preferences.rightSingleActionGesture.collectAsState()
-          ListPreference(
+          ExpressiveListPreference(
             value = rightDoubleTap,
             onValueChange = { preferences.rightSingleActionGesture.set(it) },
             values = SingleActionGesture.entries,
@@ -271,7 +270,7 @@ object GesturePreferencesScreen : Screen {
           item {
             PreferenceCard {
           val mediaPreviousGesture by preferences.mediaPreviousGesture.collectAsState()
-          ListPreference(
+          ExpressiveListPreference(
             value = mediaPreviousGesture,
             onValueChange = { preferences.mediaPreviousGesture.set(it) },
             values = SingleActionGesture.entries,
@@ -286,7 +285,7 @@ object GesturePreferencesScreen : Screen {
 
           PreferenceDivider()
           val mediaPlayGesture by preferences.mediaPlayGesture.collectAsState()
-          ListPreference(
+          ExpressiveListPreference(
             value = mediaPlayGesture,
             onValueChange = { preferences.mediaPlayGesture.set(it) },
             values =
@@ -306,7 +305,7 @@ object GesturePreferencesScreen : Screen {
 
           PreferenceDivider()
           val mediaNextGesture by preferences.mediaNextGesture.collectAsState()
-          ListPreference(
+          ExpressiveListPreference(
             value = mediaNextGesture,
             onValueChange = { preferences.mediaNextGesture.set(it) },
             values = SingleActionGesture.entries,

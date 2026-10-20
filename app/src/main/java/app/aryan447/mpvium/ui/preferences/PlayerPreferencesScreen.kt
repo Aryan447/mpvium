@@ -57,7 +57,6 @@ import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.FooterPreference
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import org.koin.compose.koinInject
@@ -89,7 +88,7 @@ object PlayerPreferencesScreen : Screen {
           item {
             PreferenceCard {
               val orientation by preferences.orientation.collectAsState()
-              ListPreference(
+              ExpressiveListPreference(
                 value = orientation,
                 onValueChange = preferences.orientation::set,
                 values = PlayerOrientation.entries,
@@ -175,7 +174,7 @@ object PlayerPreferencesScreen : Screen {
                 PreferenceDivider()
 
                 val titleMode by preferences.titleMode.collectAsState()
-                ListPreference(
+                ExpressiveListPreference(
                   value = titleMode,
                   onValueChange = preferences.titleMode::set,
                   values = PlayerTitleMode.entries,
@@ -414,7 +413,7 @@ object PlayerPreferencesScreen : Screen {
               PreferenceDivider()
 
               val holdGestureMode by preferences.holdGestureMode.collectAsState()
-              ListPreference(
+              ExpressiveListPreference(
                 value = holdGestureMode,
                 onValueChange = preferences.holdGestureMode::set,
                 values = HoldGestureMode.entries,

@@ -83,7 +83,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.TextFieldPreference
@@ -218,7 +217,7 @@ object SubtitlesPreferencesScreen : Screen {
               PreferenceDivider()
 
               val explainTranslationLang by preferences.explainTranslationLang.collectAsState()
-              ListPreference(
+              ExpressiveListPreference(
                 value = explainTranslationLang,
                 onValueChange = { preferences.explainTranslationLang.set(it) },
                 values = explainTranslationLanguages,

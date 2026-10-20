@@ -54,7 +54,6 @@ import app.aryan447.mpvium.ui.player.MPVProfile
 import app.aryan447.mpvium.ui.preferences.VulkanUtils
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import kotlinx.serialization.Serializable
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
@@ -88,7 +87,7 @@ object DecoderPreferencesScreen : Screen {
             PreferenceCard {
               val profile by preferences.profile.collectAsState()
               val currentProfile = MPVProfile.fromValue(profile)
-              ListPreference(
+              ExpressiveListPreference(
                 value = currentProfile,
                 onValueChange = { preferences.profile.set(it.value) },
                 values = MPVProfile.entries,
@@ -232,7 +231,7 @@ object DecoderPreferencesScreen : Screen {
           item {
             PreferenceCard {
               val debanding by preferences.debanding.collectAsState()
-              ListPreference(
+              ExpressiveListPreference(
                 value = debanding,
                 onValueChange = { preferences.debanding.set(it) },
                 values = Debanding.entries,
