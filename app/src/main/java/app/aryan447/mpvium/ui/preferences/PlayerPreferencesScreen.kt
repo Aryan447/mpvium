@@ -430,6 +430,26 @@ object PlayerPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              val verticalSwipeSensitivity by preferences.verticalSwipeSensitivity.collectAsState()
+              SliderPreference(
+                value = verticalSwipeSensitivity,
+                onValueChange = { preferences.verticalSwipeSensitivity.set(it.toFixed(2)) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Speed) },
+                title = { Text(stringResource(R.string.pref_player_gestures_vertical_swipe_sensitivity)) },
+                valueRange = 0.25f..3f,
+                summary = {
+                  val sensitivityPercent = (verticalSwipeSensitivity * 100).toInt()
+                  Text(
+                    "Current: ${sensitivityPercent}% (${if (sensitivityPercent < 75) "Low" else if (sensitivityPercent < 150) "Medium" else "High"})",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                onSliderValueChange = { preferences.verticalSwipeSensitivity.set(it.toFixed(2)) },
+                sliderValue = verticalSwipeSensitivity,
+              )
+
+              PreferenceDivider()
+
               val holdGestureMode by preferences.holdGestureMode.collectAsState()
               ListPreference(
                 value = holdGestureMode,
