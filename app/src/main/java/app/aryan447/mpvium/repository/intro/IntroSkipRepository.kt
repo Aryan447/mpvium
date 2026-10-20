@@ -55,7 +55,6 @@ private data class TheIntroDbSegment(
 
 @Serializable
 private data class TheIntroDbResponse(
-  @SerialName("tmdb_id") val tmdbId: Int? = null,
   val type: String? = null,
   val intro: List<TheIntroDbSegment>? = null,
   val recap: List<TheIntroDbSegment>? = null,
@@ -79,7 +78,7 @@ class IntroSkipRepository(
 ) {
   companion object {
     private const val TAG = "IntroSkipRepository"
-    private const val THE_INTRO_DB_BASE = "https://api.theintrodb.org/v3/media"
+    private const val THE_INTRO_DB_BASE = "https://api.theintrodb.org/v4/media"
     private const val DISK_CACHE_FILE_NAME = "intro_skip_cache_v1.json"
 
     fun normalizeKey(title: String): String =
