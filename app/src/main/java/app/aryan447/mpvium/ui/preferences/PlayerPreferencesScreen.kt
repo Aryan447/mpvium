@@ -450,6 +450,22 @@ object PlayerPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              val horizontalSwipeAcceleration by preferences.horizontalSwipeAcceleration.collectAsState()
+              HapticSwitchPreference(
+                value = horizontalSwipeAcceleration,
+                onValueChange = preferences.horizontalSwipeAcceleration::set,
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Bolt) },
+                title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_acceleration)) },
+                summary = {
+                  Text(
+                    text = stringResource(R.string.pref_player_gestures_horizontal_swipe_acceleration_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
               val holdGestureMode by preferences.holdGestureMode.collectAsState()
               ListPreference(
                 value = holdGestureMode,

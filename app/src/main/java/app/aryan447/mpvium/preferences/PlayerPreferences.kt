@@ -28,6 +28,7 @@ class PlayerPreferences(
   val horizontalSwipeToSeek = preferenceStore.getBoolean("horizontal_swipe_to_seek", true)
   val horizontalSwipeSensitivity = preferenceStore.getFloat("horizontal_swipe_sensitivity", 0.05f)
   val verticalSwipeSensitivity = preferenceStore.getFloat("vertical_swipe_sensitivity", 1f)
+  val horizontalSwipeAcceleration = preferenceStore.getBoolean("horizontal_swipe_acceleration", true)
 
   val customAspectRatios = preferenceStore.getStringSet("custom_aspect_ratios", emptySet())
 
