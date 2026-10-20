@@ -12,6 +12,7 @@
 - The ambient theme glow now uses a shorter, layered bloom over the resolved theme background; AMOLED setups fade into true black instead of grey.
 - The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
 - Onboarding now has scroll-reactive pages, shape-changing icon tiles, spring-driven progress dots, a fading skip action, and an animated primary button with press feedback.
+- About now groups Libraries and GitHub into an expressive action group, confirms device-info copies with a tactile icon swap, and cross-fades the update-check indicator.
 
 ## v1.2.0
 
