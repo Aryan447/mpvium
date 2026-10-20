@@ -5,6 +5,7 @@ import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.explain.ExplainRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
+import app.aryan447.mpvium.repository.wyzie.SubsourceProvider
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import okhttp3.OkHttpClient
 import org.koin.dsl.module
@@ -20,7 +21,8 @@ val domainModule = module {
             .build()
     }
     single { Anime4KManager(androidContext()) }
-    single { WyzieSearchRepository(androidContext(), get(), get(), get()) }
+    single { SubsourceProvider(get(), get(), get()) }
+    single { WyzieSearchRepository(androidContext(), get(), get(), get(), get()) }
     single { IntroSkipRepository(androidContext(), get(), get(), get(), get()) }
     single { ExplainRepository(get(), get()) }
     single { SeriesDetector(androidContext(), get()) }

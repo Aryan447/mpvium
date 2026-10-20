@@ -408,7 +408,7 @@ object SubtitlesPreferencesScreen : Screen {
 
           // === ONLINE SUBTITLE SECTION ===
           item {
-            PreferenceSectionHeader(title = "Subtitle Search", count = 6)
+            PreferenceSectionHeader(title = "Subtitle Search", count = 7)
           }
 
           item {
@@ -685,6 +685,43 @@ object SubtitlesPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              // SubSource API Key (optional provider)
+              val subsourceApiKey by preferences.subsourceApiKey.collectAsState()
+              TextFieldPreference(
+                value = subsourceApiKey,
+                onValueChange = { preferences.subsourceApiKey.set(it) },
+                title = { Text("SubSource API Key (optional)") },
+                summary = {
+                  if (subsourceApiKey.isBlank()) {
+                    Text(
+                      "Adds SubSource to online subtitle search. Get a free key at subsource.net (Profile → API)",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                      style = MaterialTheme.typography.bodySmall
+                    )
+                  } else {
+                    Text(
+                      "Key set (${subsourceApiKey.take(4)}****)",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                  }
+                },
+                textToValue = { it },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.VpnKey)
+                },
+                textField = { value, onValueChange, _ ->
+                  TextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Enter SubSource API key") },
+                    singleLine = true
+                  )
+                }
+              )
+
+              PreferenceDivider()
+
               // Provider Tag - now keyless
               Column(
                 modifier = Modifier
@@ -739,6 +776,27 @@ object SubtitlesPreferencesScreen : Screen {
                   style = MaterialTheme.typography.labelSmall,
                   color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Text(
+                    text = "Additional source",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                  Text(
+                    text = "subsource.net",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                      val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://subsource.net"))
+                      context.startActivity(intent)
+                    }
+                  )
+                }
               }
             }
           }
