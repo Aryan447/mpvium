@@ -63,7 +63,7 @@ fun PlayerTransportButton(
 ) {
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
-  val contentColor = if (hideBackground) colors.onVideoContent else colors.controlContent
+  val contentColor = if (hideBackground) colors.onVideoIconContent else colors.controlIconContent
   Surface(
     modifier =
       modifier
@@ -217,7 +217,7 @@ fun PlayerPlayPauseButton(
       } else {
         Color.Transparent
       },
-    contentColor = if (hideBackground) colors.onVideoContent else colors.playPauseContent,
+    contentColor = if (hideBackground) colors.onVideoIconContent else colors.playPauseContent,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
