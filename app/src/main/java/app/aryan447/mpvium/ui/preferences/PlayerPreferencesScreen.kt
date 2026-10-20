@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.BrightnessMedium
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.Gesture
 import androidx.compose.material.icons.outlined.GpsFixed
 import androidx.compose.material.icons.outlined.History
@@ -348,7 +349,7 @@ object PlayerPreferencesScreen : Screen {
           }
           // Gestures Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 6)
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 7)
           }
 
           item {
@@ -379,6 +380,22 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.pinchToZoomGesture::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.ZoomIn) },
                 title = { Text(stringResource(R.string.pref_player_gestures_pinch_to_zoom)) },
+              )
+
+              PreferenceDivider()
+
+              val pinchToResizeSubtitles by preferences.pinchToResizeSubtitles.collectAsState()
+              HapticSwitchPreference(
+                value = pinchToResizeSubtitles,
+                onValueChange = preferences.pinchToResizeSubtitles::set,
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.FormatSize) },
+                title = { Text(stringResource(R.string.pref_player_gestures_pinch_to_resize_subtitles)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_player_gestures_pinch_to_resize_subtitles_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
               )
 
               PreferenceDivider()
