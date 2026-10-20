@@ -315,6 +315,7 @@ fun BrightnessSlider(
           else -> Icons.Default.BrightnessMedium
         },
         contentDescription = null,
+        tint = colors.controlIconContent,
       )
     }
   }
@@ -368,6 +369,7 @@ fun VolumeSlider(
           else -> Icons.AutoMirrored.Default.VolumeOff
         },
         contentDescription = null,
+        tint = colors.controlIconContent,
       )
     }
   }

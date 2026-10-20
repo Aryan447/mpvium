@@ -5,7 +5,7 @@
 - Clean titles now apply to movies too, showing the movie name and release year in the player.
 - Default decoder setting with Auto, SW, HW, and HW+ options.
 - SubSource support in online subtitle search: add your SubSource API key in Settings → Subtitles to include SubSource results; downloaded subtitles are unzipped automatically.
-- "Full player colors" toggle (Player Layout > Appearance, on by default) that dresses the player overlay in the app theme's colors: button and pill fills, active controls, play/pause, timers, and skip chips. Turn it off to keep the previous look, where only the seekbar, volume, and brightness sliders use the theme accent.
+- "Full player colors" toggle (Player Layout > Appearance, on by default) that puts the app theme accent on player icon glyphs while keeping button, pill, and chip backgrounds neutral glass; the seekbar, volume, and brightness sliders also use the accent. Turn it off for neutral icons, where only the seekbar, volume, and brightness sliders use the theme accent.
 - Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
 - Speed-adaptive horizontal swipe seeking, on by default with a toggle under Player → Gestures: short drags stay precise while longer or faster swipes cover minutes instead of seconds in one sweep.
 - Library-sources hint on Home, Shows, and Movies when the whitelist filter is active, with one-tap access to Settings → Folders.

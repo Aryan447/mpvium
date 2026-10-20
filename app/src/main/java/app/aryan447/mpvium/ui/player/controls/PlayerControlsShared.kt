@@ -306,7 +306,7 @@ fun RenderPlayerButton(
                   Icon(
                     imageVector = Icons.Default.FastRewind,
                     contentDescription = "Previous Frame",
-                    tint = if (hideBackground) colors.onVideoContent else colors.controlContent,
+                    tint = if (hideBackground) colors.onVideoIconContent else colors.controlIconContent,
                     modifier = Modifier.size(20.dp),
                   )
                 }
@@ -349,7 +349,7 @@ fun RenderPlayerButton(
                     Icon(
                       imageVector = Icons.Default.CameraAlt,
                       contentDescription = "Take Screenshot",
-                      tint = if (hideBackground) colors.onVideoContent else colors.controlContent,
+                      tint = if (hideBackground) colors.onVideoIconContent else colors.controlIconContent,
                       modifier = Modifier.size(20.dp),
                     )
                   }
@@ -372,7 +372,7 @@ fun RenderPlayerButton(
                   Icon(
                     imageVector = Icons.Default.FastForward,
                     contentDescription = "Next Frame",
-                    tint = if (hideBackground) colors.onVideoContent else colors.controlContent,
+                    tint = if (hideBackground) colors.onVideoIconContent else colors.controlIconContent,
                     modifier = Modifier.size(20.dp),
                   )
                 }
@@ -594,8 +594,8 @@ fun RenderPlayerButton(
         when {
           isVerticalFlipped && hideBackground -> colors.activeOnVideoContent
           isVerticalFlipped -> colors.activeContent
-          hideBackground -> colors.onVideoContent
-          else -> colors.controlContent
+          hideBackground -> colors.onVideoIconContent
+          else -> colors.controlIconContent
         }
       Surface(
         shape = CircleShape,
@@ -694,7 +694,7 @@ fun RenderPlayerButton(
                   Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Clear Loop",
-                    tint = colors.controlContent,
+                    tint = colors.controlIconContent,
                     modifier = Modifier.size(16.dp),
                   )
                 }
@@ -744,7 +744,7 @@ fun RenderPlayerButton(
                 tint = if (loopA != null && loopB != null) {
                   if (hideBackground) colors.activeOnVideoContent else colors.activeContent
                 } else {
-                  if (hideBackground) colors.onVideoContent else colors.controlContent
+                  if (hideBackground) colors.onVideoIconContent else colors.controlIconContent
                 },
                 modifier = Modifier.size(24.dp),
               )

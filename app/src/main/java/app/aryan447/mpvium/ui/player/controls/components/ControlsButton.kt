@@ -55,8 +55,8 @@ fun ControlsButton(
       ?: when {
         active && hideBackground -> colors.activeOnVideoContent
         active -> colors.activeContent
-        hideBackground -> colors.onVideoContent
-        else -> colors.controlContent
+        hideBackground -> colors.onVideoIconContent
+        else -> colors.controlIconContent
       }
   Surface(
     modifier =

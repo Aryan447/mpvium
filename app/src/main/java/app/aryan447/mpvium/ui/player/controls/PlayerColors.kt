@@ -18,9 +18,13 @@ data class PlayerColors(
   // Circular buttons, pills, badges and slider panels.
   val controlFill: Color,
   val controlBorder: Color,
+  // Text inside controls. Icons get their own tint so the accent can live on
+  // the glyph alone without recoloring labels.
   val controlContent: Color,
-  // Icons/text floating directly over video (button backgrounds hidden).
+  val controlIconContent: Color,
+  // Text and icon glyphs floating directly over video (backgrounds hidden).
   val onVideoContent: Color,
+  val onVideoIconContent: Color,
   // Theme accent for progress and indicators (seekbar, sliders).
   val accent: Color,
   val accentContent: Color,
@@ -47,19 +51,21 @@ private val DefaultPlayerColors =
   PlayerColors(
     controlFill = Color(0x8C49454F),
     controlBorder = Color(0x66CAC4D0),
-    controlContent = Color(0xFF1D1B20),
+    controlContent = Color.White,
+    controlIconContent = Color(0xFFE8B5EF),
     onVideoContent = Color.White,
-    accent = Color(0xFF6750A4),
-    accentContent = Color.White,
-    activeFill = Color(0x8C49454F),
-    activeContent = Color(0xFF6750A4),
-    activeOnVideoContent = Color(0xFF6750A4),
+    onVideoIconContent = Color(0xFFE8B5EF),
+    accent = Color(0xFFE8B5EF),
+    accentContent = Color(0xFF472150),
+    activeFill = Color(0xCC393338),
+    activeContent = Color(0xFFE8B5EF),
+    activeOnVideoContent = Color(0xFFE8B5EF),
     playPauseFill = Color(0x8C49454F),
-    playPauseContent = Color(0xFF1D1B20),
+    playPauseContent = Color(0xFFE8B5EF),
     timerContent = Color.White,
     chipFill = Color(0xF2ECE6F0),
     chipContent = Color(0xFF1D1B20),
-    chipIconContent = Color.White,
+    chipIconContent = Color(0xFF6750A4),
   )
 
 val LocalPlayerColors = staticCompositionLocalOf { DefaultPlayerColors }
@@ -75,14 +81,18 @@ fun playerColorsFor(fullColors: Boolean): PlayerColors {
     if (scheme.background.luminance() < 0.5f) scheme.primary else scheme.inversePrimary
   val neutralFill = scheme.surfaceContainer.copy(alpha = glassPlayerAlpha())
   val neutralBorder = scheme.outlineVariant.copy(alpha = 0.4f)
+  val neutralActiveFill =
+    scheme.surfaceContainerHigh.copy(alpha = glassPlayerAlpha(default = 0.92f, glass = 0.38f))
   if (!fullColors) {
-    // Existing player look: neutral chrome with the seekbar, sliders and
-    // toggled-on icons wearing the theme accent.
+    // Neutral chrome: only the seekbar, sliders and toggled-on icons wear
+    // the theme accent.
     return PlayerColors(
       controlFill = neutralFill,
       controlBorder = neutralBorder,
       controlContent = scheme.onSurface,
+      controlIconContent = scheme.onSurface,
       onVideoContent = controlColor,
+      onVideoIconContent = controlColor,
       accent = scheme.primary,
       accentContent = scheme.onPrimary,
       activeFill = neutralFill,
@@ -96,21 +106,25 @@ fun playerColorsFor(fullColors: Boolean): PlayerColors {
       chipIconContent = controlColor,
     )
   }
+  // Backgrounds stay neutral glass; the accent lives on the icon glyphs and
+  // on progress indicators, so the overlay never reads as a field of color.
   return PlayerColors(
-    controlFill = scheme.primaryContainer.copy(alpha = glassPlayerAlpha()),
-    controlBorder = scheme.primary.copy(alpha = 0.35f),
-    controlContent = scheme.onPrimaryContainer,
-    onVideoContent = onVideoAccent,
+    controlFill = neutralFill,
+    controlBorder = neutralBorder,
+    controlContent = scheme.onSurface,
+    controlIconContent = scheme.primary,
+    onVideoContent = controlColor,
+    onVideoIconContent = onVideoAccent,
     accent = scheme.primary,
     accentContent = scheme.onPrimary,
-    activeFill = scheme.primary.copy(alpha = glassPlayerAlpha(default = 0.85f, glass = 0.35f)),
-    activeContent = scheme.onPrimary,
+    activeFill = neutralActiveFill,
+    activeContent = scheme.primary,
     activeOnVideoContent = onVideoAccent,
-    playPauseFill = scheme.primary.copy(alpha = glassPlayerAlpha(default = 0.85f, glass = 0.35f)),
-    playPauseContent = scheme.onPrimary,
-    timerContent = onVideoAccent,
-    chipFill = scheme.primaryContainer.copy(alpha = 0.95f),
-    chipContent = scheme.onPrimaryContainer,
-    chipIconContent = scheme.onPrimaryContainer,
+    playPauseFill = neutralFill,
+    playPauseContent = scheme.primary,
+    timerContent = controlColor,
+    chipFill = scheme.surfaceContainer.copy(alpha = 0.95f),
+    chipContent = scheme.onSurface,
+    chipIconContent = scheme.primary,
   )
 }
