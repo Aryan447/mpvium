@@ -379,21 +379,25 @@ fun PlayerControls(
             val raw = rawMediaTitle?.takeIf { it.isNotBlank() }
               ?: activity.getTitleForControls()
             if (!showEpisodeHeader) {
-              Pair(raw, null)
+              Triple(raw, null, true)
             } else {
               val clean = app.aryan447.mpvium.utils.media.EpisodeTitleFormatter.resolve(raw, tmdbEpisodeTitle)
               when (titleMode) {
                 app.aryan447.mpvium.ui.player.PlayerTitleMode.SingleLine ->
-                  Pair(clean?.singleLine ?: raw, null)
+                  Triple(clean?.singleLine ?: raw, null, true)
                 app.aryan447.mpvium.ui.player.PlayerTitleMode.EpisodeOnly ->
-                  Pair(clean?.episodeOnly ?: raw, null)
+                  Triple(clean?.detailOnly ?: raw, null, true)
                 app.aryan447.mpvium.ui.player.PlayerTitleMode.TwoLine ->
-                  if (clean != null) Pair(clean.showName, clean.episodePart) else Pair(raw, null)
+                  if (clean != null) {
+                    Triple(clean.title, clean.subtitle, clean.subtitleIsPrimary)
+                  } else {
+                    Triple(raw, null, true)
+                  }
               }
             }
           }
         }
-        val (mediaTitle, mediaSubtitle) = topTitle
+        val (mediaTitle, mediaSubtitle, mediaSubtitleIsPrimary) = topTitle
         // Pill buttons (customizable VIDEO_TITLE) stay single-line; two-line falls back
         // to the single-line form so the pill never grows vertically.
         val mediaTitleSingleLine by remember(rawMediaTitle, activity, showEpisodeHeader, titleMode, tmdbEpisodeTitle) {
@@ -406,7 +410,7 @@ fun PlayerControls(
               val clean = app.aryan447.mpvium.utils.media.EpisodeTitleFormatter.resolve(raw, tmdbEpisodeTitle)
               when (titleMode) {
                 app.aryan447.mpvium.ui.player.PlayerTitleMode.EpisodeOnly ->
-                  clean?.episodeOnly ?: raw
+                  clean?.detailOnly ?: raw
                 app.aryan447.mpvium.ui.player.PlayerTitleMode.SingleLine,
                 app.aryan447.mpvium.ui.player.PlayerTitleMode.TwoLine ->
                   clean?.singleLine ?: raw
@@ -960,6 +964,7 @@ fun PlayerControls(
             TopPlayerControlsPortrait(
               mediaTitle = mediaTitle,
               mediaSubtitle = mediaSubtitle,
+              mediaSubtitleIsPrimary = mediaSubtitleIsPrimary,
               hideBackground = hideBackground,
               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
@@ -969,6 +974,7 @@ fun PlayerControls(
             TopLeftPlayerControlsLandscape(
               mediaTitle = mediaTitle,
               mediaSubtitle = mediaSubtitle,
+              mediaSubtitleIsPrimary = mediaSubtitleIsPrimary,
               hideBackground = hideBackground,
               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,

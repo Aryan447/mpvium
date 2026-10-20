@@ -2,6 +2,15 @@
 
 ### Added
 
+- Clean titles now apply to movies too, showing the movie name and release year in the player.
+
+### Changed
+
+- The clean-title setting now describes shows and movies, and the "Episode only" style is now "Episode/title only".
+
+### Fixed
+
+- Clean show titles no longer include trailing release-group tags such as `-edge2020`.
 - Home sections can be reordered and toggled (featured banner, Continue Watching, Up Next, Recently Added, Shows, Movies, folders) in Appearance > Home.
 - Player: pinch on subtitles to resize them, with two-finger double-tap to reset to 100%; the gesture can be toggled in Settings → Player → Gestures.
 

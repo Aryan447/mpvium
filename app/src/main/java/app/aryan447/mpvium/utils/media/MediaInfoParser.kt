@@ -200,7 +200,7 @@ object MediaInfoParser {
 
         // Step 2: Extract year (from original filename)
         // Be careful not to grab episode numbers as years — skip if year is part of S01E2020 etc.
-        val yearMatch = findYear(fileName, seMatch, crossMatch)
+        val yearMatch = findYear(fileName, seMatch, crossMatch, epWordMatch, epMarkerMatch)
         val year = yearMatch?.value
 
         // Step 3: Japanese season detection
@@ -219,9 +219,20 @@ object MediaInfoParser {
         // Step 5: Extract and clean the title
         var cleanTitle = if (titleBoundary != null && titleBoundary > 0) {
             val prefix = fileName.substring(0, titleBoundary)
-            cleanRawTitle(prefix)
+            // When the year itself is the boundary, the release year is already
+            // excluded from the prefix. Any remaining year belongs to the title
+            // ("Blade Runner 2049", "2001: A Space Odyssey").
+            val boundaryIsYear = yearMatch != null && titleBoundary == yearMatch.range.first
+            cleanRawTitle(prefix, preserveYears = boundaryIsYear).ifBlank {
+                // A show whose entire name is a year ("1923", "1883") would
+                // otherwise have that year stripped as release metadata.
+                cleanRawTitle(prefix, preserveYears = true)
+            }
         } else {
-            cleanRawTitle(stripBracketsAndExtension(fileName))
+            cleanRawTitle(
+                stripBracketsAndExtension(fileName),
+                preserveYears = yearMatch == null,
+            )
         }
 
         // Step 6: Attempt to extract episode title (text after episode marker)
@@ -306,18 +317,37 @@ object MediaInfoParser {
     private fun findYear(
         fileName: String,
         seMatch: MatchResult?,
-        crossMatch: MatchResult?
+        crossMatch: MatchResult?,
+        epWordMatch: MatchResult?,
+        epMarkerMatch: MatchResult?,
     ): MatchResult? {
-        val yearCandidates = YEAR_REGEX.findAll(fileName).toList()
-        if (yearCandidates.isEmpty()) return null
-
         // Filter out any year that overlaps with S01E02 or 1x02 match ranges
         val excludeRanges = listOfNotNull(seMatch?.range, crossMatch?.range)
-        return yearCandidates.firstOrNull { yearResult ->
+        val yearCandidates = YEAR_REGEX.findAll(fileName).filter { yearResult ->
             excludeRanges.none { range ->
                 yearResult.range.first in range || yearResult.range.last in range
             }
+        }.toList()
+        if (yearCandidates.isEmpty()) return null
+
+        // For TV, a year in the show name sits before the episode marker. Years
+        // after the marker are more likely part of the episode title.
+        val episodeMarkerStart = listOfNotNull(
+            seMatch?.range?.first,
+            crossMatch?.range?.first,
+            epWordMatch?.range?.first,
+            epMarkerMatch?.range?.first
+        ).minOrNull()
+        if (episodeMarkerStart != null) {
+            return yearCandidates.lastOrNull { it.range.first < episodeMarkerStart }
+                ?: yearCandidates.first()
         }
+
+        // For movies, the release year is normally the last year in the name
+        // ("Blade Runner 2049 2017"). A lone leading year is usually part of the
+        // title ("2001 A Space Odyssey", "1917"), so don't treat it as the year.
+        val last = yearCandidates.last()
+        return if (yearCandidates.size == 1 && last.range.first == 0) null else last
     }
 
     // ── Helper: Detect "Title - 08 - Episode Name" anime pattern ─────────────────
@@ -419,7 +449,7 @@ object MediaInfoParser {
 
     // ── Helper: Clean raw title string ───────────────────────────────────────────
 
-    private fun cleanRawTitle(raw: String): String {
+    private fun cleanRawTitle(raw: String, preserveYears: Boolean = false): String {
         var title = raw
             // Remove brackets and their content
             .replace(Regex("""%5B.*?%5D""", RegexOption.IGNORE_CASE), " ")
@@ -476,8 +506,14 @@ object MediaInfoParser {
         // Remove trailing group after dash (e.g., "-PSA", "-DEMAND")
         title = title.replace(Regex("""\s*-\s*[A-Z0-9]{2,10}$"""), " ")
 
-        // Remove year pattern
-        title = title.replace(YEAR_REGEX, " ")
+        // Remove a lowercase/underscored release-group suffix left behind after
+        // metadata removal (e.g. "...[x265]-edge2020.mkv" -> "... -edge2020").
+        title = title.replace(Regex("""\s+-[A-Za-z0-9][A-Za-z0-9._-]{1,29}$"""), " ")
+
+        // Remove year pattern unless it is part of the title itself
+        if (!preserveYears) {
+            title = title.replace(YEAR_REGEX, " ")
+        }
 
         // Remove CRC32 hashes (8-char hex)
         title = title.replace(Regex("""\b[A-Fa-f0-9]{8}\b"""), " ")
@@ -498,9 +534,9 @@ object MediaInfoParser {
         return title
             // Collapse multiple spaces
             .replace(Regex("""\s+"""), " ")
-            // Remove leading/trailing separators and whitespace
-            .replace(Regex("""^[\s\-_.]+"""), "")
-            .replace(Regex("""[\s\-_.]+$"""), "")
+            // Remove leading/trailing separators, whitespace, and unmatched brackets
+            .replace(Regex("""^[\s\-_.\)\]\}]+"""), "")
+            .replace(Regex("""[\s\-_.\(\[\{]+$"""), "")
             // Remove trailing dash left over from group removal
             .replace(Regex("""\s*-\s*$"""), "")
             .trim()

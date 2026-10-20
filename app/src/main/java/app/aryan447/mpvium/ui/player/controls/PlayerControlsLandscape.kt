@@ -46,6 +46,7 @@ import dev.vivvvek.seeker.Segment
 fun TopLeftPlayerControlsLandscape(
   mediaTitle: String?,
   mediaSubtitle: String?,
+  mediaSubtitleIsPrimary: Boolean,
   hideBackground: Boolean,
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
@@ -136,22 +137,33 @@ fun TopLeftPlayerControlsLandscape(
             modifier = Modifier.weight(1f, fill = false),
           ) {
             if (mediaSubtitle != null) {
+              val textColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
+              val firstLineIsPrimary = !mediaSubtitleIsPrimary
               Text(
                 text = mediaTitle ?: "",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall,
+                style =
+                  if (firstLineIsPrimary) {
+                    MaterialTheme.typography.bodyMedium
+                  } else {
+                    MaterialTheme.typography.bodySmall
+                  },
                 fontFamily = FontFamily.Monospace,
-                color = (if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface)
-                  .copy(alpha = 0.7f),
+                color = textColor.copy(alpha = if (firstLineIsPrimary) 1f else 0.7f),
               )
               Text(
                 text = mediaSubtitle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium,
+                style =
+                  if (mediaSubtitleIsPrimary) {
+                    MaterialTheme.typography.bodyMedium
+                  } else {
+                    MaterialTheme.typography.bodySmall
+                  },
                 fontFamily = FontFamily.Monospace,
-                color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                color = textColor.copy(alpha = if (mediaSubtitleIsPrimary) 1f else 0.7f),
               )
             } else {
               Text(
