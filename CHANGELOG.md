@@ -11,6 +11,8 @@
 ### Fixed
 
 - Clean show titles no longer include trailing release-group tags such as `-edge2020`.
+- Home sections can be reordered and toggled (featured banner, Continue Watching, Up Next, Recently Added, Shows, Movies, folders) in Appearance > Home.
+- Player: pinch on subtitles to resize them, with two-finger double-tap to reset to 100%; the gesture can be toggled in Settings → Player → Gestures.
 
 ## v1.2.0
 

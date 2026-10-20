@@ -118,6 +118,7 @@ import app.aryan447.mpvium.ui.player.controls.components.PlayerPlayPauseButton
 import app.aryan447.mpvium.ui.player.controls.components.PlayerTransportButton
 import app.aryan447.mpvium.ui.player.controls.components.SpeedControlSlider
 import app.aryan447.mpvium.ui.player.controls.components.SubtitlePositionPlayerUpdate
+import app.aryan447.mpvium.ui.player.controls.components.SubtitleScalePlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.TextPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.VolumeSlider
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
@@ -641,6 +642,14 @@ fun PlayerControls(
               SubtitlePositionPlayerUpdate(
                 position = subUpdate.position,
                 isReset = subUpdate.isReset,
+                modifier = Modifier.widthIn(min = 120.dp),
+              )
+            }
+
+            is PlayerUpdates.SubtitleScale -> {
+              SubtitleScalePlayerUpdate(
+                scalePercent = update.scalePercent,
+                isReset = update.isReset,
                 modifier = Modifier.widthIn(min = 120.dp),
               )
             }

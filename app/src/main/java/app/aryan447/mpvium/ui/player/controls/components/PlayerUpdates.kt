@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.BrightnessMedium
+import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.ui.graphics.Shape
 import app.aryan447.mpvium.R
@@ -124,6 +125,55 @@ fun SubtitlePositionPlayerUpdate(
   }
 }
 
+@Composable
+fun SubtitleScalePlayerUpdate(
+  scalePercent: Int,
+  isReset: Boolean = false,
+  modifier: Modifier = Modifier,
+) {
+  PlayerUpdate(
+    shape = RoundedCornerShape(20.dp),
+    modifier = modifier,
+  ) {
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(2.dp),
+      modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+      ) {
+        Icon(
+          Icons.Default.FormatSize,
+          contentDescription = null,
+          modifier = Modifier.size(16.dp),
+          tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+          text = if (isReset) {
+            stringResource(R.string.subtitle_size_reset, scalePercent)
+          } else {
+            stringResource(R.string.subtitle_size_format, scalePercent)
+          },
+          fontFamily = FontFamily.Monospace,
+          fontWeight = FontWeight.Bold,
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colorScheme.onSurface,
+          style = MaterialTheme.typography.bodyMedium,
+        )
+      }
+      if (!isReset) {
+        Text(
+          text = stringResource(R.string.subtitle_size_double_tap_to_reset),
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          style = MaterialTheme.typography.labelSmall,
+          textAlign = TextAlign.Center,
+        )
+      }
+    }
+  }
+}
 
 @Composable
 fun TextPlayerUpdate(

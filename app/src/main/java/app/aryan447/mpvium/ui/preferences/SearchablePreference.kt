@@ -101,6 +101,13 @@ object SearchablePreferences {
                 category = "Appearance",
                 screen = AppearancePreferencesScreen,
             ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_appearance_category_home,
+                summaryRes = R.string.pref_appearance_home_sections_summary,
+                keywords = listOf("home", "sections", "reorder", "order", "continue watching", "up next", "recently added", "hide", "show", "customize"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
 
             // Layout preferences
             add(SearchablePreference(
@@ -241,6 +248,13 @@ object SearchablePreferences {
             add(SearchablePreference(
                 titleRes = R.string.pref_player_gestures_pinch_to_zoom,
                 keywords = listOf("zoom", "pinch", "gesture", "scale", "crop", "video"),
+                category = "Player",
+                screen = PlayerPreferencesScreen,
+            ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_player_gestures_pinch_to_resize_subtitles,
+                summaryRes = R.string.pref_player_gestures_pinch_to_resize_subtitles_summary,
+                keywords = listOf("subtitle", "pinch", "resize", "scale", "font", "gesture", "reset"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
