@@ -17,7 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvium.ui.theme.controlColor
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,6 +34,7 @@ fun IntroSkipChip(
   onClick: () -> Unit = {},
 ) {
   val haptic = LocalHapticFeedback.current
+  val colors = LocalPlayerColors.current
   Surface(
     onClick = {
       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -41,11 +42,11 @@ fun IntroSkipChip(
     },
     modifier = modifier.clip(RoundedCornerShape(50)),
     shape = RoundedCornerShape(50),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),
-    contentColor = MaterialTheme.colorScheme.onSurface,
+    color = colors.chipFill,
+    contentColor = colors.chipContent,
     tonalElevation = 4.dp,
     shadowElevation = 2.dp,
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+    border = BorderStroke(1.dp, colors.controlBorder),
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
@@ -55,7 +56,7 @@ fun IntroSkipChip(
       Icon(
         icon,
         contentDescription = null,
-        tint = controlColor,
+        tint = colors.chipIconContent,
         modifier = Modifier.padding(end = MaterialTheme.spacing.extraSmall),
       )
       Text(

@@ -142,6 +142,13 @@ object SearchablePreferences {
                 screen = PlayerControlsPreferencesScreen,
             ))
             add(SearchablePreference(
+                titleRes = R.string.pref_player_colors_title,
+                summaryRes = R.string.pref_player_colors_summary_on,
+                keywords = listOf("player", "colors", "theme", "buttons", "seekbar", "sliders", "full"),
+                category = "Appearance",
+                screen = PlayerControlsPreferencesScreen,
+            ))
+            add(SearchablePreference(
                 titleRes = R.string.pref_appearance_hide_player_buttons_background_title,
                 summaryRes = R.string.pref_appearance_hide_player_buttons_background_summary,
                 keywords = listOf("hide", "background", "buttons", "transparent", "player"),

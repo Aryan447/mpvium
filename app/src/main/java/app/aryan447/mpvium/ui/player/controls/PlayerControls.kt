@@ -123,7 +123,6 @@ import app.aryan447.mpvium.ui.player.controls.components.TextPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.VolumeSlider
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import app.aryan447.mpvium.ui.theme.LocalGlass
-import app.aryan447.mpvium.ui.theme.controlColor
 import app.aryan447.mpvium.ui.theme.playerRippleConfiguration
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
@@ -166,6 +165,7 @@ fun PlayerControls(
   val spacing = MaterialTheme.spacing
   val appearancePreferences = koinInject<AppearancePreferences>()
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
+  val playerFullColors by appearancePreferences.playerFullColors.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
   val audioPreferences = koinInject<AudioPreferences>()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
@@ -285,6 +285,7 @@ fun PlayerControls(
   DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime, interactionSource)
 
   CompositionLocalProvider(
+    LocalPlayerColors provides playerColorsFor(playerFullColors),
     LocalRippleConfiguration provides playerRippleConfiguration,
     LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
     LocalContentColor provides Color.White,
