@@ -6,6 +6,7 @@
 - Settings now use Material 3 Expressive controls: connected toggle buttons for choices, plus morphing loading indicators for font loading and update checks.
 - Single-choice settings now open one shared expressive picker sheet with connected, animated selection rows instead of stock list dialogs.
 - Settings search now transitions between the dashboard and results, cross-fades empty states, and animates filtered rows, result counts, and the clear action.
+- Player zoom and playback-speed sheets now group their actions with Material 3 Expressive button groups that expand the pressed action and overflow when space is tight.
 
 ## v1.2.0
 

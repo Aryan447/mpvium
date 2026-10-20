@@ -26,6 +26,9 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -67,6 +70,7 @@ import app.aryan447.mpvium.presentation.components.RepeatingIconButton
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PlaybackSpeedSheet(
   speed: Float,
@@ -288,25 +292,31 @@ fun PlaybackSpeedSheet(
 
       }
 
-      Row(
+      val makeDefaultLabel = stringResource(id = R.string.player_sheets_speed_make_default)
+      val resetLabel = stringResource(id = R.string.generic_reset)
+      ButtonGroup(
+        overflowIndicator = { menuState ->
+          ButtonGroupDefaults.OverflowIndicator(menuState)
+        },
         modifier =
           Modifier
+            .fillMaxWidth()
             .padding(horizontal = MaterialTheme.spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
       ) {
-        Button(
-          modifier = Modifier.weight(1f),
+        clickableItem(
           onClick = { onMakeDefault(speed) },
-        ) {
-          Text(text = stringResource(id = R.string.player_sheets_speed_make_default))
-        }
-        Button(onClick = {
+          label = makeDefaultLabel,
+          weight = 1f,
+        )
+        clickableItem(
+          onClick = {
             onResetDefault()
             onResetPresets()
             onSpeedChange(1.0f)
-        }) {
-          Text(text = stringResource(id = R.string.generic_reset))
-        }
+          },
+          label = resetLabel,
+          weight = 1f,
+        )
       }
     }
   }
