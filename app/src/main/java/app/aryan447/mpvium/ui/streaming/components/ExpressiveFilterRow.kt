@@ -82,7 +82,7 @@ fun <T> ExpressiveFilterRow(
 private fun filterToggleColors(): ToggleButtonColors {
   if (LocalGlass.current) return glassToggleButtonColors()
   val scheme = MaterialTheme.colorScheme
-  return ToggleButtonDefaults.toggleButtonColors(
+  return ToggleButtonDefaults.colors(
     containerColor = Color.Transparent,
     contentColor = scheme.onSurfaceVariant,
     checkedContainerColor = scheme.primary,

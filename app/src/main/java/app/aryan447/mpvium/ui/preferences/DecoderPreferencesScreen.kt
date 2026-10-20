@@ -106,7 +106,7 @@ object DecoderPreferencesScreen : Screen {
               PreferenceDivider()
 
               val defaultDecoder by preferences.defaultDecoder.collectAsState()
-              ListPreference(
+              ExpressiveListPreference(
                 value = defaultDecoder,
                 onValueChange = { preferences.defaultDecoder.set(it) },
                 values = Decoder.defaultOptions,
