@@ -50,11 +50,14 @@ data class WyzieTmdbResult(
     val id: Int,
     val mediaType: String,
     val title: String,
+    val originalTitle: String? = null,
     val releaseYear: String? = null,
     val poster: String? = null,
     val backdrop: String? = null,
     val overview: String? = null,
-    val imdbId: String? = null
+    val imdbId: String? = null,
+    val voteAverage: Float? = null,
+    val popularity: Double? = null
 )
 
 @Serializable

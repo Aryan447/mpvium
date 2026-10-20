@@ -134,7 +134,9 @@ class StreamingHomeViewModel(
         runCatching {
           metadataRepository.pruneStaleMetadata(
             presentSeriesIds = detected.series.map { it.id }.toSet(),
-            presentMovieTitles = detected.movies.map { it.title }.toSet(),
+            presentMovieKeys = detected.movies.map {
+              StreamingMetadataRepository.movieKeyFor(it.title, it.year)
+            }.toSet(),
           )
         }
         // Drop cached intro/recap windows for deleted episodes/movies so the

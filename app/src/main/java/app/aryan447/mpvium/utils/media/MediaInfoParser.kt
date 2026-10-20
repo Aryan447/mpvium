@@ -127,8 +127,15 @@ object MediaInfoParser {
     // Season word: Season 3, SEASON 3
     private val SEASON_WORD_REGEX = Regex("""\b[Ss]eason\s*(\d{1,2})\b""")
 
-    // Year: 1990-2029
+    // Four-digit year (19xx / 20xx). A movie title can itself contain a
+    // year-like number (1917, 2012, Blade Runner 2049), so candidates are
+    // filtered and the last plausible release year is chosen below.
     private val YEAR_REGEX = Regex("""\b(19|20)\d{2}\b""")
+
+    // Release years in the future are almost always title numbers (2049),
+    // not the year the file was released. Allow a small look-ahead for
+    // upcoming titles announced with a year.
+    private val MAX_RELEASE_YEAR = java.time.Year.now().value + 2
 
     // Hash episode: #05
     private val HASH_EPISODE_REGEX = Regex("""#(\d{1,4})""")
@@ -200,7 +207,11 @@ object MediaInfoParser {
 
         // Step 2: Extract year (from original filename)
         // Be careful not to grab episode numbers as years — skip if year is part of S01E2020 etc.
-        val yearMatch = findYear(fileName, seMatch, crossMatch, epWordMatch, epMarkerMatch)
+        // A four-digit number at the very start is the title itself
+        // ("2012.mkv", "1917.mkv"), never the release year.
+        val yearMatch = findYear(
+            fileName, seMatch, crossMatch, epWordMatch, seasonWordMatch, epMarkerMatch
+        )?.takeIf { it.range.first > 0 }
         val year = yearMatch?.value
 
         // Step 3: Japanese season detection
@@ -219,20 +230,9 @@ object MediaInfoParser {
         // Step 5: Extract and clean the title
         var cleanTitle = if (titleBoundary != null && titleBoundary > 0) {
             val prefix = fileName.substring(0, titleBoundary)
-            // When the year itself is the boundary, the release year is already
-            // excluded from the prefix. Any remaining year belongs to the title
-            // ("Blade Runner 2049", "2001: A Space Odyssey").
-            val boundaryIsYear = yearMatch != null && titleBoundary == yearMatch.range.first
-            cleanRawTitle(prefix, preserveYears = boundaryIsYear).ifBlank {
-                // A show whose entire name is a year ("1923", "1883") would
-                // otherwise have that year stripped as release metadata.
-                cleanRawTitle(prefix, preserveYears = true)
-            }
+            cleanRawTitle(prefix, yearToRemove = year)
         } else {
-            cleanRawTitle(
-                stripBracketsAndExtension(fileName),
-                preserveYears = yearMatch == null,
-            )
+            cleanRawTitle(stripBracketsAndExtension(fileName), yearToRemove = year)
         }
 
         // Step 6: Attempt to extract episode title (text after episode marker)
@@ -241,7 +241,7 @@ object MediaInfoParser {
         val episodeEndIndex = getEpisodeEndIndex(seMatch, crossMatch, epWordMatch, epMarkerMatch)
         if (episodeEndIndex != null && episodeEndIndex < fileName.length) {
             val afterEpisode = fileName.substring(episodeEndIndex)
-            val candidateEpTitle = cleanRawTitle(afterEpisode)
+            val candidateEpTitle = cleanRawTitle(afterEpisode, yearToRemove = year)
             if (candidateEpTitle.isNotBlank() && candidateEpTitle != cleanTitle) {
                 episodeTitle = candidateEpTitle
             }
@@ -256,7 +256,7 @@ object MediaInfoParser {
                 episode = dashEpResult.first
                 if (season == null) season = 1
                 if (dashEpResult.second != null) {
-                    val candidate = cleanRawTitle(dashEpResult.second!!)
+                    val candidate = cleanRawTitle(dashEpResult.second!!, yearToRemove = year)
                     if (candidate.isNotBlank() && candidate != cleanTitle) {
                         episodeTitle = candidate
                     }
@@ -264,7 +264,7 @@ object MediaInfoParser {
                 // Recalculate the title as the part before the dash-episode
                 val dashTitleResult = detectDashTitleBoundary(fileName)
                 if (dashTitleResult != null && dashTitleResult.isNotBlank()) {
-                    val candidateTitle = cleanRawTitle(dashTitleResult)
+                    val candidateTitle = cleanRawTitle(dashTitleResult, yearToRemove = year)
                     if (candidateTitle.isNotBlank()) {
                         cleanTitle = candidateTitle
                     }
@@ -319,35 +319,46 @@ object MediaInfoParser {
         seMatch: MatchResult?,
         crossMatch: MatchResult?,
         epWordMatch: MatchResult?,
-        epMarkerMatch: MatchResult?,
+        seasonWordMatch: MatchResult?,
+        epMarkerMatch: MatchResult?
     ): MatchResult? {
-        // Filter out any year that overlaps with S01E02 or 1x02 match ranges
-        val excludeRanges = listOfNotNull(seMatch?.range, crossMatch?.range)
-        val yearCandidates = YEAR_REGEX.findAll(fileName).filter { yearResult ->
-            excludeRanges.none { range ->
-                yearResult.range.first in range || yearResult.range.last in range
-            }
-        }.toList()
-        if (yearCandidates.isEmpty()) return null
-
-        // For TV, a year in the show name sits before the episode marker. Years
-        // after the marker are more likely part of the episode title.
-        val episodeMarkerStart = listOfNotNull(
+        val markerStart = listOfNotNull(
             seMatch?.range?.first,
             crossMatch?.range?.first,
             epWordMatch?.range?.first,
-            epMarkerMatch?.range?.first
+            epMarkerMatch?.range?.first,
+            seasonWordMatch?.range?.first
         ).minOrNull()
-        if (episodeMarkerStart != null) {
-            return yearCandidates.lastOrNull { it.range.first < episodeMarkerStart }
-                ?: yearCandidates.first()
-        }
 
-        // For movies, the release year is normally the last year in the name
-        // ("Blade Runner 2049 2017"). A lone leading year is usually part of the
-        // title ("2001 A Space Odyssey", "1917"), so don't treat it as the year.
-        val last = yearCandidates.last()
-        return if (yearCandidates.size == 1 && last.range.first == 0) null else last
+        // Filter out years that overlap episode markers and years that are
+        // implausible as release years (e.g. "2049" in Blade Runner 2049).
+        val excludeRanges = listOfNotNull(
+            seMatch?.range,
+            crossMatch?.range,
+            epWordMatch?.range,
+            epMarkerMatch?.range,
+            seasonWordMatch?.range
+        )
+        val candidates = YEAR_REGEX.findAll(fileName)
+            .filter { match ->
+                val overlapsMarker = excludeRanges.any {
+                    match.range.first in it || match.range.last in it
+                }
+                val value = match.value.toIntOrNull() ?: return@filter false
+                !overlapsMarker && value <= MAX_RELEASE_YEAR
+            }
+            .toList()
+        if (candidates.isEmpty()) return null
+
+        // The release year follows the title, so when several year-like
+        // numbers exist ("1917.2019", "Blade.Runner.2049.2017") the last one
+        // is the release year and earlier ones belong to the title.
+        // For TV files, only consider years before the episode marker so an
+        // episode air year after S01E01 cannot win.
+        val beforeMarker = markerStart?.let { marker ->
+            candidates.filter { it.range.first < marker }
+        }.orEmpty()
+        return (beforeMarker.ifEmpty { candidates }).last()
     }
 
     // ── Helper: Detect "Title - 08 - Episode Name" anime pattern ─────────────────
@@ -449,7 +460,7 @@ object MediaInfoParser {
 
     // ── Helper: Clean raw title string ───────────────────────────────────────────
 
-    private fun cleanRawTitle(raw: String, preserveYears: Boolean = false): String {
+    private fun cleanRawTitle(raw: String, yearToRemove: String? = null): String {
         var title = raw
             // Remove brackets and their content
             .replace(Regex("""%5B.*?%5D""", RegexOption.IGNORE_CASE), " ")
@@ -477,6 +488,15 @@ object MediaInfoParser {
             .replace(BITRATE_REGEX, " ")
             // Remove audio channel patterns again if spaced (5 1, 7 1)
             .replace(AUDIO_CHANNEL_REGEX, " ")
+
+        // Remove only the detected release year. Other year-like numbers are
+        // part of the title (1917, 2012, Blade Runner 2049).
+        if (yearToRemove != null) {
+            title = title.replace(
+                Regex("""\b${Regex.escape(yearToRemove)}\b"""),
+                " "
+            )
+        }
 
         // Remove all noise tags (with word boundaries)
         ALL_NOISE.forEach { tag ->
@@ -509,12 +529,6 @@ object MediaInfoParser {
         // Remove a lowercase/underscored release-group suffix left behind after
         // metadata removal (e.g. "...[x265]-edge2020.mkv" -> "... -edge2020").
         title = title.replace(Regex("""\s+-[A-Za-z0-9][A-Za-z0-9._-]{1,29}$"""), " ")
-
-        // Remove year pattern unless it is part of the title itself
-        if (!preserveYears) {
-            title = title.replace(YEAR_REGEX, " ")
-        }
-
         // Remove CRC32 hashes (8-char hex)
         title = title.replace(Regex("""\b[A-Fa-f0-9]{8}\b"""), " ")
 
@@ -532,6 +546,8 @@ object MediaInfoParser {
 
     private fun finalCleanup(title: String): String {
         return title
+            // Drop unmatched brackets left behind by partial bracket removal
+            .replace(Regex("""[\[\]\(\)\{\}【】（）]"""), " ")
             // Collapse multiple spaces
             .replace(Regex("""\s+"""), " ")
             // Remove leading/trailing separators, whitespace, and unmatched brackets

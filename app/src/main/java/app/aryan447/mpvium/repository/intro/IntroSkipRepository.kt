@@ -5,8 +5,8 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.repository.wyzie.WyzieMediaMatcher
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
-import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -82,7 +82,9 @@ class IntroSkipRepository(
     private const val DISK_CACHE_FILE_NAME = "intro_skip_cache_v1.json"
 
     fun normalizeKey(title: String): String =
-      title.lowercase().replace(Regex("[^a-z0-9]"), "")
+      title.lowercase(java.util.Locale.ROOT)
+        .replace(Regex("""[^\p{L}\p{N}]"""), "")
+        .trim()
   }
 
   private val cache = ConcurrentHashMap<String, CachedWindows>()
@@ -307,7 +309,8 @@ class IntroSkipRepository(
     val searchType = if (isTv) "tv" else "movie"
 
     // 1. Resolve TMDb/IMDb IDs
-    val cachedTmdbId = metadataRepository.getCachedTmdbId(searchTitle) ?: metadataRepository.getCachedTmdbId(parsed.title)
+    val cachedTmdbId = metadataRepository.getCachedTmdbId(searchTitle, parsed.year)
+      ?: metadataRepository.getCachedTmdbId(parsed.title, parsed.year)
 
     val queryParams = mutableListOf<String>()
     if (isTv) {
@@ -329,7 +332,7 @@ class IntroSkipRepository(
       if (results.isEmpty() && searchTitle != parsed.title) {
         results = wyzieRepository.searchMedia(parsed.title).getOrNull() ?: emptyList()
       }
-      pickBestMatch(results, searchType, parsed.year, searchTitle)
+      WyzieMediaMatcher.pickBest(results, searchType, searchTitle, parsed.year)
     }.getOrNull()
 
     val freshTmdbId = searchMatch?.id
@@ -395,18 +398,4 @@ class IntroSkipRepository(
     )
   }
 
-  private fun pickBestMatch(results: List<WyzieTmdbResult>, searchType: String, year: String?, targetTitle: String): WyzieTmdbResult? {
-    val typed = results.filter { it.mediaType.equals(searchType, ignoreCase = true) }
-    val pool = if (typed.isNotEmpty()) typed else results
-    if (pool.isEmpty()) return null
-
-    // Prefer exact title match ignoring case
-    pool.firstOrNull { it.title.equals(targetTitle, ignoreCase = true) }?.let { return it }
-
-    year?.let { y ->
-      pool.firstOrNull { it.releaseYear == y }?.let { return it }
-      pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
-    }
-    return pool.firstOrNull()
-  }
 }
