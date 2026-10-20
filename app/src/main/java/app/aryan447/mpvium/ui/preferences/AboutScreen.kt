@@ -4,14 +4,17 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.OpenInNew
@@ -36,8 +40,14 @@ import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -46,6 +56,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,6 +86,7 @@ import app.aryan447.mpvium.presentation.crash.CrashActivity.Companion.collectDev
 import app.aryan447.mpvium.ui.onboarding.OnboardingScreen
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.update.UpdateViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -81,17 +95,35 @@ import org.koin.compose.koinInject
 @Serializable
 object AboutScreen : Screen {
   @Suppress("DEPRECATION")
-  @OptIn(ExperimentalMaterial3Api::class)
+  @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
   @Composable
   override fun Content() {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
     val clipboardManager = LocalClipboardManager.current
+    val haptic = LocalHapticFeedback.current
     val appearancePreferences = koinInject<AppearancePreferences>()
     val packageManager: PackageManager = context.packageManager
     val packageInfo = packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName?.substringBefore('-') ?: packageInfo.versionName ?: BuildConfig.VERSION_NAME
     val buildType = BuildConfig.BUILD_TYPE
+    val deviceInfo = remember { collectDeviceInfo() }
+    var deviceInfoCopied by remember { mutableStateOf(false) }
+    val iconEnter = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val iconExit = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+
+    fun copyDeviceInfo() {
+      clipboardManager.setText(AnnotatedString(deviceInfo))
+      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+      deviceInfoCopied = true
+    }
+
+    LaunchedEffect(deviceInfoCopied) {
+      if (deviceInfoCopied) {
+        delay(1600)
+        deviceInfoCopied = false
+      }
+    }
 
     // Conditionally initialize update feature based on build config
     val updateViewModel: UpdateViewModel? = if (BuildConfig.ENABLE_UPDATE_FEATURE) {
@@ -228,39 +260,27 @@ object AboutScreen : Screen {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Row(
+                val librariesLabel = stringResource(id = R.string.pref_about_oss_libraries)
+                ButtonGroup(
+                  overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState)
+                  },
                   modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                  val btnContainer = cs.primary
-                  val btnContent = cs.onPrimary
-                  Button(
+                  clickableItem(
                     onClick = { backstack.add(LibrariesScreen) },
-                    modifier =
-                      Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors =
-                      ButtonDefaults.buttonColors(
-                        containerColor = btnContainer,
-                        contentColor = btnContent,
-                      ),
-                  ) {
-                    Icon(
-                      imageVector = Icons.Outlined.LibraryBooks,
-                      contentDescription = null,
-                      modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                      text = stringResource(id = R.string.pref_about_oss_libraries),
-                      style = MaterialTheme.typography.titleMedium,
-                      fontWeight = FontWeight.SemiBold,
-                    )
-                  }
+                    label = librariesLabel,
+                    icon = {
+                      Icon(
+                        imageVector = Icons.Outlined.LibraryBooks,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                      )
+                    },
+                    weight = 1f,
+                  )
 
-                  Button(
+                  clickableItem(
                     onClick = {
                       context.startActivity(
                         Intent(
@@ -269,29 +289,16 @@ object AboutScreen : Screen {
                         ),
                       )
                     },
-                    modifier =
-                      Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors =
-                      ButtonDefaults.buttonColors(
-                        containerColor = btnContainer,
-                        contentColor = btnContent,
-                      ),
-                  ) {
-                    Icon(
-                      imageVector = Icons.Outlined.OpenInNew,
-                      contentDescription = null,
-                      modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                      text = "GitHub",
-                      style = MaterialTheme.typography.titleMedium,
-                      fontWeight = FontWeight.SemiBold,
-                    )
-                  }
+                    label = "GitHub",
+                    icon = {
+                      Icon(
+                        imageVector = Icons.Outlined.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                      )
+                    },
+                    weight = 1f,
+                  )
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -331,13 +338,14 @@ object AboutScreen : Screen {
                   modifier =
                     Modifier
                       .fillMaxWidth()
-                      .clickable {
-                        clipboardManager.setText(AnnotatedString(collectDeviceInfo()))
-                      },
+                      .clip(RoundedCornerShape(16.dp))
+                      .background(cs.onPrimaryContainer.copy(alpha = 0.10f))
+                      .clickable(onClick = ::copyDeviceInfo)
+                      .padding(12.dp),
                 ) {
                   Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                   ) {
                     Icon(
                       imageVector = Icons.Outlined.Smartphone,
@@ -352,9 +360,35 @@ object AboutScreen : Screen {
                       fontWeight = FontWeight.SemiBold,
                       color = cs.onPrimaryContainer,
                     )
+                    Spacer(modifier = Modifier.weight(1f))
+                    FilledTonalIconButton(
+                      onClick = ::copyDeviceInfo,
+                      modifier = Modifier.size(36.dp),
+                    ) {
+                      AnimatedContent(
+                        targetState = deviceInfoCopied,
+                        transitionSpec = {
+                          fadeIn(animationSpec = iconEnter) togetherWith
+                            fadeOut(animationSpec = iconExit)
+                        },
+                        label = "device_info_copy",
+                      ) { copied ->
+                        Icon(
+                          imageVector =
+                            if (copied) {
+                              Icons.Outlined.CheckCircle
+                            } else {
+                              Icons.Outlined.ContentCopy
+                            },
+                          contentDescription = if (copied) "Copied" else "Copy device info",
+                          modifier = Modifier.size(18.dp),
+                        )
+                      }
+                    }
                   }
+                  Spacer(modifier = Modifier.height(8.dp))
                   Text(
-                    text = collectDeviceInfo(),
+                    text = deviceInfo,
                     style = MaterialTheme.typography.bodySmall,
                     color = cs.onPrimaryContainer.copy(alpha = 0.85f),
                   )
@@ -370,6 +404,7 @@ object AboutScreen : Screen {
             PreferenceSectionHeader(title = "Updates")
             PreferenceCard {
               val isAutoUpdateEnabled by updateViewModel.isAutoUpdateEnabled.collectAsState()
+              val isCheckingForUpdate = updateState is UpdateViewModel.UpdateState.Loading
               HapticSwitchPreference(
                 value = isAutoUpdateEnabled,
                 onValueChange = { updateViewModel.toggleAutoUpdate(it) },
@@ -397,6 +432,7 @@ object AboutScreen : Screen {
                 Button(
                   onClick = { updateViewModel.checkForUpdate(manual = true) },
                   modifier = Modifier.fillMaxWidth().height(50.dp),
+                  enabled = !isCheckingForUpdate,
                   shape = SettingsTileShape,
                   colors = ButtonDefaults.buttonColors(
                     containerColor = cs.secondaryContainer,
@@ -404,9 +440,28 @@ object AboutScreen : Screen {
                   ),
                   elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
                 ) {
-                  Icon(Icons.Outlined.CheckCircle, null, modifier = Modifier.size(18.dp))
+                  AnimatedContent(
+                    targetState = isCheckingForUpdate,
+                    transitionSpec = {
+                      fadeIn(animationSpec = iconEnter) togetherWith
+                        fadeOut(animationSpec = iconExit)
+                    },
+                    label = "update_check_icon",
+                  ) { checking ->
+                    if (checking) {
+                      LoadingIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = LocalContentColor.current,
+                      )
+                    } else {
+                      Icon(Icons.Outlined.CheckCircle, null, modifier = Modifier.size(18.dp))
+                    }
+                  }
                   Spacer(Modifier.width(8.dp))
-                  Text("Check for Updates Now", fontWeight = FontWeight.SemiBold)
+                  Text(
+                    text = stringResource(R.string.check_for_updates_now),
+                    fontWeight = FontWeight.SemiBold,
+                  )
                 }
               }
             }

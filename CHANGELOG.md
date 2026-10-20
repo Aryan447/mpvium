@@ -21,6 +21,17 @@
 - Whitelist-only mode now filters only the Home, Shows, and Movies library. Folders and Files always show full storage (blacklist still applies).
 - A horizontal swipe can no longer land exactly on the end of the video, so overshooting a swipe can't close the player through "Close after the end of playback".
 - Updated Compose Material 3 to 1.5.0-beta01.
+- Settings dashboard now has a flexible, collapsing top app bar and tiles whose corners morph on press.
+- Settings now use Material 3 Expressive controls: connected toggle buttons for choices, plus morphing loading indicators for font loading and update checks.
+- Single-choice settings now open one shared expressive picker sheet with connected, animated selection rows instead of stock list dialogs.
+- Settings search now transitions between the dashboard and results, cross-fades empty states, and animates filtered rows, result counts, and the clear action.
+- Player zoom and playback-speed sheets now group their actions with Material 3 Expressive button groups that expand the pressed action and overflow when space is tight.
+- Home category filters and Shows/Movies watch-state filters now use connected expressive toggle groups that morph the selected filter into a pill.
+- Screen and tab navigation now uses expressive fade-through transitions driven by the Material motion scheme instead of fixed tween slides.
+- The ambient theme glow now uses a shorter, layered bloom over the resolved theme background; AMOLED setups fade into true black instead of grey.
+- The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
+- Onboarding now has scroll-reactive pages, shape-changing icon tiles, spring-driven progress dots, a fading skip action, and an animated primary button with press feedback.
+- About now groups Libraries and GitHub into an expressive action group, confirms device-info copies with a tactile icon swap, and cross-fades the update-check indicator.
 
 ### Fixed
 

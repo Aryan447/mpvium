@@ -65,7 +65,6 @@ import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
@@ -276,7 +275,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              ListPreference(
+              ExpressiveListPreference(
                 value = if (isCustomTimeValue) -1 else playerTimeToDisappear,
                 onValueChange = { newValue ->
                   if (newValue == -1) {

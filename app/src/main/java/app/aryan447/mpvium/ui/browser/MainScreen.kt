@@ -5,13 +5,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -24,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
@@ -51,7 +51,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
@@ -159,6 +158,7 @@ object MainScreen : Screen {
     }
   }
 
+  @OptIn(ExperimentalMaterial3ExpressiveApi::class)
   @Composable
   @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
   override fun Content() {
@@ -169,9 +169,12 @@ object MainScreen : Screen {
     }
 
     val context = LocalContext.current
-    val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     val backstack = LocalBackStack.current
+    val enterEffects = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val exitEffects = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val enterSpatial = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    val exitSpatial = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
 
     val appearancePreferences = koinInject<AppearancePreferences>()
     val pillNavigationBar by appearancePreferences.pillNavigationBar.collectAsState()
@@ -393,57 +396,22 @@ object MainScreen : Screen {
         AnimatedContent(
           targetState = selectedTabId,
           transitionSpec = {
-            val slideDistance = with(density) { 48.dp.roundToPx() }
-            val animationDuration = 250
-
             if (targetState > initialState) {
-              (slideInHorizontally(
-                animationSpec = tween(
-                  durationMillis = animationDuration,
-                  easing = FastOutSlowInEasing
-                ),
-                initialOffsetX = { slideDistance }
-              ) + fadeIn(
-                animationSpec = tween(
-                  durationMillis = animationDuration,
-                  easing = FastOutSlowInEasing
+              (
+                fadeIn(animationSpec = enterEffects) +
+                  scaleIn(initialScale = 0.94f, animationSpec = enterSpatial)
+                ).togetherWith(
+                  fadeOut(animationSpec = exitEffects) +
+                    scaleOut(targetScale = 1.04f, animationSpec = exitSpatial),
                 )
-              )) togetherWith (slideOutHorizontally(
-                animationSpec = tween(
-                  durationMillis = animationDuration,
-                  easing = FastOutSlowInEasing
-                ),
-                targetOffsetX = { -slideDistance }
-              ) + fadeOut(
-                animationSpec = tween(
-                  durationMillis = animationDuration / 2,
-                  easing = FastOutSlowInEasing
-                )
-              ))
             } else {
-              (slideInHorizontally(
-                animationSpec = tween(
-                  durationMillis = animationDuration,
-                  easing = FastOutSlowInEasing
-                ),
-                initialOffsetX = { -slideDistance }
-              ) + fadeIn(
-                animationSpec = tween(
-                  durationMillis = animationDuration,
-                  easing = FastOutSlowInEasing
+              (
+                fadeIn(animationSpec = enterEffects) +
+                  scaleIn(initialScale = 1.04f, animationSpec = enterSpatial)
+                ).togetherWith(
+                  fadeOut(animationSpec = exitEffects) +
+                    scaleOut(targetScale = 0.94f, animationSpec = exitSpatial),
                 )
-              )) togetherWith (slideOutHorizontally(
-                animationSpec = tween(
-                  durationMillis = animationDuration,
-                  easing = FastOutSlowInEasing
-                ),
-                targetOffsetX = { slideDistance }
-              ) + fadeOut(
-                animationSpec = tween(
-                  durationMillis = animationDuration / 2,
-                  easing = FastOutSlowInEasing
-                )
-              ))
             }
           },
           label = "tab_animation"

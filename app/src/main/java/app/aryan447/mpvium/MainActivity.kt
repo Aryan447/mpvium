@@ -11,15 +11,16 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideIn
-import androidx.compose.animation.slideOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -30,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.IntOffset
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
@@ -213,6 +213,7 @@ class MainActivity : ComponentActivity() {
   /**
    * Navigator that handles screen transitions and provides shared states
    */
+  @OptIn(ExperimentalMaterial3ExpressiveApi::class)
   @Composable
   fun Navigator() {
     val onboardingCompleted by appearancePreferences.onboardingCompleted.collectAsState()
@@ -220,6 +221,11 @@ class MainActivity : ComponentActivity() {
 
     @Suppress("UNCHECKED_CAST")
     val typedBackstack = backstack as NavBackStack<Screen>
+
+    val enterEffects = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val exitEffects = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val enterSpatial = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    val exitSpatial = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
 
     val context = LocalContext.current
     val currentVersion = BuildConfig.VERSION_NAME.replace("-dev", "")
@@ -250,30 +256,30 @@ class MainActivity : ComponentActivity() {
         entryProvider = { route -> NavEntry(route) { route.Content() } },
         popTransitionSpec = {
           (
-            fadeIn(animationSpec = tween(220)) +
-              slideIn(animationSpec = tween(220)) { IntOffset(-it.width / 2, 0) }
-          ) togetherWith (
-              fadeOut(animationSpec = tween(220)) +
-                slideOut(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
-          )
+            fadeIn(animationSpec = enterEffects) +
+              scaleIn(initialScale = 1.04f, animationSpec = enterSpatial)
+            ).togetherWith(
+              fadeOut(animationSpec = exitEffects) +
+                scaleOut(targetScale = 0.94f, animationSpec = exitSpatial),
+            )
         },
         predictivePopTransitionSpec = {
           (
-            fadeIn(animationSpec = tween(220)) +
-              slideIn(animationSpec = tween(220)) { IntOffset(-it.width / 2, 0) }
-          ) togetherWith (
-              fadeOut(animationSpec = tween(220)) +
-                slideOut(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
-          )
+            fadeIn(animationSpec = enterEffects) +
+              scaleIn(initialScale = 1.04f, animationSpec = enterSpatial)
+            ).togetherWith(
+              fadeOut(animationSpec = exitEffects) +
+                scaleOut(targetScale = 0.94f, animationSpec = exitSpatial),
+            )
         },
         transitionSpec = {
           (
-            fadeIn(animationSpec = tween(220)) +
-              slideIn(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
-          ) togetherWith (
-              fadeOut(animationSpec = tween(220)) +
-                slideOut(animationSpec = tween(220)) { IntOffset(-it.width / 2, 0) }
-          )
+            fadeIn(animationSpec = enterEffects) +
+              scaleIn(initialScale = 0.94f, animationSpec = enterSpatial)
+            ).togetherWith(
+              fadeOut(animationSpec = exitEffects) +
+                scaleOut(targetScale = 1.04f, animationSpec = exitSpatial),
+            )
         },
       )
 
