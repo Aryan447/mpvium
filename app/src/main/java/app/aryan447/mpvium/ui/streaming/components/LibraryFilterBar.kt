@@ -104,16 +104,6 @@ enum class SeriesWatchFilter(val label: String) {
 }
 
 /**
- * Sort orders for the Shows grid. Recently-added uses the newest
- * episode file date; no extra metadata or DB access needed.
- */
-enum class SeriesSort(val label: String) {
-  NAME("Name (A–Z)"),
-  RECENTLY_ADDED("Recently added"),
-  PROGRESS("Most watched"),
-}
-
-/**
  * Watch-state filters for the Movies grid.
  */
 enum class MovieWatchFilter(val label: String) {
@@ -121,17 +111,6 @@ enum class MovieWatchFilter(val label: String) {
   UNWATCHED("Unwatched"),
   STARTED("Started"),
   WATCHED("Watched"),
-}
-
-/**
- * Sort orders for the Movies grid, all derived from local file data.
- */
-enum class MovieSort(val label: String) {
-  NAME("Name (A–Z)"),
-  RECENTLY_ADDED("Recently added"),
-  RATING("Highest rated"),
-  LONGEST("Longest"),
-  SHORTEST("Shortest"),
 }
 
 /**

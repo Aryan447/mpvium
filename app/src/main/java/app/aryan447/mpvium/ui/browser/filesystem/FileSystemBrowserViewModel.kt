@@ -166,26 +166,19 @@ class FileSystemBrowserViewModel(
       }
     }
 
-    // Apply sorting + folder visibility (blacklist / whitelist-only) whenever
-    // items, sort, or folder prefs change
-    // Based on Fossify's ChangeSortingDialog callback and sorting logic
-    // (Nested combines: this coroutines version has no 7-flow combine overload.)
+    // Full-storage file browser (issue #87): only the blacklist applies here.
+    // The whitelist-only library filter stays scoped to Home / Shows /
+    // Movies / Insights via SeriesDetector, so whitelisted libraries never
+    // hide entries such as DCIM in Files.
     viewModelScope.launch {
-      val visibilityFlow = combine(
-        foldersPreferences.blacklistedFolders.changes(),
-        foldersPreferences.whitelistedFolders.changes(),
-        foldersPreferences.whitelistOnlyEnabled.changes(),
-      ) { blacklist, whitelist, whitelistOnly ->
-        Triple(blacklist, whitelist, whitelistOnly)
-      }
+      val visibilityFlow = foldersPreferences.blacklistedFolders.changes()
       combine(
         _unsortedItems,
         browserPreferences.folderSortType.changes(),
         browserPreferences.folderSortOrder.changes(),
         visibilityFlow,
-      ) { items, sortType, sortOrder, visibility ->
-        val (blacklist, whitelist, whitelistOnly) = visibility
-        val visible = filterVisibleItems(_currentPath.value, items, whitelist, blacklist, whitelistOnly)
+      ) { items, sortType, sortOrder, blacklist ->
+        val visible = filterVisibleItems(_currentPath.value, items, blacklist)
         // Sort using the same logic as Fossify's FileDirItem.sort()
         SortUtils.sortFileSystemItems(visible, sortType, sortOrder)
       }.collectLatest { sortedItems ->
@@ -196,31 +189,27 @@ class FileSystemBrowserViewModel(
   }
 
   /**
-   * Applies blacklist / whitelist-only rules to a directory listing.
-   * Folders that merely lead to a whitelisted child stay navigable, but videos
-   * in non-visible folders are hidden.
+   * Applies blacklist-only rules to a directory listing.
+   * Every directory stays navigable; only blacklisted folders (and their
+   * descendants) are hidden. Videos in blacklisted folders are hidden.
    */
   private fun filterVisibleItems(
     currentPath: String,
     items: List<FileSystemItem>,
-    whitelist: Set<String>,
     blacklist: Set<String>,
-    whitelistOnly: Boolean,
   ): List<FileSystemItem> {
-    if (!whitelistOnly && blacklist.isEmpty()) return items
-    if (whitelistOnly && whitelist.isEmpty()) return items
+    if (blacklist.isEmpty()) return items
     return items.filter { item ->
       when (item) {
         is FileSystemItem.Folder ->
-          FolderVisibility.isFolderVisible(item.path, whitelist, blacklist, whitelistOnly) ||
-            FolderVisibility.canContainVisible(item.path, whitelist, blacklist, whitelistOnly)
+          FolderVisibility.isBrowserVisible(item.path, blacklist)
         is FileSystemItem.VideoFile -> {
           val parent = try {
             File(item.video.path).parent ?: currentPath
           } catch (_: Exception) {
             currentPath
           }
-          FolderVisibility.isFolderVisible(parent, whitelist, blacklist, whitelistOnly)
+          FolderVisibility.isBrowserVisible(parent, blacklist)
         }
       }
     }

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.BrightnessMedium
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.Gesture
 import androidx.compose.material.icons.outlined.GpsFixed
 import androidx.compose.material.icons.outlined.History
@@ -347,7 +348,7 @@ object PlayerPreferencesScreen : Screen {
           }
           // Gestures Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 6)
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 7)
           }
 
           item {
@@ -382,6 +383,22 @@ object PlayerPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              val pinchToResizeSubtitles by preferences.pinchToResizeSubtitles.collectAsState()
+              HapticSwitchPreference(
+                value = pinchToResizeSubtitles,
+                onValueChange = preferences.pinchToResizeSubtitles::set,
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.FormatSize) },
+                title = { Text(stringResource(R.string.pref_player_gestures_pinch_to_resize_subtitles)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_player_gestures_pinch_to_resize_subtitles_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
               val horizontalSwipeToSeek by preferences.horizontalSwipeToSeek.collectAsState()
               HapticSwitchPreference(
                 value = horizontalSwipeToSeek,
@@ -408,6 +425,42 @@ object PlayerPreferencesScreen : Screen {
                 },
                 onSliderValueChange = { preferences.horizontalSwipeSensitivity.set(it.toFixed(3)) },
                 sliderValue = horizontalSwipeSensitivity,
+              )
+
+              PreferenceDivider()
+
+              val verticalSwipeSensitivity by preferences.verticalSwipeSensitivity.collectAsState()
+              SliderPreference(
+                value = verticalSwipeSensitivity,
+                onValueChange = { preferences.verticalSwipeSensitivity.set(it.toFixed(2)) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Speed) },
+                title = { Text(stringResource(R.string.pref_player_gestures_vertical_swipe_sensitivity)) },
+                valueRange = 0.25f..3f,
+                summary = {
+                  val sensitivityPercent = (verticalSwipeSensitivity * 100).toInt()
+                  Text(
+                    "Current: ${sensitivityPercent}% (${if (sensitivityPercent < 75) "Low" else if (sensitivityPercent < 150) "Medium" else "High"})",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                onSliderValueChange = { preferences.verticalSwipeSensitivity.set(it.toFixed(2)) },
+                sliderValue = verticalSwipeSensitivity,
+              )
+
+              PreferenceDivider()
+
+              val horizontalSwipeAcceleration by preferences.horizontalSwipeAcceleration.collectAsState()
+              HapticSwitchPreference(
+                value = horizontalSwipeAcceleration,
+                onValueChange = preferences.horizontalSwipeAcceleration::set,
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Bolt) },
+                title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_acceleration)) },
+                summary = {
+                  Text(
+                    text = stringResource(R.string.pref_player_gestures_horizontal_swipe_acceleration_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
               )
 
               PreferenceDivider()

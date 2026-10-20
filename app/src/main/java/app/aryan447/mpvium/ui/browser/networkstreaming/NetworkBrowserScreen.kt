@@ -207,7 +207,12 @@ private fun NetworkBrowserContent(
 
     else -> {
       val folders = files.filter { it.isDirectory }
-      val videos = files.filter { !it.isDirectory && it.mimeType?.startsWith("video/") == true }
+      // Fall back to extension when the server omits getcontenttype: some
+      // WebDAV servers (e.g. Torbox) report no MIME type, and filtering on
+      // mimeType alone hides playable files (issue #84).
+      val videos = files.filter {
+        !it.isDirectory && (it.mimeType?.startsWith("video/") == true || isVideoExtension(it.name))
+      }
       val networkListState = LazyListState()
 
       // Check if at top of list to hide scrollbar during pull-to-refresh
@@ -309,4 +314,15 @@ private fun NetworkBrowserContent(
     }
   }
 }
+}
+
+private val NETWORK_VIDEO_EXTENSIONS = setOf(
+  "mp4", "m4v", "mkv", "mk3d", "avi", "mov", "wmv", "flv", "webm",
+  "mpeg", "mpg", "m2v", "ogv", "ogm", "ts", "mts", "m2ts", "vob",
+  "divx", "xvid", "f4v", "rm", "rmvb", "asf", "3gp", "3g2",
+)
+
+private fun isVideoExtension(fileName: String): Boolean {
+  val ext = fileName.substringBefore('?').substringBefore('#').substringAfterLast('.', "").lowercase()
+  return ext in NETWORK_VIDEO_EXTENSIONS
 }

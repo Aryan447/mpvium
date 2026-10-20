@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
@@ -50,6 +51,7 @@ import app.aryan447.mpvium.preferences.DecoderPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.player.Debanding
+import app.aryan447.mpvium.ui.player.Decoder
 import app.aryan447.mpvium.ui.player.MPVProfile
 import app.aryan447.mpvium.ui.preferences.VulkanUtils
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
@@ -103,14 +105,20 @@ object DecoderPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              val tryHWDecoding by preferences.tryHWDecoding.collectAsState()
-              HapticSwitchPreference(
-                value = tryHWDecoding,
-                onValueChange = {
-                  preferences.tryHWDecoding.set(it)
-                },
+              val defaultDecoder by preferences.defaultDecoder.collectAsState()
+              ListPreference(
+                value = defaultDecoder,
+                onValueChange = { preferences.defaultDecoder.set(it) },
+                values = Decoder.defaultOptions,
+                valueToText = { AnnotatedString(it.title) },
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Memory) },
-                title = { Text(stringResource(R.string.pref_decoder_try_hw_dec_title)) },
+                title = { Text(stringResource(R.string.pref_decoder_default_title)) },
+                summary = {
+                  Text(
+                    stringResource(defaultDecoder.descriptionRes),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
               )
             }
           }

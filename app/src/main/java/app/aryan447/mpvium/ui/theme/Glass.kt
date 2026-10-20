@@ -359,7 +359,10 @@ fun glassShortNavigationBarItemColors(): androidx.compose.material3.NavigationIt
     selectedIconColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
     ),
-    selectedTextColor = glassButtonContentColor(
+    selectedTextColorTopIconPosition = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+    ),
+    selectedTextColorStartIconPosition = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
     ),
     selectedIndicatorColor = if (dark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.65f),

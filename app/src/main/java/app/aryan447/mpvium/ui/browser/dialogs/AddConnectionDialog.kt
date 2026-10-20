@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.domain.network.NetworkConnection
@@ -58,7 +60,6 @@ fun AddConnectionSheet(
   var path by remember { mutableStateOf("/") }
   var isAnonymous by remember { mutableStateOf(false) }
   var useHttps by remember { mutableStateOf(false) }
-  var passwordVisible by remember { mutableStateOf(false) }
   var protocolMenuExpanded by remember { mutableStateOf(false) }
 
   val handleDismiss = {
@@ -243,6 +244,8 @@ fun AddConnectionSheet(
                 modifier = Modifier.weight(0.50f),
                 singleLine = true,
                 enabled = !isAnonymous,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
               )
             }
 

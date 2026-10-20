@@ -47,9 +47,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -81,6 +84,7 @@ import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.sign
 import kotlin.math.sqrt
 
 /**
@@ -103,6 +107,102 @@ private const val SubtitleTouchMinSlopPx = 48f
  * keep their existing feel.
  */
 private const val HORIZONTAL_SEEK_REFERENCE_WIDTH_PX = 820f
+
+/**
+ * Seconds the accelerating term adds at a full gesture-width drag, before the
+ * speed gain. Linear-only response still covers the first
+ * [SWIPE_SEEK_ACCEL_ENGAGE_FRACTION] of the drag, so careful seeking keeps the
+ * exact per-pixel sensitivity from the preference; past the engage point the
+ * response ramps up so a single sweep can cover minutes instead of seconds —
+ * the same idea as VLC's bi-cubic swipe progression, but engaged later so the
+ * fine end stays usable.
+ */
+private const val SWIPE_SEEK_ACCEL_SECONDS = 300f
+
+/**
+ * Exponent of the accelerating term. 2.5 is gentle near the engage point
+ * (precision survives) while still ramping hard enough at the far end.
+ */
+private const val SWIPE_SEEK_ACCEL_EXPONENT = 2.5f
+
+/**
+ * Fraction of the gesture width below which the mapping is exactly the linear
+ * per-pixel response: dragging up to 12% of the width behaves identically to
+ * the flat implementation. This is what keeps short, precise drags unaffected.
+ */
+private const val SWIPE_SEEK_ACCEL_ENGAGE_FRACTION = 0.12f
+
+/**
+ * Finger speed bounds, in gesture widths per second, for the speed gain: at or
+ * below [SWIPE_SEEK_SPEED_DEADZONE] the drag counts as deliberate and gets no
+ * gain, at or above [SWIPE_SEEK_SPEED_FULL_AT] it counts as a flick and gets
+ * the full [SWIPE_SEEK_SPEED_GAIN].
+ *
+ * The gain only ever scales the accelerating term, which is zero below the
+ * engage fraction — so velocity noise can never make precise drags jumpy.
+ */
+private const val SWIPE_SEEK_SPEED_DEADZONE = 0.5f
+private const val SWIPE_SEEK_SPEED_FULL_AT = 1.5f
+private const val SWIPE_SEEK_SPEED_GAIN = 1f
+
+/**
+ * Never let a swipe land exactly on the video's end: mpv reports EOF there and
+ * "close after the end of playback" (on by default) would tear the player down
+ * instead of leaving the last second on screen. With the accelerated range,
+ * overshooting into the end while dragging is a normal thing to do. The
+ * seekbar and double-tap seeks keep their existing exact-end behaviour.
+ */
+private const val SWIPE_SEEK_EOF_GUARD_SECONDS = 1f
+
+/**
+ * Speed multiplier for the accelerating term: 1 for deliberate drags, up to
+ * 1 + [SWIPE_SEEK_SPEED_GAIN] for flicks. [speedFraction] is the finger speed
+ * in gesture widths per second.
+ */
+private fun swipeSeekSpeedGain(speedFraction: Float): Float {
+  if (SWIPE_SEEK_SPEED_GAIN <= 0f) return 1f
+  val ramp = (speedFraction - SWIPE_SEEK_SPEED_DEADZONE) /
+    (SWIPE_SEEK_SPEED_FULL_AT - SWIPE_SEEK_SPEED_DEADZONE)
+  return 1f + SWIPE_SEEK_SPEED_GAIN * ramp.coerceIn(0f, 1f)
+}
+
+/**
+ * Maps a signed drag distance, as a fraction of the gesture width, to a seek
+ * offset in seconds.
+ *
+ * Three zones, all functions of finger position, so the mapping stays
+ * reversible: dragging back to where the gesture started always returns to the
+ * starting position.
+ *
+ * - up to [SWIPE_SEEK_ACCEL_ENGAGE_FRACTION]: pure [secondsPerWidth] per unit
+ *   fraction, i.e. the original flat behaviour — careful seeking is unchanged;
+ * - beyond it: the accelerating term ramps in smoothly from zero and reaches
+ *   [SWIPE_SEEK_ACCEL_SECONDS] at a full-width drag;
+ * - the accelerating term is scaled by [speedGain] (1..1+[SWIPE_SEEK_SPEED_GAIN]),
+ *   so the same distance seeks more when swiped fast, while the fine zone above
+ *   is untouched by velocity.
+ *
+ * Pass [adaptive] = false for the legacy flat mapping (accelerating term off).
+ */
+private fun swipeSeekSeconds(
+  fraction: Float,
+  secondsPerWidth: Float,
+  speedGain: Float,
+  adaptive: Boolean,
+): Float {
+  val linear = secondsPerWidth * fraction
+  if (!adaptive) return linear
+
+  val magnitude = abs(fraction)
+  if (magnitude <= SWIPE_SEEK_ACCEL_ENGAGE_FRACTION) return linear
+
+  val ramp = (magnitude - SWIPE_SEEK_ACCEL_ENGAGE_FRACTION) /
+    (1f - SWIPE_SEEK_ACCEL_ENGAGE_FRACTION)
+  val accelerated = SWIPE_SEEK_ACCEL_SECONDS *
+    ramp.coerceIn(0f, 1f).pow(SWIPE_SEEK_ACCEL_EXPONENT) *
+    speedGain
+  return linear + sign(fraction) * accelerated
+}
 
 /**
  * Vertical video rect (top offset, height in px) inside the touch
@@ -164,6 +264,58 @@ private fun isSubtitleTouch(
   ) <= tolerance
 }
 
+/**
+ * Wider subtitle band used by the two-finger resize gesture. The single-finger
+ * band stays deliberately tight for hold-to-drag and position reset; two
+ * fingers need a little more room to land comfortably around the text.
+ */
+private const val SubtitleScaleTouchToleranceFraction = 0.12f
+private const val SubtitleScaleTouchMinSlopPx = 64f
+
+/** Limits for the pinch-driven subtitle scale factor. */
+private const val SubtitleScaleMin = 0.25f
+private const val SubtitleScaleMax = 5f
+
+/** Two-finger double-tap tuning. */
+private const val SubtitleTwoFingerTapMaxDurationMs = 300L
+private const val SubtitleTwoFingerTapMaxStartGapMs = 200L
+private const val SubtitleDoubleTapWindowMs = 350L
+
+/** Persists two-finger tap bookkeeping across separate gestures. */
+private class SubtitleTwoFingerTapTracker {
+  var lastTapTimeMs = 0L
+  var lastTapX = 0f
+  var lastTapY = 0f
+
+  fun clear() {
+    lastTapTimeMs = 0L
+  }
+}
+
+private fun isSubtitleScaleTouch(
+  y: Float,
+  containerWidth: Float,
+  containerHeight: Float,
+  videoAspect: Double?,
+  currentSubPos: Int,
+): Boolean {
+  if (containerHeight <= 0f) return false
+  val (_, videoHeight) = videoRectTopAndHeight(containerWidth, containerHeight, videoAspect)
+  val tolerance = (videoHeight * SubtitleScaleTouchToleranceFraction).coerceAtLeast(SubtitleScaleTouchMinSlopPx)
+  return kotlin.math.abs(
+    y - subtitleYInContainer(containerWidth, containerHeight, videoAspect, currentSubPos),
+  ) <= tolerance
+}
+
+/** True when mpv is currently showing a primary or secondary subtitle track. */
+private fun hasVisibleSubtitleTrack(): Boolean {
+  val primarySid = MPVLib.getPropertyInt("sid") ?: 0
+  val secondarySid = MPVLib.getPropertyInt("secondary-sid") ?: 0
+  val primaryVisible = MPVLib.getPropertyBoolean("sub-visibility") ?: true
+  val secondaryVisible = MPVLib.getPropertyBoolean("secondary-sub-visibility") ?: true
+  return (primarySid > 0 && primaryVisible) || (secondarySid > 0 && secondaryVisible)
+}
+
 @Suppress("CyclomaticComplexMethod", "MultipleEmitters")
 @Composable
 fun GestureHandler(
@@ -203,9 +355,12 @@ fun GestureHandler(
   val volumeGesture by playerPreferences.volumeGesture.collectAsState()
   val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
   val pinchToZoomGesture by playerPreferences.pinchToZoomGesture.collectAsState()
+  val pinchToResizeSubtitles by playerPreferences.pinchToResizeSubtitles.collectAsState()
   val panAndZoomEnabled by playerPreferences.panAndZoomEnabled.collectAsState()
   val horizontalSwipeToSeek by playerPreferences.horizontalSwipeToSeek.collectAsState()
   val horizontalSwipeSensitivity by playerPreferences.horizontalSwipeSensitivity.collectAsState()
+  val verticalSwipeSensitivity by playerPreferences.verticalSwipeSensitivity.collectAsState()
+  val horizontalSwipeAcceleration by playerPreferences.horizontalSwipeAcceleration.collectAsState()
   var isLongPressing by remember { mutableStateOf(false) }
   var isDynamicSpeedControlActive by remember { mutableStateOf(false) }
   var dynamicSpeedStartX by remember { mutableStateOf(0f) }
@@ -214,10 +369,7 @@ fun GestureHandler(
   var hasSwipedEnough by remember { mutableStateOf(false) }
   var longPressTriggeredDuringTouch by remember { mutableStateOf(false) }
   var isVerticalGestureActive by remember { mutableStateOf(false) }
-  val currentVolume by viewModel.currentVolume.collectAsState()
-  val currentMPVVolume by MPVLib.propInt["volume"].collectAsState()
-  val currentBrightness by viewModel.currentBrightness.collectAsState()
-  val volumeBoostingCap = audioPreferences.volumeBoostCap.get()
+  val volumeBoostingCap by audioPreferences.volumeBoostCap.collectAsState()
   val haptics = LocalHapticFeedback.current
   val coroutineScope = rememberCoroutineScope()
   // Swipes starting in the status-bar zone belong to the system
@@ -249,6 +401,9 @@ fun GestureHandler(
   var pendingSingleTapPosition by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
   val doubleTapTimeout = 300L
   val multiTapContinueWindow = 650L
+
+  // Two-finger tap bookkeeping for the subtitle resize reset gesture.
+  val subtitleTwoFingerTapTracker = remember { SubtitleTwoFingerTapTracker() }
 
   // Multi-tap seeking state
   var lastSeekRegion by remember { mutableStateOf<String?>(null) }
@@ -319,10 +474,24 @@ fun GestureHandler(
           // Track for potential drag
           var isDrag = false
           var wasConsumedByTapGesture = false
+          var hadMultiplePointers = false
 
           do {
             val event = awaitPointerEvent()
             val pointer = event.changes.firstOrNull { it.id == down.id } ?: break
+
+            // Any two-finger gesture belongs to pinch-to-zoom or subtitle
+            // resize. Never let one of its fingers register as a single tap
+            // (which would toggle controls or reset subtitle position).
+            if (event.changes.size > 1) {
+              hadMultiplePointers = true
+              pendingSingleTapRegion = null
+              pendingSingleTapPosition = null
+              if (tapCount == 1) {
+                tapCount = 0
+                lastTapRegion = null
+              }
+            }
 
             // Check if this is a drag (not a tap)
             val distance = sqrt(
@@ -337,7 +506,7 @@ fun GestureHandler(
 
             if (!pointer.pressed) {
               // Pointer lifted - this is a tap if it wasn't a drag
-              if (!isDrag && !wasConsumedByTapGesture) {
+              if (!isDrag && !hadMultiplePointers && !wasConsumedByTapGesture && !pointer.isConsumed) {
                 val timeSinceLastTap = downTime - lastTapTime
                 val positionChange = sqrt(
                   (downPosition.x - lastTapPosition.x) * (downPosition.x - lastTapPosition.x) +
@@ -459,7 +628,7 @@ fun GestureHandler(
           } while (event.changes.any { it.pressed })
         }
       }
-      .pointerInput(areControlsLocked, multipleSpeedGesture, holdGestureMode, brightnessGesture, volumeGesture, swapVolumeAndBrightness) {
+      .pointerInput(areControlsLocked, multipleSpeedGesture, holdGestureMode, brightnessGesture, volumeGesture, swapVolumeAndBrightness, verticalSwipeSensitivity, volumeBoostingCap) {
         if (areControlsLocked) return@pointerInput
 
         awaitEachGesture {
@@ -469,18 +638,24 @@ fun GestureHandler(
           // Reset long press tracking at the start of each gesture
           longPressTriggeredDuringTouch = false
 
-          // State for vertical gestures (volume/brightness)
+          // State for vertical gestures (volume/brightness).
+          // Read volume/brightness fresh from the sources of truth here:
+          // the outer collected states are stale inside pointerInput because
+          // the detector does not restart on every volume change, so reusing
+          // them made consecutive/quick swipes jump back to an old base
+          // (issue #86: many swipes needed, fast swipes felt stuck).
           var startingY = 0f
           var mpvVolumeStartingY = 0f
-          var originalVolume = currentVolume
-          var originalMPVVolume = currentMPVVolume
-          var originalBrightness = currentBrightness
-          var lastVolumeValue = currentVolume
-          var lastMPVVolumeValue = currentMPVVolume ?: 100
-          var lastBrightnessValue = currentBrightness
-          val brightnessGestureSens = 0.001f
-          val volumeGestureSens = 0.017f
-          val mpvVolumeGestureSens = 0.017f
+          var originalVolume = viewModel.currentVolume.value
+          var originalMPVVolume: Int? = MPVLib.getPropertyInt("volume") ?: 100
+          var originalBrightness = viewModel.currentBrightness.value
+          var lastVolumeValue = originalVolume
+          var lastMPVVolumeValue = originalMPVVolume ?: 100
+          var lastBrightnessValue = originalBrightness
+          val sensitivity = verticalSwipeSensitivity.coerceIn(0.25f, 3f)
+          val brightnessGestureSens = 0.001f * sensitivity
+          val volumeGestureSens = 0.017f * sensitivity
+          val mpvVolumeGestureSens = 0.017f * sensitivity
 
           // Original speed for long press
           var originalSpeed = playbackSpeed ?: 1f
@@ -500,12 +675,12 @@ fun GestureHandler(
           var holdPrevY = 0f
           var holdStartingY = 0f
           var holdMpvStartingY = 0f
-          var holdBaseVolume = currentVolume
-          var holdBaseMPVVolume = currentMPVVolume ?: 100
-          var holdBaseBrightness = currentBrightness
-          var holdLastVolume = currentVolume
-          var holdLastMPVVolume = currentMPVVolume ?: 100
-          var holdLastBrightness = currentBrightness
+          var holdBaseVolume = viewModel.currentVolume.value
+          var holdBaseMPVVolume = MPVLib.getPropertyInt("volume") ?: 100
+          var holdBaseBrightness = viewModel.currentBrightness.value
+          var holdLastVolume = holdBaseVolume
+          var holdLastMPVVolume = holdBaseMPVVolume
+          var holdLastBrightness = holdBaseBrightness
           var subtitleDragStartSubPos = subtitlesPreferences.subPos.get()
           var lastSubtitlePos = subtitleDragStartSubPos
           val gestureAreaHeight = size.height.toFloat()
@@ -768,12 +943,12 @@ fun GestureHandler(
                           isVerticalGestureActive = true
                           startingY = 0f
                           mpvVolumeStartingY = 0f
-                          originalVolume = currentVolume
-                          originalMPVVolume = currentMPVVolume
-                          originalBrightness = currentBrightness
-                          lastVolumeValue = currentVolume
-                          lastMPVVolumeValue = currentMPVVolume ?: 100
-                          lastBrightnessValue = currentBrightness
+                          originalVolume = viewModel.currentVolume.value
+                          originalMPVVolume = MPVLib.getPropertyInt("volume") ?: 100
+                          originalBrightness = viewModel.currentBrightness.value
+                          lastVolumeValue = originalVolume
+                          lastMPVVolumeValue = originalMPVVolume ?: 100
+                          lastBrightnessValue = originalBrightness
                         }
                       }
                     }
@@ -825,19 +1000,22 @@ fun GestureHandler(
                         val amount = currentPosition.y - startPosition.y
 
                         val changeVolume: () -> Unit = {
+                          val liveSystemVolume = viewModel.currentVolume.value
+                          val liveMpvVolume = MPVLib.getPropertyInt("volume") ?: 100
                           val isIncreasingVolumeBoost: (Float) -> Boolean = {
-                            volumeBoostingCap > 0 && currentVolume == viewModel.maxVolume &&
-                              (currentMPVVolume ?: 100) - 100 < volumeBoostingCap && amount < 0
+                            volumeBoostingCap > 0 && liveSystemVolume == viewModel.maxVolume &&
+                              liveMpvVolume - 100 < volumeBoostingCap && amount < 0
                           }
                           val isDecreasingVolumeBoost: (Float) -> Boolean = {
-                            volumeBoostingCap > 0 && currentVolume == viewModel.maxVolume &&
-                              (currentMPVVolume ?: 100) - 100 in 1..volumeBoostingCap && amount > 0
+                            volumeBoostingCap > 0 && liveSystemVolume == viewModel.maxVolume &&
+                              liveMpvVolume - 100 in 1..volumeBoostingCap && amount > 0
                           }
 
                           if (isIncreasingVolumeBoost(amount) || isDecreasingVolumeBoost(amount)) {
                             if (mpvVolumeStartingY == 0f) {
                               startingY = 0f
-                              originalVolume = currentVolume
+                              originalVolume = liveSystemVolume
+                              originalMPVVolume = liveMpvVolume
                               mpvVolumeStartingY = currentPosition.y
                             }
                             val newMPVVolume = calculateNewVerticalGestureValue(
@@ -854,7 +1032,8 @@ fun GestureHandler(
                           } else {
                             if (startingY == 0f) {
                               mpvVolumeStartingY = 0f
-                              originalMPVVolume = currentMPVVolume
+                              originalMPVVolume = MPVLib.getPropertyInt("volume") ?: liveMpvVolume
+                              originalVolume = liveSystemVolume
                               startingY = currentPosition.y
                             }
                             val newVolume = calculateNewVerticalGestureValue(
@@ -931,9 +1110,9 @@ fun GestureHandler(
                     if (brightnessGesture || volumeGesture) {
                       isVerticalGestureActive = false
                       startingY = 0f
-                      lastVolumeValue = currentVolume
-                      lastMPVVolumeValue = currentMPVVolume ?: 100
-                      lastBrightnessValue = currentBrightness
+                      lastVolumeValue = viewModel.currentVolume.value
+                      lastMPVVolumeValue = MPVLib.getPropertyInt("volume") ?: 100
+                      lastBrightnessValue = viewModel.currentBrightness.value
                     }
                   }
                 }
@@ -987,16 +1166,16 @@ fun GestureHandler(
               if (brightnessGesture || volumeGesture) {
                 isVerticalGestureActive = false
                 startingY = 0f
-                lastVolumeValue = currentVolume
-                lastMPVVolumeValue = currentMPVVolume ?: 100
-                lastBrightnessValue = currentBrightness
+                lastVolumeValue = viewModel.currentVolume.value
+                lastMPVVolumeValue = MPVLib.getPropertyInt("volume") ?: 100
+                lastBrightnessValue = viewModel.currentBrightness.value
               }
             }
           }
         }
       }
-      .pointerInput(pinchToZoomGesture, panAndZoomEnabled, areControlsLocked, isVerticalGestureActive) {
-        if (!pinchToZoomGesture || areControlsLocked || isVerticalGestureActive) return@pointerInput
+      .pointerInput(pinchToZoomGesture, pinchToResizeSubtitles, panAndZoomEnabled, areControlsLocked, isVerticalGestureActive) {
+        if ((!pinchToZoomGesture && !pinchToResizeSubtitles) || areControlsLocked || isVerticalGestureActive) return@pointerInput
 
         // Helper: get video display dimensions at 1x (how mpv fits the video to screen)
         fun videoDisplaySize(): Pair<Float, Float> {
@@ -1034,7 +1213,34 @@ fun GestureHandler(
           )
         }
 
+        val subtitleTapSlopPx = 24.dp.toPx()
+        val subtitleScaleActivationPx = 12.dp.toPx()
+        val subtitleDoubleTapMaxDistancePx = 64.dp.toPx()
+
         awaitEachGesture {
+          val firstDown = awaitFirstDown(requireUnconsumed = false)
+          val firstPointerId = firstDown.id
+          val firstStart = firstDown.position
+          val gestureStartTime = System.currentTimeMillis()
+
+          // null until both fingers are down, then true for subtitle resize
+          // and false for the existing video pinch-to-zoom path.
+          var subtitleMode: Boolean? = null
+          var subtitleStartScale = 1f
+          var subtitleScale = 1f
+          var subtitleStartDist = 0f
+          var subtitleScaleStarted = false
+          var subtitleLastPercent = -1
+          var subtitleHapticBucket = -1
+          var secondPointerId: PointerId? = null
+          var secondStart = Offset.Zero
+          var secondDownTime = 0L
+          var tapMidX = 0f
+          var tapMidY = 0f
+          var tapCandidate = true
+          var maxConcurrentPointers = 0
+          var maxPointerMovement = 0f
+
           var zoom = 0f
           var gestureStarted = false
           var prevDist = 0f
@@ -1042,11 +1248,44 @@ fun GestureHandler(
           var prevMidY = 0f
           val panSmooth = floatArrayOf(0f, 0f, 0f) // smoothX, smoothY, initialized
 
-          awaitFirstDown(requireUnconsumed = false)
-
           do {
             val event = awaitPointerEvent()
             val pressed = event.changes.filter { it.pressed }
+            if (pressed.isEmpty()) break
+
+            maxConcurrentPointers = maxOf(maxConcurrentPointers, pressed.size)
+            if (pressed.size > 2) tapCandidate = false
+
+            // Capture the second finger as soon as it lands so movement
+            // tracking can resolve both pointers' start positions.
+            if (secondPointerId == null && pressed.size == 2) {
+              val second = pressed.firstOrNull { it.id != firstPointerId }
+              if (second != null) {
+                secondPointerId = second.id
+                secondStart = second.position
+                secondDownTime = System.currentTimeMillis()
+                tapMidX = (pressed[0].position.x + pressed[1].position.x) / 2f
+                tapMidY = (pressed[0].position.y + pressed[1].position.y) / 2f
+              }
+            }
+
+            // Track movement from each finger's landing point. A small,
+            // short-lived two-finger touch is a tap, not a pinch.
+            if (tapCandidate) {
+              pressed.forEach { change ->
+                val start = when (change.id) {
+                  firstPointerId -> firstStart
+                  secondPointerId -> secondStart
+                  else -> null
+                }
+                if (start == null) {
+                  tapCandidate = false
+                } else {
+                  maxPointerMovement = maxOf(maxPointerMovement, (change.position - start).getDistance())
+                  if (maxPointerMovement > subtitleTapSlopPx) tapCandidate = false
+                }
+              }
+            }
 
             if (pressed.size == 2) {
               val p1 = pressed[0].position
@@ -1057,41 +1296,153 @@ fun GestureHandler(
               val midX = (p1.x + p2.x) / 2f
               val midY = (p1.y + p2.y) / 2f
 
-              if (prevDist == 0f) {
-                // First frame — capture baseline
-                prevDist = dist
-                zoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f
-                prevMidX = midX
-                prevMidY = midY
-              } else {
-                // Activate on significant pinch movement
-                if (!gestureStarted && abs(dist - prevDist) > 5f) {
-                  gestureStarted = true
-                  viewModel.playerUpdate.update { PlayerUpdates.VideoZoom }
+              if (subtitleMode == null) {
+                // First frame with both fingers down: decide once whether
+                // this gesture targets subtitles or the video.
+                val currentSubPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+                val subtitleTouch = pinchToResizeSubtitles &&
+                  hasVisibleSubtitleTrack() &&
+                  isSubtitleScaleTouch(
+                    midY,
+                    size.width.toFloat(),
+                    size.height.toFloat(),
+                    currentVideoAspect(),
+                    currentSubPos,
+                  )
+                subtitleMode = subtitleTouch
+
+                if (subtitleTouch) {
+                  subtitleStartScale = MPVLib.getPropertyDouble("sub-scale")?.toFloat()
+                    ?: subtitlesPreferences.subScale.get()
+                  subtitleScale = subtitleStartScale
+                  subtitleStartDist = dist.coerceAtLeast(1f)
+                  subtitleLastPercent = (subtitleScale * 100).roundToInt()
+                  subtitleHapticBucket = subtitleLastPercent / 10
+                } else {
+                  prevDist = dist
+                  zoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f
+                  prevMidX = midX
+                  prevMidY = midY
                 }
-
-                if (gestureStarted) {
-                  // Per-frame zoom: small delta from previous distance → naturally smooth
-                  val zoomDelta = ln((dist / prevDist).toDouble()).toFloat() * 1.2f
-                  zoom = (zoom + zoomDelta).coerceIn(-1f, 3f)
-                  viewModel.setVideoZoom(zoom)
-
-                  // Simultaneous pan while pinching
-                  if (panAndZoomEnabled) {
-                    applyPan(midX - prevMidX, midY - prevMidY, 2f.pow(zoom), panSmooth)
-                  }
-                }
-
-                prevDist = dist
-                prevMidX = midX
-                prevMidY = midY
               }
 
-              pressed.forEach { it.consume() }
+              if (subtitleMode == true) {
+                if (!subtitleScaleStarted &&
+                  abs(dist - subtitleStartDist) > subtitleScaleActivationPx
+                ) {
+                  subtitleScaleStarted = true
+                }
+
+                if (subtitleScaleStarted) {
+                  val newScale = (subtitleStartScale.coerceAtLeast(0.01f) * (dist / subtitleStartDist))
+                    .coerceIn(SubtitleScaleMin, SubtitleScaleMax)
+                  if (abs(newScale - subtitleScale) > 0.001f) {
+                    subtitleScale = newScale
+                    MPVLib.setPropertyFloat("sub-scale", newScale)
+                    val percent = (newScale * 100).roundToInt()
+                    if (percent != subtitleLastPercent) {
+                      subtitleLastPercent = percent
+                      viewModel.playerUpdate.update { PlayerUpdates.SubtitleScale(percent) }
+                    }
+                    val bucket = percent / 10
+                    if (bucket != subtitleHapticBucket) {
+                      subtitleHapticBucket = bucket
+                      haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                  }
+                }
+                pressed.forEach { it.consume() }
+              } else if (pinchToZoomGesture) {
+                if (prevDist == 0f) {
+                  // First frame — capture baseline
+                  prevDist = dist
+                  zoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f
+                  prevMidX = midX
+                  prevMidY = midY
+                } else {
+                  // Activate on significant pinch movement
+                  if (!gestureStarted && abs(dist - prevDist) > 5f) {
+                    gestureStarted = true
+                    viewModel.playerUpdate.update { PlayerUpdates.VideoZoom }
+                  }
+
+                  if (gestureStarted) {
+                    // Per-frame zoom: small delta from previous distance → naturally smooth
+                    val zoomDelta = ln((dist / prevDist).toDouble()).toFloat() * 1.2f
+                    zoom = (zoom + zoomDelta).coerceIn(-1f, 3f)
+                    viewModel.setVideoZoom(zoom)
+
+                    // Simultaneous pan while pinching
+                    if (panAndZoomEnabled) {
+                      applyPan(midX - prevMidX, midY - prevMidY, 2f.pow(zoom), panSmooth)
+                    }
+                  }
+
+                  prevDist = dist
+                  prevMidX = midX
+                  prevMidY = midY
+                }
+
+                pressed.forEach { it.consume() }
+              }
+            } else if (pressed.size < 2 && subtitleMode != null) {
+              break
             } else if (pressed.size < 2 && prevDist != 0f) {
               break
             }
           } while (event.changes.any { it.pressed })
+
+          if (subtitleMode == true) {
+            val tracker = subtitleTwoFingerTapTracker
+            if (subtitleScaleStarted) {
+              // Persist once when the pinch ends, not on every frame.
+              if (abs(subtitleScale - subtitlesPreferences.subScale.get()) > 0.001f) {
+                subtitlesPreferences.subScale.set(subtitleScale)
+              }
+              tracker.clear()
+            } else {
+              val now = System.currentTimeMillis()
+              val duration = now - gestureStartTime
+              val startGap = secondDownTime - gestureStartTime
+              val isValidTap = tapCandidate &&
+                maxConcurrentPointers == 2 &&
+                secondPointerId != null &&
+                duration <= SubtitleTwoFingerTapMaxDurationMs &&
+                startGap in 0..SubtitleTwoFingerTapMaxStartGapMs &&
+                maxPointerMovement <= subtitleTapSlopPx
+
+              if (isValidTap) {
+                val distanceFromLastTap = if (tracker.lastTapTimeMs > 0L) {
+                  sqrt(
+                    (tapMidX - tracker.lastTapX) * (tapMidX - tracker.lastTapX) +
+                    (tapMidY - tracker.lastTapY) * (tapMidY - tracker.lastTapY),
+                  )
+                } else {
+                  Float.MAX_VALUE
+                }
+                val elapsedSinceLastTap = now - tracker.lastTapTimeMs
+                val isDoubleTap = tracker.lastTapTimeMs > 0L &&
+                  elapsedSinceLastTap in 0..SubtitleDoubleTapWindowMs &&
+                  distanceFromLastTap <= subtitleDoubleTapMaxDistancePx
+
+                if (isDoubleTap) {
+                  tracker.clear()
+                  MPVLib.setPropertyFloat("sub-scale", 1f)
+                  subtitlesPreferences.subScale.set(1f)
+                  haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                  viewModel.playerUpdate.update {
+                    PlayerUpdates.SubtitleScale(100, isReset = true)
+                  }
+                } else {
+                  tracker.lastTapTimeMs = now
+                  tracker.lastTapX = tapMidX
+                  tracker.lastTapY = tapMidY
+                }
+              } else {
+                tracker.clear()
+              }
+            }
+          }
         }
       }
       // Single-finger pan (only when Pan & Zoom enabled and zoomed in)
@@ -1163,7 +1514,13 @@ fun GestureHandler(
           } while (event.changes.any { it.pressed })
         }
       }
-      .pointerInput(horizontalSwipeToSeek, areControlsLocked, gesturePreferences, isVerticalGestureActive) {
+      .pointerInput(
+        horizontalSwipeToSeek,
+        areControlsLocked,
+        gesturePreferences,
+        isVerticalGestureActive,
+        horizontalSwipeAcceleration,
+      ) {
         if (!horizontalSwipeToSeek || areControlsLocked || isVerticalGestureActive) return@pointerInput
 
         awaitEachGesture {
@@ -1178,6 +1535,17 @@ fun GestureHandler(
           var wasPlayerAlreadyPaused = false
           // Use the sensitivity preference instead of hardcoded value
           val seekSensitivity = horizontalSwipeSensitivity
+          // Seconds covered by the linear term at a full gesture-width drag.
+          val secondsPerWidth = seekSensitivity * HORIZONTAL_SEEK_REFERENCE_WIDTH_PX
+          // Platform fling estimator (same one Compose uses for scrolling):
+          // gives a stable horizontal speed from the last ~100ms of samples
+          // instead of chasing per-event jitter.
+          val velocityTracker = VelocityTracker()
+          velocityTracker.addPosition(down.uptimeMillis, down.position)
+          // Peak, not instantaneous, speed: a gesture's speed class only ever
+          // ratchets up, so the preview can't walk backwards when the finger
+          // slows down or stops while still touching the screen.
+          var peakSpeedFraction = 0f
 
           do {
             val event = awaitPointerEvent()
@@ -1190,6 +1558,7 @@ fun GestureHandler(
                   val deltaX = currentPosition.x - startPosition.x
                   val deltaY = currentPosition.y - startPosition.y
                   val timeSinceStart = System.currentTimeMillis() - startTime
+                  velocityTracker.addPosition(change.uptimeMillis, currentPosition)
 
                   // Tablet-specific responsive swipe gesture vs standard phone gesture.
                   // The width-scaled sensitivity (reference/actual) already normalizes
@@ -1234,12 +1603,33 @@ fun GestureHandler(
                     // wide screens hypersensitive, throwing the seekbar preview
                     // across the track on small finger movements.
                     val gestureWidthPx = size.width.toFloat().coerceAtLeast(1f)
-                    val widthScale = HORIZONTAL_SEEK_REFERENCE_WIDTH_PX / gestureWidthPx
+                    // Finger speed in gesture widths per second, peak-latched for
+                    // this gesture so the gain only ever rises (see
+                    // swipeSeekSeconds).
+                    val speedFraction = abs(velocityTracker.calculateVelocity().x) / gestureWidthPx
+                    peakSpeedFraction = maxOf(peakSpeedFraction, speedFraction)
                     // Calculate seek amount based on horizontal movement
-                    val seekAmount = deltaX * seekSensitivity * widthScale
+                    val seekAmount = swipeSeekSeconds(
+                      fraction = deltaX / gestureWidthPx,
+                      secondsPerWidth = secondsPerWidth,
+                      speedGain = swipeSeekSpeedGain(peakSpeedFraction),
+                      adaptive = horizontalSwipeAcceleration,
+                    )
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
                     val maxDuration = duration?.toFloat() ?: 0f
-                    val clampedPosition = targetPosition.coerceAtMost(maxDuration)
+                    // Stop just short of the very end: landing on it makes mpv
+                    // report EOF and "close after the end of playback" would
+                    // exit the player mid-swipe. Never clamps below the position
+                    // the gesture started from, so the guard itself can't seek
+                    // backwards when the video is already on its last second.
+                    val seekCeiling = if (maxDuration > 0f) {
+                      (maxDuration - SWIPE_SEEK_EOF_GUARD_SECONDS)
+                        .coerceAtLeast(initialVideoPosition)
+                        .coerceAtMost(maxDuration)
+                    } else {
+                      maxDuration
+                    }
+                    val clampedPosition = targetPosition.coerceAtMost(seekCeiling)
                     lastClampedPosition = clampedPosition
 
                     // Quantize to whole seconds with rounding (not truncation) so tiny

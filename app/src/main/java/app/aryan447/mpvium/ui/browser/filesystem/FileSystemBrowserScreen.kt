@@ -1115,22 +1115,21 @@ fun FileSystemBrowserScreen(path: String? = null) {
 }
 
 /**
- * Applies blacklist / whitelist-only rules to file-browser search results.
+ * Applies blacklist-only rules to file-browser search results.
+ * Files is full-storage (issue #87): the whitelist-only library filter never
+ * applies here.
  */
 private fun filterSearchResults(
   results: List<app.aryan447.mpvium.domain.browser.FileSystemItem>,
   foldersPreferences: app.aryan447.mpvium.preferences.FoldersPreferences,
 ): List<app.aryan447.mpvium.domain.browser.FileSystemItem> {
-  val whitelist = foldersPreferences.whitelistedFolders.get()
   val blacklist = foldersPreferences.blacklistedFolders.get()
-  val whitelistOnly = foldersPreferences.whitelistOnlyEnabled.get()
-  if (!whitelistOnly && blacklist.isEmpty()) return results
-  if (whitelistOnly && whitelist.isEmpty()) return results
+  if (blacklist.isEmpty()) return results
   return results.filter { item ->
     when (item) {
       is app.aryan447.mpvium.domain.browser.FileSystemItem.Folder ->
-        app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
-          item.path, whitelist, blacklist, whitelistOnly,
+        app.aryan447.mpvium.preferences.FolderVisibility.isBrowserVisible(
+          item.path, blacklist,
         )
       is app.aryan447.mpvium.domain.browser.FileSystemItem.VideoFile -> {
         val parent = try {
@@ -1138,8 +1137,8 @@ private fun filterSearchResults(
         } catch (_: Exception) {
           item.path
         }
-        app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
-          parent, whitelist, blacklist, whitelistOnly,
+        app.aryan447.mpvium.preferences.FolderVisibility.isBrowserVisible(
+          parent, blacklist,
         )
       }
     }

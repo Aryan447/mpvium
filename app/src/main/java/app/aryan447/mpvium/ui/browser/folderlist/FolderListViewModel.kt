@@ -108,20 +108,25 @@ class FolderListViewModel(
       }
     }
 
-    // Filter folders based on blacklist / whitelist-only mode
+    // Refresh NEW counts when manual "Mark as New" overrides change
+    viewModelScope.launch(Dispatchers.IO) {
+      browserPreferences.manualNewVideos.changes().collectLatest {
+        calculateNewVideoCounts(_videoFolders.value)
+      }
+    }
+
+    // Folders tab is the full-storage browser (issue #87): only the blacklist
+    // applies here. The whitelist-only library filter stays scoped to
+    // Home / Shows / Movies / Insights via SeriesDetector.
     viewModelScope.launch {
       combine(
         _allVideoFolders,
         foldersPreferences.blacklistedFolders.changes(),
-        foldersPreferences.whitelistedFolders.changes(),
-        foldersPreferences.whitelistOnlyEnabled.changes(),
-      ) { folders, blacklist, whitelist, whitelistOnly ->
+      ) { folders, blacklist ->
         folders.filter { folder ->
-          app.aryan447.mpvium.preferences.FolderVisibility.isFolderVisible(
+          app.aryan447.mpvium.preferences.FolderVisibility.isBrowserVisible(
             folderPath = folder.path,
-            whitelist = whitelist,
             blacklist = blacklist,
-            whitelistOnly = whitelistOnly,
           )
         }
       }.collectLatest { filteredFolders ->
@@ -229,6 +234,12 @@ class FolderListViewModel(
         val thresholdDays = appearancePreferences.unplayedOldVideoDays.get()
         val thresholdMillis = thresholdDays * 24 * 60 * 60 * 1000L
         val currentTime = System.currentTimeMillis()
+        val manualNewPaths = try {
+          browserPreferences.manualNewVideos.get()
+        } catch (_: Exception) {
+          emptySet()
+        }
+        val stalePaths = mutableSetOf<String>()
 
         val foldersWithCounts = folders.map { folder ->
           try {
@@ -236,24 +247,39 @@ class FolderListViewModel(
             val videos = app.aryan447.mpvium.repository.MediaFileRepository
               .getVideosInFolder(getApplication(), folder.bucketId)
 
-            // Count new unplayed videos
+            // Count new unplayed videos (automatic recency + manual "Mark as New").
             val newCount = videos.count { video ->
-              // Check if video was modified within threshold days
-              val videoAge = currentTime - (video.dateModified * 1000)
-              val isRecent = videoAge <= thresholdMillis
-
               // Check if video has been played
               // A video is considered "played" if it has any playback state
               val playbackState = playbackStateRepository.getVideoDataByTitle(video.displayName)
               val isUnplayed = playbackState == null
+              if (!isUnplayed) {
+                // Played videos must never count, and any stale manual
+                // override is cleaned so it cannot resurface later.
+                if (manualNewPaths.contains(video.path)) stalePaths.add(video.path)
+                false
+              } else {
+                // Check if video was modified within threshold days
+                val videoAge = currentTime - (video.dateModified * 1000)
+                val isRecent = videoAge <= thresholdMillis
+                val isManuallyMarkedNew = manualNewPaths.contains(video.path)
 
-              isRecent && isUnplayed
+                isRecent || isManuallyMarkedNew
+              }
             }
 
             FolderWithNewCount(folder, newCount)
           } catch (e: Exception) {
             Log.e(TAG, "Error counting new videos for folder ${folder.name}", e)
             FolderWithNewCount(folder, 0)
+          }
+        }
+
+        if (stalePaths.isNotEmpty()) {
+          try {
+            browserPreferences.manualNewVideos.set(manualNewPaths - stalePaths)
+          } catch (e: Exception) {
+            Log.w(TAG, "Failed to prune stale manual-new marks: ${e.message}")
           }
         }
 

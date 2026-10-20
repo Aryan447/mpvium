@@ -27,6 +27,7 @@ class AppearancePreferences(
   val darkMode = preferenceStore.getEnum("dark_mode", DarkMode.System)
   val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Default)
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
+  val playerFullColors = preferenceStore.getBoolean("full_player_colors", true)
   val pillNavigationBar = preferenceStore.getBoolean("pill_navigation_bar", true)
   val showBottomNavLabels = preferenceStore.getBoolean("show_bottom_nav_labels", true)
   val bottomNavTabs =
@@ -41,6 +42,13 @@ class AppearancePreferences(
   val unplayedOldVideoDays = preferenceStore.getInt("unplayed_old_video_days", 7)
   val showNetworkThumbnails = preferenceStore.getBoolean("show_network_thumbnails", false)
   val showFeaturedHero = preferenceStore.getBoolean("show_featured_hero", true)
+  val homeSectionOrder = preferenceStore.getString("home_section_order", HomeSection.defaultOrderCsv)
+  val showContinueWatching = preferenceStore.getBoolean("show_continue_watching", true)
+  val showUpNext = preferenceStore.getBoolean("show_up_next", true)
+  val showRecentlyAdded = preferenceStore.getBoolean("show_recently_added", true)
+  val showShowsSection = preferenceStore.getBoolean("show_shows_section", true)
+  val showMoviesSection = preferenceStore.getBoolean("show_movies_section", true)
+  val showFoldersSection = preferenceStore.getBoolean("show_folders_section", true)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Wavy)
   val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Wavy)
   val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Wavy)
@@ -76,6 +84,39 @@ class AppearancePreferences(
       "portrait_bottom_controls",
       "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP,EXPLAIN",
     )
+
+  fun setHomeSectionVisible(section: HomeSection, visible: Boolean) {
+    when (section) {
+      HomeSection.FEATURED -> showFeaturedHero.set(visible)
+      HomeSection.CONTINUE_WATCHING -> showContinueWatching.set(visible)
+      HomeSection.UP_NEXT -> showUpNext.set(visible)
+      HomeSection.RECENTLY_ADDED -> showRecentlyAdded.set(visible)
+      HomeSection.SHOWS -> showShowsSection.set(visible)
+      HomeSection.MOVIES -> showMoviesSection.set(visible)
+      HomeSection.FOLDERS -> showFoldersSection.set(visible)
+    }
+  }
+
+  // Move a section by [delta] positions (-1 up, +1 down); no-op at the ends.
+  fun moveHomeSection(section: HomeSection, delta: Int) {
+    val order = HomeSection.parseOrder(homeSectionOrder.get()).toMutableList()
+    val from = order.indexOf(section)
+    val to = from + delta
+    if (from < 0 || to !in order.indices) return
+    order.add(to, order.removeAt(from))
+    homeSectionOrder.set(order.joinToString(",") { it.key })
+  }
+
+  fun resetHomeSections() {
+    homeSectionOrder.delete()
+    showFeaturedHero.delete()
+    showContinueWatching.delete()
+    showUpNext.delete()
+    showRecentlyAdded.delete()
+    showShowsSection.delete()
+    showMoviesSection.delete()
+    showFoldersSection.delete()
+  }
 
   fun parseButtons(
     csv: String,

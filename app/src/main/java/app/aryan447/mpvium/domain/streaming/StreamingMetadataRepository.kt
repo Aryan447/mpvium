@@ -5,6 +5,7 @@ import android.util.Log
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.repository.wyzie.WyzieMediaMatcher
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import kotlinx.coroutines.Dispatchers
@@ -59,7 +60,11 @@ class StreamingMetadataRepository(
     private const val TMDB_IMAGE_BASE_W500 = "https://image.tmdb.org/t/p/w500"
     private const val TMDB_IMAGE_BASE_W780 = "https://image.tmdb.org/t/p/w780"
     private const val TMDB_IMAGE_BASE_W1280 = "https://image.tmdb.org/t/p/w1280"
-    private const val CACHE_FILE_NAME = "streaming_metadata_cache_v2.json"
+    // v3 re-resolves automatic matches with the stricter title/year matcher.
+    // v2 entries could permanently pin a wrong poster because cache entries
+    // have no TTL, so only user-picked matches are migrated.
+    private const val CACHE_FILE_NAME = "streaming_metadata_cache_v3.json"
+    private const val PREVIOUS_CACHE_FILE_NAME = "streaming_metadata_cache_v2.json"
     private const val LEGACY_CACHE_FILE_NAME = "streaming_metadata_cache_v1.json"
 
     // Cache keys are indefinite: entries live until the underlying media is
@@ -67,12 +72,25 @@ class StreamingMetadataRepository(
     private const val SERIES_KEY_PREFIX = "series_"
     private const val MOVIE_KEY_PREFIX = "movie_"
 
+    // Keep Unicode letters and digits: stripping everything outside a-z0-9
+    // collapses all Japanese/Chinese/Korean/Arabic titles to the same cache
+    // key, making every show share one poster (and every movie, one match).
     fun normalizeKey(title: String): String =
-      title.lowercase().replace(Regex("[^a-z0-9]"), "")
+      title.lowercase(java.util.Locale.ROOT)
+        .replace(Regex("""[^\p{L}\p{N}]"""), "")
+        .trim()
 
     fun seriesKeyFor(seriesId: String): String = "$SERIES_KEY_PREFIX$seriesId"
 
-    fun movieKeyFor(movieTitle: String): String = "$MOVIE_KEY_PREFIX${normalizeKey(movieTitle)}"
+    /**
+     * Movie keys include the release year so same-name films (Dune 1984 and
+     * Dune 2021, The Thing 1982 and The Thing 2011) do not share a poster.
+     */
+    fun movieKeyFor(movieTitle: String, year: String? = null): String {
+      val base = "$MOVIE_KEY_PREFIX${normalizeKey(movieTitle)}"
+      val normalizedYear = year?.filter { it.isDigit() }?.take(4)?.takeIf { it.length == 4 }
+      return if (normalizedYear != null) "$base@$normalizedYear" else base
+    }
   }
 
   // Phone-sized artwork (w500 posters, w780 backdrops) upscales ~2.4x on a
@@ -96,8 +114,14 @@ class StreamingMetadataRepository(
       if (isCacheLoaded) return@withLock
       withContext(Dispatchers.IO) {
         try {
-          // v1 cached phone-sized URLs; drop it so tablets refetch hi-res artwork.
+          // v1 cached phone-sized URLs; v2 auto-matches may be wrong. Drop
+          // both, but carry forward matches the user picked by hand so their
+          // manual corrections survive the matcher upgrade.
+          if (!cacheFile.exists()) {
+            migrateManualMatches()
+          }
           runCatching { File(context.filesDir, LEGACY_CACHE_FILE_NAME).takeIf { it.exists() }?.delete() }
+          runCatching { File(context.filesDir, PREVIOUS_CACHE_FILE_NAME).takeIf { it.exists() }?.delete() }
           if (cacheFile.exists()) {
             val text = cacheFile.readText()
             if (text.isNotBlank()) {
@@ -111,6 +135,24 @@ class StreamingMetadataRepository(
         }
         isCacheLoaded = true
       }
+    }
+  }
+
+  /** Carries user-picked matches from the previous cache generation. */
+  private fun migrateManualMatches() {
+    val previous = File(context.filesDir, PREVIOUS_CACHE_FILE_NAME)
+    if (!previous.exists()) return
+    try {
+      val text = previous.readText()
+      if (text.isBlank()) return
+      val old = json.decodeFromString<Map<String, CachedMediaMetadata>>(text)
+      val manual = old.filterValues { it.manuallySelected }
+      if (manual.isNotEmpty()) {
+        cacheFile.writeText(json.encodeToString(manual))
+        Log.d(TAG, "Migrated ${manual.size} manually matched metadata entries")
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to migrate previous metadata cache", e)
     }
   }
 
@@ -158,7 +200,7 @@ class StreamingMetadataRepository(
         }
         if (match == null) {
           val searchResults = wyzieRepository.searchMedia(series.title).getOrNull() ?: emptyList()
-          match = pickBestTvMatch(searchResults, series.year)
+          match = WyzieMediaMatcher.pickBest(searchResults, "tv", series.title, series.year)
         }
         if (match == null) return@withContext series
 
@@ -265,7 +307,7 @@ class StreamingMetadataRepository(
    */
   suspend fun pruneStaleMetadata(
     presentSeriesIds: Set<String>? = null,
-    presentMovieTitles: Set<String>? = null,
+    presentMovieKeys: Set<String>? = null,
   ) {
     ensureCacheLoaded()
     var changed = false
@@ -280,8 +322,14 @@ class StreamingMetadataRepository(
         }
       }
     }
-    if (presentMovieTitles != null) {
-      val keep = presentMovieTitles.mapTo(HashSet()) { movieKeyFor(it) }
+    if (presentMovieKeys != null) {
+      // Keep both the year-qualified key and the title-only fallback used by
+      // migrated manual matches.
+      val keep = HashSet<String>()
+      presentMovieKeys.forEach {
+        keep.add(it)
+        keep.add(it.substringBefore('@'))
+      }
       val iterator = memoryCache.keys.iterator()
       while (iterator.hasNext()) {
         val key = iterator.next()
@@ -301,10 +349,11 @@ class StreamingMetadataRepository(
    * Returns the already-resolved (and possibly manually chosen) TMDb id for a title,
    * so other features like intro skip can reuse the correct match instead of re-guessing.
    */
-  suspend fun getCachedTmdbId(title: String): Int? = withContext(Dispatchers.IO) {
+  suspend fun getCachedTmdbId(title: String, year: String? = null): Int? = withContext(Dispatchers.IO) {
     ensureCacheLoaded()
     val normalized = normalizeKey(title)
     memoryCache["series_$normalized"]?.tmdbId
+      ?: memoryCache[movieKeyFor(title, year)]?.tmdbId
       ?: memoryCache["movie_$normalized"]?.tmdbId
   }
 
@@ -339,28 +388,6 @@ class StreamingMetadataRepository(
       }
     }
 
-  private fun pickBestTvMatch(results: List<WyzieTmdbResult>, year: String?): WyzieTmdbResult? {
-    val tvResults = results.filter { it.mediaType.equals("tv", ignoreCase = true) }
-    val pool = if (tvResults.isNotEmpty()) tvResults else results
-    if (pool.isEmpty()) return null
-    year?.let { y ->
-      pool.firstOrNull { it.releaseYear == y }?.let { return it }
-      pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
-    }
-    return pool.firstOrNull()
-  }
-
-  private fun pickBestMovieMatch(results: List<WyzieTmdbResult>, year: String?): WyzieTmdbResult? {
-    val movieResults = results.filter { it.mediaType.equals("movie", ignoreCase = true) }
-    val pool = if (movieResults.isNotEmpty()) movieResults else results
-    if (pool.isEmpty()) return null
-    year?.let { y ->
-      pool.firstOrNull { it.releaseYear == y }?.let { return it }
-      pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
-    }
-    return pool.firstOrNull()
-  }
-
   /**
    * Returns search candidates (movies first, then series) so the user can manually fix a match for movies.
    */
@@ -375,7 +402,17 @@ class StreamingMetadataRepository(
    */
   suspend fun clearMovieMetadata(movieTitle: String) {
     ensureCacheLoaded()
-    if (memoryCache.remove(movieKeyFor(movieTitle)) != null) {
+    val baseKey = movieKeyFor(movieTitle)
+    var changed = false
+    val iterator = memoryCache.keys.iterator()
+    while (iterator.hasNext()) {
+      val key = iterator.next()
+      if (key == baseKey || key.startsWith("$baseKey@")) {
+        iterator.remove()
+        changed = true
+      }
+    }
+    if (changed) {
       persistCache()
     }
   }
@@ -387,8 +424,21 @@ class StreamingMetadataRepository(
   ): LocalMovie =
     withContext(Dispatchers.IO) {
       ensureCacheLoaded()
-      val cacheKey = movieKeyFor(movie.title)
-      val cached = memoryCache[cacheKey]
+      val cacheKey = movieKeyFor(movie.title, movie.year)
+      val legacyKey = movieKeyFor(movie.title)
+      var cached = memoryCache[cacheKey]
+
+      // v2 stored one title-only entry per movie. If that entry was a manual
+      // pick, move it to the year-qualified key so it keeps winning without
+      // leaking to a same-name film from another year.
+      if (cached == null && legacyKey != cacheKey) {
+        val legacy = memoryCache.remove(legacyKey)
+        if (legacy?.manuallySelected == true) {
+          memoryCache[cacheKey] = legacy
+          persistCache()
+          cached = legacy
+        }
+      }
 
       // Cached entries are reused indefinitely (no TTL, no re-scrape on app
       // open). Only forceRefresh, a manual match pick, or deletion evicts.
@@ -413,7 +463,7 @@ class StreamingMetadataRepository(
         }
         if (match == null) {
           val searchResults = wyzieRepository.searchMedia(movie.title).getOrNull() ?: emptyList()
-          match = pickBestMovieMatch(searchResults, movie.year)
+          match = WyzieMediaMatcher.pickBest(searchResults, "movie", movie.title, movie.year)
         }
 
         if (match != null) {
@@ -446,6 +496,9 @@ class StreamingMetadataRepository(
           }
 
           memoryCache[cacheKey] = mergedMetadata
+          if (legacyKey != cacheKey) {
+            memoryCache.remove(legacyKey)
+          }
           persistCache()
 
           return@withContext movie.copy(

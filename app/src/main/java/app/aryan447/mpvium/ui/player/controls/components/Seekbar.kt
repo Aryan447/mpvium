@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -73,6 +74,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.preferences.SeekbarStyle
 import dev.vivvvek.seeker.Segment
@@ -821,7 +823,7 @@ fun VideoTimer(
         )
         .wrapContentHeight(Alignment.CenterVertically),
     text = Utils.prettyTime(value.toInt(), isInverted),
-    color = Color.White,
+    color = LocalPlayerColors.current.timerContent,
     textAlign = TextAlign.Center,
   )
 }
@@ -886,11 +888,18 @@ fun StandardSeekbar(
     // gesture handler for every style. Leaving this Slider enabled would add
     // a second handler underneath (with its own thumb-inset mapping), stealing
     // pointers from the overlay and clobbering the release target.
+    val trackRange = 0f..duration.coerceAtLeast(0.1f)
+    val sliderState = remember(duration) {
+        SliderState(value = position, trackRange = trackRange)
+    }
+    LaunchedEffect(position) {
+        sliderState.value = position
+    }
+
     Slider(
-        value = position,
+        state = sliderState,
         onValueChange = onSeek,
         onValueChangeFinished = onSeekFinished,
-        valueRange = 0f..duration.coerceAtLeast(0.1f),
         modifier = Modifier.fillMaxWidth(),
         enabled = false,
         interactionSource = interactionSource,
@@ -902,8 +911,8 @@ fun StandardSeekbar(
                     .fillMaxWidth()
                     .height(trackHeightDp),
             ) {
-                val min = sliderState.valueRange.start
-                val max = sliderState.valueRange.endInclusive
+                val min = sliderState.trackRange.start
+                val max = sliderState.trackRange.endInclusive
                 val range = (max - min).takeIf { it > 0f } ?: 1f
 
                 val playedFraction = ((sliderState.value - min) / range).coerceIn(0f, 1f)

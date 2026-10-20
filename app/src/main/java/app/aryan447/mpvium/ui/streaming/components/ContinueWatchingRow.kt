@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.DropdownMenu
@@ -67,6 +68,7 @@ fun ContinueWatchingRow(
   title: String = "Continue Watching",
   onSeeAllClick: (() -> Unit)? = null,
   onItemRemove: ((ContinueWatchingItem) -> Unit)? = null,
+  onMarkAsClick: ((ContinueWatchingItem) -> Unit)? = null,
 ) {
   if (items.isEmpty()) return
 
@@ -107,6 +109,7 @@ fun ContinueWatchingRow(
           item = item,
           onClick = { onItemClick(item) },
           onRemove = onItemRemove?.let { remove -> { remove(item) } },
+          onMarkAs = onMarkAsClick?.let { markAs -> { markAs(item) } },
         )
       }
     }
@@ -120,10 +123,12 @@ fun ContinueWatchingCard(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   onRemove: (() -> Unit)? = null,
+  onMarkAs: (() -> Unit)? = null,
 ) {
   val cardWidth = 220.dp
   val haptic = LocalHapticFeedback.current
-  var showRemoveMenu by remember { mutableStateOf(false) }
+  var showMenu by remember { mutableStateOf(false) }
+  val hasMenu = onRemove != null || onMarkAs != null
 
   Box(modifier = modifier.width(cardWidth)) {
     Column(
@@ -135,10 +140,10 @@ fun ContinueWatchingCard(
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onClick()
           },
-          onLongClick = if (onRemove != null) {
+          onLongClick = if (hasMenu) {
             {
               haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-              showRemoveMenu = true
+              showMenu = true
             }
           } else {
             null
@@ -251,23 +256,40 @@ fun ContinueWatchingCard(
     }
 
     DropdownMenu(
-      expanded = showRemoveMenu,
-      onDismissRequest = { showRemoveMenu = false },
+      expanded = showMenu,
+      onDismissRequest = { showMenu = false },
       containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
     ) {
-      DropdownMenuItem(
-        text = { Text("Remove from Continue Watching") },
-        leadingIcon = {
-          Icon(
-            Icons.Filled.Close,
-            contentDescription = null,
-          )
-        },
-        onClick = {
-          showRemoveMenu = false
-          onRemove?.invoke()
-        },
-      )
+      if (onMarkAs != null) {
+        DropdownMenuItem(
+          text = { Text("Mark as…") },
+          leadingIcon = {
+            Icon(
+              Icons.Filled.CheckCircle,
+              contentDescription = null,
+            )
+          },
+          onClick = {
+            showMenu = false
+            onMarkAs()
+          },
+        )
+      }
+      if (onRemove != null) {
+        DropdownMenuItem(
+          text = { Text("Remove from Continue Watching") },
+          leadingIcon = {
+            Icon(
+              Icons.Filled.Close,
+              contentDescription = null,
+            )
+          },
+          onClick = {
+            showMenu = false
+            onRemove()
+          },
+        )
+      }
     }
   }
 }

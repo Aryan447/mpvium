@@ -88,8 +88,25 @@ fun VideoCard(
   val showDateChip by browserPreferences.showDateChip.collectAsState()
   val showUnplayedOldVideoLabel by appearancePreferences.showUnplayedOldVideoLabel.collectAsState()
   val unplayedOldVideoDays by appearancePreferences.unplayedOldVideoDays.collectAsState()
+  val manualNewVideos by browserPreferences.manualNewVideos.collectAsState()
   val maxLines = if (unlimitedNameLines) Int.MAX_VALUE else 2
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
+
+  // Manual "Mark as New" forces the NEW badge even for older files. Automatic
+  // NEW still requires the file to be within the recency threshold.
+  val isManuallyMarkedNew = remember(manualNewVideos, video.path) {
+    manualNewVideos.contains(video.path)
+  }
+  val showNewBadge = remember(
+    showUnplayedOldVideoLabel,
+    isOldAndUnplayed,
+    isManuallyMarkedNew,
+    video.dateModified,
+    unplayedOldVideoDays,
+  ) {
+    showUnplayedOldVideoLabel && isOldAndUnplayed &&
+      (isManuallyMarkedNew || isWithinNewThreshold(video.dateModified, unplayedOldVideoDays))
+  }
 
   // Use override parameters if provided, otherwise use preferences
   val showSizeChip = overrideShowSizeChip ?: showSizeChipPref
@@ -198,32 +215,26 @@ fun VideoCard(
             )
           }
 
-          // Show "NEW" label for recently added unplayed videos if enabled (top-left corner)
-          // Like MX Player: show NEW for videos added within threshold days that haven't been played
-          if (showUnplayedOldVideoLabel && isOldAndUnplayed) {
-            // Check if video is recently modified (within threshold days)
-            val currentTime = System.currentTimeMillis()
-            val videoAge = currentTime - (video.dateModified * 1000) // dateModified is in seconds
-            val thresholdMillis = unplayedOldVideoDays * 24 * 60 * 60 * 1000L
-
-            if (videoAge <= thresholdMillis) {
-              Box(
-                modifier =
-                  Modifier
-                    .align(Alignment.TopStart)
-                    .padding(6.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFD32F2F)) // Warning red color
-                    .padding(horizontal = 8.dp, vertical = 3.dp),
-              ) {
-                Text(
-                  text = stringResource(R.string.video_label_new),
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                  ),
-                  color = Color.White,
-                )
-              }
+          // Show "NEW" label for unplayed videos if enabled (top-left corner).
+          // Automatic NEW requires a recently modified file; manual "Mark as New"
+          // forces the badge regardless of age (see showNewBadge above).
+          if (showNewBadge) {
+            Box(
+              modifier =
+                Modifier
+                  .align(Alignment.TopStart)
+                  .padding(6.dp)
+                  .clip(RoundedCornerShape(4.dp))
+                  .background(Color(0xFFD32F2F)) // Warning red color
+                  .padding(horizontal = 8.dp, vertical = 3.dp),
+            ) {
+              Text(
+                text = stringResource(R.string.video_label_new),
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontWeight = FontWeight.Bold,
+                ),
+                color = Color.White,
+              )
             }
           }
 
@@ -476,32 +487,26 @@ fun VideoCard(
             )
           }
 
-          // Show "NEW" label for recently added unplayed videos if enabled (top-left corner)
-          // Like MX Player: show NEW for videos added within threshold days that haven't been played
-          if (showUnplayedOldVideoLabel && isOldAndUnplayed) {
-            // Check if video is recently modified (within threshold days)
-            val currentTime = System.currentTimeMillis()
-            val videoAge = currentTime - (video.dateModified * 1000) // dateModified is in seconds
-            val thresholdMillis = unplayedOldVideoDays * 24 * 60 * 60 * 1000L
-
-            if (videoAge <= thresholdMillis) {
-              Box(
-                modifier =
-                  Modifier
-                    .align(Alignment.TopStart)
-                    .padding(6.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFD32F2F)) // Warning red color
-                    .padding(horizontal = 8.dp, vertical = 3.dp),
-              ) {
-                Text(
-                  text = stringResource(R.string.video_label_new),
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                  ),
-                  color = Color.White,
-                )
-              }
+          // Show "NEW" label for unplayed videos if enabled (top-left corner).
+          // Automatic NEW requires a recently modified file; manual "Mark as New"
+          // forces the badge regardless of age (see showNewBadge above).
+          if (showNewBadge) {
+            Box(
+              modifier =
+                Modifier
+                  .align(Alignment.TopStart)
+                  .padding(6.dp)
+                  .clip(RoundedCornerShape(4.dp))
+                  .background(Color(0xFFD32F2F)) // Warning red color
+                  .padding(horizontal = 8.dp, vertical = 3.dp),
+            ) {
+              Text(
+                text = stringResource(R.string.video_label_new),
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontWeight = FontWeight.Bold,
+                ),
+                color = Color.White,
+              )
             }
           }
 
@@ -674,4 +679,15 @@ fun VideoCard(
 private fun formatDate(timestampSeconds: Long): String {
   val sdf = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
   return sdf.format(java.util.Date(timestampSeconds * 1000))
+}
+
+private fun isWithinNewThreshold(
+  dateModifiedSeconds: Long,
+  thresholdDays: Int,
+): Boolean {
+  if (dateModifiedSeconds <= 0) return false
+  val currentTime = System.currentTimeMillis()
+  val videoAge = currentTime - (dateModifiedSeconds * 1000) // dateModified is in seconds
+  val thresholdMillis = thresholdDays * 24 * 60 * 60 * 1000L
+  return videoAge <= thresholdMillis
 }
