@@ -1,18 +1,13 @@
 package app.aryan447.mpvium.ui.streaming.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,9 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 
 /**
@@ -64,34 +57,13 @@ fun <F, S> LibraryFilterBar(
     modifier = modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    LazyRow(
+    ExpressiveFilterRow(
+      options = options,
+      selected = selected,
+      labelOf = labelOf,
+      onSelect = onSelect,
       modifier = Modifier.weight(1f),
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-      items(options, key = { labelOf(it) }) { option ->
-        val isSelected = option == selected
-        FilterChip(
-          selected = isSelected,
-          onClick = {
-            if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onSelect(option)
-          },
-          label = {
-            Text(
-              text = labelOf(option),
-              style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-              ),
-            )
-          },
-          colors = glassFilterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-          ),
-          shape = RoundedCornerShape(20.dp),
-        )
-      }
-    }
+    )
 
     IconButton(onClick = { sortExpanded = true }) {
       Icon(Icons.Filled.Sort, contentDescription = "Sort${activeSortLabel?.let { ": $it" } ?: ""}")

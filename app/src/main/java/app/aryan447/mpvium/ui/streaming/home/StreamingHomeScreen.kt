@@ -41,7 +41,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,7 +51,6 @@ import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassChrome
-import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.glassRimColor
@@ -105,6 +103,7 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
+import app.aryan447.mpvium.ui.streaming.components.ExpressiveFilterRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.StreamingHeroBanner
@@ -541,35 +540,13 @@ private fun CategoryChipsRow(
   onCategorySelect: (StreamingCategory) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val haptic = LocalHapticFeedback.current
-  LazyRow(
+  ExpressiveFilterRow(
+    options = StreamingCategory.entries,
+    selected = selectedCategory,
+    labelOf = { it.displayName },
+    onSelect = onCategorySelect,
     modifier = modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
-  ) {
-    items(StreamingCategory.values()) { category ->
-      val selected = category == selectedCategory
-      FilterChip(
-        selected = selected,
-        onClick = {
-          if (!selected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-          onCategorySelect(category)
-        },
-        label = {
-          Text(
-            text = category.displayName,
-            style = MaterialTheme.typography.labelMedium.copy(
-              fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            ),
-          )
-        },
-        colors = glassFilterChipColors(
-          selectedContainerColor = MaterialTheme.colorScheme.primary,
-          selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-        ),
-        shape = RoundedCornerShape(20.dp),
-      )
-    }
-  }
+  )
 }
 
 @Composable
