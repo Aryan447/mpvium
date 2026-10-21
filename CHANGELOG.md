@@ -35,7 +35,7 @@
 
 ### Fixed
 
-- Swipe seeking on large screens (tablets, foldables, landscape phones) no longer feels slow: seek distance now follows physical finger travel instead of screen width, so a comfortable swipe covers the same amount of video on a tablet as on a phone, and flick acceleration kicks in at the same physical speed everywhere.
+- Swipe seeking now adapts to screen size: the accelerating part of the curve uses VLC-style quartic growth on physical finger travel, scaled by how wide the gesture area is, so a comfortable swipe on a 10" tablet no longer seeks as much as a full-width phone sweep and short drags keep their precision; phones keep their current feel, and the horizontal swipe sensitivity slider now scales the whole curve, not just the fine part.
 - Compose Material 3 1.5.0-beta01 compatibility for dropdown menus, the seekbar, and glass navigation item colors.
 - Clean show titles no longer include trailing release-group tags such as `-edge2020`.
 - Home sections can be reordered and toggled (featured banner, Continue Watching, Up Next, Recently Added, Shows, Movies, folders) in Appearance > Home.
