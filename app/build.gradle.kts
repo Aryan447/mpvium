@@ -234,6 +234,8 @@ dependencies {
   implementation(libs.lazycolumnscrollbar)
   implementation(libs.reorderable)
   implementation(libs.haze)
+
+  testImplementation(libs.junit)
 }
 
 /* ---------------- Git helpers ---------------- */

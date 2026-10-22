@@ -1,3 +1,9 @@
+## Unreleased
+
+### Changed
+
+- Movies now hides short clips, reels, trailers, social/download exports, and camera recordings; those files remain available in Folders.
+
 ## v1.2.0
 
 ### Added

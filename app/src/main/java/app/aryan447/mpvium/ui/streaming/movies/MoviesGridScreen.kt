@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
@@ -138,6 +139,10 @@ object MoviesGridScreen : Screen {
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
+        // The scanner treats every non-episode file as a movie. Keep reels,
+        // trailers, social exports and personal clips out of the Movies grid;
+        // they are not deleted or moved, and Folders still lists every file.
+        val libraryMovies = detected.movies.filter { MovieLibraryClassifier.isMovieLibraryItem(it) }
         // Drop cached TMDB entries for deleted movies.
         // Remaining movies reuse their cache with no re-scrape.
         runCatching {
@@ -145,11 +150,11 @@ object MoviesGridScreen : Screen {
             presentMovieTitles = detected.movies.map { it.title }.toSet(),
           )
         }
-        movieList = detected.movies
+        movieList = libraryMovies
         isLoading = false
 
-        // Background enrichment
-        val enriched = detected.movies.map { metadataRepository.enrichMovie(it) }
+        // Background enrichment (movie-library items only)
+        val enriched = libraryMovies.map { metadataRepository.enrichMovie(it) }
         movieList = enriched
       }
     }
