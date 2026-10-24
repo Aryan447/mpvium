@@ -25,9 +25,21 @@ export const features: Feature[] = [
     icon: '<path d="M4 5h9M8.5 3v2c0 3.5-2 6.5-4.5 8"/><path d="M6 9c1 2.5 3 4.5 5.5 5.5"/><path d="M13 21l4.5-9L22 21M14.8 17h5.4"/>',
   },
   {
+    title: "Library Insights",
+    description:
+      "Collection size, storage, runtime, watch progress and weekly activity in one dashboard.",
+    icon: '<path d="M4 20h16"/><path d="M7 20v-6M12 20V8M17 20v-9"/>',
+  },
+  {
     title: "Modern Material 3 UI",
-    description: "Expressive light & dark themes, intuitive browsing.",
+    description: "Expressive motion, morphing controls, and 15 themes with light & dark modes.",
     icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>',
+  },
+  {
+    title: "Subtitles & Online Search",
+    description:
+      "External tracks, OpenSubtitles and optional SubSource search, styling, and pinch-to-resize.",
+    icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 12h4M7 15h7"/>',
   },
   {
     title: "Advanced Config",
@@ -48,11 +60,6 @@ export const features: Feature[] = [
     title: "Network Streaming",
     description: "Open URLs plus SMB, FTP and WebDAV.",
     icon: '<circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.5 5.5a9 9 0 000 13M18.5 5.5a9 9 0 010 13"/>',
-  },
-  {
-    title: "Subtitles & Audio",
-    description: "External tracks, online search, fine-tuned delay.",
-    icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 12h4M7 15h7"/>',
   },
   {
     title: "File Management",
