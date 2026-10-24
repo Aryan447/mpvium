@@ -1,4 +1,4 @@
-## Unreleased
+## V1.3.0
 
 ### Added
 

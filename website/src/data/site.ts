@@ -5,8 +5,9 @@ export const links = {
   releases: `https://github.com/${REPO}/releases`,
   latestRelease: `https://github.com/${REPO}/releases/latest`,
   issues: `https://github.com/${REPO}/issues`,
+  changelog: `https://github.com/${REPO}/blob/main/CHANGELOG.md`,
   telegram: "https://t.me/mpvium",
-  screenshotsDir: `https://github.com/${REPO}/tree/website-migration/docs/screenshots`,
+  screenshotsDir: `https://github.com/${REPO}/tree/main/docs/screenshots`,
 };
 
 export const meta = {
