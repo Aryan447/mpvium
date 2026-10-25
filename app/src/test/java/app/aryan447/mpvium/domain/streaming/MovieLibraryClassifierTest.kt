@@ -49,7 +49,7 @@ class MovieLibraryClassifierTest {
   fun portraitReel_isShortVideo() {
     assertEquals(
       SHORT_VIDEO,
-      classify(durationMs = 3 * MINUTE_MS, width = 1080, height = 1920),
+      classify(durationMs = 8 * MINUTE_MS, width = 1080, height = 1920),
     )
   }
 
@@ -74,16 +74,48 @@ class MovieLibraryClassifierTest {
   fun squareClip_isShortVideo() {
     assertEquals(
       SHORT_VIDEO,
-      classify(durationMs = 5 * MINUTE_MS, width = 1080, height = 1080),
+      classify(durationMs = 8 * MINUTE_MS, width = 1080, height = 1080),
     )
   }
 
   @Test
   fun landscapeShortFilmInMoviesFolder_staysMovie() {
-    // No clip source signal; four minutes is plausible for a short film.
+    // No clip source signal; just over five minutes is plausible for a short film.
     assertEquals(
       MOVIE,
-      classify(durationMs = 4 * MINUTE_MS + 30_000L, width = 1920, height = 1080),
+      classify(durationMs = 6 * MINUTE_MS, width = 1920, height = 1080),
+    )
+  }
+
+  @Test
+  fun landscapeClipJustUnderThreeMinutes_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      classify(durationMs = 2 * MINUTE_MS + 45_000L, width = 1920, height = 1080),
+    )
+  }
+
+  @Test
+  fun landscapeClipJustUnderFiveMinutes_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      classify(durationMs = 4 * MINUTE_MS + 59_000L, width = 1920, height = 1080),
+    )
+  }
+
+  @Test
+  fun landscapeVideoAtFiveMinutes_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      classify(durationMs = 5 * MINUTE_MS, width = 1920, height = 1080),
+    )
+  }
+
+  @Test
+  fun landscapeVideoJustOverFiveMinutes_staysMovie() {
+    assertEquals(
+      MOVIE,
+      classify(durationMs = 5 * MINUTE_MS + 1_000L, width = 1920, height = 1080),
     )
   }
 
@@ -154,7 +186,77 @@ class MovieLibraryClassifierTest {
       classify(
         fileName = "VID-20240101-WA0001.mp4",
         folderPath = MOVIES_FOLDER,
-        durationMs = 4 * MINUTE_MS,
+        durationMs = 9 * MINUTE_MS,
+      ),
+    )
+  }
+
+  @Test
+  fun underscoreSeparatedPlatformName_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      classify(
+        fileName = "WhatsApp_Video_20240101.mp4",
+        folderPath = MOVIES_FOLDER,
+        durationMs = 12 * MINUTE_MS,
+        width = 1920,
+        height = 1080,
+      ),
+    )
+  }
+
+  @Test
+  fun underscoreSeparatedScreenRecording_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      classify(
+        fileName = "Screen_Recording_20240101.mp4",
+        folderPath = MOVIES_FOLDER,
+        durationMs = 8 * MINUTE_MS,
+        width = 1920,
+        height = 1080,
+      ),
+    )
+  }
+
+  @Test
+  fun cameraFileNameCopiedToMoviesFolder_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      classify(
+        fileName = "VID_20240101_120000.mp4",
+        folderPath = MOVIES_FOLDER,
+        durationMs = 8 * MINUTE_MS,
+        width = 1920,
+        height = 1080,
+      ),
+    )
+  }
+
+  @Test
+  fun pixelFileNameCopiedToMoviesFolder_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      classify(
+        fileName = "PXL_20240101_120000123.mp4",
+        folderPath = MOVIES_FOLDER,
+        durationMs = 9 * MINUTE_MS,
+        width = 1920,
+        height = 1080,
+      ),
+    )
+  }
+
+  @Test
+  fun underscoreSeparatedClipFolder_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      classify(
+        fileName = "clip.mp4",
+        folderPath = "/storage/emulated/0/Screen_Recordings",
+        durationMs = 9 * MINUTE_MS,
+        width = 1920,
+        height = 1080,
       ),
     )
   }
@@ -166,7 +268,7 @@ class MovieLibraryClassifierTest {
       classify(
         fileName = "Spider-Man 2026 Official Trailer.mp4",
         folderPath = MOVIES_FOLDER,
-        durationMs = 3 * MINUTE_MS + 30_000L,
+        durationMs = 8 * MINUTE_MS,
       ),
     )
   }
@@ -177,7 +279,7 @@ class MovieLibraryClassifierTest {
       SHORT_VIDEO,
       classify(
         fileName = "Feature.Film.2024.1080p.sample.mkv",
-        durationMs = 5 * MINUTE_MS,
+        durationMs = 8 * MINUTE_MS,
       ),
     )
   }
@@ -189,7 +291,7 @@ class MovieLibraryClassifierTest {
       classify(
         fileName = "clip.mp4",
         folderPath = "/storage/emulated/0/Shorts",
-        durationMs = 5 * MINUTE_MS,
+        durationMs = 8 * MINUTE_MS,
       ),
     )
   }

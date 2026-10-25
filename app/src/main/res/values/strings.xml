@@ -191,8 +191,8 @@
   <string name="pref_player_gestures_horizontal_swipe_sensitivity_summary">Adjust how much distance is covered per swipe</string>
   <string name="pref_player_gestures_vertical_swipe_sensitivity">Vertical swipe sensitivity</string>
   <string name="pref_player_gestures_vertical_swipe_sensitivity_summary">Adjust how much volume and brightness change per swipe</string>
-  <string name="pref_player_gestures_horizontal_swipe_acceleration">Adaptive swipe seek</string>
-  <string name="pref_player_gestures_horizontal_swipe_acceleration_summary">Screen-aware curve: short drags stay precise while longer swipes cover minutes</string>
+  <string name="pref_player_gestures_horizontal_swipe_acceleration">VLC-style swipe seek</string>
+  <string name="pref_player_gestures_horizontal_swipe_acceleration_summary">VLC\'s exact curve: short swipes stay precise while longer swipes quickly cover minutes; turn off for a flat mapping</string>
   <string name="pref_player_gestures_hold_for_multiple_speed">Hold for multi - x speed</string>
   <string name="pref_player_gestures_hold_action">Hold gesture action</string>
   <string name="pref_player_gestures_hold_action_summary">Choose what happens when you press and hold the video</string>
@@ -507,9 +507,7 @@
   <string name="pref_folders_clear_all_whitelist">Clear all whitelisted folders</string>
   <string name="pref_folders_clear_all_whitelist_confirm_title">Clear all whitelisted folders?</string>
   <string name="pref_folders_clear_all_whitelist_confirm_message">This will remove all folders from the whitelist and show every folder again. You can add them back later.</string>
-  <string name="library_sources_banner_title">Library limited to %d folders</string>
   <string name="library_sources_banner_message">Home, Shows and Movies show only whitelisted folders. Folders and Files still show full storage.</string>
-  <string name="library_sources_manage">Manage</string>
   <string name="library_sources_empty_action">Manage library folders</string>
   <!-- M3U Playlist Strings -->
   <string name="pref_subtitles_searching">Searching…</string>
