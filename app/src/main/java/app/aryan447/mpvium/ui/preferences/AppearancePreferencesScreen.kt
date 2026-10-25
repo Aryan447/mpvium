@@ -53,15 +53,14 @@ import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.HomeSection
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
-import app.aryan447.mpvium.preferences.MultiChoiceSegmentedButton
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.ui.preferences.components.ThemePicker
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.spacing
 import kotlin.math.roundToInt
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
@@ -78,6 +77,7 @@ object AppearancePreferencesScreen : Screen {
         val systemDarkTheme = isSystemInDarkTheme()
 
         val darkMode by preferences.darkMode.collectAsState()
+        val darkModeLabels = DarkMode.entries.associateWith { stringResource(it.titleRes) }
         val appTheme by preferences.appTheme.collectAsState()
         val haptic = LocalHapticFeedback.current
 
@@ -111,13 +111,14 @@ object AppearancePreferencesScreen : Screen {
                         PreferenceCard {
                             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                                 // Dark mode selector
-                                MultiChoiceSegmentedButton(
-                                    choices = DarkMode.entries.map { stringResource(it.titleRes) }.toImmutableList(),
-                                    selectedIndices = persistentListOf(DarkMode.entries.indexOf(darkMode)),
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        preferences.darkMode.set(DarkMode.entries[it])
-                                    },
+                                ExpressiveChoiceRow(
+                                    options = DarkMode.entries,
+                                    selected = darkMode,
+                                    labelOf = { darkModeLabels.getValue(it) },
+                                    onSelect = { preferences.darkMode.set(it) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(MaterialTheme.spacing.medium),
                                 )
                             }
 

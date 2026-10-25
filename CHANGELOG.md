@@ -26,6 +26,7 @@
 - Settings search now transitions between the dashboard and results, cross-fades empty states, and animates filtered rows, result counts, and the clear action.
 - Player zoom and playback-speed sheets now group their actions with Material 3 Expressive button groups that expand the pressed action and overflow when space is tight.
 - Home category filters and Shows/Movies watch-state filters now use connected expressive toggle groups that morph the selected filter into a pill.
+- The Appearance dark/light/system selector now uses the same connected expressive toggle group as the Home category filters.
 - Screen and tab navigation now uses expressive fade-through transitions driven by the Material motion scheme instead of fixed tween slides.
 - The ambient theme glow now uses a shorter, layered bloom over the resolved theme background; AMOLED setups fade into true black instead of grey.
 - The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
@@ -45,6 +46,7 @@
 - Manual "Mark as New" now always restores the red NEW badge, even for older videos.
 - WebDAV browsing on servers that mark video files as collections (e.g. Torbox): `.mkv` entries without a folder href now show as playable videos with size, listings filter self by href instead of dropping the first entry, and paths with spaces/unicode are percent-encoded for listing, playback, and seeking.
 - Shows and Movies sort choices now persist across app restarts.
+- The Shows and Movies sort button now has a visible tonal surface, so it no longer disappears on dark and AMOLED themes.
 - VOBSUB/DVD and other bitmap subtitles now scale correctly: they keep their aspect ratio on anamorphic video instead of being stretched, and always follow the Scale and Position sliders.
 - Vertical volume/brightness swipes no longer use a stale starting volume, so consecutive and fast swipes no longer feel stuck or need repeating.
 - Watched threshold setting (e.g. 90%) now honored in Continue Watching, Up Next, widget, and playlist instead of staying stuck at 95%.

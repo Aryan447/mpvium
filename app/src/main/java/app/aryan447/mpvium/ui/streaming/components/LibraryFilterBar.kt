@@ -1,15 +1,17 @@
 package app.aryan447.mpvium.ui.streaming.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
@@ -23,6 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 
 /**
@@ -57,7 +62,7 @@ fun <F, S> LibraryFilterBar(
     modifier = modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    ExpressiveFilterRow(
+    ExpressiveChoiceRow(
       options = options,
       selected = selected,
       labelOf = labelOf,
@@ -65,29 +70,41 @@ fun <F, S> LibraryFilterBar(
       modifier = Modifier.weight(1f),
     )
 
-    IconButton(onClick = { sortExpanded = true }) {
-      Icon(Icons.Filled.Sort, contentDescription = "Sort${activeSortLabel?.let { ": $it" } ?: ""}")
-    }
-    DropdownMenu(
-      expanded = sortExpanded,
-      onDismissRequest = { sortExpanded = false },
-      containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
-    ) {
-      sorts.forEach { sort ->
-        val isSelected = sort.value == selectedSort
-        DropdownMenuItem(
-          text = { Text(sort.label) },
-          leadingIcon = if (isSelected) {
-            { Icon(Icons.Filled.Check, contentDescription = null) }
-          } else {
-            null
-          },
-          onClick = {
-            sortExpanded = false
-            if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onSortSelect(sort.value)
-          },
+    Box {
+      FilledTonalIconButton(
+        onClick = { sortExpanded = true },
+        modifier = Modifier.padding(start = 8.dp),
+        colors = IconButtonDefaults.filledTonalIconButtonColors(
+          containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
+          contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
+        ),
+      ) {
+        Icon(
+          imageVector = Icons.AutoMirrored.Filled.Sort,
+          contentDescription = "Sort${activeSortLabel?.let { ": $it" } ?: ""}",
         )
+      }
+      DropdownMenu(
+        expanded = sortExpanded,
+        onDismissRequest = { sortExpanded = false },
+        containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
+      ) {
+        sorts.forEach { sort ->
+          val isSelected = sort.value == selectedSort
+          DropdownMenuItem(
+            text = { Text(sort.label) },
+            leadingIcon = if (isSelected) {
+              { Icon(Icons.Filled.Check, contentDescription = null) }
+            } else {
+              null
+            },
+            onClick = {
+              sortExpanded = false
+              if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+              onSortSelect(sort.value)
+            },
+          )
+        }
       }
     }
   }
