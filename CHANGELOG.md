@@ -37,6 +37,11 @@
 
 ### Fixed
 
+- Movie and show posters now stay stored on device until that movie or show is deleted, so covers keep working offline instead of being evicted from a size-capped image cache or re-downloaded.
+- Cached poster/backdrop files are removed together with their library entry when media is deleted or pruned.
+- Metadata cache writes are now atomic, so a write interrupted while the app is closed can no longer corrupt the cache and force every cover to be fetched again.
+- Movies and shows now render their cached cover immediately on open instead of briefly falling back to a video thumbnail before metadata enrichment finishes.
+- Refreshing metadata while offline now keeps the last saved cover instead of clearing it.
 - Swipe seeking now follows VLC Android's exact curve in physical finger travel: a comfortable 5 cm swipe seeks about 1.5 minutes and a long sweep quickly covers tens of minutes (kept just short of the end of the video), the same on phones and tablets. Previously a full sweep could jump an unpredictable number of minutes depending on the screen.
 - Compose Material 3 1.5.0-beta01 compatibility for dropdown menus, the seekbar, and glass navigation item colors.
 - Clean show titles no longer include trailing release-group tags such as `-edge2020`.

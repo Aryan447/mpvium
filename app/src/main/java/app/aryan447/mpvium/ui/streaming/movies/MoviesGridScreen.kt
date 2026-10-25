@@ -165,10 +165,12 @@ object MoviesGridScreen : Screen {
             }.toSet(),
           )
         }
-        movieList = libraryMovies
+        val cachedMovies = libraryMovies.map { metadataRepository.applyCachedMovie(it) }
+        movieList = cachedMovies
         isLoading = false
 
-        // Background enrichment (movie-library items only)
+        // Background enrichment. Start from the detected copies so cache keys
+        // keep using the filename title/year, not the TMDb display year.
         val enriched = libraryMovies.map { metadataRepository.enrichMovie(it) }
         movieList = enriched
       }

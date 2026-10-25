@@ -155,16 +155,18 @@ class StreamingHomeViewModel(
         }
 
         // Pick Hero banner: first in-progress series or highest episode count series
-        val hero = detected.series.firstOrNull { it.lastWatchedEpisode != null && !it.lastWatchedEpisode.isWatched }
-          ?: detected.series.firstOrNull()
+        val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
+        val cachedMovies = detected.movies.map { metadataRepository.applyCachedMovie(it) }
+        val hero = cachedSeries.firstOrNull { it.lastWatchedEpisode != null && !it.lastWatchedEpisode.isWatched }
+          ?: cachedSeries.firstOrNull()
 
         _uiState.update {
           it.copy(
             isLoading = false,
             heroSeries = hero,
             continueWatching = detected.continueWatching,
-            series = detected.series,
-            movies = detected.movies,
+            series = cachedSeries,
+            movies = cachedMovies,
             folders = detected.folders,
             totalVideos = detected.totalVideoCount,
           )
@@ -226,13 +228,15 @@ class StreamingHomeViewModel(
     viewModelScope.launch(Dispatchers.IO) {
       try {
         val detected = seriesDetector.detectLibrary()
+        val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
+        val cachedMovies = detected.movies.map { metadataRepository.applyCachedMovie(it) }
         _uiState.update {
           it.copy(
-            heroSeries = detected.series.firstOrNull { s -> s.lastWatchedEpisode != null && !s.lastWatchedEpisode.isWatched }
-              ?: detected.series.firstOrNull(),
+            heroSeries = cachedSeries.firstOrNull { s -> s.lastWatchedEpisode != null && !s.lastWatchedEpisode.isWatched }
+              ?: cachedSeries.firstOrNull(),
             continueWatching = detected.continueWatching,
-            series = detected.series,
-            movies = detected.movies,
+            series = cachedSeries,
+            movies = cachedMovies,
             folders = detected.folders,
             totalVideos = detected.totalVideoCount,
           )
