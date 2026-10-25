@@ -109,7 +109,6 @@ import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
 import app.aryan447.mpvium.ui.streaming.components.ExpressiveFilterRow
-import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.StreamingHeroBanner
@@ -155,8 +154,8 @@ object StreamingHomeScreen : Screen {
     val showMoviesSection by appearancePreferences.showMoviesSection.collectAsState()
     val showFoldersSection by appearancePreferences.showFoldersSection.collectAsState()
     val homeSections = remember(homeSectionOrder) { HomeSection.parseOrder(homeSectionOrder) }
-    // Library-sources hint (issue #87): surface Settings → Folders without
-    // adding setup steps.
+    // Empty-state hint (issue #87): when whitelist-only leaves no results,
+    // offer a one-tap route to Settings → Folders.
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
     val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
     val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
@@ -419,18 +418,6 @@ object StreamingHomeScreen : Screen {
                   onCategorySelect = { viewModel.setCategory(it) },
                   modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                 )
-              }
-
-              // Library-sources hint (issue #87): one-tap entry to
-              // Settings → Folders when the library is filtered.
-              if (libraryFiltered) {
-                item {
-                  LibrarySourcesBanner(
-                    whitelistCount = whitelistedFolders.size,
-                    onManageClick = { backstack.add(FoldersPreferencesScreen) },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                  )
-                }
               }
 
               // Home sections in user order (Appearance > Home). A hidden

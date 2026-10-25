@@ -35,7 +35,7 @@ object MovieLibraryClassifier {
   private const val MINUTE_MS = 60_000L
 
   /** Anything at or under this length is a clip in any folder/orientation. */
-  private const val VERY_SHORT_MAX_MS = 2 * MINUTE_MS
+  private const val VERY_SHORT_MAX_MS = 5 * MINUTE_MS
 
   /** Portrait/square short-form videos are reels/status clips, not movies. */
   private const val PORTRAIT_MAX_MS = 20 * MINUTE_MS
@@ -52,6 +52,8 @@ object MovieLibraryClassifier {
    */
   private const val FEATURE_LENGTH_MS = 40 * MINUTE_MS
 
+  private val WHITESPACE_REGEX = Regex("""\s+""")
+
   /**
    * Filename markers produced by common downloaders/social apps, plus
    * trailer/sample markers. Only applied below [CLIP_SOURCE_MAX_MS].
@@ -63,21 +65,30 @@ object MovieLibraryClassifier {
     Regex("""^vid[-_]\d{8}[-_]wa\d+""", RegexOption.IGNORE_CASE),
     Regex("""(^|[^a-z0-9])wa\d{4}([^a-z0-9]|$)""", RegexOption.IGNORE_CASE),
     // AI/social exports seen in Downloads.
-    Regex("""\bgrok[ _-]?video\b""", RegexOption.IGNORE_CASE),
-    // Platform-branded exports.
+    Regex("""(^|[^a-z0-9])grok[ _-]?video([^a-z0-9]|$)""", RegexOption.IGNORE_CASE),
+    // Platform-branded exports. Underscores count as separators here, so
+    // WhatsApp_Video_2024.mp4 matches too.
     Regex(
-      """\b(whatsapp|telegram|instagram|snapchat|tiktok|facebook|messenger|twitter|reddit)\b""",
+      """(^|[^a-z0-9])(youtube|whatsapp|telegram|instagram|snapchat|tiktok|facebook|messenger|twitter|reddit)([^a-z0-9]|$)""",
       RegexOption.IGNORE_CASE,
     ),
-    // Screen recordings.
-    Regex("""\bscreen[ _-]?record(ing|er|ed)?\b""", RegexOption.IGNORE_CASE),
+    // Screen recordings, with or without a separator.
+    Regex(
+      """(^|[^a-z0-9])screen[ _-]?record(ing|er|ed)?([^a-z0-9]|$)""",
+      RegexOption.IGNORE_CASE,
+    ),
     // Trailers/teasers/featurettes are non-movie extras.
-    Regex("""\b(trailer|teaser|featurette)\b""", RegexOption.IGNORE_CASE),
-    // Release samples.
     Regex(
-      """\.sample\.(mp4|mkv|avi|mov|webm|m4v|3gp|ts|m2ts)$""",
+      """(^|[^a-z0-9])(trailer|teaser|featurette)([^a-z0-9]|$)""",
       RegexOption.IGNORE_CASE,
     ),
+    // Release samples.
+    Regex("""(^|[^a-z0-9])sample([^a-z0-9]|$)""", RegexOption.IGNORE_CASE),
+    // Camera roll exports copied out of DCIM: VID_20240101_120000.mp4,
+    // PXL_20240101_120000.mp4, IMG_1234.MOV.
+    Regex("""^vid[_-]\d{8}[_-]\d{6}""", RegexOption.IGNORE_CASE),
+    Regex("""^pxl[_-]\d{8}""", RegexOption.IGNORE_CASE),
+    Regex("""^img[_-]\d{3,4}""", RegexOption.IGNORE_CASE),
   )
 
   /** Folder names that explicitly hold short-form/clip content. */
@@ -166,7 +177,9 @@ object MovieLibraryClassifier {
     val folderSegments = folderPath
       .lowercase(Locale.ROOT)
       .split('/', '\\')
-      .map { it.trim() }
+      // Treat underscores/hyphens as spaces so Screen_Recordings and
+      // whatsapp-video match the folder names below.
+      .map { it.trim().replace('_', ' ').replace('-', ' ').replace(WHITESPACE_REGEX, " ") }
       .filter { it.isNotEmpty() }
 
     val clipName = CLIP_NAME_PATTERNS.any { it.containsMatchIn(fileName) }
