@@ -99,47 +99,81 @@ private const val SubtitleTouchToleranceFraction = 0.075f
 private const val SubtitleTouchMinSlopPx = 48f
 
 /**
- * Reference gesture width (px) that the horizontal swipe-seek sensitivity is
- * calibrated against: a 1080p phone's swipe area (screen minus the 96dp
- * gesture padding). Raw pixel deltas would make wide tablet screens
- * hypersensitive, so deltas are scaled by reference / actual width: the same
- * swipe fraction always seeks the same amount on every device, while phones
- * keep their existing feel.
+ * Physical swipe length the accelerating part of the curve is calibrated
+ * against: ~6.5cm, about a phone's width — a comfortable thumb swipe. Finger
+ * travel and flick speed are measured in multiples of this length instead of
+ * fractions of the actual screen.
+ *
+ * The linear part stays screen-relative (a full-width drag keeps covering the
+ * same seconds, which is what gives a big display its extra precision for
+ * small movements), but the acceleration has to be physical: VLC's swipe seek
+ * is a quartic on centimetres, so the same thumb travel reaches the same part
+ * of the ramp on every screen. The screen-scale factor below then keeps the
+ * result proportional to the display.
  */
-private const val HORIZONTAL_SEEK_REFERENCE_WIDTH_PX = 820f
+private const val SWIPE_SEEK_REFERENCE_WIDTH_DP = 410f
 
 /**
- * Seconds the accelerating term adds at a full gesture-width drag, before the
- * speed gain. Linear-only response still covers the first
- * [SWIPE_SEEK_ACCEL_ENGAGE_FRACTION] of the drag, so careful seeking keeps the
- * exact per-pixel sensitivity from the preference; past the engage point the
- * response ramps up so a single sweep can cover minutes instead of seconds —
- * the same idea as VLC's bi-cubic swipe progression, but engaged later so the
- * fine end stays usable.
+ * Gesture-area width (dp) of the reference phone the accelerating curve is
+ * tuned on: a ~411dp phone minus the 96dp horizontal gesture padding. The
+ * accelerating term is scaled by the current gesture width relative to this
+ * reference, so a comfortable swipe on a tablet — a much smaller fraction of
+ * its screen than the same physical swipe on a phone — no longer jumps as many
+ * minutes. Phones at or below the reference keep the tuned curve unchanged.
+ *
+ * VLC itself only measures physical centimetres; on a 10" tablet that makes a
+ * 5cm thumb swipe (a quarter of the screen) seek like a full-width phone
+ * sweep, which reads as far too fast under the finger. Mixing VLC's quartic
+ * with this width ratio is the adaptive part.
+ */
+private const val SWIPE_SEEK_PHONE_WIDTH_DP = 320f
+
+/**
+ * Pixels the sensitivity preference is calibrated against (a 1080p phone's
+ * swipe area). Keeping it independent of the device density preserves the
+ * existing linear sensitivity: one full gesture width covers
+ * `horizontalSwipeSensitivity * this` seconds.
+ */
+private const val HORIZONTAL_SEEK_SENSITIVITY_REFERENCE_PX = 820f
+
+/**
+ * Default value of the horizontal swipe sensitivity preference. The adaptive
+ * curve is calibrated at this value and scaled linearly by the preference, so
+ * the slider controls the whole mapping (not just the fine linear part).
+ */
+private const val HORIZONTAL_SEEK_DEFAULT_SENSITIVITY = 0.05f
+
+/** Limits for the sensitivity scale, mirroring the preference slider's range. */
+private const val HORIZONTAL_SEEK_SENSITIVITY_SCALE_MIN = 0.4f
+private const val HORIZONTAL_SEEK_SENSITIVITY_SCALE_MAX = 2f
+
+/**
+ * Seconds the accelerating term adds once the finger has travelled one
+ * [SWIPE_SEEK_REFERENCE_WIDTH_DP] (~6.5cm), before the screen scale and speed
+ * gain — the quartic VLC uses for its swipe seek, gently scaled. The screen
+ * scale then keeps that amount proportional to how much of the display the
+ * swipe covers.
  */
 private const val SWIPE_SEEK_ACCEL_SECONDS = 300f
 
 /**
- * Exponent of the accelerating term. 2.5 is gentle near the engage point
- * (precision survives) while still ramping hard enough at the far end.
+ * Exponent of the accelerating term. The quartic keeps the start flat enough
+ * that short drags stay effectively linear (well under a second over the first
+ * centimetre) while every extra centimetre past ~3cm adds noticeably more than
+ * the previous one, so the curve keeps opening up to a thumb-length swipe
+ * instead of hitting a wall. VLC uses the same exponent.
  */
-private const val SWIPE_SEEK_ACCEL_EXPONENT = 2.5f
+private const val SWIPE_SEEK_ACCEL_EXPONENT = 4f
 
 /**
- * Fraction of the gesture width below which the mapping is exactly the linear
- * per-pixel response: dragging up to 12% of the width behaves identically to
- * the flat implementation. This is what keeps short, precise drags unaffected.
- */
-private const val SWIPE_SEEK_ACCEL_ENGAGE_FRACTION = 0.12f
-
-/**
- * Finger speed bounds, in gesture widths per second, for the speed gain: at or
+ * Finger speed bounds, in reference widths per second, for the speed gain: at or
  * below [SWIPE_SEEK_SPEED_DEADZONE] the drag counts as deliberate and gets no
  * gain, at or above [SWIPE_SEEK_SPEED_FULL_AT] it counts as a flick and gets
  * the full [SWIPE_SEEK_SPEED_GAIN].
  *
- * The gain only ever scales the accelerating term, which is zero below the
- * engage fraction — so velocity noise can never make precise drags jumpy.
+ * The gain only ever scales the accelerating term, which stays a fraction of a
+ * second over the first centimetre of travel — so velocity noise can never
+ * make precise drags jumpy.
  */
 private const val SWIPE_SEEK_SPEED_DEADZONE = 0.5f
 private const val SWIPE_SEEK_SPEED_FULL_AT = 1.5f
@@ -157,7 +191,7 @@ private const val SWIPE_SEEK_EOF_GUARD_SECONDS = 1f
 /**
  * Speed multiplier for the accelerating term: 1 for deliberate drags, up to
  * 1 + [SWIPE_SEEK_SPEED_GAIN] for flicks. [speedFraction] is the finger speed
- * in gesture widths per second.
+ * in reference widths per second.
  */
 private fun swipeSeekSpeedGain(speedFraction: Float): Float {
   if (SWIPE_SEEK_SPEED_GAIN <= 0f) return 1f
@@ -167,39 +201,60 @@ private fun swipeSeekSpeedGain(speedFraction: Float): Float {
 }
 
 /**
- * Maps a signed drag distance, as a fraction of the gesture width, to a seek
- * offset in seconds.
+ * Width-relative gain for the accelerating term: 1 on the reference phone,
+ * ~0.24 on a 10" tablet in landscape. VLC's quartic grows with physical
+ * distance; dividing by the gesture width keeps a short thumb swipe on a large
+ * display from covering a full phone sweep's minutes while longer swipes still
+ * keep opening up.
+ */
+private fun swipeSeekScreenScale(gestureWidthDp: Float): Float =
+  (SWIPE_SEEK_PHONE_WIDTH_DP / gestureWidthDp.coerceAtLeast(1f)).coerceAtMost(1f)
+
+/**
+ * Maps a signed drag to a seek offset in seconds: a screen-relative linear
+ * part plus a physical-distance accelerating part.
  *
- * Three zones, all functions of finger position, so the mapping stays
+ * Both parts are functions of the finger position, so the mapping stays
  * reversible: dragging back to where the gesture started always returns to the
  * starting position.
  *
- * - up to [SWIPE_SEEK_ACCEL_ENGAGE_FRACTION]: pure [secondsPerWidth] per unit
- *   fraction, i.e. the original flat behaviour — careful seeking is unchanged;
- * - beyond it: the accelerating term ramps in smoothly from zero and reaches
- *   [SWIPE_SEEK_ACCEL_SECONDS] at a full-width drag;
- * - the accelerating term is scaled by [speedGain] (1..1+[SWIPE_SEEK_SPEED_GAIN]),
- *   so the same distance seeks more when swiped fast, while the fine zone above
- *   is untouched by velocity.
+ * - linear: [secondsPerWidth] per unit of [fraction] (a fraction of the gesture
+ *   width) — the original flat mapping, and the thing that gives a big display
+ *   its extra precision for small movements;
+ * - accelerating: grows with [travelDp] to the [SWIPE_SEEK_ACCEL_EXPONENT]th
+ *   power, reaching [SWIPE_SEEK_ACCEL_SECONDS] after
+ *   [SWIPE_SEEK_REFERENCE_WIDTH_DP] of physical travel and continuing to grow
+ *   from there, like VLC's swipe seek;
+ * - the accelerating part is scaled by the gesture width relative to
+ *   [SWIPE_SEEK_PHONE_WIDTH_DP], so a short thumb swipe on a large display is
+ *   gentler instead of covering a phone's full-sweep minutes;
+ * - it is also scaled by [sensitivity] relative to the default, so the
+ *   sensitivity preference controls the whole curve, and by [speedGain]
+ *   (1..1+[SWIPE_SEEK_SPEED_GAIN]), so the same distance seeks more when
+ *   flicked while the linear precision of short drags is untouched by
+ *   velocity.
  *
  * Pass [adaptive] = false for the legacy flat mapping (accelerating term off).
  */
 private fun swipeSeekSeconds(
   fraction: Float,
   secondsPerWidth: Float,
+  travelDp: Float,
+  gestureWidthDp: Float,
+  sensitivity: Float,
   speedGain: Float,
   adaptive: Boolean,
 ): Float {
   val linear = secondsPerWidth * fraction
   if (!adaptive) return linear
 
-  val magnitude = abs(fraction)
-  if (magnitude <= SWIPE_SEEK_ACCEL_ENGAGE_FRACTION) return linear
-
-  val ramp = (magnitude - SWIPE_SEEK_ACCEL_ENGAGE_FRACTION) /
-    (1f - SWIPE_SEEK_ACCEL_ENGAGE_FRACTION)
+  val travel = travelDp / SWIPE_SEEK_REFERENCE_WIDTH_DP
+  val sensitivityScale = (sensitivity / HORIZONTAL_SEEK_DEFAULT_SENSITIVITY)
+    .coerceIn(HORIZONTAL_SEEK_SENSITIVITY_SCALE_MIN, HORIZONTAL_SEEK_SENSITIVITY_SCALE_MAX)
   val accelerated = SWIPE_SEEK_ACCEL_SECONDS *
-    ramp.coerceIn(0f, 1f).pow(SWIPE_SEEK_ACCEL_EXPONENT) *
+    travel.pow(SWIPE_SEEK_ACCEL_EXPONENT) *
+    swipeSeekScreenScale(gestureWidthDp) *
+    sensitivityScale *
     speedGain
   return linear + sign(fraction) * accelerated
 }
@@ -1520,6 +1575,8 @@ fun GestureHandler(
         gesturePreferences,
         isVerticalGestureActive,
         horizontalSwipeAcceleration,
+        horizontalSwipeSensitivity,
+        density,
       ) {
         if (!horizontalSwipeToSeek || areControlsLocked || isVerticalGestureActive) return@pointerInput
 
@@ -1527,6 +1584,10 @@ fun GestureHandler(
           val down = awaitFirstDown(requireUnconsumed = false)
           val startPosition = down.position
           val startTime = System.currentTimeMillis()
+          // Width of the padded gesture area, used by the screen-adaptive
+          // accelerating term. Phones are at/below the reference width and
+          // keep the tuned curve; tablets get a proportionally smaller boost.
+          val gestureWidthDp = size.width.toFloat() / density.density
 
           var gestureType: String? = null
           var hasStartedSeeking = false
@@ -1536,7 +1597,14 @@ fun GestureHandler(
           // Use the sensitivity preference instead of hardcoded value
           val seekSensitivity = horizontalSwipeSensitivity
           // Seconds covered by the linear term at a full gesture-width drag.
-          val secondsPerWidth = seekSensitivity * HORIZONTAL_SEEK_REFERENCE_WIDTH_PX
+          val secondsPerWidth =
+            seekSensitivity * HORIZONTAL_SEEK_SENSITIVITY_REFERENCE_PX
+          // Physical length the accelerating range and the flick gain are
+          // measured in. VLC's curve is quartic on centimetres, so the same
+          // thumb travel reaches the same part of the ramp on every screen
+          // (see SWIPE_SEEK_REFERENCE_WIDTH_DP).
+          val referenceWidthPx =
+            with(density) { SWIPE_SEEK_REFERENCE_WIDTH_DP.dp.toPx() }
           // Platform fling estimator (same one Compose uses for scrolling):
           // gives a stable horizontal speed from the last ~100ms of samples
           // instead of chasing per-event jitter.
@@ -1561,13 +1629,13 @@ fun GestureHandler(
                   velocityTracker.addPosition(change.uptimeMillis, currentPosition)
 
                   // Tablet-specific responsive swipe gesture vs standard phone gesture.
-                  // The width-scaled sensitivity (reference/actual) already normalizes
-                  // seek distance per swipe, so the pixel gate must not be absurdly low:
-                  // an ordinary tap (touch slop ~8dp, often >18px on high-density
-                  // tablets) could previously fire the swipe-seek, which transiently
-                  // pauses, exact-seeks and resumes — the reported "video pauses/
-                  // freezes ~0.5-1s after a seek lands" on tablets. Require a real
-                  // swipe: past slop, clear horizontal dominance, and a short time gate.
+                  // Seek distance is normalized by physical finger travel, so the
+                  // pixel gate must not be absurdly low: an ordinary tap (touch slop
+                  // ~8dp, often >18px on high-density tablets) could previously fire
+                  // the swipe-seek, which transiently pauses, exact-seeks and resumes
+                  // — the reported "video pauses/freezes ~0.5-1s after a seek lands"
+                  // on tablets. Require a real swipe: past slop, clear horizontal
+                  // dominance, and a short time gate.
                   val horizontalSlopPx = with(density) { 24.dp.toPx() }
                   val isGestureTriggered = if (isTablet) {
                     abs(deltaX) > horizontalSlopPx && abs(deltaX) > abs(deltaY) * 1.6f && timeSinceStart > 80L
@@ -1598,20 +1666,25 @@ fun GestureHandler(
                   }
 
                   if (gestureType == "horizontal_seek" && hasStartedSeeking) {
-                    // Normalize by gesture width so the same swipe fraction seeks
-                    // the same amount on phones and tablets. Raw pixel deltas made
-                    // wide screens hypersensitive, throwing the seekbar preview
-                    // across the track on small finger movements.
-                    val gestureWidthPx = size.width.toFloat().coerceAtLeast(1f)
-                    // Finger speed in gesture widths per second, peak-latched for
-                    // this gesture so the gain only ever rises (see
-                    // swipeSeekSeconds).
-                    val speedFraction = abs(velocityTracker.calculateVelocity().x) / gestureWidthPx
+                    // Finger speed in reference widths per second, peak-latched
+                    // for this gesture so the gain only ever rises (see
+                    // swipeSeekSeconds). The same physical flick speed now earns
+                    // the same gain on a phone and a tablet.
+                    val speedFraction =
+                      abs(velocityTracker.calculateVelocity().x) / referenceWidthPx
                     peakSpeedFraction = maxOf(peakSpeedFraction, speedFraction)
-                    // Calculate seek amount based on horizontal movement
+                    // Linear part stays a fraction of the gesture width, so
+                    // precision keeps scaling with the display. The accelerating
+                    // part is VLC's quartic on physical travel, scaled by the
+                    // gesture width relative to a phone: a comfortable tablet
+                    // swipe is a small slice of the screen, so it should not
+                    // cover a full phone sweep's minutes.
                     val seekAmount = swipeSeekSeconds(
-                      fraction = deltaX / gestureWidthPx,
+                      fraction = deltaX / size.width.toFloat().coerceAtLeast(1f),
                       secondsPerWidth = secondsPerWidth,
+                      travelDp = abs(deltaX) / density.density,
+                      gestureWidthDp = gestureWidthDp,
+                      sensitivity = seekSensitivity,
                       speedGain = swipeSeekSpeedGain(peakSpeedFraction),
                       adaptive = horizontalSwipeAcceleration,
                     )

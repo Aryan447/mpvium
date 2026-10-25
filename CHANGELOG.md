@@ -1,4 +1,4 @@
-## Unreleased
+## V1.3.0
 
 ### Added
 
@@ -33,9 +33,11 @@
 - The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
 - Onboarding now has scroll-reactive pages, shape-changing icon tiles, spring-driven progress dots, a fading skip action, and an animated primary button with press feedback.
 - About now groups Libraries and GitHub into an expressive action group, confirms device-info copies with a tactile icon swap, and cross-fades the update-check indicator.
+- Movies now hides short clips, reels, trailers, social/download exports, and camera recordings; those files remain available in Folders.
 
 ### Fixed
 
+- Swipe seeking now adapts to screen size: the accelerating part of the curve uses VLC-style quartic growth on physical finger travel, scaled by how wide the gesture area is, so a comfortable swipe on a 10" tablet no longer seeks as much as a full-width phone sweep and short drags keep their precision; phones keep their current feel, and the horizontal swipe sensitivity slider now scales the whole curve, not just the fine part.
 - Compose Material 3 1.5.0-beta01 compatibility for dropdown menus, the seekbar, and glass navigation item colors.
 - Clean show titles no longer include trailing release-group tags such as `-edge2020`.
 - Home sections can be reordered and toggled (featured banner, Continue Watching, Up Next, Recently Added, Shows, Movies, folders) in Appearance > Home.

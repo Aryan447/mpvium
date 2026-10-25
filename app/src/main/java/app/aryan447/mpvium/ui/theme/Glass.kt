@@ -416,10 +416,10 @@ fun glassSegmentedButtonColors(): androidx.compose.material3.SegmentedButtonColo
 @Composable
 fun glassToggleButtonColors(): androidx.compose.material3.ToggleButtonColors {
   if (!LocalGlass.current) {
-    return androidx.compose.material3.ToggleButtonDefaults.toggleButtonColors()
+    return androidx.compose.material3.ToggleButtonDefaults.colors()
   }
   val dark = androidx.compose.foundation.isSystemInDarkTheme()
-  return androidx.compose.material3.ToggleButtonDefaults.toggleButtonColors(
+  return androidx.compose.material3.ToggleButtonDefaults.colors(
     containerColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
     contentColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
