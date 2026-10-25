@@ -8,7 +8,6 @@
 - "Full player colors" toggle (Player Layout > Appearance, on by default) that puts the app theme accent on player icon glyphs while keeping button, pill, and chip backgrounds neutral glass; the seekbar, volume, and brightness sliders also use the accent. Turn it off for neutral icons, where only the seekbar, volume, and brightness sliders use the theme accent.
 - Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
 - Horizontal swipe seeking with VLC Android's exact distance curve, on by default with a toggle under Player → Gestures: short drags stay precise while longer swipes quickly cover minutes.
-- Library-sources hint on Home, Shows, and Movies when the whitelist filter is active, with one-tap access to Settings → Folders.
 - Manual "Mark as" watch status on Home Continue Watching / Up Next / Recently Added (long-press), series episodes (long-press) and whole shows, movie details, and Recently Played selection.
 
 ### Changed
@@ -32,7 +31,8 @@
 - The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
 - Onboarding now has scroll-reactive pages, shape-changing icon tiles, spring-driven progress dots, a fading skip action, and an animated primary button with press feedback.
 - About now groups Libraries and GitHub into an expressive action group, confirms device-info copies with a tactile icon swap, and cross-fades the update-check indicator.
-- Movies now hides short clips, reels, trailers, social/download exports, and camera recordings; those files remain available in Folders.
+- Movies now hides clips of five minutes or less, along with reels, trailers, social/download exports, and camera recordings; those files remain available in Folders.
+- Removed the library-sources hint banner from Home, Shows, and Movies; whitelist settings remain in Settings → Folders.
 
 ### Fixed
 

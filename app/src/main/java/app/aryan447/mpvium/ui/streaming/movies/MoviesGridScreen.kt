@@ -84,7 +84,6 @@ import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
-import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
@@ -113,8 +112,8 @@ object MoviesGridScreen : Screen {
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
-    // Library-sources hint (issue #87): surface Settings → Folders without
-    // adding setup steps.
+    // Empty-state hint (issue #87): when whitelist-only leaves no results,
+    // offer a one-tap route to Settings → Folders.
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
     val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
     val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
@@ -327,7 +326,6 @@ object MoviesGridScreen : Screen {
               onMovieSortChange = { streamingPreferences.movieSort.set(it) },
               totalMovieCount = movieList.size,
               libraryFiltered = libraryFiltered,
-              whitelistCount = whitelistedFolders.size,
               onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onMovieClick = { selectedMovieId = it.video.id },
               onMovieLongClick = { moviePendingDeletion = it },
@@ -366,7 +364,6 @@ object MoviesGridScreen : Screen {
           onMovieSortChange = { streamingPreferences.movieSort.set(it) },
           totalMovieCount = movieList.size,
           libraryFiltered = libraryFiltered,
-          whitelistCount = whitelistedFolders.size,
           onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onMovieClick = { backstack.add(MovieDetailScreen(it.video.id, it.title)) },
           onMovieLongClick = { moviePendingDeletion = it },
@@ -416,7 +413,6 @@ private fun MoviesGridContent(
   onMovieSortChange: (MovieSort) -> Unit,
   totalMovieCount: Int,
   libraryFiltered: Boolean,
-  whitelistCount: Int,
   onManageLibrarySources: () -> Unit,
   onMovieClick: (LocalMovie) -> Unit,
   onMovieLongClick: (LocalMovie) -> Unit,
@@ -483,14 +479,6 @@ private fun MoviesGridContent(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
-        if (libraryFiltered) {
-          item(span = { GridItemSpan(columns) }) {
-            LibrarySourcesBanner(
-              whitelistCount = whitelistCount,
-              onManageClick = onManageLibrarySources,
-            )
-          }
-        }
         item(span = { GridItemSpan(columns) }) {
           Column {
             LibraryFilterBar(
