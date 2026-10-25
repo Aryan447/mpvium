@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
@@ -81,11 +82,13 @@ import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
+import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -118,6 +121,8 @@ data class MovieDetailScreen(
     var matchOptions by remember { mutableStateOf<List<WyzieTmdbResult>>(emptyList()) }
     var isSearchingMatches by remember { mutableStateOf(false) }
     var matchQuery by remember { mutableStateOf("") }
+    // Manual watch status (issue #94)
+    var markAsOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(videoId, reloadKey) {
       withContext(Dispatchers.IO) {
@@ -304,6 +309,15 @@ data class MovieDetailScreen(
                   Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
                 }
                 IconButton(
+                  onClick = { markAsOpen = true },
+                  modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                  Icon(Icons.Filled.CheckCircle, contentDescription = "Mark as", tint = Color.White)
+                }
+                IconButton(
                   onClick = { pendingDeletion = currentMovie.video },
                   modifier = Modifier
                     .size(40.dp)
@@ -478,6 +492,31 @@ data class MovieDetailScreen(
         itemNames = listOf(movie?.title ?: video.title),
       )
     }
+
+    MarkAsDialog(
+      isOpen = markAsOpen,
+      selectedCount = 1,
+      onDismiss = { markAsOpen = false },
+      onSelect = { status ->
+        markAsOpen = false
+        val target = movie?.video
+        if (target != null) {
+          coroutineScope.launch(Dispatchers.IO) {
+            val applied = VideoWatchStatusOps.markVideo(target, status)
+            withContext(Dispatchers.Main) {
+              android.widget.Toast.makeText(
+                context,
+                context.getString(
+                  if (applied) app.aryan447.mpvium.R.string.mark_as_updated
+                  else app.aryan447.mpvium.R.string.mark_as_failed,
+                ),
+                android.widget.Toast.LENGTH_SHORT,
+              ).show()
+            }
+          }
+        }
+      },
+    )
 
     if (showMatchPicker) {
       AlertDialog(

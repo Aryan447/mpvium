@@ -24,8 +24,11 @@ class PlayerPreferences(
   val brightnessGesture = preferenceStore.getBoolean("gestures_brightness", true)
   val volumeGesture = preferenceStore.getBoolean("volume_brightness", true)
   val pinchToZoomGesture = preferenceStore.getBoolean("pinch_to_zoom_gesture", true)
+  val pinchToResizeSubtitles = preferenceStore.getBoolean("pinch_to_resize_subtitles_gesture", true)
   val horizontalSwipeToSeek = preferenceStore.getBoolean("horizontal_swipe_to_seek", true)
   val horizontalSwipeSensitivity = preferenceStore.getFloat("horizontal_swipe_sensitivity", 0.05f)
+  val verticalSwipeSensitivity = preferenceStore.getFloat("vertical_swipe_sensitivity", 1f)
+  val horizontalSwipeAcceleration = preferenceStore.getBoolean("horizontal_swipe_acceleration", true)
 
   val customAspectRatios = preferenceStore.getStringSet("custom_aspect_ratios", emptySet())
 
@@ -72,7 +75,7 @@ class PlayerPreferences(
   // New: autoplay next video when current file ends
   val autoplayNextVideo = preferenceStore.getBoolean("autoplay_next_video", true)
 
-  // Master toggle for clean titles. When off, the raw filename is shown.
+  // Master toggle for clean titles on shows and movies. When off, the raw filename is shown.
   val showEpisodeHeader = preferenceStore.getBoolean("show_episode_header", true)
 
   // Clean title style, shown when the master toggle is on. Single line is the default.

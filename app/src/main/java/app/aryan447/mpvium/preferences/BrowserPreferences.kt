@@ -50,6 +50,11 @@ class BrowserPreferences(
 
   // Watched threshold preference (percentage 1-100)
   val watchedThreshold = preferenceStore.getInt("watched_threshold", 95)
+
+  // Manual "Mark as New" overrides: file paths that must show the NEW badge
+  // even when the file is older than the recency threshold. Cleared when the
+  // video is played or marked with any other manual status.
+  val manualNewVideos = preferenceStore.getStringSet("manual_new_videos", emptySet())
 }
 
 /**

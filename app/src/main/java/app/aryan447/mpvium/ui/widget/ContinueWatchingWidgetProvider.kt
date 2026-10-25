@@ -38,7 +38,7 @@ class ContinueWatchingWidgetProvider : AppWidgetProvider() {
     private const val TAG = "ContinueWidget"
     private const val ACTION_REFRESH = "app.aryan447.mpvium.action.WIDGET_REFRESH"
     private const val MAX_ITEMS = 3
-    private const val WATCHED_THRESHOLD = 0.95f
+    private const val DEFAULT_WATCHED_THRESHOLD = 0.95f
 
     private data class WidgetItem(
       val title: String,
@@ -84,10 +84,17 @@ class ContinueWatchingWidgetProvider : AppWidgetProvider() {
         val koin = GlobalContext.get()
         val recentRepo: RecentlyPlayedRepository = koin.get()
         val stateRepo: PlaybackStateRepository = koin.get()
+        // Honor the user-configurable watched threshold (issue #94) instead
+        // of a hardcoded 95%, and respect the sticky hasBeenWatched flag.
+        val watchedThreshold = runCatching {
+          val browserPreferences: app.aryan447.mpvium.preferences.BrowserPreferences = koin.get()
+          browserPreferences.watchedThreshold.get().coerceIn(1, 100) / 100f
+        }.getOrDefault(DEFAULT_WATCHED_THRESHOLD)
         recentRepo.getRecentlyPlayed(10).mapNotNull { entity ->
           val title = entity.videoTitle?.takeIf { it.isNotBlank() } ?: entity.fileName
           val state = runCatching { stateRepo.getVideoDataByTitle(title) }.getOrNull()
             ?: runCatching { stateRepo.getVideoDataByTitle(entity.fileName) }.getOrNull()
+          if (state?.hasBeenWatched == true) return@mapNotNull null
           val positionMs = (state?.lastPosition ?: 0) * 1000L
           val durationMs = entity.duration.takeIf { it > 0 }
             ?: state?.let { (it.lastPosition + it.timeRemaining) * 1000L }?.takeIf { d -> d > 0 }
@@ -97,7 +104,7 @@ class ContinueWatchingWidgetProvider : AppWidgetProvider() {
           } else {
             0f
           }
-          if (positionMs <= 10_000L || progress >= WATCHED_THRESHOLD) return@mapNotNull null
+          if (positionMs <= 10_000L || progress >= watchedThreshold) return@mapNotNull null
           val remainingMins = ((durationMs - positionMs) / (1000 * 60)).coerceAtLeast(0)
           WidgetItem(
             title = title,

@@ -1,197 +1,61 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { changelog } from "../data/changelog";
 import { links } from "../data/site";
-
-/**
- * Mirror of the root CHANGELOG.md (user-facing, newest first).
- * Source of truth for GitHub release notes is the root CHANGELOG.md —
- * update both when tagging a preview or release.
- */
-const entries = [
-  {
-    version: "Unreleased",
-    groups: [{ heading: "Fixed", items: ["Launcher icon: smaller play-button foreground to match mpvium proportions."] }],
-  },
-  {
-    version: "v1.1.6-preview.5",
-    groups: [
-      {
-        heading: "Added",
-        items: [
-          "Player hold gestures for brightness/volume controls with speed-boost option.",
-          "1-step volume swipes and coarser hardware-key volume handling.",
-        ],
-      },
-      {
-        heading: "Changed",
-        items: [
-          "Refactored TV Shows label back to Shows.",
-          "Hold-volume gesture now uses the gesture volume API.",
-        ],
-      },
-      { heading: "Fixed", items: ["Player smart-cast crash on delegated `currentPlayer` update."] },
-    ],
-  },
-  {
-    version: "v1.1.6-preview.4",
-    groups: [
-      {
-        heading: "Added",
-        items: ["Home setting to hide the Featured banner.", "Instant Continue Watching updates with remove option."],
-      },
-      {
-        heading: "Changed",
-        items: ["Renamed Series to TV Shows throughout the UI."],
-      },
-      {
-        heading: "Fixed",
-        items: ["Keep series in Continue Watching while episodes remain.", "Fetch hi-res artwork on tablets to fix blurry backdrops."],
-      },
-    ],
-  },
-  {
-    version: "v1.1.6-preview.3",
-    groups: [
-      {
-        heading: "Added",
-        items: [
-          "Library Insights dashboard.",
-          "Continue Watching home-screen widget.",
-          "Explain button, Smart Skip, and Shader Peek in the player.",
-          "First-run onboarding and replayable welcome tour.",
-          "Customizable volume step and limits.",
-        ],
-      },
-      {
-        heading: "Changed",
-        items: [
-          "Tablet master-detail two-pane for Series and Movies.",
-          "Pill navigation bar on by default with matching outline.",
-          "Actionable network-error and history-disabled states.",
-        ],
-      },
-      {
-        heading: "Fixed",
-        items: [
-          "Swipe-seek normalization for tablets (gesture-width based).",
-          "App shortcut / context-menu crash.",
-          "Player overlay startup crash, subtitle touch zones, and chip anchoring.",
-          "Smaller thumbnail/artwork caches with bounded disk eviction.",
-          "Reactive browser state (replaces 60fps polling loop).",
-        ],
-      },
-    ],
-  },
-];
 ---
 
 <BaseLayout
   active="changelog"
   title="Changelog — mpvium"
-  description="What's new in mpvium: user-facing changes per preview and release build."
+  description="What's new in mpvium: the latest user-facing changes, generated from the project changelog."
 >
   <div class="mx-auto max-w-3xl px-5 pb-2 pt-14">
     <h1 class="text-4xl font-extrabold tracking-tight">
       What&apos;s New<span class="text-[var(--primary)]">.</span>
     </h1>
     <p class="mb-8 mt-2 text-[var(--muted)]">
-      User-facing changelog for preview and release builds. Full release notes with checksums
-      are on the{" "}
+      Full release notes with checksums are on the{" "}
       <a class="text-[var(--primary)] hover:underline" href={links.releases}>
         releases page
       </a>
       .
     </p>
 
-    <section
-      id="wn-latest"
-      hidden
-      class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6"
-    >
-      <h2 class="text-xl font-extrabold text-[var(--primary)]">
-        <span id="wn-tag"></span>
-        <span
-          id="wn-date"
-          class="ml-2 align-middle text-xs font-bold uppercase tracking-wider text-[var(--muted)]"
-        ></span>
-      </h2>
-      <div id="wn-body" class="mt-2"></div>
-    </section>
-
     {
-      entries.map((e) => (
-        <section class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-          <h2 class="text-xl font-extrabold text-[var(--primary)]">## {e.version}</h2>
-          {e.groups.map((g) => (
-            <div class="mt-4">
-              <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)]">
-                {g.heading}
-              </h3>
-              <ul class="mt-2 list-disc space-y-1.5 pl-5 text-[15px]">
-                {g.items.map((item) => (
-                  <li>{item}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
-      ))
+      changelog.length === 0 ? (
+        <p class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--muted)]">
+          No changelog entries yet.
+        </p>
+      ) : (
+        changelog.map((entry) => (
+          <section class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+            <h2 class="text-xl font-extrabold text-[var(--primary)]">{entry.version}</h2>
+            {entry.groups.map((group) => (
+              <div class="mt-4">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)]">
+                  {group.heading}
+                </h3>
+                <ul class="mt-2 list-disc space-y-1.5 pl-5 text-[15px]">
+                  {group.items.map((parts) => (
+                    <li>
+                      {parts.map((part) =>
+                        part.code ? (
+                          <code class="rounded bg-[var(--surface2)] px-1.5 py-0.5 font-mono text-[0.88em] text-[var(--primary)]">
+                            {part.text}
+                          </code>
+                        ) : (
+                          <>{part.text}</>
+                        ),
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </section>
+        ))
+      )
     }
   </div>
   <div class="h-10"></div>
-
-  <script is:inline>
-    (function () {
-      function esc(s) {
-        return String(s == null ? "" : s)
-          .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-      }
-      // Fetches the latest stable release so this page updates itself
-      // with every release — no site edits needed.
-      fetch("https://api.github.com/repos/aryan447/mpvium/releases/latest")
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (rel) {
-          if (!rel || !rel.body) return;
-          var card = document.getElementById("wn-latest");
-          if (!card) return;
-          document.getElementById("wn-tag").textContent = rel.tag_name;
-          try {
-            document.getElementById("wn-date").textContent =
-              new Date(rel.published_at).toLocaleDateString(undefined, {
-                year: "numeric", month: "short", day: "numeric",
-              });
-          } catch (e) {}
-          var html = "", inList = false, para = [];
-          function flushPara() {
-            if (para.length) { html += '<p class="mb-2 text-[15px]">' + para.join("<br>") + "</p>"; para = []; }
-          }
-          function closeList() {
-            if (inList) { html += "</ul>"; inList = false; }
-          }
-          rel.body.split("\n").forEach(function (raw) {
-            var line = raw.trim();
-            var h = line.match(/^#{2,3}\s+(.*)/);
-            if (h) {
-              closeList(); flushPara();
-              html += '<h3 class="mt-4 text-sm font-bold uppercase tracking-wider text-[var(--muted)]">' + esc(h[1]) + "</h3>";
-              return;
-            }
-            var b = line.match(/^[-*]\s+(.*)/);
-            if (b) {
-              flushPara();
-              if (!inList) { html += '<ul class="mt-2 list-disc space-y-1.5 pl-5 text-[15px]">'; inList = true; }
-              html += "<li>" + esc(b[1]) + "</li>";
-              return;
-            }
-            if (line === "") { closeList(); flushPara(); return; }
-            para.push(esc(line));
-          });
-          closeList(); flushPara();
-          document.getElementById("wn-body").innerHTML = html;
-          card.hidden = false;
-        })
-        .catch(function () {});
-    })();
-  </script>
 </BaseLayout>

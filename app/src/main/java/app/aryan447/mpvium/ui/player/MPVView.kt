@@ -104,11 +104,8 @@ class MPVView(
       MPVLib.setOptionString("gpu-context", "androidvk")
     }
 
-    // Set hwdec with fallback order: HW+ (mediacodec) -> HW (mediacodec-copy) -> SW (no)
-    MPVLib.setOptionString(
-      "hwdec",
-      if (decoderPreferences.tryHWDecoding.get()) "mediacodec,mediacodec-copy,no" else "no",
-    )
+    // Initial decoder from settings. HW falls back to SW; HW+ also tries direct output first.
+    MPVLib.setOptionString("hwdec", decoderPreferences.defaultDecoder.get().defaultHwdec)
     MPVLib.setOptionString("hwdec-codecs", "all")
 
     if (decoderPreferences.useYUV420P.get()) {
@@ -283,13 +280,17 @@ class MPVView(
     }
     // If blank, MPV uses its default font
 
+    // "no" makes mpv ignore sub-scale and sub-pos for bitmap subtitles
+    // (VOBSUB/DVD, PGS), so image subs would stop following the Scale and
+    // Position sliders. "scale" keeps them responsive, same as
+    // PlayerActivity.applySubtitlePreferences() does at playback start.
     if (subtitlesPreferences.overrideAssSubs.get()) {
       MPVLib.setOptionString("sub-ass-override", "force")
       MPVLib.setOptionString("sub-ass-justify", "yes")
       MPVLib.setOptionString("secondary-sub-ass-override", "force")
     } else {
-      MPVLib.setOptionString("sub-ass-override", "no")
-      MPVLib.setOptionString("secondary-sub-ass-override", "no")
+      MPVLib.setOptionString("sub-ass-override", "scale")
+      MPVLib.setOptionString("secondary-sub-ass-override", "scale")
     }
 
     // Typography and styling for both primary and secondary
@@ -341,6 +342,11 @@ class MPVView(
     MPVLib.setOptionString("sub-use-margins", scaleByWindow)
     MPVLib.setOptionString("secondary-sub-scale-by-window", scaleByWindow)
     MPVLib.setOptionString("secondary-sub-use-margins", scaleByWindow)
+
+    // DVD subtitles (VOBSUB) are authored for anamorphic storage, so mpv would
+    // otherwise stretch the bitmap canvas onto the video area and distort the
+    // text. No effect on square-pixel video or on PGS/text subtitles.
+    MPVLib.setOptionString("stretch-dvd-subs", "yes")
   }
 
 

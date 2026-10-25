@@ -359,7 +359,10 @@ fun glassShortNavigationBarItemColors(): androidx.compose.material3.NavigationIt
     selectedIconColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
     ),
-    selectedTextColor = glassButtonContentColor(
+    selectedTextColorTopIconPosition = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+    ),
+    selectedTextColorStartIconPosition = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
     ),
     selectedIndicatorColor = if (dark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.65f),
@@ -401,6 +404,31 @@ fun glassSegmentedButtonColors(): androidx.compose.material3.SegmentedButtonColo
     inactiveContainerColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
     inactiveContentColor = glassButtonContentColor(
       androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+    ),
+  )
+}
+
+/**
+ * Expressive toggle-button colors: translucent frost for Glass, M3 defaults
+ * otherwise. Used by connected button groups in settings.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun glassToggleButtonColors(): androidx.compose.material3.ToggleButtonColors {
+  if (!LocalGlass.current) {
+    return androidx.compose.material3.ToggleButtonDefaults.colors()
+  }
+  val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  return androidx.compose.material3.ToggleButtonDefaults.colors(
+    containerColor = glassFrostColor(isDark = dark, kind = GlassKind.Chip),
+    contentColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+    ),
+    checkedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer.copy(
+      alpha = 0.55f,
+    ),
+    checkedContentColor = glassButtonContentColor(
+      androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
     ),
   )
 }

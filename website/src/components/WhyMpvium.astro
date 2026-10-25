@@ -1,0 +1,151 @@
+---
+import { links } from "../data/site";
+
+const engineBenefits = [
+  {
+    title: "Colors as intended",
+    description:
+      "Source color metadata is respected, with HDR tone mapping for your screen — no fake saturation, contrast or sharpening.",
+    icon: '<path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/><path d="M9 14.5c.7 1.2 1.7 1.8 3 1.8"/>',
+  },
+  {
+    title: "Debanding built in",
+    description:
+      "CPU or GPU debanding smooths stepped gradients in skies, fog and dark scenes.",
+    icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 15l4-4 3 3 4-5 7 6"/><path d="M7 9h.01"/>',
+  },
+  {
+    title: "Detail that holds up",
+    description:
+      "High-quality scaling, chroma upsampling and deinterlacing keep edges and motion clean.",
+    icon: '<path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/><rect x="8" y="8" width="8" height="8" rx="1"/>',
+  },
+  {
+    title: "Subtitles as authored",
+    description:
+      "ASS/SSA fonts, colors, positioning and effects render the way the release intended.",
+    icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 12h4M7 15h7M14 12h3"/>',
+  },
+];
+---
+
+<section class="mx-auto max-w-5xl px-5 pb-2 pt-14" aria-labelledby="why-h">
+  <h2 id="why-h" class="mb-1.5 text-[28px] font-extrabold tracking-[-0.5px]">
+    Why mpvium<span class="text-[var(--primary)]">?</span>
+  </h2>
+  <p class="max-w-3xl text-[var(--muted)]">
+    Most mpv frontends stop at the engine. Most video players stop at the library.{" "}
+    <span class="text-[var(--text)]">mpvium is the overlap</span> — libmpv playback, a real
+    Shows &amp; Movies library, and touch-first controls, without giving up the pro settings.
+  </p>
+
+  <div class="mt-6 grid gap-3.5 lg:grid-cols-3">
+    <article class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-[18px]">
+      <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+        Many mpv forks
+      </p>
+      <h3 class="mt-1 text-lg font-extrabold">Engine first</h3>
+      <p class="mt-1.5 text-sm text-[var(--muted)]">
+        Playback power and config freedom, but the library and touch flow are left to you.
+      </p>
+      <ul class="mt-4 space-y-2 text-sm text-[var(--muted)]">
+        <li>Full mpv playback engine</li>
+        <li>mpv.conf, Lua scripts and config</li>
+        <li>Minimal, file-browser-first interface</li>
+      </ul>
+    </article>
+
+    <article class="rounded-2xl border border-[var(--primary)] bg-[var(--surface2)] p-[18px]">
+      <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--primary)]">
+        mpvium
+      </p>
+      <h3 class="mt-1 text-lg font-extrabold text-[var(--primary)]">Both, by default</h3>
+      <p class="mt-1.5 text-sm text-[var(--text)]">
+        The same libmpv engine, wrapped in a complete library and a player designed for touch.
+      </p>
+      <ul class="mt-4 space-y-2 text-sm text-[var(--text)]">
+        <li>
+          <span class="mr-1.5 text-[var(--primary)]" aria-hidden="true">✓</span>Automatic Shows
+          &amp; Movies library
+        </li>
+        <li>
+          <span class="mr-1.5 text-[var(--primary)]" aria-hidden="true">✓</span>Material 3
+          Expressive, 15 themes
+        </li>
+        <li>
+          <span class="mr-1.5 text-[var(--primary)]" aria-hidden="true">✓</span>mpv.conf, Lua and
+          decoder modes
+        </li>
+        <li>
+          <span class="mr-1.5 text-[var(--primary)]" aria-hidden="true">✓</span>Intro skip,
+          Explain, online subtitles
+        </li>
+      </ul>
+    </article>
+
+    <article class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-[18px]">
+      <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+        Many video players
+      </p>
+      <h3 class="mt-1 text-lg font-extrabold">Library first</h3>
+      <p class="mt-1.5 text-sm text-[var(--muted)]">
+        A familiar library and controls, but the engine and fine-tuning are mostly fixed.
+      </p>
+      <ul class="mt-4 space-y-2 text-sm text-[var(--muted)]">
+        <li>Polished library and playback</li>
+        <li>Touch-friendly interface</li>
+        <li>Preset engine and codec controls</li>
+      </ul>
+    </article>
+  </div>
+
+  <div class="mt-10">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <h3 class="text-2xl font-extrabold tracking-[-0.3px]">
+        The engine difference<span class="text-[var(--primary)]">.</span>
+      </h3>
+      <a
+        class="text-sm font-bold text-[var(--primary)] hover:underline"
+        href={links.mpvRocks}
+      >
+        Visual comparisons at mpv.rocks ↗
+      </a>
+    </div>
+    <p class="mt-1 max-w-3xl text-sm text-[var(--muted)]">
+      Playback runs through libmpv, the same rendering engine as mpv — not a generic Android
+      decoder.
+    </p>
+
+    <div class="mt-4 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        engineBenefits.map((benefit) => (
+          <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-[18px]">
+            <svg
+              viewBox="0 0 24 24"
+              class="h-[24px] w-[24px] fill-none stroke-[var(--tertiary)]"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              set:html={benefit.icon}
+            />
+            <h4 class="mb-1 mt-2 text-[15px] font-bold text-[var(--primary)]">
+              {benefit.title}
+            </h4>
+            <p class="text-sm text-[var(--muted)]">{benefit.description}</p>
+          </div>
+        ))
+      }
+    </div>
+
+    <p class="mt-4 text-sm text-[var(--muted)]">
+      Also from libmpv: hardware decoding, frame-accurate seeking and FFmpeg-backed codec
+      support.
+    </p>
+  </div>
+
+  <p class="mt-6 text-sm text-[var(--muted)]">
+    <span class="font-bold text-[var(--text)]">No trade-off:</span> the engine, the library, and
+    the controls stay yours.
+  </p>
+</section>

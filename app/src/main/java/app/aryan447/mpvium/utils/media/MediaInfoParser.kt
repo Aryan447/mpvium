@@ -526,6 +526,9 @@ object MediaInfoParser {
         // Remove trailing group after dash (e.g., "-PSA", "-DEMAND")
         title = title.replace(Regex("""\s*-\s*[A-Z0-9]{2,10}$"""), " ")
 
+        // Remove a lowercase/underscored release-group suffix left behind after
+        // metadata removal (e.g. "...[x265]-edge2020.mkv" -> "... -edge2020").
+        title = title.replace(Regex("""\s+-[A-Za-z0-9][A-Za-z0-9._-]{1,29}$"""), " ")
         // Remove CRC32 hashes (8-char hex)
         title = title.replace(Regex("""\b[A-Fa-f0-9]{8}\b"""), " ")
 
@@ -547,9 +550,9 @@ object MediaInfoParser {
             .replace(Regex("""[\[\]\(\)\{\}【】（）]"""), " ")
             // Collapse multiple spaces
             .replace(Regex("""\s+"""), " ")
-            // Remove leading/trailing separators and whitespace
-            .replace(Regex("""^[\s\-_.]+"""), "")
-            .replace(Regex("""[\s\-_.]+$"""), "")
+            // Remove leading/trailing separators, whitespace, and unmatched brackets
+            .replace(Regex("""^[\s\-_.\)\]\}]+"""), "")
+            .replace(Regex("""[\s\-_.\(\[\{]+$"""), "")
             // Remove trailing dash left over from group removal
             .replace(Regex("""\s*-\s*$"""), "")
             .trim()

@@ -88,8 +88,6 @@ import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
 import app.aryan447.mpvium.ui.player.controls.components.CurrentChapter
 import app.aryan447.mpvium.ui.player.controls.components.PlayerPillButton
-import app.aryan447.mpvium.ui.theme.controlColor
-import app.aryan447.mpvium.ui.theme.glassPlayerAlpha
 import app.aryan447.mpvium.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 
@@ -114,12 +112,12 @@ fun RenderPlayerButton(
   buttonSize: Dp = 40.dp,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  val colors = LocalPlayerColors.current
   when (button) {
     PlayerButton.BACK_ARROW -> {
       ControlsButton(
         icon = Icons.AutoMirrored.Default.ArrowBack,
         onClick = onBackPress,
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -154,14 +152,14 @@ fun RenderPlayerButton(
               maxLines = 1,
               overflow = TextOverflow.Visible,
               fontFamily = FontFamily.Monospace,
-              color = MaterialTheme.colorScheme.primary,
+              color = if (hideBackground) colors.onVideoContent else colors.accent,
             )
             Text(
               text = Typography.bullet.toString(),
               textAlign = TextAlign.Center,
               style = MaterialTheme.typography.bodyMedium,
               maxLines = 1,
-              color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+              color = if (hideBackground) colors.onVideoContent else colors.controlContent,
               overflow = TextOverflow.Clip,
             )
           }
@@ -171,7 +169,7 @@ fun RenderPlayerButton(
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
             fontFamily = FontFamily.Monospace,
-            color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+            color = if (hideBackground) colors.onVideoContent else colors.controlContent,
             modifier = Modifier.weight(1f, fill = false),
           )
         }
@@ -183,7 +181,6 @@ fun RenderPlayerButton(
         ControlsButton(
           Icons.Default.Bookmarks,
           onClick = { onOpenSheet(Sheets.Chapters) },
-          color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
           modifier = Modifier.size(buttonSize),
         )
       }
@@ -210,7 +207,7 @@ fun RenderPlayerButton(
             Icon(
               imageVector = Icons.Default.Speed,
               contentDescription = "Playback Speed",
-              tint = MaterialTheme.colorScheme.primary,
+              tint = if (hideBackground) colors.onVideoContent else colors.accent,
               modifier = Modifier.size(20.dp),
             )
             Text(
@@ -225,7 +222,6 @@ fun RenderPlayerButton(
         ControlsButton(
           icon = Icons.Default.Speed,
           onClick = { onOpenSheet(Sheets.PlaybackSpeed) },
-          color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
           modifier = Modifier.size(buttonSize),
         )
       }
@@ -264,7 +260,6 @@ fun RenderPlayerButton(
       ControlsButton(
         icon = Icons.Default.ScreenRotation,
         onClick = viewModel::cycleScreenRotations,
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -286,8 +281,8 @@ fun RenderPlayerButton(
         if (expanded) {
           Surface(
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-            border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            color = colors.controlFill,
+            border = if (hideBackground) null else BorderStroke(1.dp, colors.controlBorder),
             modifier = Modifier.height(buttonSize),
           ) {
             Row(
@@ -311,7 +306,7 @@ fun RenderPlayerButton(
                   Icon(
                     imageVector = Icons.Default.FastRewind,
                     contentDescription = "Previous Frame",
-                    tint = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                    tint = if (hideBackground) colors.onVideoIconContent else colors.controlIconContent,
                     modifier = Modifier.size(20.dp),
                   )
                 }
@@ -321,15 +316,15 @@ fun RenderPlayerButton(
               if (isSnapshotLoading) {
                 Surface(
                   shape = CircleShape,
-                  color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-                  border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                  color = colors.controlFill,
+                  border = BorderStroke(1.dp, colors.controlBorder),
                   modifier = Modifier.size(buttonSize - 4.dp),
                 ) {
                   Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     CircularProgressIndicator(
                       modifier = Modifier.size(16.dp),
                       strokeWidth = 2.dp,
-                      color = if (hideBackground) controlColor else MaterialTheme.colorScheme.primary,
+                      color = if (hideBackground) colors.onVideoContent else colors.accent,
                     )
                   }
                 }
@@ -337,8 +332,8 @@ fun RenderPlayerButton(
                 @OptIn(ExperimentalFoundationApi::class)
                 Surface(
                   shape = CircleShape,
-                  color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-                  border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                  color = colors.controlFill,
+                  border = BorderStroke(1.dp, colors.controlBorder),
                   modifier = Modifier
                     .size(buttonSize - 4.dp)
                     .clip(CircleShape)
@@ -354,7 +349,7 @@ fun RenderPlayerButton(
                     Icon(
                       imageVector = Icons.Default.CameraAlt,
                       contentDescription = "Take Screenshot",
-                      tint = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                      tint = if (hideBackground) colors.onVideoIconContent else colors.controlIconContent,
                       modifier = Modifier.size(20.dp),
                     )
                   }
@@ -377,7 +372,7 @@ fun RenderPlayerButton(
                   Icon(
                     imageVector = Icons.Default.FastForward,
                     contentDescription = "Next Frame",
-                    tint = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                    tint = if (hideBackground) colors.onVideoIconContent else colors.controlIconContent,
                     modifier = Modifier.size(20.dp),
                   )
                 }
@@ -390,7 +385,6 @@ fun RenderPlayerButton(
             icon = Icons.Default.Camera,
             onClick = viewModel::toggleFrameNavigationExpanded,
             onLongClick = { onOpenSheet(Sheets.FrameNavigation) },
-            color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(buttonSize),
           )
         }
@@ -422,7 +416,7 @@ fun RenderPlayerButton(
             Icon(
               imageVector = Icons.Default.ZoomIn,
               contentDescription = "Video Zoom",
-              tint = MaterialTheme.colorScheme.primary,
+              tint = colors.accent,
               modifier = Modifier.size(20.dp),
             )
             Text(
@@ -441,7 +435,6 @@ fun RenderPlayerButton(
             onOpenSheet(Sheets.VideoZoom)
           },
           onLongClick = { viewModel.resetVideoZoom() },
-          color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
           modifier = Modifier.size(buttonSize),
         )
       }
@@ -451,7 +444,6 @@ fun RenderPlayerButton(
       ControlsButton(
         Icons.Default.PictureInPictureAlt,
         onClick = { activity.enterPipModeHidingOverlay() },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -472,7 +464,6 @@ fun RenderPlayerButton(
           }
         },
         onLongClick = { onOpenSheet(Sheets.AspectRatios) },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -481,7 +472,6 @@ fun RenderPlayerButton(
       ControlsButton(
         Icons.Default.LockOpen,
         onClick = viewModel::lockControls,
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -491,7 +481,6 @@ fun RenderPlayerButton(
         Icons.Default.Audiotrack,
         onClick = { onOpenSheet(Sheets.AudioTracks) },
         onLongClick = { onOpenPanel(Panels.AudioDelay) },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -501,7 +490,6 @@ fun RenderPlayerButton(
         Icons.Default.Subtitles,
         onClick = { onOpenSheet(Sheets.SubtitleTracks) },
         onLongClick = { onOpenPanel(Panels.SubtitleDelay) },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -511,7 +499,6 @@ fun RenderPlayerButton(
         Icons.Default.MoreVert,
         onClick = { onOpenSheet(Sheets.More) },
         onLongClick = { onOpenPanel(Panels.VideoFilters) },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -520,7 +507,6 @@ fun RenderPlayerButton(
       ControlsButton(
         Icons.Default.MenuBook,
         onClick = { onOpenSheet(Sheets.Explain) },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -550,17 +536,7 @@ fun RenderPlayerButton(
       ControlsButton(
         icon = icon,
         onClick = viewModel::cycleRepeatMode,
-        color = if (hideBackground) {
-          when (repeatMode) {
-            app.aryan447.mpvium.ui.player.RepeatMode.OFF -> controlColor
-            else -> MaterialTheme.colorScheme.primary
-          }
-        } else {
-          when (repeatMode) {
-            app.aryan447.mpvium.ui.player.RepeatMode.OFF -> MaterialTheme.colorScheme.onSurface
-            else -> MaterialTheme.colorScheme.primary
-          }
-        },
+        active = repeatMode != app.aryan447.mpvium.ui.player.RepeatMode.OFF,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -570,7 +546,6 @@ fun RenderPlayerButton(
       ControlsButton(
         icon = Icons.Default.FastForward,
         onClick = { viewModel.seekBy(playerPreferences.customSkipDuration.get()) },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -586,7 +561,6 @@ fun RenderPlayerButton(
       ControlsButton(
         icon = Icons.Default.FastForward,
         onClick = { viewModel.seekBy(skipDuration) },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -598,11 +572,7 @@ fun RenderPlayerButton(
         ControlsButton(
           icon = if (shuffleEnabled) Icons.Default.ShuffleOn else Icons.Default.Shuffle,
           onClick = viewModel::toggleShuffle,
-          color = if (hideBackground) {
-            if (shuffleEnabled) MaterialTheme.colorScheme.primary else controlColor
-          } else {
-            if (shuffleEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-          },
+          active = shuffleEnabled,
           modifier = Modifier.size(buttonSize),
         )
       }
@@ -613,27 +583,30 @@ fun RenderPlayerButton(
       ControlsButton(
         icon = Icons.Default.Flip,
         onClick = viewModel::toggleMirroring,
-        color = if (hideBackground) {
-          if (isMirrored) MaterialTheme.colorScheme.primary else controlColor
-        } else {
-          if (isMirrored) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-        },
+        active = isMirrored,
         modifier = Modifier.size(buttonSize),
       )
     }
 
     PlayerButton.VERTICAL_FLIP -> {
       val isVerticalFlipped by viewModel.isVerticalFlipped.collectAsState()
-      val vFlipColor = if (hideBackground) {
-        if (isVerticalFlipped) MaterialTheme.colorScheme.primary else controlColor
-      } else {
-        if (isVerticalFlipped) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-      }
+      val vFlipColor =
+        when {
+          isVerticalFlipped && hideBackground -> colors.activeOnVideoContent
+          isVerticalFlipped -> colors.activeContent
+          hideBackground -> colors.onVideoIconContent
+          else -> colors.controlIconContent
+        }
       Surface(
         shape = CircleShape,
-        color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
+        color =
+          when {
+            hideBackground -> Color.Transparent
+            isVerticalFlipped -> colors.activeFill
+            else -> colors.controlFill
+          },
         contentColor = vFlipColor,
-        border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        border = if (hideBackground) null else BorderStroke(1.dp, colors.controlBorder),
         modifier = Modifier
           .size(buttonSize)
           .clip(CircleShape)
@@ -670,8 +643,8 @@ fun RenderPlayerButton(
         if (expanded) {
           Surface(
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-            border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            color = colors.controlFill,
+            border = if (hideBackground) null else BorderStroke(1.dp, colors.controlBorder),
             modifier = Modifier.height(buttonSize),
           ) {
             Row(
@@ -679,10 +652,10 @@ fun RenderPlayerButton(
               verticalAlignment = Alignment.CenterVertically,
               modifier = Modifier.padding(horizontal = 4.dp),
             ) {
-              // Point A Button - always transparent background
+              // Point A Button - transparent until a timestamp is set
               Surface(
                 shape = CircleShape,
-                color = if (loopA != null) MaterialTheme.colorScheme.tertiaryContainer else Color.Transparent,
+                color = if (loopA != null) colors.activeFill else Color.Transparent,
                 modifier = Modifier
                   .height(buttonSize - 4.dp)
                   .widthIn(min = buttonSize - 4.dp)
@@ -695,9 +668,9 @@ fun RenderPlayerButton(
                     style = MaterialTheme.typography.labelLarge,
                     fontFamily = FontFamily.Monospace,
                     color = if (loopA != null) {
-                      MaterialTheme.colorScheme.onTertiaryContainer
+                      colors.activeContent
                     } else {
-                      if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
+                      if (hideBackground) colors.onVideoContent else colors.controlContent
                     },
                     modifier = Modifier.padding(horizontal = if (loopA != null) 8.dp else 0.dp),
                   )
@@ -707,8 +680,8 @@ fun RenderPlayerButton(
               // Clear/Close Button - always has background
               Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                color = colors.controlFill,
+                border = BorderStroke(1.dp, colors.controlBorder),
                 modifier = Modifier
                   .size(buttonSize - 4.dp)
                   .clip(CircleShape)
@@ -721,16 +694,16 @@ fun RenderPlayerButton(
                   Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Clear Loop",
-                    tint = MaterialTheme.colorScheme.onSurface,
+                    tint = colors.controlIconContent,
                     modifier = Modifier.size(16.dp),
                   )
                 }
               }
 
-              // Point B Button - always transparent background
+              // Point B Button - transparent until a timestamp is set
               Surface(
                 shape = CircleShape,
-                color = if (loopB != null) MaterialTheme.colorScheme.tertiaryContainer else Color.Transparent,
+                color = if (loopB != null) colors.activeFill else Color.Transparent,
                 modifier = Modifier
                   .height(buttonSize - 4.dp)
                   .widthIn(min = buttonSize - 4.dp)
@@ -743,9 +716,9 @@ fun RenderPlayerButton(
                     style = MaterialTheme.typography.labelLarge,
                     fontFamily = FontFamily.Monospace,
                     color = if (loopB != null) {
-                      MaterialTheme.colorScheme.onTertiaryContainer
+                      colors.activeContent
                     } else {
-                      if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
+                      if (hideBackground) colors.onVideoContent else colors.controlContent
                     },
                     modifier = Modifier.padding(horizontal = if (loopB != null) 8.dp else 0.dp),
                   )
@@ -757,8 +730,8 @@ fun RenderPlayerButton(
           // Collapsed: Show Autorenew icon
           Surface(
             shape = CircleShape,
-            color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = glassPlayerAlpha()),
-            border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            color = if (hideBackground) Color.Transparent else colors.controlFill,
+            border = if (hideBackground) null else BorderStroke(1.dp, colors.controlBorder),
             modifier = Modifier
               .size(buttonSize)
               .clip(CircleShape)
@@ -769,9 +742,9 @@ fun RenderPlayerButton(
                 imageVector = Icons.Outlined.Autorenew,
                 contentDescription = "AB Loop",
                 tint = if (loopA != null && loopB != null) {
-                  MaterialTheme.colorScheme.primary
+                  if (hideBackground) colors.activeOnVideoContent else colors.activeContent
                 } else {
-                  if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
+                  if (hideBackground) colors.onVideoIconContent else colors.controlIconContent
                 },
                 modifier = Modifier.size(24.dp),
               )
@@ -785,7 +758,6 @@ fun RenderPlayerButton(
       ControlsButton(
         icon = Icons.Default.Headset,
         onClick = { activity.triggerBackgroundPlayback() },
-        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(buttonSize),
       )
     }
@@ -806,13 +778,7 @@ fun RenderPlayerButton(
           )
         },
         title = if (isSpeedBoost) "Hold for speed boost" else "Hold for brightness / volume",
-        color = if (isSpeedBoost) {
-          MaterialTheme.colorScheme.primary
-        } else if (hideBackground) {
-          controlColor
-        } else {
-          MaterialTheme.colorScheme.onSurface
-        },
+        active = isSpeedBoost,
         modifier = Modifier.size(buttonSize),
       )
     }
