@@ -1,4 +1,4 @@
-package app.aryan447.mpvium.ui.streaming.components
+package app.aryan447.mpvium.presentation.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -24,13 +24,13 @@ import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassToggleButtonColors
 
 /**
- * Single-choice filter row built from connected Material 3 Expressive toggle
+ * Single-choice row built from connected Material 3 Expressive toggle
  * buttons. The selected item morphs into a full pill while the rest stay
  * joined, and the row scrolls when the labels do not fit.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun <T> ExpressiveFilterRow(
+fun <T> ExpressiveChoiceRow(
   options: List<T>,
   selected: T,
   labelOf: (T) -> String,
@@ -38,7 +38,7 @@ fun <T> ExpressiveFilterRow(
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
-  val colors = filterToggleColors()
+  val colors = expressiveChoiceColors()
   val unselectedBorder = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
 
   LazyRow(
@@ -79,10 +79,10 @@ fun <T> ExpressiveFilterRow(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun filterToggleColors(): ToggleButtonColors {
+private fun expressiveChoiceColors(): ToggleButtonColors {
   if (LocalGlass.current) return glassToggleButtonColors()
   val scheme = MaterialTheme.colorScheme
-  return ToggleButtonDefaults.toggleButtonColors(
+  return ToggleButtonDefaults.colors(
     containerColor = Color.Transparent,
     contentColor = scheme.onSurfaceVariant,
     checkedContainerColor = scheme.primary,

@@ -101,6 +101,7 @@ import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.streaming.model.StreamingCategory
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
@@ -108,7 +109,6 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
-import app.aryan447.mpvium.ui.streaming.components.ExpressiveFilterRow
 import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
@@ -643,7 +643,7 @@ private fun CategoryChipsRow(
   onCategorySelect: (StreamingCategory) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  ExpressiveFilterRow(
+  ExpressiveChoiceRow(
     options = StreamingCategory.entries,
     selected = selectedCategory,
     labelOf = { it.displayName },
