@@ -131,7 +131,7 @@ data class SeriesDetailScreen(
         val detected = seriesDetector.detectLibrary()
         val found = detected.series.find { it.id == seriesId }
         if (found != null) {
-          series = found
+          series = metadataRepository.applyCachedSeries(found)
           selectedSeason = found.seasons.keys.firstOrNull() ?: 1
           isLoading = false
 

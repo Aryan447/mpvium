@@ -110,6 +110,7 @@ data class MovieDetailScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var movie by remember { mutableStateOf<LocalMovie?>(null) }
+    var detectedMovie by remember { mutableStateOf<LocalMovie?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var pendingDeletion by remember { mutableStateOf<Video?>(null) }
@@ -123,7 +124,8 @@ data class MovieDetailScreen(
         val detected = seriesDetector.detectLibrary()
         val found = detected.movies.find { it.video.id == videoId } ?: detected.movies.find { it.title.equals(movieTitle, ignoreCase = true) }
         if (found != null) {
-          movie = found
+          detectedMovie = found
+          movie = metadataRepository.applyCachedMovie(found)
           isLoading = false
 
           val enriched = metadataRepository.enrichMovie(found, forceRefresh = reloadKey > 0)
@@ -563,7 +565,10 @@ data class MovieDetailScreen(
                       option = option,
                       onClick = {
                         showMatchPicker = false
-                        val selectedTarget = movie
+                        // Key the manual pick from the file's detected title/year.
+                        // `movie` may already carry the TMDb display year, which
+                        // would store the entry under a key the rescan prunes.
+                        val selectedTarget = detectedMovie ?: movie
                         if (selectedTarget != null) {
                           coroutineScope.launch {
                             val enriched = withContext(Dispatchers.IO) {

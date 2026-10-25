@@ -138,7 +138,8 @@ object SeriesGridScreen : Screen {
             presentSeriesIds = detected.series.map { it.id }.toSet(),
           )
         }
-        seriesList = detected.series
+        val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
+        seriesList = cachedSeries
         isLoading = false
 
         // Background enrichment

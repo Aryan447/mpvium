@@ -2,6 +2,11 @@
 
 ### Fixed
 
+- Movie and show posters now stay stored on device until that movie or show is deleted, so covers keep working offline instead of being evicted from a size-capped image cache or re-downloaded.
+- Cached poster/backdrop files are removed together with their library entry when media is deleted or pruned.
+- Metadata cache writes are now atomic, so a write interrupted while the app is closed can no longer corrupt the cache and force every cover to be fetched again.
+- Movies and shows now render their cached cover immediately on open instead of briefly falling back to a video thumbnail before metadata enrichment finishes.
+- Refreshing metadata while offline now keeps the last saved cover instead of clearing it.
 - Movie and show posters now use a stricter TMDb match: title similarity, original title and release year are scored, movie/show types are never mixed, and uncertain matches no longer attach a wrong cover.
 - Filenames with year-like title numbers (1917, 2012, Blade Runner 2049) keep the number in the title, and folders such as "Spider-Man" are no longer mistaken for season folders.
 - Bare episode names (`S01E01.mkv`, `Episode 1.mkv`, `01.mkv`) and generic movie files (`movie.mkv`) now take their title from the show/movie folder, so their covers resolve correctly.
