@@ -288,7 +288,7 @@ object SearchablePreferences {
             add(SearchablePreference(
                 titleRes = R.string.pref_player_gestures_horizontal_swipe_acceleration,
                 summaryRes = R.string.pref_player_gestures_horizontal_swipe_acceleration_summary,
-                keywords = listOf("accelerated", "acceleration", "adaptive", "horizontal", "swipe", "seek", "distance", "physical", "precise", "screen", "tablet"),
+                keywords = listOf("distance", "adaptive", "horizontal", "swipe", "seek", "seconds", "minutes", "cap", "physical", "centimetre", "centimeter", "precise", "screen", "tablet"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))

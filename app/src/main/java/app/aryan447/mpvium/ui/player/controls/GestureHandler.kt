@@ -85,7 +85,6 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sign
 import kotlin.math.sqrt
-import kotlin.math.tanh
 
 /**
  * Touches starting within this vertical distance of the current subtitle
@@ -99,31 +98,16 @@ private const val SubtitleTouchToleranceFraction = 0.075f
 private const val SubtitleTouchMinSlopPx = 48f
 
 /**
- * Physical finger travel the accelerating part of the curve is calibrated
- * against: 8 cm, the reference distance VLC uses for its swipe seek. Travel is
- * measured in centimetres rather than as a fraction of the screen, so the
- * accelerating part covers the same amount of video for the same physical
- * swipe on a phone, a foldable and a tablet.
+ * Playback seconds covered per physical centimetre of horizontal swipe travel
+ * at the default sensitivity: 5 cm seeks 35 s and 10 cm seeks 1:10.
  */
-private const val SWIPE_SEEK_REFERENCE_TRAVEL_CM = 8f
+private const val SWIPE_SEEK_SECONDS_PER_CM = 7f
 
 /**
- * Raw seconds the accelerating term adds after
- * [SWIPE_SEEK_REFERENCE_TRAVEL_CM] of physical travel: VLC reaches ten minutes
- * at that distance. The term is passed through a soft knee below, so this value
- * shapes the curve under the knee instead of being reached at the reference
- * distance.
+ * Maximum seek jump for a single swipe. A long sweep stops at three minutes
+ * instead of skipping a large part of the video.
  */
-private const val SWIPE_SEEK_ACCEL_RAW_SECONDS = 600f
-
-/**
- * Soft ceiling for the accelerating term. An unbounded quartic explodes on the
- * longer swipes a landscape phone or tablet allows (13-19 cm), which is how a
- * full sweep ended up seeking tens of minutes. With the knee the accelerating
- * term approaches this value, so a full sweep stays within a few minutes while
- * every extra centimetre still adds a little.
- */
-private const val SWIPE_SEEK_ACCEL_LIMIT_SECONDS = 120f
+private const val SWIPE_SEEK_MAX_SECONDS = 180f
 
 /** Centimetres per dp (1 dp = 1/160 inch, i.e. 2.54 / 160 cm). */
 private const val CM_PER_DP = 2.54f / 160f
@@ -137,9 +121,9 @@ private const val CM_PER_DP = 2.54f / 160f
 private const val HORIZONTAL_SEEK_SENSITIVITY_REFERENCE_PX = 820f
 
 /**
- * Default value of the horizontal swipe sensitivity preference. The adaptive
- * curve is calibrated at this value and scaled linearly by the preference, so
- * the slider controls the whole mapping (not just the fine linear part).
+ * Default value of the horizontal swipe sensitivity preference. The distance
+ * mapping is calibrated at this value and scaled linearly by the preference,
+ * so the slider controls the whole mapping.
  */
 private const val HORIZONTAL_SEEK_DEFAULT_SENSITIVITY = 0.05f
 
@@ -148,48 +132,29 @@ private const val HORIZONTAL_SEEK_SENSITIVITY_SCALE_MIN = 0.4f
 private const val HORIZONTAL_SEEK_SENSITIVITY_SCALE_MAX = 2f
 
 /**
- * Exponent of the accelerating term. The quartic keeps the start flat enough
- * that short drags stay effectively linear (well under a second over the first
- * centimetre) while every extra centimetre past ~3cm adds noticeably more than
- * the previous one, so the curve keeps opening up to a thumb-length swipe.
- * VLC uses the same exponent.
- */
-private const val SWIPE_SEEK_ACCEL_EXPONENT = 4f
-
-/**
  * Never let a swipe land exactly on the video's end: mpv reports EOF there and
  * "close after the end of playback" (on by default) would tear the player down
- * instead of leaving the last second on screen. With the accelerated range,
+ * instead of leaving the last second on screen. With a three-minute range,
  * overshooting into the end while dragging is a normal thing to do. The
  * seekbar and double-tap seeks keep their existing exact-end behaviour.
  */
 private const val SWIPE_SEEK_EOF_GUARD_SECONDS = 1f
 
 /**
- * Maps a signed drag to a seek offset in seconds: a screen-relative linear
- * part plus a physical-distance accelerating part.
+ * Maps a signed drag to a seek offset in seconds.
  *
- * Both parts are functions of the finger position, so the mapping stays
- * reversible: dragging back to where the gesture started always returns to the
- * starting position, and the same distance always maps to the same offset (no
- * velocity term), like VLC's and Samsung's swipe seek.
+ * With [adaptive] on, the finger travel is converted from dp to physical
+ * centimetres and mapped at [SWIPE_SEEK_SECONDS_PER_CM] seconds per
+ * centimetre, then capped at [SWIPE_SEEK_MAX_SECONDS]. The mapping is a
+ * function of finger position, so dragging back to where the gesture started
+ * always returns to the starting position, and the same distance always maps
+ * to the same offset. [sensitivity] scales the whole mapping; the cap is
+ * applied after scaling, so a single swipe never exceeds three minutes.
  *
- * - linear: [secondsPerWidth] per unit of [fraction] (a fraction of the gesture
- *   width) — the original flat mapping, and the thing that gives a big display
- *   its extra precision for small movements;
- * - accelerating: VLC's quartic on physical travel ([travelDp] converted to
- *   centimetres), calibrated to [SWIPE_SEEK_ACCEL_RAW_SECONDS] at
- *   [SWIPE_SEEK_REFERENCE_TRAVEL_CM] before softening;
- * - soft knee: the accelerating term approaches
- *   [SWIPE_SEEK_ACCEL_LIMIT_SECONDS] instead of growing without bound, so a
- *   full-screen sweep on any device stays within a few minutes;
- * - the accelerating term is scaled by [sensitivity] relative to the default,
- *   so the sensitivity preference controls the whole curve.
+ * At the default sensitivity: 1 cm ≈ 7 s, 5 cm ≈ 35 s, 10 cm ≈ 1:10, and
+ * longer swipes stop at 3:00.
  *
- * Calibration at the default sensitivity: 1 cm ≈ 3 s, 5 cm ≈ 1:30, 6.5 cm ≈
- * 2:15, and a full-screen sweep tops out around 2:40 regardless of the device.
- *
- * Pass [adaptive] = false for the legacy flat mapping (accelerating term off).
+ * Pass [adaptive] = false for the legacy flat mapping.
  */
 private fun swipeSeekSeconds(
   fraction: Float,
@@ -198,19 +163,14 @@ private fun swipeSeekSeconds(
   sensitivity: Float,
   adaptive: Boolean,
 ): Float {
-  val linear = secondsPerWidth * fraction
-  if (!adaptive) return linear
+  if (!adaptive) return secondsPerWidth * fraction
 
-  val travelCm = travelDp * CM_PER_DP
-  val rawAcceleration = SWIPE_SEEK_ACCEL_RAW_SECONDS *
-    (travelCm / SWIPE_SEEK_REFERENCE_TRAVEL_CM).pow(SWIPE_SEEK_ACCEL_EXPONENT)
-  // Soft knee: almost the raw value for small travels, asymptotically the
-  // limit for long ones, and continuous/monotonic in between.
-  val acceleration = SWIPE_SEEK_ACCEL_LIMIT_SECONDS *
-    tanh(rawAcceleration / SWIPE_SEEK_ACCEL_LIMIT_SECONDS)
   val sensitivityScale = (sensitivity / HORIZONTAL_SEEK_DEFAULT_SENSITIVITY)
     .coerceIn(HORIZONTAL_SEEK_SENSITIVITY_SCALE_MIN, HORIZONTAL_SEEK_SENSITIVITY_SCALE_MAX)
-  return linear + sign(fraction) * acceleration * sensitivityScale
+  val travelCm = travelDp * CM_PER_DP
+  val seconds = (SWIPE_SEEK_SECONDS_PER_CM * travelCm * sensitivityScale)
+    .coerceAtMost(SWIPE_SEEK_MAX_SECONDS)
+  return sign(fraction) * seconds
 }
 
 /**
@@ -1600,12 +1560,10 @@ fun GestureHandler(
                   }
 
                   if (gestureType == "horizontal_seek" && hasStartedSeeking) {
-                    // Linear part stays a fraction of the gesture width, so
-                    // precision keeps scaling with the display. The accelerating
-                    // part is VLC's quartic on physical finger travel with a
-                    // soft ceiling, so a comfortable swipe on a phone and on a
-                    // tablet both cover about the same 1-2 minutes and a full
-                    // sweep stays within a few minutes.
+                    // Physical finger travel maps to playback time at 7 s/cm
+                    // at the default sensitivity, capped at three minutes, so
+                    // the same swipe covers the same amount on a phone and a
+                    // tablet and a long sweep cannot skip too far.
                     val seekAmount = swipeSeekSeconds(
                       fraction = deltaX / size.width.toFloat().coerceAtLeast(1f),
                       secondsPerWidth = secondsPerWidth,
