@@ -68,6 +68,7 @@ import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.components.LeftSideOvalShape
 import app.aryan447.mpvium.presentation.components.RightSideOvalShape
+import app.aryan447.mpvium.ui.player.FullSwipeSeekMode
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerUpdates
 import app.aryan447.mpvium.ui.player.HoldControlTarget
@@ -98,78 +99,66 @@ private const val SubtitleTouchToleranceFraction = 0.075f
 private const val SubtitleTouchMinSlopPx = 48f
 
 /**
- * Playback seconds covered per physical centimetre of horizontal swipe travel
- * at the default sensitivity: 5 cm seeks 35 s and 10 cm seeks 1:10.
+ * Seek distance for a swipe across the full width of the touch area when
+ * "3 minutes" is selected as the full-swipe behaviour.
  */
-private const val SWIPE_SEEK_SECONDS_PER_CM = 7f
+private const val SWIPE_SEEK_FULL_SWIPE_SECONDS = 180f
 
 /**
- * Maximum seek jump for a single swipe. A long sweep stops at three minutes
- * instead of skipping a large part of the video.
+ * A full-width swipe covers [SWIPE_SEEK_FULL_SWIPE_SECONDS] (or the whole
+ * video), while ordinary drags follow the preference's seconds per
+ * centimetre. The extra distance needed to reach the full-swipe target is
+ * blended in near the end of the drag, so short, precise swipes keep their
+ * exact distance mapping and a full swipe still reaches the target.
  */
-private const val SWIPE_SEEK_MAX_SECONDS = 180f
+private const val SWIPE_SEEK_FULL_SWIPE_CURVE_POWER = 8f
 
 /** Centimetres per dp (1 dp = 1/160 inch, i.e. 2.54 / 160 cm). */
 private const val CM_PER_DP = 2.54f / 160f
 
 /**
- * Pixels the sensitivity preference is calibrated against (a 1080p phone's
- * swipe area). Keeping it independent of the device density preserves the
- * existing linear sensitivity: one full gesture width covers
- * `horizontalSwipeSensitivity * this` seconds.
- */
-private const val HORIZONTAL_SEEK_SENSITIVITY_REFERENCE_PX = 820f
-
-/**
- * Default value of the horizontal swipe sensitivity preference. The distance
- * mapping is calibrated at this value and scaled linearly by the preference,
- * so the slider controls the whole mapping.
- */
-private const val HORIZONTAL_SEEK_DEFAULT_SENSITIVITY = 0.05f
-
-/** Limits for the sensitivity scale, mirroring the preference slider's range. */
-private const val HORIZONTAL_SEEK_SENSITIVITY_SCALE_MIN = 0.4f
-private const val HORIZONTAL_SEEK_SENSITIVITY_SCALE_MAX = 2f
-
-/**
  * Never let a swipe land exactly on the video's end: mpv reports EOF there and
  * "close after the end of playback" (on by default) would tear the player down
- * instead of leaving the last second on screen. With a three-minute range,
- * overshooting into the end while dragging is a normal thing to do. The
- * seekbar and double-tap seeks keep their existing exact-end behaviour.
+ * instead of leaving the last second on screen. With swipes that can cover
+ * minutes (or the whole video), overshooting into the end while dragging is
+ * a normal thing to do. The seekbar and double-tap seeks keep their existing
+ * exact-end behaviour.
  */
 private const val SWIPE_SEEK_EOF_GUARD_SECONDS = 1f
 
 /**
  * Maps a signed drag to a seek offset in seconds.
  *
- * With [adaptive] on, the finger travel is converted from dp to physical
- * centimetres and mapped at [SWIPE_SEEK_SECONDS_PER_CM] seconds per
- * centimetre, then capped at [SWIPE_SEEK_MAX_SECONDS]. The mapping is a
- * function of finger position, so dragging back to where the gesture started
- * always returns to the starting position, and the same distance always maps
- * to the same offset. [sensitivity] scales the whole mapping; the cap is
- * applied after scaling, so a single swipe never exceeds three minutes.
+ * Ordinary finger travel is converted from dp to physical centimetres and
+ * mapped at [secondsPerCm]. The extra distance needed for [fullSwipeSeconds]
+ * (three minutes by default, or the video duration) is blended in towards
+ * the end of a full-width drag, so short swipes keep their exact 1 cm
+ * mapping while a swipe across the whole screen reaches the full-swipe
+ * target. The mapping is a function of finger position, so dragging back to
+ * where the gesture started always returns to the starting position and the
+ * same distance always maps to the same offset.
  *
- * At the default sensitivity: 1 cm ≈ 7 s, 5 cm ≈ 35 s, 10 cm ≈ 1:10, and
- * longer swipes stop at 3:00.
- *
- * Pass [adaptive] = false for the legacy flat mapping.
+ * At the default 7 s/cm: 5 cm ≈ 35 s, 10 cm ≈ 1:10, and a full swipe covers
+ * the configured target (3:00 by default).
  */
 private fun swipeSeekSeconds(
   fraction: Float,
-  secondsPerWidth: Float,
   travelDp: Float,
-  sensitivity: Float,
-  adaptive: Boolean,
+  widthDp: Float,
+  secondsPerCm: Float,
+  fullSwipeSeconds: Float,
 ): Float {
-  if (!adaptive) return secondsPerWidth * fraction
+  if (widthDp <= 0f) return 0f
 
-  val sensitivityScale = (sensitivity / HORIZONTAL_SEEK_DEFAULT_SENSITIVITY)
-    .coerceIn(HORIZONTAL_SEEK_SENSITIVITY_SCALE_MIN, HORIZONTAL_SEEK_SENSITIVITY_SCALE_MAX)
-  val travelCm = travelDp * CM_PER_DP
-  val seconds = (SWIPE_SEEK_SECONDS_PER_CM * travelCm * sensitivityScale)
-    .coerceAtMost(SWIPE_SEEK_MAX_SECONDS)
+  val widthCm = widthDp * CM_PER_DP
+  val travelCm = abs(travelDp) * CM_PER_DP
+  val fullSwipeTarget = fullSwipeSeconds.coerceAtLeast(0f)
+  val linearFullWidth = secondsPerCm * widthCm
+  val fullSwipeExtra = (fullSwipeTarget - linearFullWidth).coerceAtLeast(0f)
+  val progress = (travelCm / widthCm).coerceIn(0f, 1f)
+  val linearSeconds = secondsPerCm * travelCm
+  val seconds = (linearSeconds + fullSwipeExtra * progress.pow(SWIPE_SEEK_FULL_SWIPE_CURVE_POWER))
+    .coerceAtMost(fullSwipeTarget)
   return sign(fraction) * seconds
 }
 
@@ -327,9 +316,9 @@ fun GestureHandler(
   val pinchToResizeSubtitles by playerPreferences.pinchToResizeSubtitles.collectAsState()
   val panAndZoomEnabled by playerPreferences.panAndZoomEnabled.collectAsState()
   val horizontalSwipeToSeek by playerPreferences.horizontalSwipeToSeek.collectAsState()
-  val horizontalSwipeSensitivity by playerPreferences.horizontalSwipeSensitivity.collectAsState()
+  val horizontalSwipeSecondsPerCm by playerPreferences.horizontalSwipeSecondsPerCm.collectAsState()
+  val fullSwipeSeekMode by playerPreferences.fullSwipeSeekMode.collectAsState()
   val verticalSwipeSensitivity by playerPreferences.verticalSwipeSensitivity.collectAsState()
-  val horizontalSwipeAcceleration by playerPreferences.horizontalSwipeAcceleration.collectAsState()
   var isLongPressing by remember { mutableStateOf(false) }
   var isDynamicSpeedControlActive by remember { mutableStateOf(false) }
   var dynamicSpeedStartX by remember { mutableStateOf(0f) }
@@ -1488,8 +1477,8 @@ fun GestureHandler(
         areControlsLocked,
         gesturePreferences,
         isVerticalGestureActive,
-        horizontalSwipeAcceleration,
-        horizontalSwipeSensitivity,
+        horizontalSwipeSecondsPerCm,
+        fullSwipeSeekMode,
         density,
       ) {
         if (!horizontalSwipeToSeek || areControlsLocked || isVerticalGestureActive) return@pointerInput
@@ -1504,11 +1493,14 @@ fun GestureHandler(
           var initialVideoPosition = 0f
           var lastClampedPosition = 0f
           var wasPlayerAlreadyPaused = false
-          // Use the sensitivity preference instead of hardcoded value
-          val seekSensitivity = horizontalSwipeSensitivity
-          // Seconds covered by the linear term at a full gesture-width drag.
-          val secondsPerWidth =
-            seekSensitivity * HORIZONTAL_SEEK_SENSITIVITY_REFERENCE_PX
+          val secondsPerCm = horizontalSwipeSecondsPerCm.coerceIn(1f, 10f)
+          val fullSwipeSeconds = when (fullSwipeSeekMode) {
+            FullSwipeSeekMode.ThreeMinutes -> SWIPE_SEEK_FULL_SWIPE_SECONDS
+            FullSwipeSeekMode.WholeVideo ->
+              (duration?.toFloat() ?: 0f)
+                .takeIf { it > 0f }
+                ?: SWIPE_SEEK_FULL_SWIPE_SECONDS
+          }
 
           do {
             val event = awaitPointerEvent()
@@ -1560,16 +1552,16 @@ fun GestureHandler(
                   }
 
                   if (gestureType == "horizontal_seek" && hasStartedSeeking) {
-                    // Physical finger travel maps to playback time at 7 s/cm
-                    // at the default sensitivity, capped at three minutes, so
-                    // the same swipe covers the same amount on a phone and a
-                    // tablet and a long sweep cannot skip too far.
+                    // Physical finger travel maps to playback time at the
+                    // configured seconds per centimetre (7 s/cm by default),
+                    // with a full-width swipe reaching the configured
+                    // full-swipe target (3 minutes or the whole video).
                     val seekAmount = swipeSeekSeconds(
                       fraction = deltaX / size.width.toFloat().coerceAtLeast(1f),
-                      secondsPerWidth = secondsPerWidth,
                       travelDp = abs(deltaX) / density.density,
-                      sensitivity = seekSensitivity,
-                      adaptive = horizontalSwipeAcceleration,
+                      widthDp = size.width / density.density,
+                      secondsPerCm = secondsPerCm,
+                      fullSwipeSeconds = fullSwipeSeconds,
                     )
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
                     val maxDuration = duration?.toFloat() ?: 0f

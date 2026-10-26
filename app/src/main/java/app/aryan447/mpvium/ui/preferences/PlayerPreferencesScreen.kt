@@ -51,6 +51,7 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.player.FullSwipeSeekMode
 import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.PlayerTitleMode
@@ -409,22 +410,46 @@ object PlayerPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              val horizontalSwipeSensitivity by preferences.horizontalSwipeSensitivity.collectAsState()
+              val horizontalSwipeSecondsPerCm by preferences.horizontalSwipeSecondsPerCm.collectAsState()
               SliderPreference(
-                value = horizontalSwipeSensitivity,
-                onValueChange = { preferences.horizontalSwipeSensitivity.set(it.toFixed(3)) },
+                value = horizontalSwipeSecondsPerCm,
+                onValueChange = { preferences.horizontalSwipeSecondsPerCm.set(it.roundToInt().toFloat()) },
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Speed) },
-                title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_sensitivity)) },
-                valueRange = 0.020f..0.1f,
+                title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_speed)) },
+                valueRange = 1f..10f,
+                valueSteps = 8,
                 summary = {
-                  val sensitivityPercent = (horizontalSwipeSensitivity * 1000).toInt()
+                  val secondsPerCm = horizontalSwipeSecondsPerCm.roundToInt()
                   Text(
-                    "Current: ${sensitivityPercent}/100 (${if (sensitivityPercent < 30) "Low" else if (sensitivityPercent < 55) "Medium" else "High"})",
+                    text = stringResource(
+                      R.string.pref_player_gestures_horizontal_swipe_speed_value,
+                      secondsPerCm,
+                      formatSwipeSeekDuration(secondsPerCm * 5),
+                      formatSwipeSeekDuration(secondsPerCm * 10),
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
-                onSliderValueChange = { preferences.horizontalSwipeSensitivity.set(it.toFixed(3)) },
-                sliderValue = horizontalSwipeSensitivity,
+                onSliderValueChange = { preferences.horizontalSwipeSecondsPerCm.set(it.roundToInt().toFloat()) },
+                sliderValue = horizontalSwipeSecondsPerCm,
+              )
+
+              PreferenceDivider()
+
+              val fullSwipeSeekMode by preferences.fullSwipeSeekMode.collectAsState()
+              ExpressiveListPreference(
+                value = fullSwipeSeekMode,
+                onValueChange = preferences.fullSwipeSeekMode::set,
+                values = FullSwipeSeekMode.entries,
+                valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.FastForward) },
+                title = { Text(stringResource(R.string.pref_player_gestures_full_swipe)) },
+                summary = {
+                  Text(
+                    text = stringResource(fullSwipeSeekMode.summaryRes),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
               )
 
               PreferenceDivider()
@@ -445,22 +470,6 @@ object PlayerPreferencesScreen : Screen {
                 },
                 onSliderValueChange = { preferences.verticalSwipeSensitivity.set(it.toFixed(2)) },
                 sliderValue = verticalSwipeSensitivity,
-              )
-
-              PreferenceDivider()
-
-              val horizontalSwipeAcceleration by preferences.horizontalSwipeAcceleration.collectAsState()
-              HapticSwitchPreference(
-                value = horizontalSwipeAcceleration,
-                onValueChange = preferences.horizontalSwipeAcceleration::set,
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.Bolt) },
-                title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_acceleration)) },
-                summary = {
-                  Text(
-                    text = stringResource(R.string.pref_player_gestures_horizontal_swipe_acceleration_summary),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  )
-                },
               )
 
               PreferenceDivider()
@@ -631,3 +640,10 @@ object PlayerPreferencesScreen : Screen {
     }
   }
 }
+
+private fun formatSwipeSeekDuration(seconds: Int): String =
+  if (seconds >= 60) {
+    "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
+  } else {
+    "$seconds s"
+  }

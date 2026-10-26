@@ -3,6 +3,7 @@ package app.aryan447.mpvium.preferences
 
 import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
+import app.aryan447.mpvium.ui.player.FullSwipeSeekMode
 import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.PlayerTitleMode
@@ -26,9 +27,9 @@ class PlayerPreferences(
   val pinchToZoomGesture = preferenceStore.getBoolean("pinch_to_zoom_gesture", true)
   val pinchToResizeSubtitles = preferenceStore.getBoolean("pinch_to_resize_subtitles_gesture", true)
   val horizontalSwipeToSeek = preferenceStore.getBoolean("horizontal_swipe_to_seek", true)
-  val horizontalSwipeSensitivity = preferenceStore.getFloat("horizontal_swipe_sensitivity", 0.05f)
+  val horizontalSwipeSecondsPerCm = preferenceStore.getFloat("horizontal_swipe_seconds_per_cm", 7f)
+  val fullSwipeSeekMode = preferenceStore.getEnum("full_swipe_seek_mode", FullSwipeSeekMode.ThreeMinutes)
   val verticalSwipeSensitivity = preferenceStore.getFloat("vertical_swipe_sensitivity", 1f)
-  val horizontalSwipeAcceleration = preferenceStore.getBoolean("horizontal_swipe_acceleration", true)
 
   val customAspectRatios = preferenceStore.getStringSet("custom_aspect_ratios", emptySet())
 

@@ -272,9 +272,16 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
-                titleRes = R.string.pref_player_gestures_horizontal_swipe_sensitivity,
-                summaryRes = R.string.pref_player_gestures_horizontal_swipe_sensitivity_summary,
-                keywords = listOf("horizontal", "swipe", "sensitivity", "seek", "distance", "speed"),
+                titleRes = R.string.pref_player_gestures_horizontal_swipe_speed,
+                summaryRes = R.string.pref_player_gestures_horizontal_swipe_speed_summary,
+                keywords = listOf("horizontal", "swipe", "seek", "speed", "seconds", "centimetre", "centimeter", "distance", "sensitivity", "precise"),
+                category = "Player",
+                screen = PlayerPreferencesScreen,
+            ))
+            add(SearchablePreference(
+                titleRes = R.string.pref_player_gestures_full_swipe,
+                summaryRes = R.string.pref_player_gestures_full_swipe_summary,
+                keywords = listOf("full", "swipe", "seek", "three", "minutes", "whole", "video", "end", "distance", "tablet"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
@@ -282,13 +289,6 @@ object SearchablePreferences {
                 titleRes = R.string.pref_player_gestures_vertical_swipe_sensitivity,
                 summaryRes = R.string.pref_player_gestures_vertical_swipe_sensitivity_summary,
                 keywords = listOf("vertical", "swipe", "sensitivity", "volume", "brightness", "gesture"),
-                category = "Player",
-                screen = PlayerPreferencesScreen,
-            ))
-            add(SearchablePreference(
-                titleRes = R.string.pref_player_gestures_horizontal_swipe_acceleration,
-                summaryRes = R.string.pref_player_gestures_horizontal_swipe_acceleration_summary,
-                keywords = listOf("distance", "adaptive", "horizontal", "swipe", "seek", "seconds", "minutes", "cap", "physical", "centimetre", "centimeter", "precise", "screen", "tablet"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
