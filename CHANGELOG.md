@@ -7,7 +7,7 @@
 - SubSource support in online subtitle search: add your SubSource API key in Settings → Subtitles to include SubSource results; downloaded subtitles are unzipped automatically.
 - "Full player colors" toggle (Player Layout > Appearance, on by default) that puts the app theme accent on player icon glyphs while keeping button, pill, and chip backgrounds neutral glass; the seekbar, volume, and brightness sliders also use the accent. Turn it off for neutral icons, where only the seekbar, volume, and brightness sliders use the theme accent.
 - Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
-- Horizontal swipe seeking with VLC Android's exact distance curve, on by default with a toggle under Player → Gestures: short drags stay precise while longer swipes quickly cover minutes.
+- Horizontal swipe seeking now maps finger travel to playback time, with a 1–10 seconds-per-centimetre slider under Player → Gestures (7 s/cm by default: a 5 cm swipe covers ~35 seconds and 10 cm ~1:10) and a full-swipe choice of 3 minutes (default) or the whole video.
 - Manual "Mark as" watch status on Home Continue Watching / Up Next / Recently Added (long-press), series episodes (long-press) and whole shows, movie details, and Recently Played selection.
 
 ### Changed
@@ -42,7 +42,7 @@
 - Metadata cache writes are now atomic, so a write interrupted while the app is closed can no longer corrupt the cache and force every cover to be fetched again.
 - Movies and shows now render their cached cover immediately on open instead of briefly falling back to a video thumbnail before metadata enrichment finishes.
 - Refreshing metadata while offline now keeps the last saved cover instead of clearing it.
-- Swipe seeking now follows VLC Android's exact curve in physical finger travel: a comfortable 5 cm swipe seeks about 1.5 minutes and a long sweep quickly covers tens of minutes (kept just short of the end of the video), the same on phones and tablets. Previously a full sweep could jump an unpredictable number of minutes depending on the screen.
+- Swipe seeking no longer jumps by an unpredictable number of minutes: it uses a configurable seconds-per-centimetre distance mapping (7 s/cm by default, so a 5 cm swipe covers ~35 seconds and 10 cm ~1:10), and a full swipe covers 3 minutes or the whole video.
 - Compose Material 3 1.5.0-beta01 compatibility for dropdown menus, the seekbar, and glass navigation item colors.
 - Clean show titles no longer include trailing release-group tags such as `-edge2020`.
 - Home sections can be reordered and toggled (featured banner, Continue Watching, Up Next, Recently Added, Shows, Movies, folders) in Appearance > Home.

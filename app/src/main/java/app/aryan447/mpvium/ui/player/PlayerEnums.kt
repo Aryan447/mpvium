@@ -42,6 +42,20 @@ enum class HoldGestureMode(
   BrightnessVolume(R.string.pref_player_gestures_hold_action_controls),
 }
 
+enum class FullSwipeSeekMode(
+  @StringRes val titleRes: Int,
+  @StringRes val summaryRes: Int,
+) {
+  ThreeMinutes(
+    R.string.pref_player_gestures_full_swipe_three_minutes,
+    R.string.pref_player_gestures_full_swipe_three_minutes_summary,
+  ),
+  WholeVideo(
+    R.string.pref_player_gestures_full_swipe_whole_video,
+    R.string.pref_player_gestures_full_swipe_whole_video_summary,
+  ),
+}
+
 enum class PlayerTitleMode(
   @StringRes val titleRes: Int,
 ) {
