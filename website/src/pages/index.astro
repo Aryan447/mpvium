@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Hero from "../components/Hero.astro";
 import FeatureGrid from "../components/FeatureGrid.astro";
 import ThemeSwitcher from "../components/ThemeSwitcher.astro";
+import WhyMpvium from "../components/WhyMpvium.astro";
 import { features } from "../data/features";
 import { shots } from "../data/screenshots";
 import { links } from "../data/site";
@@ -12,6 +13,8 @@ import { links } from "../data/site";
   <Hero />
 
   <div class="film-strip"></div>
+
+  <WhyMpvium />
 
   <section class="mx-auto max-w-5xl px-5 pb-2 pt-14" aria-labelledby="features-h">
     <h2 id="features-h" class="mb-1.5 text-[28px] font-extrabold tracking-[-0.5px]">
@@ -72,8 +75,8 @@ import { links } from "../data/site";
         Ready to watch<span class="text-[var(--primary)]">?</span>
       </h2>
       <p class="mx-auto mt-2 max-w-xl text-[var(--muted)]">
-        Grab the latest APK from GitHub Releases, or follow development in the Telegram
-        community.
+        Grab the latest APK from GitHub Releases, or follow development in the Discord and
+        Telegram communities.
       </p>
       <div class="mt-5 flex flex-wrap justify-center gap-3">
         <a
@@ -81,6 +84,12 @@ import { links } from "../data/site";
           class="inline-block rounded-full bg-[var(--primary)] px-7 py-3 text-base font-bold text-[#1A1206] hover:brightness-110"
         >
           Get mpvium
+        </a>
+        <a
+          href={links.discord}
+          class="inline-block rounded-full border border-[var(--border)] px-7 py-3 text-base font-bold text-[var(--text)] hover:border-[var(--primary)]"
+        >
+          Join Discord
         </a>
         <a
           href={links.telegram}

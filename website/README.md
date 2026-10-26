@@ -35,12 +35,12 @@ bun run preview  # preview the production build
 
 ## Notes
 
-- The old GitHub Pages page (`docs/index.html`) is untouched; remove it or
-  switch Pages off once the Cloudflare Pages site is live (or keep it as a
-  redirect to the new URL).
+- The legacy GitHub Pages site has been removed. `docs/` now only holds the
+  README assets and the full screenshot collection.
 - Screenshots are a curated subset in `public/screenshots/`. The full set lives
   in the repo's `docs/screenshots/` — copy files over and extend
   `src/data/screenshots.ts` to grow the gallery.
-- `src/pages/changelog.astro` mirrors the root `CHANGELOG.md`. Update both
-  when tagging a preview or release.
+- `src/pages/changelog.astro` renders the root `CHANGELOG.md` at build time via
+  `src/data/changelog.ts`. Add changes to `CHANGELOG.md` only; the site picks
+  them up on the next deployment.
 - Theme preference persists in `localStorage` (`mpvium-theme`).

@@ -269,7 +269,7 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
 
     private val prefs = application.getSharedPreferences("mpvium_prefs", Context.MODE_PRIVATE)
     private val _isAutoUpdateEnabled = MutableStateFlow(
-        if (BuildConfig.ENABLE_UPDATE_FEATURE) prefs.getBoolean("auto_update", false) else false
+        if (BuildConfig.ENABLE_UPDATE_FEATURE) prefs.getBoolean("auto_update", true) else false
     )
     val isAutoUpdateEnabled: StateFlow<Boolean> = _isAutoUpdateEnabled.asStateFlow()
 

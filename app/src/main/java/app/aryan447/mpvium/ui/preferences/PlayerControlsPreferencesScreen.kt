@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -64,7 +65,6 @@ import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
@@ -219,10 +219,11 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Appearance Section
           item {
-            PreferenceSectionHeader(title = "Appearance", count = 2)
+            PreferenceSectionHeader(title = "Appearance", count = 3)
           }
 
           item {
+            val playerFullColors by appearancePrefs.playerFullColors.collectAsState()
             val hidePlayerButtonsBackground by appearancePrefs.hidePlayerButtonsBackground.collectAsState()
             val playerTimeToDisappear by playerPrefs.playerTimeToDisappear.collectAsState()
             val predefinedTimeValues = listOf(500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000)
@@ -232,6 +233,30 @@ object PlayerControlsPreferencesScreen : Screen {
             var customTimeValue by remember { mutableStateOf("") }
 
             PreferenceCard {
+              HapticSwitchPreference(
+                value = playerFullColors,
+                onValueChange = { appearancePrefs.playerFullColors.set(it) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Palette) },
+                title = {
+                  Text(
+                    text = stringResource(id = R.string.pref_player_colors_title),
+                  )
+                },
+                summary = {
+                  Text(
+                    text = stringResource(
+                      id = if (playerFullColors) {
+                        R.string.pref_player_colors_summary_on
+                      } else {
+                        R.string.pref_player_colors_summary_off
+                      },
+                    ),
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
               HapticSwitchPreference(
                 value = hidePlayerButtonsBackground,
                 onValueChange = { appearancePrefs.hidePlayerButtonsBackground.set(it) },
@@ -250,7 +275,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              ListPreference(
+              ExpressiveListPreference(
                 value = if (isCustomTimeValue) -1 else playerTimeToDisappear,
                 onValueChange = { newValue ->
                   if (newValue == -1) {

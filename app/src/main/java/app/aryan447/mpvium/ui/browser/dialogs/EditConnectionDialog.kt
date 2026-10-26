@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.domain.network.NetworkConnection
@@ -55,12 +57,15 @@ fun EditConnectionSheet(
   var host by remember(connection.id) { mutableStateOf(connection.host) }
   var port by remember(connection.id) { mutableStateOf(connection.port.toString()) }
   var username by remember(connection.id) { mutableStateOf(connection.username) }
-  var password by remember(connection.id) { mutableStateOf(connection.password) }
+  // Never pre-fill the saved password (issue #85): keep it hidden and only
+  // update it when the user types a new one. Blank means "keep existing".
+  var password by remember(connection.id) { mutableStateOf("") }
   var path by remember(connection.id) { mutableStateOf(connection.path) }
   var isAnonymous by remember(connection.id) { mutableStateOf(connection.isAnonymous) }
   var useHttps by remember(connection.id) { mutableStateOf(connection.useHttps) }
-  var passwordVisible by remember { mutableStateOf(false) }
   var protocolMenuExpanded by remember { mutableStateOf(false) }
+
+  val hasSavedPassword = connection.password.isNotEmpty() && !connection.isAnonymous
 
   val handleDismiss = {
     onDismiss()
@@ -74,7 +79,8 @@ fun EditConnectionSheet(
         host = host,
         port = port.toIntOrNull() ?: protocol.defaultPort,
         username = if (isAnonymous) "" else username,
-        password = if (isAnonymous) "" else password,
+        // Keep the stored password unless a new one was typed (issue #85).
+        password = if (isAnonymous) "" else password.ifBlank { connection.password },
         path = path.ifBlank { "/" },
         isAnonymous = isAnonymous,
         useHttps = useHttps,
@@ -235,14 +241,26 @@ fun EditConnectionSheet(
             enabled = !isAnonymous,
           )
 
-          // Password
+          // Password (never shows the saved value; blank keeps it)
           OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            label = { Text(if (hasSavedPassword) "New Password" else "Password", maxLines = 1, overflow = TextOverflow.Ellipsis) },
             modifier = Modifier.weight(0.50f),
             singleLine = true,
             enabled = !isAnonymous,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            placeholder = {
+              if (hasSavedPassword) {
+                Text("Saved — blank keeps it", maxLines = 1, overflow = TextOverflow.Ellipsis)
+              }
+            },
+            supportingText = {
+              if (hasSavedPassword) {
+                Text("Leave blank to keep saved password")
+              }
+            },
           )
         }
       }

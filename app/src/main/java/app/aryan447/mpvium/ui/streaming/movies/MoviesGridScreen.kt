@@ -59,25 +59,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
+import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.MovieSort
+import app.aryan447.mpvium.preferences.StreamingPreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
+import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
-import app.aryan447.mpvium.ui.streaming.components.MovieSort
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
@@ -100,9 +107,16 @@ object MoviesGridScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
+    val streamingPreferences = koinInject<StreamingPreferences>()
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
+    val foldersPreferences = koinInject<FoldersPreferences>()
+    // Empty-state hint (issue #87): when whitelist-only leaves no results,
+    // offer a one-tap route to Settings → Folders.
+    val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
+    val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
+    val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
     val navigationBarHeight = LocalNavigationBarHeight.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -138,18 +152,26 @@ object MoviesGridScreen : Screen {
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
+        // The scanner treats every non-episode file as a movie. Keep reels,
+        // trailers, social exports and personal clips out of the Movies grid;
+        // they are not deleted or moved, and Folders still lists every file.
+        val libraryMovies = detected.movies.filter { MovieLibraryClassifier.isMovieLibraryItem(it) }
         // Drop cached TMDB entries for deleted movies.
         // Remaining movies reuse their cache with no re-scrape.
         runCatching {
           metadataRepository.pruneStaleMetadata(
-            presentMovieTitles = detected.movies.map { it.title }.toSet(),
+            presentMovieKeys = detected.movies.map {
+              StreamingMetadataRepository.movieKeyFor(it.title, it.year)
+            }.toSet(),
           )
         }
-        movieList = detected.movies
+        val cachedMovies = libraryMovies.map { metadataRepository.applyCachedMovie(it) }
+        movieList = cachedMovies
         isLoading = false
 
-        // Background enrichment
-        val enriched = detected.movies.map { metadataRepository.enrichMovie(it) }
+        // Background enrichment. Start from the detected copies so cache keys
+        // keep using the filename title/year, not the TMDb display year.
+        val enriched = libraryMovies.map { metadataRepository.enrichMovie(it) }
         movieList = enriched
       }
     }
@@ -179,9 +201,8 @@ object MoviesGridScreen : Screen {
     }
 
     var movieFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
-    var movieSortOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val movieFilter = MovieWatchFilter.entries[movieFilterOrdinal.coerceIn(MovieWatchFilter.entries.indices)]
-    val movieSort = MovieSort.entries[movieSortOrdinal.coerceIn(MovieSort.entries.indices)]
+    val movieSort by streamingPreferences.movieSort.collectAsState()
     val movieSortOptions = remember {
       MovieSort.entries.map { SortOption(it, it.label) }
     }
@@ -304,8 +325,10 @@ object MoviesGridScreen : Screen {
               onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
               movieSort = movieSort,
               movieSortOptions = movieSortOptions,
-              onMovieSortChange = { movieSortOrdinal = it.ordinal },
+              onMovieSortChange = { streamingPreferences.movieSort.set(it) },
               totalMovieCount = movieList.size,
+              libraryFiltered = libraryFiltered,
+              onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onMovieClick = { selectedMovieId = it.video.id },
               onMovieLongClick = { moviePendingDeletion = it },
             )
@@ -340,8 +363,10 @@ object MoviesGridScreen : Screen {
           onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
           movieSort = movieSort,
           movieSortOptions = movieSortOptions,
-          onMovieSortChange = { movieSortOrdinal = it.ordinal },
+          onMovieSortChange = { streamingPreferences.movieSort.set(it) },
           totalMovieCount = movieList.size,
+          libraryFiltered = libraryFiltered,
+          onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onMovieClick = { backstack.add(MovieDetailScreen(it.video.id, it.title)) },
           onMovieLongClick = { moviePendingDeletion = it },
         )
@@ -389,6 +414,8 @@ private fun MoviesGridContent(
   movieSortOptions: List<SortOption<MovieSort>>,
   onMovieSortChange: (MovieSort) -> Unit,
   totalMovieCount: Int,
+  libraryFiltered: Boolean,
+  onManageLibrarySources: () -> Unit,
   onMovieClick: (LocalMovie) -> Unit,
   onMovieLongClick: (LocalMovie) -> Unit,
 ) {
@@ -413,6 +440,7 @@ private fun MoviesGridContent(
       message = when {
         searchQuery.isNotBlank() -> "No movies match '$searchQuery'"
         filteringByWatchState -> "Try a different watch-state filter"
+        libraryFiltered -> stringResource(R.string.library_sources_banner_message)
         else -> "Add movie files to your device storage to see them here"
       },
       modifier = Modifier
@@ -421,11 +449,13 @@ private fun MoviesGridContent(
       actionLabel = when {
         searchQuery.isNotBlank() -> "Clear search"
         filteringByWatchState -> "Show all"
+        libraryFiltered -> stringResource(R.string.library_sources_empty_action)
         else -> null
       },
       onAction = when {
         searchQuery.isNotBlank() -> onClearSearch
         filteringByWatchState -> ({ onMovieFilterChange(MovieWatchFilter.ALL) })
+        libraryFiltered -> onManageLibrarySources
         else -> null
       },
     )

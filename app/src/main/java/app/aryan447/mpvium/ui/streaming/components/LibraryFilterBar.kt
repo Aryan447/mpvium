@@ -1,20 +1,17 @@
 package app.aryan447.mpvium.ui.streaming.components
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
@@ -27,9 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.aryan447.mpvium.ui.theme.glassFilterChipColors
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
+import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
+import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 
 /**
@@ -64,58 +62,49 @@ fun <F, S> LibraryFilterBar(
     modifier = modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    LazyRow(
+    ExpressiveChoiceRow(
+      options = options,
+      selected = selected,
+      labelOf = labelOf,
+      onSelect = onSelect,
       modifier = Modifier.weight(1f),
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-      items(options, key = { labelOf(it) }) { option ->
-        val isSelected = option == selected
-        FilterChip(
-          selected = isSelected,
-          onClick = {
-            if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onSelect(option)
-          },
-          label = {
-            Text(
-              text = labelOf(option),
-              style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-              ),
-            )
-          },
-          colors = glassFilterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-          ),
-          shape = RoundedCornerShape(20.dp),
+    )
+
+    Box {
+      FilledTonalIconButton(
+        onClick = { sortExpanded = true },
+        modifier = Modifier.padding(start = 8.dp),
+        colors = IconButtonDefaults.filledTonalIconButtonColors(
+          containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
+          contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
+        ),
+      ) {
+        Icon(
+          imageVector = Icons.AutoMirrored.Filled.Sort,
+          contentDescription = "Sort${activeSortLabel?.let { ": $it" } ?: ""}",
         )
       }
-    }
-
-    IconButton(onClick = { sortExpanded = true }) {
-      Icon(Icons.Filled.Sort, contentDescription = "Sort${activeSortLabel?.let { ": $it" } ?: ""}")
-    }
-    DropdownMenu(
-      expanded = sortExpanded,
-      onDismissRequest = { sortExpanded = false },
-      containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
-    ) {
-      sorts.forEach { sort ->
-        val isSelected = sort.value == selectedSort
-        DropdownMenuItem(
-          text = { Text(sort.label) },
-          leadingIcon = if (isSelected) {
-            { Icon(Icons.Filled.Check, contentDescription = null) }
-          } else {
-            null
-          },
-          onClick = {
-            sortExpanded = false
-            if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onSortSelect(sort.value)
-          },
-        )
+      DropdownMenu(
+        expanded = sortExpanded,
+        onDismissRequest = { sortExpanded = false },
+        containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
+      ) {
+        sorts.forEach { sort ->
+          val isSelected = sort.value == selectedSort
+          DropdownMenuItem(
+            text = { Text(sort.label) },
+            leadingIcon = if (isSelected) {
+              { Icon(Icons.Filled.Check, contentDescription = null) }
+            } else {
+              null
+            },
+            onClick = {
+              sortExpanded = false
+              if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+              onSortSelect(sort.value)
+            },
+          )
+        }
       }
     }
   }
@@ -132,16 +121,6 @@ enum class SeriesWatchFilter(val label: String) {
 }
 
 /**
- * Sort orders for the Shows grid. Recently-added uses the newest
- * episode file date; no extra metadata or DB access needed.
- */
-enum class SeriesSort(val label: String) {
-  NAME("Name (A–Z)"),
-  RECENTLY_ADDED("Recently added"),
-  PROGRESS("Most watched"),
-}
-
-/**
  * Watch-state filters for the Movies grid.
  */
 enum class MovieWatchFilter(val label: String) {
@@ -149,17 +128,6 @@ enum class MovieWatchFilter(val label: String) {
   UNWATCHED("Unwatched"),
   STARTED("Started"),
   WATCHED("Watched"),
-}
-
-/**
- * Sort orders for the Movies grid, all derived from local file data.
- */
-enum class MovieSort(val label: String) {
-  NAME("Name (A–Z)"),
-  RECENTLY_ADDED("Recently added"),
-  RATING("Highest rated"),
-  LONGEST("Longest"),
-  SHORTEST("Shortest"),
 }
 
 /**

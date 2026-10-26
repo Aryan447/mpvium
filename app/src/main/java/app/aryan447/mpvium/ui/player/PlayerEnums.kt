@@ -42,6 +42,20 @@ enum class HoldGestureMode(
   BrightnessVolume(R.string.pref_player_gestures_hold_action_controls),
 }
 
+enum class FullSwipeSeekMode(
+  @StringRes val titleRes: Int,
+  @StringRes val summaryRes: Int,
+) {
+  ThreeMinutes(
+    R.string.pref_player_gestures_full_swipe_three_minutes,
+    R.string.pref_player_gestures_full_swipe_three_minutes_summary,
+  ),
+  WholeVideo(
+    R.string.pref_player_gestures_full_swipe_whole_video,
+    R.string.pref_player_gestures_full_swipe_whole_video_summary,
+  ),
+}
+
 enum class PlayerTitleMode(
   @StringRes val titleRes: Int,
 ) {
@@ -69,15 +83,34 @@ enum class CustomKeyCodes(
 enum class Decoder(
   val title: String,
   val value: String,
+  @StringRes val descriptionRes: Int,
 ) {
-  AutoCopy("Auto", "auto-copy"),
-  Auto("Auto", "auto"),
-  SW("SW", "no"),
-  HW("HW", "mediacodec-copy"),
-  HWPlus("HW+", "mediacodec"),
+  AutoCopy("Auto", "auto-copy", R.string.decoder_option_auto_copy_summary),
+  Auto("Auto", "auto", R.string.decoder_option_auto_summary),
+  SW("SW", "no", R.string.decoder_option_sw_summary),
+  HW("HW", "mediacodec-copy", R.string.decoder_option_hw_summary),
+  HWPlus("HW+", "mediacodec", R.string.decoder_option_hw_plus_summary),
   ;
 
+  /**
+   * Initial `hwdec` fallback chain for this decoder. HW falls back to software;
+   * HW+ also tries direct surface output first. Runtime changes from the player
+   * sheet use the raw [value] instead.
+   */
+  val defaultHwdec: String
+    get() =
+      when (this) {
+        AutoCopy -> "auto-copy"
+        Auto -> "auto"
+        SW -> "no"
+        HW -> "mediacodec-copy,no"
+        HWPlus -> "mediacodec,mediacodec-copy,no"
+      }
+
   companion object {
+    /** Options offered by the default decoder setting. */
+    val defaultOptions: List<Decoder> = listOf(Auto, SW, HW, HWPlus)
+
     fun getDecoderFromValue(value: String): Decoder = Decoder.entries.first { it.value == value }
   }
 }
@@ -163,6 +196,11 @@ sealed class PlayerUpdates {
 
   data class SubtitlePosition(
     val position: Int,
+    val isReset: Boolean = false,
+  ) : PlayerUpdates()
+
+  data class SubtitleScale(
+    val scalePercent: Int,
     val isReset: Boolean = false,
   ) : PlayerUpdates()
 

@@ -1,8 +1,10 @@
 package app.aryan447.mpvium.ui.streaming.series
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +30,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -88,12 +91,14 @@ import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
+import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.media.MediaUtils
+import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -125,13 +130,17 @@ data class SeriesDetailScreen(
     var matchOptions by remember { mutableStateOf<List<WyzieTmdbResult>>(emptyList()) }
     var isSearchingMatches by remember { mutableStateOf(false) }
     var matchQuery by remember { mutableStateOf("") }
+    // Manual watch status (issue #94): long-press an episode -> Mark as…
+    var markAsEpisode by remember { mutableStateOf<LocalEpisode?>(null) }
+    // Show-level Mark as: applies to all episodes (e.g. mark whole show finished)
+    var markShowAsOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(seriesId, reloadKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
         val found = detected.series.find { it.id == seriesId }
         if (found != null) {
-          series = found
+          series = metadataRepository.applyCachedSeries(found)
           selectedSeason = found.seasons.keys.firstOrNull() ?: 1
           isLoading = false
 
@@ -322,6 +331,15 @@ data class SeriesDetailScreen(
                   Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
                 }
                 IconButton(
+                  onClick = { markShowAsOpen = true },
+                  modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                  Icon(Icons.Filled.CheckCircle, contentDescription = "Mark as", tint = Color.White)
+                }
+                IconButton(
                   onClick = {
                     pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
                   },
@@ -496,12 +514,63 @@ data class SeriesDetailScreen(
               episode = episode,
               onClick = { MediaUtils.playFile(episode.video, context, "series_episode_click") },
               onDelete = { pendingDeletion = episode.displayTitle to listOf(episode.video) },
+              onLongClick = { markAsEpisode = episode },
               modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             )
           }
         }
       }
     }
+
+    MarkAsDialog(
+      isOpen = markAsEpisode != null,
+      selectedCount = 1,
+      onDismiss = { markAsEpisode = null },
+      onSelect = { status ->
+        val target = markAsEpisode
+        markAsEpisode = null
+        if (target != null) {
+          coroutineScope.launch(Dispatchers.IO) {
+            val applied = VideoWatchStatusOps.markVideo(target.video, status)
+            withContext(Dispatchers.Main) {
+              android.widget.Toast.makeText(
+                context,
+                context.getString(
+                  if (applied) app.aryan447.mpvium.R.string.mark_as_updated
+                  else app.aryan447.mpvium.R.string.mark_as_failed,
+                ),
+                android.widget.Toast.LENGTH_SHORT,
+              ).show()
+            }
+          }
+        }
+      },
+    )
+
+    MarkAsDialog(
+      isOpen = markShowAsOpen,
+      selectedCount = series?.totalEpisodes ?: 0,
+      onDismiss = { markShowAsOpen = false },
+      onSelect = { status ->
+        markShowAsOpen = false
+        val videos = series?.seasons?.values?.flatten()?.map { it.video } ?: emptyList()
+        if (videos.isNotEmpty()) {
+          coroutineScope.launch(Dispatchers.IO) {
+            val applied = VideoWatchStatusOps.markVideos(videos, status)
+            withContext(Dispatchers.Main) {
+              android.widget.Toast.makeText(
+                context,
+                context.getString(
+                  if (applied > 0) app.aryan447.mpvium.R.string.mark_as_updated
+                  else app.aryan447.mpvium.R.string.mark_as_failed,
+                ),
+                android.widget.Toast.LENGTH_SHORT,
+              ).show()
+            }
+          }
+        }
+      },
+    )
 
     pendingDeletion?.let { (name, videos) ->
       DeleteConfirmationDialog(
@@ -737,18 +806,23 @@ private fun MatchOptionRow(
   }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EpisodeItemCard(
   episode: LocalEpisode,
   onClick: () -> Unit,
   onDelete: () -> Unit,
   modifier: Modifier = Modifier,
+  onLongClick: (() -> Unit)? = null,
 ) {
   Surface(
     modifier = modifier
       .fillMaxWidth()
       .clip(RoundedCornerShape(12.dp))
-      .clickable(onClick = onClick),
+      .combinedClickable(
+        onClick = onClick,
+        onLongClick = onLongClick,
+      ),
     color = MaterialTheme.colorScheme.surfaceContainer,
     shape = RoundedCornerShape(12.dp),
   ) {

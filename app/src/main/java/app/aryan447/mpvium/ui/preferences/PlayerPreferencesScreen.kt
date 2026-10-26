@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.BrightnessMedium
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.Gesture
 import androidx.compose.material.icons.outlined.GpsFixed
 import androidx.compose.material.icons.outlined.History
@@ -50,6 +51,7 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.player.FullSwipeSeekMode
 import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.PlayerTitleMode
@@ -57,7 +59,6 @@ import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.FooterPreference
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import org.koin.compose.koinInject
@@ -89,7 +90,7 @@ object PlayerPreferencesScreen : Screen {
           item {
             PreferenceCard {
               val orientation by preferences.orientation.collectAsState()
-              ListPreference(
+              ExpressiveListPreference(
                 value = orientation,
                 onValueChange = preferences.orientation::set,
                 values = PlayerOrientation.entries,
@@ -175,7 +176,7 @@ object PlayerPreferencesScreen : Screen {
                 PreferenceDivider()
 
                 val titleMode by preferences.titleMode.collectAsState()
-                ListPreference(
+                ExpressiveListPreference(
                   value = titleMode,
                   onValueChange = preferences.titleMode::set,
                   values = PlayerTitleMode.entries,
@@ -348,7 +349,7 @@ object PlayerPreferencesScreen : Screen {
           }
           // Gestures Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 6)
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 7)
           }
 
           item {
@@ -383,6 +384,22 @@ object PlayerPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              val pinchToResizeSubtitles by preferences.pinchToResizeSubtitles.collectAsState()
+              HapticSwitchPreference(
+                value = pinchToResizeSubtitles,
+                onValueChange = preferences.pinchToResizeSubtitles::set,
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.FormatSize) },
+                title = { Text(stringResource(R.string.pref_player_gestures_pinch_to_resize_subtitles)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_player_gestures_pinch_to_resize_subtitles_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
               val horizontalSwipeToSeek by preferences.horizontalSwipeToSeek.collectAsState()
               HapticSwitchPreference(
                 value = horizontalSwipeToSeek,
@@ -393,28 +410,72 @@ object PlayerPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              val horizontalSwipeSensitivity by preferences.horizontalSwipeSensitivity.collectAsState()
+              val horizontalSwipeSecondsPerCm by preferences.horizontalSwipeSecondsPerCm.collectAsState()
               SliderPreference(
-                value = horizontalSwipeSensitivity,
-                onValueChange = { preferences.horizontalSwipeSensitivity.set(it.toFixed(3)) },
+                value = horizontalSwipeSecondsPerCm,
+                onValueChange = { preferences.horizontalSwipeSecondsPerCm.set(it.roundToInt().toFloat()) },
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Speed) },
-                title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_sensitivity)) },
-                valueRange = 0.020f..0.1f,
+                title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_speed)) },
+                valueRange = 1f..10f,
+                valueSteps = 8,
                 summary = {
-                  val sensitivityPercent = (horizontalSwipeSensitivity * 1000).toInt()
+                  val secondsPerCm = horizontalSwipeSecondsPerCm.roundToInt()
                   Text(
-                    "Current: ${sensitivityPercent}/100 (${if (sensitivityPercent < 30) "Low" else if (sensitivityPercent < 55) "Medium" else "High"})",
+                    text = stringResource(
+                      R.string.pref_player_gestures_horizontal_swipe_speed_value,
+                      secondsPerCm,
+                      formatSwipeSeekDuration(secondsPerCm * 5),
+                      formatSwipeSeekDuration(secondsPerCm * 10),
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
-                onSliderValueChange = { preferences.horizontalSwipeSensitivity.set(it.toFixed(3)) },
-                sliderValue = horizontalSwipeSensitivity,
+                onSliderValueChange = { preferences.horizontalSwipeSecondsPerCm.set(it.roundToInt().toFloat()) },
+                sliderValue = horizontalSwipeSecondsPerCm,
+              )
+
+              PreferenceDivider()
+
+              val fullSwipeSeekMode by preferences.fullSwipeSeekMode.collectAsState()
+              ExpressiveListPreference(
+                value = fullSwipeSeekMode,
+                onValueChange = preferences.fullSwipeSeekMode::set,
+                values = FullSwipeSeekMode.entries,
+                valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.FastForward) },
+                title = { Text(stringResource(R.string.pref_player_gestures_full_swipe)) },
+                summary = {
+                  Text(
+                    text = stringResource(fullSwipeSeekMode.summaryRes),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
+              val verticalSwipeSensitivity by preferences.verticalSwipeSensitivity.collectAsState()
+              SliderPreference(
+                value = verticalSwipeSensitivity,
+                onValueChange = { preferences.verticalSwipeSensitivity.set(it.toFixed(2)) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Speed) },
+                title = { Text(stringResource(R.string.pref_player_gestures_vertical_swipe_sensitivity)) },
+                valueRange = 0.25f..3f,
+                summary = {
+                  val sensitivityPercent = (verticalSwipeSensitivity * 100).toInt()
+                  Text(
+                    "Current: ${sensitivityPercent}% (${if (sensitivityPercent < 75) "Low" else if (sensitivityPercent < 150) "Medium" else "High"})",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                onSliderValueChange = { preferences.verticalSwipeSensitivity.set(it.toFixed(2)) },
+                sliderValue = verticalSwipeSensitivity,
               )
 
               PreferenceDivider()
 
               val holdGestureMode by preferences.holdGestureMode.collectAsState()
-              ListPreference(
+              ExpressiveListPreference(
                 value = holdGestureMode,
                 onValueChange = preferences.holdGestureMode::set,
                 values = HoldGestureMode.entries,
@@ -579,3 +640,10 @@ object PlayerPreferencesScreen : Screen {
     }
   }
 }
+
+private fun formatSwipeSeekDuration(seconds: Int): String =
+  if (seconds >= 60) {
+    "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
+  } else {
+    "$seconds s"
+  }

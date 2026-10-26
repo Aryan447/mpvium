@@ -5,6 +5,7 @@ import android.util.Log
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.repository.wyzie.WyzieMediaMatcher
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.net.URLEncoder
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 
 @Serializable
@@ -53,13 +56,18 @@ class StreamingMetadataRepository(
   private val client: OkHttpClient,
   private val json: Json,
   private val wyzieRepository: WyzieSearchRepository,
+  private val artworkStore: StreamingArtworkStore,
 ) {
   companion object {
     private const val TAG = "StreamingMetadataRepo"
     private const val TMDB_IMAGE_BASE_W500 = "https://image.tmdb.org/t/p/w500"
     private const val TMDB_IMAGE_BASE_W780 = "https://image.tmdb.org/t/p/w780"
     private const val TMDB_IMAGE_BASE_W1280 = "https://image.tmdb.org/t/p/w1280"
-    private const val CACHE_FILE_NAME = "streaming_metadata_cache_v2.json"
+    // v3 re-resolves automatic matches with the stricter title/year matcher.
+    // v2 entries could permanently pin a wrong poster because cache entries
+    // have no TTL, so only user-picked matches are migrated.
+    private const val CACHE_FILE_NAME = "streaming_metadata_cache_v3.json"
+    private const val PREVIOUS_CACHE_FILE_NAME = "streaming_metadata_cache_v2.json"
     private const val LEGACY_CACHE_FILE_NAME = "streaming_metadata_cache_v1.json"
 
     // Cache keys are indefinite: entries live until the underlying media is
@@ -67,12 +75,25 @@ class StreamingMetadataRepository(
     private const val SERIES_KEY_PREFIX = "series_"
     private const val MOVIE_KEY_PREFIX = "movie_"
 
+    // Keep Unicode letters and digits: stripping everything outside a-z0-9
+    // collapses all Japanese/Chinese/Korean/Arabic titles to the same cache
+    // key, making every show share one poster (and every movie, one match).
     fun normalizeKey(title: String): String =
-      title.lowercase().replace(Regex("[^a-z0-9]"), "")
+      title.lowercase(java.util.Locale.ROOT)
+        .replace(Regex("""[^\p{L}\p{N}]"""), "")
+        .trim()
 
     fun seriesKeyFor(seriesId: String): String = "$SERIES_KEY_PREFIX$seriesId"
 
-    fun movieKeyFor(movieTitle: String): String = "$MOVIE_KEY_PREFIX${normalizeKey(movieTitle)}"
+    /**
+     * Movie keys include the release year so same-name films (Dune 1984 and
+     * Dune 2021, The Thing 1982 and The Thing 2011) do not share a poster.
+     */
+    fun movieKeyFor(movieTitle: String, year: String? = null): String {
+      val base = "$MOVIE_KEY_PREFIX${normalizeKey(movieTitle)}"
+      val normalizedYear = year?.filter { it.isDigit() }?.take(4)?.takeIf { it.length == 4 }
+      return if (normalizedYear != null) "$base@$normalizedYear" else base
+    }
   }
 
   // Phone-sized artwork (w500 posters, w780 backdrops) upscales ~2.4x on a
@@ -88,6 +109,7 @@ class StreamingMetadataRepository(
   private val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
   private val memoryCache = ConcurrentHashMap<String, CachedMediaMetadata>()
   private val cacheMutex = Mutex()
+  private val persistMutex = Mutex()
   private var isCacheLoaded = false
 
   private suspend fun ensureCacheLoaded() {
@@ -96,12 +118,28 @@ class StreamingMetadataRepository(
       if (isCacheLoaded) return@withLock
       withContext(Dispatchers.IO) {
         try {
-          // v1 cached phone-sized URLs; drop it so tablets refetch hi-res artwork.
+          // v1 cached phone-sized URLs; v2 auto-matches may be wrong. Drop
+          // both, but carry forward matches the user picked by hand so their
+          // manual corrections survive the matcher upgrade.
+          if (!cacheFile.exists()) {
+            migrateManualMatches()
+          }
           runCatching { File(context.filesDir, LEGACY_CACHE_FILE_NAME).takeIf { it.exists() }?.delete() }
+          runCatching { File(context.filesDir, PREVIOUS_CACHE_FILE_NAME).takeIf { it.exists() }?.delete() }
           if (cacheFile.exists()) {
             val text = cacheFile.readText()
             if (text.isNotBlank()) {
-              val map = json.decodeFromString<Map<String, CachedMediaMetadata>>(text)
+              val map = try {
+                json.decodeFromString<Map<String, CachedMediaMetadata>>(text)
+              } catch (e: Exception) {
+                // A half-written file from an older build (or a killed
+                // process) would otherwise force every launch to re-fetch
+                // every cover. A transient read error is not handled here:
+                // only a file that cannot be decoded is thrown away.
+                Log.w(TAG, "Metadata cache is corrupt; discarding it", e)
+                runCatching { cacheFile.delete() }
+                emptyMap()
+              }
               memoryCache.putAll(map)
               Log.d(TAG, "Loaded ${memoryCache.size} metadata entries from disk cache")
             }
@@ -114,20 +152,94 @@ class StreamingMetadataRepository(
     }
   }
 
-  private suspend fun persistCache() {
-    // Snapshot under lock, write outside it so slow disk IO never blocks
-    // concurrent enrichers waiting on ensureCacheLoaded.
-    val snapshot: Map<String, CachedMediaMetadata> = cacheMutex.withLock {
-      memoryCache.toMap()
+  /** Carries user-picked matches from the previous cache generation. */
+  private fun migrateManualMatches() {
+    val previous = File(context.filesDir, PREVIOUS_CACHE_FILE_NAME)
+    if (!previous.exists()) return
+    try {
+      val text = previous.readText()
+      if (text.isBlank()) return
+      val old = json.decodeFromString<Map<String, CachedMediaMetadata>>(text)
+      val manual = old.filterValues { it.manuallySelected }
+      if (manual.isNotEmpty()) {
+        writeCacheAtomically(json.encodeToString(manual))
+        Log.d(TAG, "Migrated ${manual.size} manually matched metadata entries")
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to migrate previous metadata cache", e)
     }
-    withContext(Dispatchers.IO) {
+  }
+
+  /**
+   * Writes the whole cache file atomically.
+   *
+   * A partially written cache is worse than no cache at all: it loses every
+   * poster URL. Writing to a sibling temp file and renaming keeps the previous
+   * good file intact if the process dies mid-write.
+   */
+  private fun writeCacheAtomically(text: String) {
+    val tempFile = File(context.filesDir, "$CACHE_FILE_NAME.tmp")
+    try {
+      tempFile.writeText(text)
       try {
-        val text = json.encodeToString(snapshot)
-        cacheFile.writeText(text)
+        Files.move(
+          tempFile.toPath(),
+          cacheFile.toPath(),
+          StandardCopyOption.REPLACE_EXISTING,
+          StandardCopyOption.ATOMIC_MOVE,
+        )
+      } catch (_: Exception) {
+        Files.move(
+          tempFile.toPath(),
+          cacheFile.toPath(),
+          StandardCopyOption.REPLACE_EXISTING,
+        )
+      }
+    } catch (e: Exception) {
+      runCatching { tempFile.delete() }
+      throw e
+    }
+  }
+
+  private suspend fun persistCache() = withContext(Dispatchers.IO) {
+    // Serialize the snapshot and the write together. Taking the snapshot
+    // outside the lock lets an older snapshot overwrite a newer one when two
+    // enrichers finish close together.
+    persistMutex.withLock {
+      val snapshot: Map<String, CachedMediaMetadata> = cacheMutex.withLock {
+        memoryCache.toMap()
+      }
+      try {
+        writeCacheAtomically(json.encodeToString(snapshot))
       } catch (e: Exception) {
         Log.w(TAG, "Failed to persist metadata cache file", e)
       }
     }
+  }
+
+  /** Removes the durable artwork that belongs to a cleared/pruned entry. */
+  private fun deleteArtwork(metadata: CachedMediaMetadata) {
+    artworkStore.delete(artworkUrls(metadata))
+  }
+
+  /**
+   * Drops files for artwork that a forced refresh/manual match replaced.
+   * Keeps anything still referenced so an unchanged cover never blinks out.
+   */
+  private fun deleteReplacedArtwork(
+    previous: CachedMediaMetadata?,
+    current: CachedMediaMetadata,
+  ) {
+    if (previous == null) return
+    val currentUrls = artworkUrls(current).toSet()
+    val replaced = artworkUrls(previous).filterNot { it in currentUrls }
+    artworkStore.delete(replaced)
+  }
+
+  private fun artworkUrls(metadata: CachedMediaMetadata): List<String> = buildList {
+    metadata.posterUrl?.let(::add)
+    metadata.backdropUrl?.let(::add)
+    addAll(metadata.episodeStills.values)
   }
 
   suspend fun enrichSeries(
@@ -153,14 +265,16 @@ class StreamingMetadataRepository(
         var manualOverride = match != null
         if (match == null && cached?.manuallySelected == true && cached.tmdbId != null) {
           // Keep a previously chosen match across forced refreshes instead of re-picking
-          match = WyzieTmdbResult(id = cached.tmdbId!!, mediaType = "tv", title = cached.title)
+          match = WyzieTmdbResult(id = cached.tmdbId, mediaType = "tv", title = cached.title)
           manualOverride = true
         }
         if (match == null) {
           val searchResults = wyzieRepository.searchMedia(series.title).getOrNull() ?: emptyList()
-          match = pickBestTvMatch(searchResults, series.year)
+          match = WyzieMediaMatcher.pickBest(searchResults, "tv", series.title, series.year)
         }
-        if (match == null) return@withContext series
+        if (match == null) {
+          return@withContext cached?.let { applyMetadataToSeries(series, it) } ?: series
+        }
 
         var poster = match.poster?.let { formatImageUrl(it, posterBase) }
         var backdrop = match.backdrop?.let { formatImageUrl(it, backdropBase) }
@@ -228,13 +342,15 @@ class StreamingMetadataRepository(
         }
 
         memoryCache[cacheKey] = mergedMetadata
+        deleteReplacedArtwork(cached, mergedMetadata)
         persistCache()
         return@withContext applyMetadataToSeries(series, mergedMetadata)
       } catch (e: Exception) {
         Log.w(TAG, "Error fetching metadata for series: ${series.title}", e)
       }
 
-      series
+      // A failed forced refresh must not blank a cover that is already cached.
+      cached?.let { applyMetadataToSeries(series, it) } ?: series
     }
 
   /**
@@ -252,7 +368,9 @@ class StreamingMetadataRepository(
    */
   suspend fun clearSeriesMetadata(seriesId: String) {
     ensureCacheLoaded()
-    if (memoryCache.remove(seriesKeyFor(seriesId)) != null) {
+    val removed = memoryCache.remove(seriesKeyFor(seriesId))
+    if (removed != null) {
+      withContext(Dispatchers.IO) { deleteArtwork(removed) }
       persistCache()
     }
   }
@@ -265,33 +383,43 @@ class StreamingMetadataRepository(
    */
   suspend fun pruneStaleMetadata(
     presentSeriesIds: Set<String>? = null,
-    presentMovieTitles: Set<String>? = null,
+    presentMovieKeys: Set<String>? = null,
   ) {
     ensureCacheLoaded()
     var changed = false
+    val removedEntries = mutableListOf<CachedMediaMetadata>()
     if (presentSeriesIds != null) {
       val keep = presentSeriesIds.mapTo(HashSet()) { seriesKeyFor(it) }
       val iterator = memoryCache.keys.iterator()
       while (iterator.hasNext()) {
         val key = iterator.next()
         if (key.startsWith(SERIES_KEY_PREFIX) && !keep.contains(key)) {
+          memoryCache[key]?.let(removedEntries::add)
           iterator.remove()
           changed = true
         }
       }
     }
-    if (presentMovieTitles != null) {
-      val keep = presentMovieTitles.mapTo(HashSet()) { movieKeyFor(it) }
+    if (presentMovieKeys != null) {
+      // Keep both the year-qualified key and the title-only fallback used by
+      // migrated manual matches.
+      val keep = HashSet<String>()
+      presentMovieKeys.forEach {
+        keep.add(it)
+        keep.add(it.substringBefore('@'))
+      }
       val iterator = memoryCache.keys.iterator()
       while (iterator.hasNext()) {
         val key = iterator.next()
         if (key.startsWith(MOVIE_KEY_PREFIX) && !keep.contains(key)) {
+          memoryCache[key]?.let(removedEntries::add)
           iterator.remove()
           changed = true
         }
       }
     }
     if (changed) {
+      withContext(Dispatchers.IO) { removedEntries.forEach(::deleteArtwork) }
       Log.d(TAG, "Pruned stale metadata entries")
       persistCache()
     }
@@ -301,10 +429,11 @@ class StreamingMetadataRepository(
    * Returns the already-resolved (and possibly manually chosen) TMDb id for a title,
    * so other features like intro skip can reuse the correct match instead of re-guessing.
    */
-  suspend fun getCachedTmdbId(title: String): Int? = withContext(Dispatchers.IO) {
+  suspend fun getCachedTmdbId(title: String, year: String? = null): Int? = withContext(Dispatchers.IO) {
     ensureCacheLoaded()
     val normalized = normalizeKey(title)
     memoryCache["series_$normalized"]?.tmdbId
+      ?: memoryCache[movieKeyFor(title, year)]?.tmdbId
       ?: memoryCache["movie_$normalized"]?.tmdbId
   }
 
@@ -339,28 +468,6 @@ class StreamingMetadataRepository(
       }
     }
 
-  private fun pickBestTvMatch(results: List<WyzieTmdbResult>, year: String?): WyzieTmdbResult? {
-    val tvResults = results.filter { it.mediaType.equals("tv", ignoreCase = true) }
-    val pool = if (tvResults.isNotEmpty()) tvResults else results
-    if (pool.isEmpty()) return null
-    year?.let { y ->
-      pool.firstOrNull { it.releaseYear == y }?.let { return it }
-      pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
-    }
-    return pool.firstOrNull()
-  }
-
-  private fun pickBestMovieMatch(results: List<WyzieTmdbResult>, year: String?): WyzieTmdbResult? {
-    val movieResults = results.filter { it.mediaType.equals("movie", ignoreCase = true) }
-    val pool = if (movieResults.isNotEmpty()) movieResults else results
-    if (pool.isEmpty()) return null
-    year?.let { y ->
-      pool.firstOrNull { it.releaseYear == y }?.let { return it }
-      pool.firstOrNull { it.releaseYear?.startsWith(y.take(3)) == true }?.let { return it }
-    }
-    return pool.firstOrNull()
-  }
-
   /**
    * Returns search candidates (movies first, then series) so the user can manually fix a match for movies.
    */
@@ -375,7 +482,20 @@ class StreamingMetadataRepository(
    */
   suspend fun clearMovieMetadata(movieTitle: String) {
     ensureCacheLoaded()
-    if (memoryCache.remove(movieKeyFor(movieTitle)) != null) {
+    val baseKey = movieKeyFor(movieTitle)
+    var changed = false
+    val removedEntries = mutableListOf<CachedMediaMetadata>()
+    val iterator = memoryCache.keys.iterator()
+    while (iterator.hasNext()) {
+      val key = iterator.next()
+      if (key == baseKey || key.startsWith("$baseKey@")) {
+        memoryCache[key]?.let(removedEntries::add)
+        iterator.remove()
+        changed = true
+      }
+    }
+    if (changed) {
+      withContext(Dispatchers.IO) { removedEntries.forEach(::deleteArtwork) }
       persistCache()
     }
   }
@@ -387,33 +507,39 @@ class StreamingMetadataRepository(
   ): LocalMovie =
     withContext(Dispatchers.IO) {
       ensureCacheLoaded()
-      val cacheKey = movieKeyFor(movie.title)
-      val cached = memoryCache[cacheKey]
+      val cacheKey = movieKeyFor(movie.title, movie.year)
+      val legacyKey = movieKeyFor(movie.title)
+      var cached = memoryCache[cacheKey]
+
+      // v2 stored one title-only entry per movie. If that entry was a manual
+      // pick, move it to the year-qualified key so it keeps winning without
+      // leaking to a same-name film from another year.
+      if (cached == null && legacyKey != cacheKey) {
+        val legacy = memoryCache.remove(legacyKey)
+        if (legacy?.manuallySelected == true) {
+          memoryCache[cacheKey] = legacy
+          persistCache()
+          cached = legacy
+        }
+      }
 
       // Cached entries are reused indefinitely (no TTL, no re-scrape on app
       // open). Only forceRefresh, a manual match pick, or deletion evicts.
 
       if (cached != null && preferred == null && !forceRefresh) {
-        return@withContext movie.copy(
-          posterUrl = cached.posterUrl ?: movie.posterUrl,
-          backdropUrl = cached.backdropUrl ?: movie.backdropUrl,
-          rating = cached.rating ?: movie.rating,
-          overview = cached.overview ?: movie.overview,
-          year = cached.year ?: movie.year,
-          tmdbId = cached.tmdbId ?: movie.tmdbId,
-        )
+        return@withContext applyMetadataToMovie(movie, cached)
       }
 
       try {
         var match = preferred
         var manualOverride = match != null
         if (match == null && cached?.manuallySelected == true && cached.tmdbId != null) {
-          match = WyzieTmdbResult(id = cached.tmdbId!!, mediaType = "movie", title = cached.title)
+          match = WyzieTmdbResult(id = cached.tmdbId, mediaType = "movie", title = cached.title)
           manualOverride = true
         }
         if (match == null) {
           val searchResults = wyzieRepository.searchMedia(movie.title).getOrNull() ?: emptyList()
-          match = pickBestMovieMatch(searchResults, movie.year)
+          match = WyzieMediaMatcher.pickBest(searchResults, "movie", movie.title, movie.year)
         }
 
         if (match != null) {
@@ -446,23 +572,53 @@ class StreamingMetadataRepository(
           }
 
           memoryCache[cacheKey] = mergedMetadata
+          if (legacyKey != cacheKey) {
+            memoryCache.remove(legacyKey)
+          }
+          deleteReplacedArtwork(cached, mergedMetadata)
           persistCache()
 
-          return@withContext movie.copy(
-            posterUrl = mergedMetadata.posterUrl ?: movie.posterUrl,
-            backdropUrl = mergedMetadata.backdropUrl ?: movie.backdropUrl,
-            rating = mergedMetadata.rating ?: movie.rating,
-            overview = mergedMetadata.overview ?: movie.overview,
-            year = mergedMetadata.year ?: movie.year,
-            tmdbId = mergedMetadata.tmdbId ?: movie.tmdbId,
-          )
+          return@withContext applyMetadataToMovie(movie, mergedMetadata)
         }
       } catch (e: Exception) {
         Log.w(TAG, "Error fetching metadata for movie: ${movie.title}", e)
       }
 
-      movie
+      // A failed forced refresh must not blank a cover that is already cached.
+      cached?.let { applyMetadataToMovie(movie, it) } ?: movie
     }
+
+  /**
+   * Applies an already-resolved cached entry without touching the network.
+   *
+   * Grids call this before [enrichMovie] so a movie that was enriched on a
+   * previous run renders its stored cover immediately instead of briefly
+   * falling back to a video thumbnail (and looking like it was re-fetched).
+   */
+  suspend fun applyCachedMovie(movie: LocalMovie): LocalMovie = withContext(Dispatchers.IO) {
+    ensureCacheLoaded()
+    val cacheKey = movieKeyFor(movie.title, movie.year)
+    val cached = memoryCache[cacheKey]
+      ?: memoryCache[movieKeyFor(movie.title)]?.takeIf { it.manuallySelected }
+      ?: return@withContext movie
+    applyMetadataToMovie(movie, cached)
+  }
+
+  suspend fun applyCachedSeries(series: LocalSeries): LocalSeries = withContext(Dispatchers.IO) {
+    ensureCacheLoaded()
+    val cached = memoryCache[seriesKeyFor(series.id)] ?: return@withContext series
+    applyMetadataToSeries(series, cached)
+  }
+
+  private fun applyMetadataToMovie(movie: LocalMovie, metadata: CachedMediaMetadata): LocalMovie =
+    movie.copy(
+      posterUrl = metadata.posterUrl ?: movie.posterUrl,
+      backdropUrl = metadata.backdropUrl ?: movie.backdropUrl,
+      rating = metadata.rating ?: movie.rating,
+      overview = metadata.overview ?: movie.overview,
+      year = metadata.year ?: movie.year,
+      tmdbId = metadata.tmdbId ?: movie.tmdbId,
+    )
 
   private fun applyMetadataToSeries(series: LocalSeries, metadata: CachedMediaMetadata): LocalSeries {
     val enrichedSeasons = series.seasons.mapValues { (seasonNum, episodes) ->
@@ -502,7 +658,7 @@ class StreamingMetadataRepository(
       val request = Request.Builder().url(url).build()
       client.newCall(request).execute().use { response ->
         if (!response.isSuccessful) return null
-        val body = response.body?.string() ?: return null
+        val body = response.body.string()
         val jsonElement = json.decodeFromString<JsonObject>(body)
         jsonElement["vote_average"]?.jsonPrimitive?.floatOrNull
           ?: jsonElement["rating"]?.jsonPrimitive?.floatOrNull

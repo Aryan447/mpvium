@@ -31,7 +31,6 @@ import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import kotlinx.serialization.Serializable
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import me.zhanghai.compose.preference.TextFieldPreference
@@ -143,7 +142,7 @@ object AudioPreferencesScreen : Screen {
 
           PreferenceDivider()
           val audioChannel by preferences.audioChannels.collectAsState()
-          ListPreference(
+          ExpressiveListPreference(
             value = audioChannel,
             onValueChange = { preferences.audioChannels.set(it) },
             values = AudioChannels.entries,

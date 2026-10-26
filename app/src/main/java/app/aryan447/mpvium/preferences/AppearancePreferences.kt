@@ -1,22 +1,10 @@
 package app.aryan447.mpvium.preferences
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MultiChoiceSegmentedButtonRow
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
-import app.aryan447.mpvium.ui.theme.glassSegmentedButtonColors
-import app.aryan447.mpvium.ui.theme.spacing
-import kotlinx.collections.immutable.ImmutableList
 
 class AppearancePreferences(
   preferenceStore: PreferenceStore,
@@ -24,6 +12,7 @@ class AppearancePreferences(
   val darkMode = preferenceStore.getEnum("dark_mode", DarkMode.System)
   val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Default)
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
+  val playerFullColors = preferenceStore.getBoolean("full_player_colors", false)
   val pillNavigationBar = preferenceStore.getBoolean("pill_navigation_bar", true)
   val showBottomNavLabels = preferenceStore.getBoolean("show_bottom_nav_labels", true)
   val bottomNavTabs =
@@ -38,6 +27,13 @@ class AppearancePreferences(
   val unplayedOldVideoDays = preferenceStore.getInt("unplayed_old_video_days", 7)
   val showNetworkThumbnails = preferenceStore.getBoolean("show_network_thumbnails", false)
   val showFeaturedHero = preferenceStore.getBoolean("show_featured_hero", true)
+  val homeSectionOrder = preferenceStore.getString("home_section_order", HomeSection.defaultOrderCsv)
+  val showContinueWatching = preferenceStore.getBoolean("show_continue_watching", true)
+  val showUpNext = preferenceStore.getBoolean("show_up_next", true)
+  val showRecentlyAdded = preferenceStore.getBoolean("show_recently_added", true)
+  val showShowsSection = preferenceStore.getBoolean("show_shows_section", true)
+  val showMoviesSection = preferenceStore.getBoolean("show_movies_section", true)
+  val showFoldersSection = preferenceStore.getBoolean("show_folders_section", true)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Wavy)
   val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Wavy)
   val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Wavy)
@@ -74,6 +70,39 @@ class AppearancePreferences(
       "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP,EXPLAIN",
     )
 
+  fun setHomeSectionVisible(section: HomeSection, visible: Boolean) {
+    when (section) {
+      HomeSection.FEATURED -> showFeaturedHero.set(visible)
+      HomeSection.CONTINUE_WATCHING -> showContinueWatching.set(visible)
+      HomeSection.UP_NEXT -> showUpNext.set(visible)
+      HomeSection.RECENTLY_ADDED -> showRecentlyAdded.set(visible)
+      HomeSection.SHOWS -> showShowsSection.set(visible)
+      HomeSection.MOVIES -> showMoviesSection.set(visible)
+      HomeSection.FOLDERS -> showFoldersSection.set(visible)
+    }
+  }
+
+  // Move a section by [delta] positions (-1 up, +1 down); no-op at the ends.
+  fun moveHomeSection(section: HomeSection, delta: Int) {
+    val order = HomeSection.parseOrder(homeSectionOrder.get()).toMutableList()
+    val from = order.indexOf(section)
+    val to = from + delta
+    if (from < 0 || to !in order.indices) return
+    order.add(to, order.removeAt(from))
+    homeSectionOrder.set(order.joinToString(",") { it.key })
+  }
+
+  fun resetHomeSections() {
+    homeSectionOrder.delete()
+    showFeaturedHero.delete()
+    showContinueWatching.delete()
+    showUpNext.delete()
+    showRecentlyAdded.delete()
+    showShowsSection.delete()
+    showMoviesSection.delete()
+    showFoldersSection.delete()
+  }
+
   fun parseButtons(
     csv: String,
     usedButtons: MutableSet<PlayerButton>,
@@ -90,30 +119,4 @@ class AppearancePreferences(
       }.filter { it != PlayerButton.NONE }
       .filter { usedButtons.add(it) }
       .toList()
-}
-
-@Composable
-fun MultiChoiceSegmentedButton(
-  choices: ImmutableList<String>,
-  selectedIndices: ImmutableList<Int>,
-  onClick: (Int) -> Unit,
-  modifier: Modifier = Modifier,
-) {
-  MultiChoiceSegmentedButtonRow(
-    modifier =
-      modifier
-        .fillMaxWidth()
-        .padding(MaterialTheme.spacing.medium),
-  ) {
-    choices.forEachIndexed { index, choice ->
-      SegmentedButton(
-        checked = selectedIndices.contains(index),
-        onCheckedChange = { onClick(index) },
-        shape = SegmentedButtonDefaults.itemShape(index = index, count = choices.size),
-        colors = glassSegmentedButtonColors(),
-      ) {
-        Text(text = choice)
-      }
-    }
-  }
 }

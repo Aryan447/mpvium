@@ -10,10 +10,12 @@ import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.FolderVisibility
 import app.aryan447.mpvium.preferences.FoldersPreferences
 import app.aryan447.mpvium.repository.MediaFileRepository
 import app.aryan447.mpvium.utils.media.MediaInfoParser
+import app.aryan447.mpvium.utils.media.ParsedMediaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -34,18 +36,46 @@ data class DetectedMediaLibrary(
 
 /**
  * Scans all device storage to detect TV Series, Seasons, Episodes, and Movies.
+ *
+ * Library scope (issue #87): the whitelist-only filter applies here (Home,
+ * Shows, Movies, Insights). The Folders/Files full-storage browsers ignore
+ * the whitelist and apply only the blacklist.
  */
 class SeriesDetector(
   private val context: Context,
   private val database: MpviumDatabase,
 ) : KoinComponent {
   private val foldersPreferences: FoldersPreferences by inject()
+  private val browserPreferences: BrowserPreferences by inject()
   companion object {
     private const val TAG = "SeriesDetector"
-    private const val WATCHED_PERCENTAGE_THRESHOLD = 0.95f
+    private const val DEFAULT_WATCHED_PERCENTAGE_THRESHOLD = 0.95f
     private const val MAX_FALLBACK_EPISODE_DURATION_MS = 90 * 60 * 1000L
-    private val SEASON_FOLDER_REGEX = Regex("""(?:Season|S|Series|Specials)\s*(\d{1,2})?""", RegexOption.IGNORE_CASE)
+    // Require a number after the season token so ordinary folders that merely
+    // start with "S" (Spider-Man, Star Wars, Sci-Fi) are not mistaken for
+    // seasons and turned into fake shows.
+    private val SEASON_FOLDER_REGEX = Regex("""\b(?:Season|Series|Specials|S)[\s._-]*(\d{1,2})\b""", RegexOption.IGNORE_CASE)
+    private val SPECIALS_FOLDER_REGEX = Regex("""^(?:Specials|Extras)$""", RegexOption.IGNORE_CASE)
     private val EPISODE_NUM_REGEX = Regex("""(?:^|[^\d])(?:E|EP|Episode|#)?\s*(\d{1,4})(?:[^\d]|$)""", RegexOption.IGNORE_CASE)
+
+    // Folders that describe a library root rather than one title. They must
+    // never become a show/movie name.
+    private val GENERIC_FOLDER_NAMES = setOf(
+      "movies", "movie", "films", "film", "videos", "video", "tv", "tvshows",
+      "shows", "series", "media", "download", "downloads", "storage", "emulated",
+      "0", "dcim", "camera", "whatsapp", "telegram", "documents", "desktop",
+      "sdcard", "all", "other", "misc", "new", "unsorted", "season", "specials",
+      "extras", "featurettes", "trailers", "bonus"
+    )
+
+    private val GENERIC_VIDEO_TITLES = setOf(
+      "movie", "video", "film", "feature", "untitled", "unknown", "index",
+      "main", "play", "watch", "sample", "trailer"
+    )
+
+    // "01", "CD1", "Part 2", "Episode 5" are episode/part labels, not titles.
+    private val PART_OR_EPISODE_TITLE_REGEX =
+      Regex("""(?:cd|disc|disk|part|pt|episode|ep|e)?[\s._-]*\d{1,3}""", RegexOption.IGNORE_CASE)
   }
 
   suspend fun detectLibrary(): DetectedMediaLibrary = withContext(Dispatchers.IO) {
@@ -53,6 +83,12 @@ class SeriesDetector(
       val whitelist = foldersPreferences.whitelistedFolders.get()
       val blacklist = foldersPreferences.blacklistedFolders.get()
       val whitelistOnly = foldersPreferences.whitelistOnlyEnabled.get()
+      // User-configurable watched threshold (50-100%). Continue Watching and
+      // Up Next must honor the same value used when saving playback state,
+      // otherwise e.g. 90% stays stuck in Continue Watching (issue #94).
+      val watchedThreshold = runCatching {
+        browserPreferences.watchedThreshold.get().coerceIn(1, 100) / 100f
+      }.getOrDefault(DEFAULT_WATCHED_PERCENTAGE_THRESHOLD)
       val folders = MediaFileRepository.getAllVideoFolders(context).filter { folder ->
         FolderVisibility.isFolderVisible(folder.path, whitelist, blacklist, whitelistOnly)
       }
@@ -99,35 +135,56 @@ class SeriesDetector(
         val positionMs = (playbackState?.lastPosition ?: 0) * 1000L
         val durationMs = video.duration
         val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-        val isWatched = (playbackState?.hasBeenWatched == true) || (progress >= WATCHED_PERCENTAGE_THRESHOLD)
+        val isWatched = (playbackState?.hasBeenWatched == true) || (progress >= watchedThreshold)
+
+        val parentFile = File(video.path).parentFile
+        val parentName = parentFile?.name ?: ""
+        val grandParentName = parentFile?.parentFile?.name ?: ""
+        val seasonMatch = SEASON_FOLDER_REGEX.find(parentName)
+        val isSpecialsFolder = SPECIALS_FOLDER_REGEX.matches(parentName.trim())
+        val parentSeasonNum = when {
+          seasonMatch != null -> seasonMatch.groupValues[1].toIntOrNull() ?: 1
+          isSpecialsFolder -> 0
+          else -> null
+        }
 
         // Check if video is TV series or movie
         var isTvSeries = parsed.type == "tv" || parsed.season != null || parsed.episode != null
         var seriesTitle = parsed.title
-        var seasonNum = parsed.season ?: 1
+        var seriesYear = parsed.year
+        var seasonNum = parsed.season ?: parentSeasonNum ?: 1
         var episodeNum = parsed.episode
         var isFolderFallback = false
 
         // Folder-level fallback heuristic (e.g. Breaking Bad / Season 1 / 01.mp4)
-        if (!isTvSeries) {
-          val parentFile = File(video.path).parentFile
-          val parentName = parentFile?.name ?: ""
-          val grandParentName = parentFile?.parentFile?.name ?: ""
+        if (!isTvSeries && parentSeasonNum != null) {
+          isTvSeries = true
+          isFolderFallback = true
+          seasonNum = parentSeasonNum
+          resolveFolderMedia(grandParentName)?.let { folder ->
+            seriesTitle = folder.title
+            seriesYear = seriesYear ?: folder.year
+          }
+          if (episodeNum == null) {
+            val epMatch = EPISODE_NUM_REGEX.find(video.displayName)
+            episodeNum = epMatch?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
+          }
+        }
 
-          val seasonMatch = SEASON_FOLDER_REGEX.find(parentName)
-          if (seasonMatch != null) {
+        // A bare episode number directly inside a show folder ("Show/01.mkv")
+        // is an episode, not a one-file movie. "CD1"/"Part 1" stay movies.
+        // Three digits max: "1917.mkv"/"2012.mkv" are film titles, not episodes.
+        if (!isTvSeries && parentSeasonNum == null &&
+          parsed.title.matches(Regex("""\d{1,3}""")) &&
+          (durationMs == 0L || durationMs < MAX_FALLBACK_EPISODE_DURATION_MS)
+        ) {
+          resolveFolderMedia(parentName)?.let { folder ->
             isTvSeries = true
             isFolderFallback = true
-            seasonNum = seasonMatch.groupValues[1].toIntOrNull() ?: 1
-            seriesTitle = if (grandParentName.isNotBlank() && grandParentName != "0" && !grandParentName.equals("emulated", true)) {
-              MediaInfoParser.parse(grandParentName).title.ifBlank { grandParentName }
-            } else {
-              parsed.title
-            }
-            if (episodeNum == null) {
-              val epMatch = EPISODE_NUM_REGEX.find(video.displayName)
-              episodeNum = epMatch?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
-            }
+            seriesTitle = folder.title
+            seriesYear = seriesYear ?: folder.year
+            seasonNum = 1
+            episodeNum = parsed.title.toIntOrNull() ?: 1
           }
         }
 
@@ -137,11 +194,28 @@ class SeriesDetector(
           isTvSeries = false
         }
 
+        // Bare filenames like "S01E01.mkv" or "Episode 1.mkv" carry no show
+        // name. Recover it from the show/season folder instead of showing the
+        // file as a movie with a meaningless cover.
+        if (isTvSeries && seriesTitle.isBlank()) {
+          val primaryFolder = if (parentSeasonNum != null) grandParentName else parentName
+          val secondaryFolder = if (parentSeasonNum != null) "" else grandParentName
+          val folder = resolveFolderMedia(primaryFolder) ?: resolveFolderMedia(secondaryFolder)
+          if (folder != null) {
+            seriesTitle = folder.title
+            seriesYear = seriesYear ?: folder.year
+          }
+          if (episodeNum == null) {
+            episodeNum = EPISODE_NUM_REGEX.find(video.displayName)
+              ?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
+          }
+        }
+
         if (isTvSeries && seriesTitle.isNotBlank()) {
           val normalizedSeriesId = normalizeKey(seriesTitle)
           seriesTitleById.putIfAbsent(normalizedSeriesId, seriesTitle)
-          if (parsed.year != null && seriesYearById[normalizedSeriesId] == null) {
-            seriesYearById[normalizedSeriesId] = parsed.year
+          if (seriesYear != null && seriesYearById[normalizedSeriesId] == null) {
+            seriesYearById[normalizedSeriesId] = seriesYear
           }
 
           val finalEpisodeNum = episodeNum ?: (rawSeriesMap[normalizedSeriesId]?.size?.plus(1) ?: 1)
@@ -161,7 +235,7 @@ class SeriesDetector(
           rawSeriesMap.getOrPut(normalizedSeriesId) { mutableListOf() }.add(Pair(episode, video))
 
           // Continue Watching for in-progress series episode
-          if (positionMs > 10_000L && !isWatched && progress < WATCHED_PERCENTAGE_THRESHOLD) {
+          if (positionMs > 10_000L && !isWatched && progress < watchedThreshold) {
             val remainingMins = (durationMs - positionMs) / (1000 * 60)
             val episodeTag = episode.formattedEpisodeTag
             val subtitleText = if (remainingMins > 0) "$episodeTag • ${remainingMins}m remaining" else episodeTag
@@ -182,11 +256,21 @@ class SeriesDetector(
           }
         } else {
           // Movie / Standalone video
-          val movieTitle = parsed.title.ifBlank { video.title }
+          var movieTitle = parsed.title.ifBlank { video.title }
+          var movieYear = parsed.year
+          // "movie.mkv", "01.mkv", "CD1.mkv" etc. tell us nothing; the folder
+          // name ("Inception (2010)") is a much better metadata query.
+          if (shouldUseFolderTitle(movieTitle)) {
+            val movieFolderName = if (parentSeasonNum != null) grandParentName else parentName
+            resolveFolderMedia(movieFolderName)?.let { folder ->
+              movieTitle = folder.title
+              movieYear = movieYear ?: folder.year
+            }
+          }
           val movie = LocalMovie(
             video = video,
             title = movieTitle,
-            year = parsed.year,
+            year = movieYear,
             posterUrl = null,
             backdropUrl = null,
             rating = null,
@@ -198,7 +282,7 @@ class SeriesDetector(
           detectedMovies.add(movie)
 
           // Continue Watching for in-progress movie
-          if (positionMs > 10_000L && !isWatched && progress < WATCHED_PERCENTAGE_THRESHOLD) {
+          if (positionMs > 10_000L && !isWatched && progress < watchedThreshold) {
             val remainingMins = (durationMs - positionMs) / (1000 * 60)
             continueWatchingList.add(
               ContinueWatchingItem(
@@ -332,9 +416,33 @@ class SeriesDetector(
     }
   }
 
+  /**
+   * Parses a containing folder as a title, rejecting library roots such as
+   * "Movies", "TV Shows" or "Downloads" that would otherwise become covers.
+   */
+  private fun resolveFolderMedia(name: String): ParsedMediaInfo? {
+    val trimmed = name.trim()
+    if (trimmed.isBlank()) return null
+    val parsed = MediaInfoParser.parse(trimmed)
+    val title = parsed.title.ifBlank { trimmed }
+    val key = normalizeKey(title)
+    if (key.isBlank() || key in GENERIC_FOLDER_NAMES) return null
+    if (title.matches(Regex("""\d+"""))) return null
+    return parsed.copy(title = title)
+  }
+
+  private fun shouldUseFolderTitle(title: String): Boolean {
+    val normalized = title.lowercase(Locale.ROOT).trim()
+    if (normalized.isBlank()) return true
+    if (normalized in GENERIC_VIDEO_TITLES) return true
+    return PART_OR_EPISODE_TITLE_REGEX.matches(normalized)
+  }
+
   private fun normalizeKey(title: String): String {
-    return title.lowercase(Locale.getDefault())
-      .replace(Regex("""[^a-z0-9]"""), "")
+    // Keep Unicode letters/digits. An ASCII-only filter maps every non-Latin
+    // show to the same empty id, merging unrelated series (and their covers).
+    return title.lowercase(Locale.ROOT)
+      .replace(Regex("""[^\p{L}\p{N}]"""), "")
       .trim()
   }
 }

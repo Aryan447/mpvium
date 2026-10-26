@@ -1,11 +1,19 @@
 package app.aryan447.mpvium.ui.preferences
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +54,8 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +64,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -69,12 +81,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.Screen
@@ -102,6 +116,7 @@ private data class DashboardSection(
 
 @Serializable
 object PreferencesScreen : Screen {
+  @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
   @Composable
   override fun Content() {
     val backstack = LocalBackStack.current
@@ -116,17 +131,28 @@ object PreferencesScreen : Screen {
     val isSearching = query.isNotBlank()
 
     val sections = rememberDashboardSections()
+    val topAppBarState = rememberTopAppBarState()
+    val scrollBehavior =
+      TopAppBarDefaults.exitUntilCollapsedScrollBehavior(state = topAppBarState)
+    val searchEnterEffects = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val searchExitEffects = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val searchEnterSpatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
 
     Scaffold(
       topBar = {
-        SettingsTopBar(title = stringResource(R.string.pref_preferences))
+        SettingsFlexibleTopBar(
+          title = stringResource(R.string.pref_preferences),
+          subtitle = stringResource(R.string.pref_preferences_subtitle),
+          scrollBehavior = scrollBehavior,
+        )
       },
     ) { padding ->
       ProvidePreferenceLocals {
         Column(
           modifier = Modifier
             .fillMaxSize()
-            .padding(padding),
+            .padding(padding)
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         ) {
           DashboardSearchField(
             query = query,
@@ -134,35 +160,52 @@ object PreferencesScreen : Screen {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
           )
 
-          if (isSearching) {
-            DashboardSearchResults(
-              query = query,
-              results = results,
-              onOpen = { backstack.add(it.screen) },
-              modifier = Modifier.fillMaxSize(),
-            )
-          } else {
-            LazyColumn(
-              modifier = Modifier.fillMaxSize(),
-            ) {
-              sections.forEach { section ->
-                item {
-                  PreferenceSectionHeader(
-                    title = section.title,
-                    count = section.entries.size,
+          AnimatedContent(
+            targetState = isSearching,
+            modifier = Modifier.fillMaxSize(),
+            transitionSpec = {
+              (
+                fadeIn(animationSpec = searchEnterEffects) +
+                  slideInVertically(
+                    animationSpec = searchEnterSpatial,
+                    initialOffsetY = { it / 16 },
                   )
+              ).togetherWith(
+                fadeOut(animationSpec = searchExitEffects),
+              )
+            },
+            label = "settingsSearchMode",
+          ) { searching ->
+            if (searching) {
+              DashboardSearchResults(
+                query = query,
+                results = results,
+                onOpen = { backstack.add(it.screen) },
+                modifier = Modifier.fillMaxSize(),
+              )
+            } else {
+              LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+              ) {
+                sections.forEach { section ->
+                  item {
+                    PreferenceSectionHeader(
+                      title = section.title,
+                      count = section.entries.size,
+                    )
+                  }
+                  item {
+                    DashboardGrid(
+                      entries = section.entries,
+                      onOpen = { backstack.add(it.screen) },
+                      modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                  }
                 }
-                item {
-                  DashboardGrid(
-                    entries = section.entries,
-                    onOpen = { backstack.add(it.screen) },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                  )
-                }
-              }
 
-              item {
-                Spacer(modifier = Modifier.height(20.dp))
+                item {
+                  Spacer(modifier = Modifier.height(20.dp))
+                }
               }
             }
           }
@@ -281,6 +324,7 @@ private fun rememberDashboardSections(): List<DashboardSection> {
   }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DashboardSearchField(
   query: String,
@@ -289,6 +333,17 @@ private fun DashboardSearchField(
 ) {
   var focused by remember { mutableStateOf(false) }
   val scheme = MaterialTheme.colorScheme
+  val active = focused || query.isNotEmpty()
+  val borderColor by animateColorAsState(
+    targetValue = if (active) scheme.primary else scheme.outlineVariant.copy(alpha = 0.5f),
+    animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+    label = "searchBorder",
+  )
+  val leadingIconColor by animateColorAsState(
+    targetValue = if (active) scheme.primary else scheme.onSurfaceVariant,
+    animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+    label = "searchLeadingIcon",
+  )
   TextField(
     value = query,
     onValueChange = onQueryChange,
@@ -297,7 +352,7 @@ private fun DashboardSearchField(
       .onFocusChanged { focused = it.isFocused }
       .border(
         width = 1.5.dp,
-        color = if (focused || query.isNotEmpty()) scheme.primary else scheme.outlineVariant.copy(alpha = 0.5f),
+        color = borderColor,
         shape = RoundedCornerShape(28.dp),
       ),
     placeholder = {
@@ -310,14 +365,22 @@ private fun DashboardSearchField(
       Icon(
         imageVector = Icons.Outlined.Search,
         contentDescription = null,
-        tint = if (focused || query.isNotEmpty()) scheme.primary else scheme.onSurfaceVariant,
+        tint = leadingIconColor,
       )
     },
     trailingIcon = {
       AnimatedVisibility(
         visible = query.isNotEmpty(),
-        enter = fadeIn(),
-        exit = fadeOut(),
+        enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+          scaleIn(
+            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+            initialScale = 0.7f,
+          ),
+        exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+          scaleOut(
+            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+            targetScale = 0.7f,
+          ),
       ) {
         IconButton(onClick = { onQueryChange("") }) {
           Icon(
@@ -372,8 +435,10 @@ private fun DashboardGrid(
 
 /**
  * Premium tile: hairline border, gradient icon medallion, chevron
- * affordance, and a springy press-scale for tactile feedback.
+ * affordance, and expressive press feedback: the tile and its medallion
+ * morph their corner shapes while the surface springs inward.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DashboardTile(
   entry: DashboardEntry,
@@ -388,15 +453,26 @@ private fun DashboardTile(
   val pressed by interaction.collectIsPressedAsState()
   val scale by animateFloatAsState(
     targetValue = if (pressed) 0.965f else 1f,
-    animationSpec = spring(stiffness = 420f, dampingRatio = 0.72f),
+    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
     label = "tilePress",
   )
+  val tileCorner by animateDpAsState(
+    targetValue = if (pressed) SettingsTilePressedCorner else SettingsTileCorner,
+    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+    label = "tileCorner",
+  )
+  val iconCorner by animateDpAsState(
+    targetValue = if (pressed) 52.dp / 2 else SettingsIconBoxCorner,
+    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+    label = "tileIconCorner",
+  )
+  val tileShape = RoundedCornerShape(tileCorner)
   Card(
     modifier = modifier
       .heightIn(min = 168.dp)
       .graphicsLayer(scaleX = scale, scaleY = scale)
-      .glassSheen(SettingsTileShape, isGlass)
-      .clip(SettingsTileShape)
+      .glassSheen(tileShape, isGlass)
+      .clip(tileShape)
       .clickable(
         interactionSource = interaction,
         indication = null,
@@ -405,7 +481,7 @@ private fun DashboardTile(
           onClick()
         },
       ),
-    shape = SettingsTileShape,
+    shape = tileShape,
     colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
       containerColor = scheme.surfaceContainer,
     ),
@@ -425,6 +501,7 @@ private fun DashboardTile(
           content = entry.content(),
           boxSize = 52.dp,
           iconSize = 28.dp,
+          shape = RoundedCornerShape(iconCorner),
         )
         Spacer(modifier = Modifier.weight(1f))
         Box(
@@ -463,6 +540,7 @@ private fun DashboardTile(
   }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DashboardSearchResults(
   query: String,
@@ -470,66 +548,102 @@ private fun DashboardSearchResults(
   onOpen: (SearchablePreference) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  if (results.isEmpty()) {
-    Box(
-      modifier = modifier,
-      contentAlignment = Alignment.Center,
-    ) {
-      Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-          modifier = Modifier
-            .size(88.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-          contentAlignment = Alignment.Center,
-        ) {
-          Icon(
-            imageVector = Icons.Outlined.Search,
-            contentDescription = null,
-            modifier = Modifier.size(36.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+  val enterEffects = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+  val exitEffects = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+  val enterSpatial = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+  val exitSpatial = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+
+  Crossfade(
+    targetState = results.isEmpty(),
+    modifier = modifier,
+    animationSpec = enterEffects,
+    label = "searchResultsState",
+  ) { isEmpty ->
+    if (isEmpty) {
+      Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+      ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Box(
+            modifier = Modifier
+              .size(88.dp)
+              .clip(CircleShape)
+              .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = Icons.Outlined.Search,
+              contentDescription = null,
+              modifier = Modifier.size(36.dp),
+              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          Spacer(modifier = Modifier.height(16.dp))
+          Text(
+            text = stringResource(R.string.settings_search_no_results),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+          )
+          Spacer(modifier = Modifier.height(4.dp))
+          Text(
+            text = "“$query”",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
           )
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-          text = stringResource(R.string.settings_search_no_results),
-          style = MaterialTheme.typography.titleMedium,
-          fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-          text = "“$query”",
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-        )
       }
-    }
-    return
-  }
-
-  LazyColumn(modifier = modifier) {
-    item {
-      Text(
-        text = "${results.size} result${if (results.size == 1) "" else "s"}",
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-      )
-    }
-    items(
-      items = results,
-      key = { "${it.titleRes}_${it.category}_${it.screen}" },
-    ) { preference ->
-      SettingsSearchResultRow(
-        preference = preference,
-        onClick = { onOpen(preference) },
-      )
-    }
-    item {
-      Spacer(modifier = Modifier.height(16.dp))
+    } else {
+      LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+          AnimatedContent(
+            targetState = results.size,
+            transitionSpec = {
+              (
+                fadeIn(animationSpec = enterEffects) +
+                  slideInVertically(
+                    animationSpec = enterSpatial,
+                    initialOffsetY = { it / 2 },
+                  )
+              ).togetherWith(
+                fadeOut(animationSpec = exitEffects) +
+                  slideOutVertically(
+                    animationSpec = exitSpatial,
+                    targetOffsetY = { -it / 2 },
+                  ),
+              )
+            },
+            label = "searchResultCount",
+          ) { count ->
+            Text(
+              text = "$count result${if (count == 1) "" else "s"}",
+              style = MaterialTheme.typography.labelLarge,
+              fontWeight = FontWeight.SemiBold,
+              color = MaterialTheme.colorScheme.primary,
+              modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+            )
+          }
+        }
+        items(
+          items = results,
+          key = { "${it.titleRes}_${it.category}_${it.screen}" },
+        ) { preference ->
+          SettingsSearchResultRow(
+            preference = preference,
+            onClick = { onOpen(preference) },
+            modifier = Modifier.animateItem(
+              fadeInSpec = enterEffects,
+              placementSpec = enterSpatial,
+              fadeOutSpec = exitEffects,
+            ),
+          )
+        }
+        item {
+          Spacer(modifier = Modifier.height(16.dp))
+        }
+      }
     }
   }
 }

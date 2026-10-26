@@ -39,10 +39,11 @@ import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.VpnKey
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -82,7 +83,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.TextFieldPreference
@@ -90,7 +90,7 @@ import org.koin.compose.koinInject
 
 @Serializable
 object SubtitlesPreferencesScreen : Screen {
-  @OptIn(ExperimentalMaterial3Api::class)
+  @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
   @Composable
   override fun Content() {
     val context = LocalContext.current
@@ -217,7 +217,7 @@ object SubtitlesPreferencesScreen : Screen {
               PreferenceDivider()
 
               val explainTranslationLang by preferences.explainTranslationLang.collectAsState()
-              ListPreference(
+              ExpressiveListPreference(
                 value = explainTranslationLang,
                 onValueChange = { preferences.explainTranslationLang.set(it) },
                 values = explainTranslationLanguages,
@@ -359,9 +359,8 @@ object SubtitlesPreferencesScreen : Screen {
                           modifier = Modifier.size(48.dp),
                           contentAlignment = Alignment.Center,
                         ) {
-                          CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
+                          LoadingIndicator(
+                            modifier = Modifier.size(28.dp),
                             color = MaterialTheme.colorScheme.primary,
                           )
                         }
@@ -408,7 +407,7 @@ object SubtitlesPreferencesScreen : Screen {
 
           // === ONLINE SUBTITLE SECTION ===
           item {
-            PreferenceSectionHeader(title = "Subtitle Search", count = 6)
+            PreferenceSectionHeader(title = "Subtitle Search", count = 7)
           }
 
           item {
@@ -685,6 +684,43 @@ object SubtitlesPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              // SubSource API Key (optional provider)
+              val subsourceApiKey by preferences.subsourceApiKey.collectAsState()
+              TextFieldPreference(
+                value = subsourceApiKey,
+                onValueChange = { preferences.subsourceApiKey.set(it) },
+                title = { Text("SubSource API Key (optional)") },
+                summary = {
+                  if (subsourceApiKey.isBlank()) {
+                    Text(
+                      "Adds SubSource to online subtitle search. Get a free key at subsource.net (Profile → API)",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                      style = MaterialTheme.typography.bodySmall
+                    )
+                  } else {
+                    Text(
+                      "Key set (${subsourceApiKey.take(4)}****)",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                  }
+                },
+                textToValue = { it },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.VpnKey)
+                },
+                textField = { value, onValueChange, _ ->
+                  TextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Enter SubSource API key") },
+                    singleLine = true
+                  )
+                }
+              )
+
+              PreferenceDivider()
+
               // Provider Tag - now keyless
               Column(
                 modifier = Modifier
@@ -739,6 +775,27 @@ object SubtitlesPreferencesScreen : Screen {
                   style = MaterialTheme.typography.labelSmall,
                   color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Text(
+                    text = "Additional source",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                  Text(
+                    text = "subsource.net",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                      val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://subsource.net"))
+                      context.startActivity(intent)
+                    }
+                  )
+                }
               }
             }
           }

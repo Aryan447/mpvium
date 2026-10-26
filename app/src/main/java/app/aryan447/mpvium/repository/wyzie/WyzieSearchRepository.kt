@@ -7,6 +7,7 @@ import androidx.documentfile.provider.DocumentFile
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.utils.media.ChecksumUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -49,11 +50,14 @@ data class WyzieTmdbResult(
     val id: Int,
     val mediaType: String,
     val title: String,
+    val originalTitle: String? = null,
     val releaseYear: String? = null,
     val poster: String? = null,
     val backdrop: String? = null,
     val overview: String? = null,
-    val imdbId: String? = null
+    val imdbId: String? = null,
+    val voteAverage: Float? = null,
+    val popularity: Double? = null
 )
 
 @Serializable
@@ -307,7 +311,8 @@ class WyzieSearchRepository(
     private val context: Context,
     private val client: OkHttpClient,
     private val json: Json,
-    private val preferences: SubtitlesPreferences
+    private val preferences: SubtitlesPreferences,
+    private val subsource: SubsourceProvider
 ) {
     // Primary keyless provider: Stremio / Cinemeta + OpenSubtitles v3
     private val cinemetaBase = "https://v3-cinemeta.strem.io"
@@ -339,16 +344,37 @@ class WyzieSearchRepository(
         year: String? = null
     ): Result<List<WyzieSubtitle>> = withContext(Dispatchers.IO) {
         try {
-            // Try Stremio keyless path first
-            val stremioResult = runCatching { stremioSearch(query, season, episode, year) }.getOrNull()
-            if (stremioResult != null && stremioResult.isNotEmpty()) {
-                return@withContext Result.success(filterAndSort(stremioResult, query))
+            val isSeries = season != null && episode != null
+            // Resolve the IMDb id once so both keyless providers can share it.
+            val imdbId = runCatching { resolveImdbId(query, year, preferSeries = isSeries) }.getOrNull()
+
+            // Keyless Stremio (OpenSubtitles v3) plus SubSource when its key is set.
+            val stremioDeferred = async {
+                runCatching { stremioSearch(query, season, episode, year, imdbId) }.getOrNull()
             }
-            // If Stremio returned empty and we have no Wyzie key, return empty (no 401)
+            val subsourceDeferred = if (subsource.isConfigured) {
+                async { runCatching { subsource.search(query, imdbId, season, episode, year) } }
+            } else null
+            val stremioResult = stremioDeferred.await()
+            val subsourceAttempt = subsourceDeferred?.await()
+            val subsourceResult = subsourceAttempt?.getOrNull()
+            val subsourceFailure = subsourceAttempt?.exceptionOrNull()
+            if (subsourceFailure != null) {
+                Log.w("WyzieSearchRepository", "SubSource search failed: ${subsourceFailure.message}")
+            }
+
+            val keylessResults = (stremioResult ?: emptyList()) + (subsourceResult ?: emptyList())
+            if (keylessResults.isNotEmpty()) {
+                return@withContext Result.success(filterAndSort(keylessResults, query))
+            }
+            // If no keyless provider returned results and we have no Wyzie key, return empty (no 401)
             val wyzieKey = preferences.wyzieApiKey.get().trim()
             if (wyzieKey.isBlank()) {
-                // Stremio was empty, no Wyzie key to fallback -> return empty or stremio empty
-                if (stremioResult != null) return@withContext Result.success(emptyList())
+                // A configured-but-rejected SubSource key explains why nothing was found.
+                if (subsourceFailure is SubsourceAuthException && stremioResult.isNullOrEmpty()) {
+                    return@withContext Result.failure(subsourceFailure)
+                }
+                if (stremioResult != null || subsourceResult != null) return@withContext Result.success(emptyList())
                 // Try Wyzie without key to give better error? It will 401, so return friendly error
                 return@withContext Result.failure(IOException("No subtitles found. Try a different title or check language filters. (Stremio keyless search)"))
             }
@@ -448,12 +474,13 @@ class WyzieSearchRepository(
         query: String,
         season: Int?,
         episode: Int?,
-        year: String?
+        year: String?,
+        resolvedImdbId: String? = null
     ): List<WyzieSubtitle> {
         // Resolve IMDB ID. When searching a TV show (season+episode), prefer the series catalog
         // so we don't accidentally resolve to a movie with a similar title.
         val isSeries = season != null && episode != null
-        val imdbId = resolveImdbId(query, year, preferSeries = isSeries)
+        val imdbId = resolvedImdbId ?: resolveImdbId(query, year, preferSeries = isSeries)
             ?: throw IOException("Could not resolve IMDB ID for '$query'")
         // Determine type via Cinemeta meta: use series if season/episode supplied, otherwise probe
         val type = if (isSeries) "series" else detectType(imdbId)
@@ -642,12 +669,17 @@ class WyzieSearchRepository(
 
     suspend fun download(subtitle: WyzieSubtitle, mediaTitle: String): Result<Uri> = withContext(Dispatchers.IO) {
         try {
-            val response = client.newCall(Request.Builder().url(subtitle.url).build()).execute()
-            if (!response.isSuccessful) return@withContext Result.failure(Exception("Download failed: ${response.code}"))
+            val (bytes, extension) = if (subsource.isSubsourceHandle(subtitle.url)) {
+                // SubSource serves a ZIP archive that may contain several files.
+                subsource.downloadAndExtract(subtitle.url)
+            } else {
+                val response = client.newCall(Request.Builder().url(subtitle.url).build()).execute()
+                if (!response.isSuccessful) return@withContext Result.failure(Exception("Download failed: ${response.code}"))
 
-            val bytes = response.body?.bytes() ?: return@withContext Result.failure(Exception("Empty body"))
-            val urlExtension = subtitle.url.substringAfterLast("/", "").substringBefore("?").substringAfterLast(".", "")
-            val extension = subtitle.format?.lowercase() ?: urlExtension.takeIf { it.isNotEmpty() } ?: "srt"
+                val body = response.body?.bytes() ?: return@withContext Result.failure(Exception("Empty body"))
+                val urlExtension = subtitle.url.substringAfterLast("/", "").substringBefore("?").substringAfterLast(".", "")
+                body to (subtitle.format?.lowercase() ?: urlExtension.takeIf { it.isNotEmpty() } ?: "srt")
+            }
 
             val saveFolderUri = preferences.subtitleSaveFolder.get()
             val folderName = ChecksumUtils.getCRC32(mediaTitle)

@@ -13,12 +13,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,6 +91,7 @@ fun VideoZoomSheet(
   }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ZoomVideoSheet(
   zoom: Float,
@@ -103,6 +105,8 @@ private fun ZoomVideoSheet(
 ) {
   val isDefault = zoom == defaultZoom
   val isZero = zoom == 0f
+  val setAsDefaultLabel = stringResource(R.string.set_as_default)
+  val resetLabel = stringResource(R.string.generic_reset)
 
   Column(
     modifier =
@@ -181,26 +185,26 @@ private fun ZoomVideoSheet(
         )
       }
 
-      // Action buttons
-      Row(
+      // Action buttons: one expressive group that expands the pressed action
+      // and compresses its neighbor.
+      ButtonGroup(
+        overflowIndicator = { menuState ->
+          ButtonGroupDefaults.OverflowIndicator(menuState)
+        },
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
       ) {
-        OutlinedButton(
+        clickableItem(
           onClick = onSetAsDefault,
+          label = setAsDefaultLabel,
           enabled = !isDefault,
-          modifier = Modifier.weight(1f),
-        ) {
-          Text(stringResource(R.string.set_as_default), style = MaterialTheme.typography.labelMedium)
-        }
-
-        Button(
+          weight = 1f,
+        )
+        clickableItem(
           onClick = onReset,
+          label = resetLabel,
           enabled = !isZero,
-          modifier = Modifier.weight(1f),
-        ) {
-          Text(stringResource(R.string.generic_reset), style = MaterialTheme.typography.labelMedium)
-        }
+          weight = 1f,
+        )
       }
     }
   }
