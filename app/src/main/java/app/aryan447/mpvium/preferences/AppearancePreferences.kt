@@ -12,7 +12,7 @@ class AppearancePreferences(
   val darkMode = preferenceStore.getEnum("dark_mode", DarkMode.System)
   val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Default)
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
-  val playerFullColors = preferenceStore.getBoolean("full_player_colors", true)
+  val playerFullColors = preferenceStore.getBoolean("full_player_colors", false)
   val pillNavigationBar = preferenceStore.getBoolean("pill_navigation_bar", true)
   val showBottomNavLabels = preferenceStore.getBoolean("show_bottom_nav_labels", true)
   val bottomNavTabs =

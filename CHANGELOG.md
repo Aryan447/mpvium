@@ -5,7 +5,7 @@
 - Clean titles now apply to movies too, showing the movie name and release year in the player.
 - Default decoder setting with Auto, SW, HW, and HW+ options.
 - SubSource support in online subtitle search: add your SubSource API key in Settings → Subtitles to include SubSource results; downloaded subtitles are unzipped automatically.
-- "Full player colors" toggle (Player Layout > Appearance, on by default) that puts the app theme accent on player icon glyphs while keeping button, pill, and chip backgrounds neutral glass; the seekbar, volume, and brightness sliders also use the accent. Turn it off for neutral icons, where only the seekbar, volume, and brightness sliders use the theme accent.
+- "Full player colors" toggle (Player Layout > Appearance, off by default) that puts the app theme accent on player icon glyphs while keeping button, pill, and chip backgrounds neutral glass; the seekbar, volume, and brightness sliders also use the accent. With it off, icons stay neutral and only the seekbar, volume, and brightness sliders use the theme accent.
 - Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
 - Horizontal swipe seeking now maps finger travel to playback time, with a 1–10 seconds-per-centimetre slider under Player → Gestures (7 s/cm by default: a 5 cm swipe covers ~35 seconds and 10 cm ~1:10) and a full-swipe choice of 3 minutes (default) or the whole video.
 - Manual "Mark as" watch status on Home Continue Watching / Up Next / Recently Added (long-press), series episodes (long-press) and whole shows, movie details, and Recently Played selection.
