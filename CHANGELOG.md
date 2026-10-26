@@ -9,6 +9,7 @@
 - Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
 - Horizontal swipe seeking now maps finger travel to playback time, with a 1–10 seconds-per-centimetre slider under Player → Gestures (7 s/cm by default: a 5 cm swipe covers ~35 seconds and 10 cm ~1:10) and a full-swipe choice of 3 minutes (default) or the whole video.
 - Manual "Mark as" watch status on Home Continue Watching / Up Next / Recently Added (long-press), series episodes (long-press) and whole shows, movie details, and Recently Played selection.
+- Discord community, linked next to Telegram in About and across the website and README.
 
 ### Changed
 

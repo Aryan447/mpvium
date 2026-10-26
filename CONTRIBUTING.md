@@ -137,8 +137,9 @@ If a bug is flavor-specific, state which flavor you tested.
 
 ## Communication
 
-- Join our [Telegram community](https://t.me/mpvium) for tester discussion,
-  preview builds, help, and feature ideas.
+- Join our [Discord server](https://discord.gg/g72fmqU7Sw) or
+  [Telegram community](https://t.me/mpvium) for tester discussion, preview
+  builds, help, and feature ideas.
 - Formal bug reports and feature requests still belong on GitHub Issues
   (see [Issues](#issues)) so they stay tracked.
 - Be kind and constructive per our Code of Conduct.

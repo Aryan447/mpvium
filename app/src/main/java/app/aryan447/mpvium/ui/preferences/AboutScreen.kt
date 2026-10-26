@@ -70,6 +70,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -293,6 +294,55 @@ object AboutScreen : Screen {
                     icon = {
                       Icon(
                         imageVector = Icons.Outlined.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                      )
+                    },
+                    weight = 1f,
+                  )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ButtonGroup(
+                  overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState)
+                  },
+                  modifier = Modifier.fillMaxWidth(),
+                ) {
+                  clickableItem(
+                    onClick = {
+                      context.startActivity(
+                        Intent(
+                          Intent.ACTION_VIEW,
+                          context.getString(R.string.discord_url).toUri(),
+                        ),
+                      )
+                    },
+                    label = "Discord",
+                    icon = {
+                      Icon(
+                        painter = painterResource(id = R.drawable.ic_discord_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                      )
+                    },
+                    weight = 1f,
+                  )
+
+                  clickableItem(
+                    onClick = {
+                      context.startActivity(
+                        Intent(
+                          Intent.ACTION_VIEW,
+                          context.getString(R.string.telegram_url).toUri(),
+                        ),
+                      )
+                    },
+                    label = "Telegram",
+                    icon = {
+                      Icon(
+                        painter = painterResource(id = R.drawable.ic_telegram_24),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                       )
