@@ -101,6 +101,7 @@ import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.streaming.model.StreamingCategory
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
@@ -108,8 +109,6 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
-import app.aryan447.mpvium.ui.streaming.components.ExpressiveFilterRow
-import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.StreamingHeroBanner
@@ -155,8 +154,8 @@ object StreamingHomeScreen : Screen {
     val showMoviesSection by appearancePreferences.showMoviesSection.collectAsState()
     val showFoldersSection by appearancePreferences.showFoldersSection.collectAsState()
     val homeSections = remember(homeSectionOrder) { HomeSection.parseOrder(homeSectionOrder) }
-    // Library-sources hint (issue #87): surface Settings → Folders without
-    // adding setup steps.
+    // Empty-state hint (issue #87): when whitelist-only leaves no results,
+    // offer a one-tap route to Settings → Folders.
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
     val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
     val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
@@ -421,18 +420,6 @@ object StreamingHomeScreen : Screen {
                 )
               }
 
-              // Library-sources hint (issue #87): one-tap entry to
-              // Settings → Folders when the library is filtered.
-              if (libraryFiltered) {
-                item {
-                  LibrarySourcesBanner(
-                    whitelistCount = whitelistedFolders.size,
-                    onManageClick = { backstack.add(FoldersPreferencesScreen) },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                  )
-                }
-              }
-
               // Home sections in user order (Appearance > Home). A hidden
               // section stays hidden everywhere, including category filters.
               homeSections.forEach { section ->
@@ -643,7 +630,7 @@ private fun CategoryChipsRow(
   onCategorySelect: (StreamingCategory) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  ExpressiveFilterRow(
+  ExpressiveChoiceRow(
     options = StreamingCategory.entries,
     selected = selectedCategory,
     labelOf = { it.displayName },

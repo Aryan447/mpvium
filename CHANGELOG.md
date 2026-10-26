@@ -1,4 +1,4 @@
-## Unreleased
+## V1.3.0
 
 ### Added
 
@@ -8,7 +8,6 @@
 - "Full player colors" toggle (Player Layout > Appearance, on by default) that puts the app theme accent on player icon glyphs while keeping button, pill, and chip backgrounds neutral glass; the seekbar, volume, and brightness sliders also use the accent. Turn it off for neutral icons, where only the seekbar, volume, and brightness sliders use the theme accent.
 - Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
 - Horizontal swipe seeking with an adaptive distance curve, on by default with a toggle under Player → Gestures: short drags stay precise while longer swipes cover a minute or two instead of seconds.
-- Library-sources hint on Home, Shows, and Movies when the whitelist filter is active, with one-tap access to Settings → Folders.
 - Manual "Mark as" watch status on Home Continue Watching / Up Next / Recently Added (long-press), series episodes (long-press) and whole shows, movie details, and Recently Played selection.
 
 ### Changed
@@ -27,14 +26,22 @@
 - Settings search now transitions between the dashboard and results, cross-fades empty states, and animates filtered rows, result counts, and the clear action.
 - Player zoom and playback-speed sheets now group their actions with Material 3 Expressive button groups that expand the pressed action and overflow when space is tight.
 - Home category filters and Shows/Movies watch-state filters now use connected expressive toggle groups that morph the selected filter into a pill.
+- The Appearance dark/light/system selector now uses the same connected expressive toggle group as the Home category filters.
 - Screen and tab navigation now uses expressive fade-through transitions driven by the Material motion scheme instead of fixed tween slides.
 - The ambient theme glow now uses a shorter, layered bloom over the resolved theme background; AMOLED setups fade into true black instead of grey.
 - The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
 - Onboarding now has scroll-reactive pages, shape-changing icon tiles, spring-driven progress dots, a fading skip action, and an animated primary button with press feedback.
 - About now groups Libraries and GitHub into an expressive action group, confirms device-info copies with a tactile icon swap, and cross-fades the update-check indicator.
+- Movies now hides clips of five minutes or less, along with reels, trailers, social/download exports, and camera recordings; those files remain available in Folders.
+- Removed the library-sources hint banner from Home, Shows, and Movies; whitelist settings remain in Settings → Folders.
 
 ### Fixed
 
+- Movie and show posters now stay stored on device until that movie or show is deleted, so covers keep working offline instead of being evicted from a size-capped image cache or re-downloaded.
+- Cached poster/backdrop files are removed together with their library entry when media is deleted or pruned.
+- Metadata cache writes are now atomic, so a write interrupted while the app is closed can no longer corrupt the cache and force every cover to be fetched again.
+- Movies and shows now render their cached cover immediately on open instead of briefly falling back to a video thumbnail before metadata enrichment finishes.
+- Refreshing metadata while offline now keeps the last saved cover instead of clearing it.
 - Swipe seeking is now calibrated in physical finger travel: a comfortable 5 cm swipe seeks about 1.5 minutes and a full-screen sweep about 2.5–3 minutes on phones and tablets alike, instead of a full sweep jumping tens of minutes on a phone and over an hour on a tablet; short drags stay precise, the same distance always maps to the same seek, and the sensitivity slider scales the whole curve.
 - Compose Material 3 1.5.0-beta01 compatibility for dropdown menus, the seekbar, and glass navigation item colors.
 - Clean show titles no longer include trailing release-group tags such as `-edge2020`.
@@ -44,6 +51,7 @@
 - Manual "Mark as New" now always restores the red NEW badge, even for older videos.
 - WebDAV browsing on servers that mark video files as collections (e.g. Torbox): `.mkv` entries without a folder href now show as playable videos with size, listings filter self by href instead of dropping the first entry, and paths with spaces/unicode are percent-encoded for listing, playback, and seeking.
 - Shows and Movies sort choices now persist across app restarts.
+- The Shows and Movies sort button now has a visible tonal surface, so it no longer disappears on dark and AMOLED themes.
 - VOBSUB/DVD and other bitmap subtitles now scale correctly: they keep their aspect ratio on anamorphic video instead of being stretched, and always follow the Scale and Position sliders.
 - Vertical volume/brightness swipes no longer use a stale starting volume, so consecutive and fast swipes no longer feel stuck or need repeating.
 - Watched threshold setting (e.g. 90%) now honored in Continue Watching, Up Next, widget, and playlist instead of staying stuck at 95%.

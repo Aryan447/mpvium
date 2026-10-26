@@ -82,7 +82,6 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
-import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
@@ -107,8 +106,8 @@ object SeriesGridScreen : Screen {
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
-    // Library-sources hint (issue #87): surface Settings → Folders without
-    // adding setup steps.
+    // Empty-state hint (issue #87): when whitelist-only leaves no results,
+    // offer a one-tap route to Settings → Folders.
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
     val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
     val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
@@ -152,7 +151,8 @@ object SeriesGridScreen : Screen {
             presentSeriesIds = detected.series.map { it.id }.toSet(),
           )
         }
-        seriesList = detected.series
+        val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
+        seriesList = cachedSeries
         isLoading = false
 
         // Background enrichment
@@ -315,7 +315,6 @@ object SeriesGridScreen : Screen {
               onSeriesSortChange = { streamingPreferences.seriesSort.set(it) },
               totalSeriesCount = seriesList.size,
               libraryFiltered = libraryFiltered,
-              whitelistCount = whitelistedFolders.size,
               onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onSeriesClick = { selectedSeriesId = it.id },
             )
@@ -353,7 +352,6 @@ object SeriesGridScreen : Screen {
           onSeriesSortChange = { streamingPreferences.seriesSort.set(it) },
           totalSeriesCount = seriesList.size,
           libraryFiltered = libraryFiltered,
-          whitelistCount = whitelistedFolders.size,
           onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onSeriesClick = { backstack.add(SeriesDetailScreen(it.id)) },
         )
@@ -382,7 +380,6 @@ private fun SeriesGridContent(
   onSeriesSortChange: (SeriesSort) -> Unit,
   totalSeriesCount: Int,
   libraryFiltered: Boolean,
-  whitelistCount: Int,
   onManageLibrarySources: () -> Unit,
   onSeriesClick: (LocalSeries) -> Unit,
 ) {
@@ -448,14 +445,6 @@ private fun SeriesGridContent(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
-        if (libraryFiltered) {
-          item(span = { GridItemSpan(columns) }) {
-            LibrarySourcesBanner(
-              whitelistCount = whitelistCount,
-              onManageClick = onManageLibrarySources,
-            )
-          }
-        }
         item(span = { GridItemSpan(columns) }) {
           Column {
             LibraryFilterBar(

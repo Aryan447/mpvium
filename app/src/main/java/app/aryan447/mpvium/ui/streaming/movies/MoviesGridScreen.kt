@@ -67,6 +67,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
@@ -83,7 +84,6 @@ import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
-import app.aryan447.mpvium.ui.streaming.components.LibrarySourcesBanner
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
@@ -112,8 +112,8 @@ object MoviesGridScreen : Screen {
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
-    // Library-sources hint (issue #87): surface Settings → Folders without
-    // adding setup steps.
+    // Empty-state hint (issue #87): when whitelist-only leaves no results,
+    // offer a one-tap route to Settings → Folders.
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
     val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
     val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
@@ -152,6 +152,10 @@ object MoviesGridScreen : Screen {
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
         val detected = seriesDetector.detectLibrary()
+        // The scanner treats every non-episode file as a movie. Keep reels,
+        // trailers, social exports and personal clips out of the Movies grid;
+        // they are not deleted or moved, and Folders still lists every file.
+        val libraryMovies = detected.movies.filter { MovieLibraryClassifier.isMovieLibraryItem(it) }
         // Drop cached TMDB entries for deleted movies.
         // Remaining movies reuse their cache with no re-scrape.
         runCatching {
@@ -161,11 +165,13 @@ object MoviesGridScreen : Screen {
             }.toSet(),
           )
         }
-        movieList = detected.movies
+        val cachedMovies = libraryMovies.map { metadataRepository.applyCachedMovie(it) }
+        movieList = cachedMovies
         isLoading = false
 
-        // Background enrichment
-        val enriched = detected.movies.map { metadataRepository.enrichMovie(it) }
+        // Background enrichment. Start from the detected copies so cache keys
+        // keep using the filename title/year, not the TMDb display year.
+        val enriched = libraryMovies.map { metadataRepository.enrichMovie(it) }
         movieList = enriched
       }
     }
@@ -322,7 +328,6 @@ object MoviesGridScreen : Screen {
               onMovieSortChange = { streamingPreferences.movieSort.set(it) },
               totalMovieCount = movieList.size,
               libraryFiltered = libraryFiltered,
-              whitelistCount = whitelistedFolders.size,
               onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onMovieClick = { selectedMovieId = it.video.id },
               onMovieLongClick = { moviePendingDeletion = it },
@@ -361,7 +366,6 @@ object MoviesGridScreen : Screen {
           onMovieSortChange = { streamingPreferences.movieSort.set(it) },
           totalMovieCount = movieList.size,
           libraryFiltered = libraryFiltered,
-          whitelistCount = whitelistedFolders.size,
           onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onMovieClick = { backstack.add(MovieDetailScreen(it.video.id, it.title)) },
           onMovieLongClick = { moviePendingDeletion = it },
@@ -411,7 +415,6 @@ private fun MoviesGridContent(
   onMovieSortChange: (MovieSort) -> Unit,
   totalMovieCount: Int,
   libraryFiltered: Boolean,
-  whitelistCount: Int,
   onManageLibrarySources: () -> Unit,
   onMovieClick: (LocalMovie) -> Unit,
   onMovieLongClick: (LocalMovie) -> Unit,
@@ -478,14 +481,6 @@ private fun MoviesGridContent(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
-        if (libraryFiltered) {
-          item(span = { GridItemSpan(columns) }) {
-            LibrarySourcesBanner(
-              whitelistCount = whitelistCount,
-              onManageClick = onManageLibrarySources,
-            )
-          }
-        }
         item(span = { GridItemSpan(columns) }) {
           Column {
             LibraryFilterBar(
