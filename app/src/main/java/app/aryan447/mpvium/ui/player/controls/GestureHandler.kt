@@ -53,7 +53,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -85,6 +85,7 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sign
 import kotlin.math.sqrt
+import kotlin.math.tanh
 
 /**
  * Touches starting within this vertical distance of the current subtitle
@@ -98,32 +99,47 @@ private const val SubtitleTouchToleranceFraction = 0.075f
 private const val SubtitleTouchMinSlopPx = 48f
 
 /**
- * VLC Android's swipe-seek calibration, reproduced from
- * `VideoTouchDelegate.doSeekTouch`: the jump grows as a quartic on the physical
- * finger travel, reaching ten minutes after 8 cm, plus a flat 3 s base.
+ * Physical finger travel the accelerating part of the curve is calibrated
+ * against: 8 cm, the reference distance VLC uses for its swipe seek. Travel is
+ * measured in centimetres rather than as a fraction of the screen, so the
+ * accelerating part covers the same amount of video for the same physical
+ * swipe on a phone, a foldable and a tablet.
  */
-private const val VLC_SWIPE_SEEK_REFERENCE_CM = 8.0
-private const val VLC_SWIPE_SEEK_RAW_MS = 600_000.0
-private const val VLC_SWIPE_SEEK_BASE_MS = 3_000.0
-
-/** VLC ignores horizontal swipes shorter than 1 cm. */
-private const val VLC_SWIPE_SEEK_MIN_TRAVEL_CM = 1f
-
-/** Centimetres per inch, used to turn pixels into physical travel with xdpi. */
-private const val CM_PER_INCH = 2.54f
+private const val SWIPE_SEEK_REFERENCE_TRAVEL_CM = 8f
 
 /**
- * Pixels the sensitivity preference is calibrated against for the flat mapping
- * used when acceleration is off (a 1080p phone's swipe area). Keeping it
- * independent of the device density preserves the existing linear sensitivity:
- * one full gesture width covers `horizontalSwipeSensitivity * this` seconds.
+ * Raw seconds the accelerating term adds after
+ * [SWIPE_SEEK_REFERENCE_TRAVEL_CM] of physical travel: VLC reaches ten minutes
+ * at that distance. The term is passed through a soft knee below, so this value
+ * shapes the curve under the knee instead of being reached at the reference
+ * distance.
+ */
+private const val SWIPE_SEEK_ACCEL_RAW_SECONDS = 600f
+
+/**
+ * Soft ceiling for the accelerating term. An unbounded quartic explodes on the
+ * longer swipes a landscape phone or tablet allows (13-19 cm), which is how a
+ * full sweep ended up seeking tens of minutes. With the knee the accelerating
+ * term approaches this value, so a full sweep stays within a few minutes while
+ * every extra centimetre still adds a little.
+ */
+private const val SWIPE_SEEK_ACCEL_LIMIT_SECONDS = 120f
+
+/** Centimetres per dp (1 dp = 1/160 inch, i.e. 2.54 / 160 cm). */
+private const val CM_PER_DP = 2.54f / 160f
+
+/**
+ * Pixels the sensitivity preference is calibrated against (a 1080p phone's
+ * swipe area). Keeping it independent of the device density preserves the
+ * existing linear sensitivity: one full gesture width covers
+ * `horizontalSwipeSensitivity * this` seconds.
  */
 private const val HORIZONTAL_SEEK_SENSITIVITY_REFERENCE_PX = 820f
 
 /**
- * Default value of the horizontal swipe sensitivity preference. VLC's curve is
- * calibrated at this value and scaled linearly by the preference, so the slider
- * controls the whole jump; 0.05 is VLC's exact behaviour.
+ * Default value of the horizontal swipe sensitivity preference. The adaptive
+ * curve is calibrated at this value and scaled linearly by the preference, so
+ * the slider controls the whole mapping (not just the fine linear part).
  */
 private const val HORIZONTAL_SEEK_DEFAULT_SENSITIVITY = 0.05f
 
@@ -132,55 +148,70 @@ private const val HORIZONTAL_SEEK_SENSITIVITY_SCALE_MIN = 0.4f
 private const val HORIZONTAL_SEEK_SENSITIVITY_SCALE_MAX = 2f
 
 /**
+ * Exponent of the accelerating term. The quartic keeps the start flat enough
+ * that short drags stay effectively linear (well under a second over the first
+ * centimetre) while every extra centimetre past ~3cm adds noticeably more than
+ * the previous one, so the curve keeps opening up to a thumb-length swipe.
+ * VLC uses the same exponent.
+ */
+private const val SWIPE_SEEK_ACCEL_EXPONENT = 4f
+
+/**
  * Never let a swipe land exactly on the video's end: mpv reports EOF there and
  * "close after the end of playback" (on by default) would tear the player down
- * instead of leaving the last second on screen. With VLC's unbounded curve,
+ * instead of leaving the last second on screen. With the accelerated range,
  * overshooting into the end while dragging is a normal thing to do. The
  * seekbar and double-tap seeks keep their existing exact-end behaviour.
  */
 private const val SWIPE_SEEK_EOF_GUARD_SECONDS = 1f
 
 /**
- * VLC Android's swipe-seek jump, reproduced from
- * `VideoTouchDelegate.doSeekTouch`:
+ * Maps a signed drag to a seek offset in seconds: a screen-relative linear
+ * part plus a physical-distance accelerating part.
  *
- * ```
- * jumpMs = sign(cm) * (600000 * (cm / 8)^4 + 3000) / verticalCoef
- * ```
+ * Both parts are functions of the finger position, so the mapping stays
+ * reversible: dragging back to where the gesture started always returns to the
+ * starting position, and the same distance always maps to the same offset (no
+ * velocity term), like VLC's and Samsung's swipe seek.
  *
- * [travelCm] is the total signed horizontal finger travel in centimetres,
- * measured with `DisplayMetrics.xdpi` exactly like VLC. [verticalDriftCoef] is
- * VLC's damping for vertical finger drift during the swipe: 1 for a straight
- * horizontal gesture, 2+ once the finger has drifted vertically, which divides
- * the jump. The result is in seconds; the caller clamps it to the video.
+ * - linear: [secondsPerWidth] per unit of [fraction] (a fraction of the gesture
+ *   width) — the original flat mapping, and the thing that gives a big display
+ *   its extra precision for small movements;
+ * - accelerating: VLC's quartic on physical travel ([travelDp] converted to
+ *   centimetres), calibrated to [SWIPE_SEEK_ACCEL_RAW_SECONDS] at
+ *   [SWIPE_SEEK_REFERENCE_TRAVEL_CM] before softening;
+ * - soft knee: the accelerating term approaches
+ *   [SWIPE_SEEK_ACCEL_LIMIT_SECONDS] instead of growing without bound, so a
+ *   full-screen sweep on any device stays within a few minutes;
+ * - the accelerating term is scaled by [sensitivity] relative to the default,
+ *   so the sensitivity preference controls the whole curve.
  *
- * [sensitivity] scales the whole jump. At the default 0.05 this function is
- * VLC's formula unchanged.
+ * Calibration at the default sensitivity: 1 cm ≈ 3 s, 5 cm ≈ 1:30, 6.5 cm ≈
+ * 2:15, and a full-screen sweep tops out around 2:40 regardless of the device.
+ *
+ * Pass [adaptive] = false for the legacy flat mapping (accelerating term off).
  */
-private fun vlcSwipeSeekSeconds(
-  travelCm: Float,
-  verticalDriftCoef: Int,
+private fun swipeSeekSeconds(
+  fraction: Float,
+  secondsPerWidth: Float,
+  travelDp: Float,
   sensitivity: Float,
+  adaptive: Boolean,
 ): Float {
-  val coef = verticalDriftCoef.coerceAtLeast(1)
-  val jumpMs = (sign(travelCm) * (
-    VLC_SWIPE_SEEK_RAW_MS *
-      (abs(travelCm).toDouble() / VLC_SWIPE_SEEK_REFERENCE_CM).pow(4.0) +
-      VLC_SWIPE_SEEK_BASE_MS
-    ) / coef).toInt()
+  val linear = secondsPerWidth * fraction
+  if (!adaptive) return linear
+
+  val travelCm = travelDp * CM_PER_DP
+  val rawAcceleration = SWIPE_SEEK_ACCEL_RAW_SECONDS *
+    (travelCm / SWIPE_SEEK_REFERENCE_TRAVEL_CM).pow(SWIPE_SEEK_ACCEL_EXPONENT)
+  // Soft knee: almost the raw value for small travels, asymptotically the
+  // limit for long ones, and continuous/monotonic in between.
+  val acceleration = SWIPE_SEEK_ACCEL_LIMIT_SECONDS *
+    tanh(rawAcceleration / SWIPE_SEEK_ACCEL_LIMIT_SECONDS)
   val sensitivityScale = (sensitivity / HORIZONTAL_SEEK_DEFAULT_SENSITIVITY)
     .coerceIn(HORIZONTAL_SEEK_SENSITIVITY_SCALE_MIN, HORIZONTAL_SEEK_SENSITIVITY_SCALE_MAX)
-  return jumpMs / 1000f * sensitivityScale
+  return linear + sign(fraction) * acceleration * sensitivityScale
 }
-
-/**
- * VLC's damping coefficient for vertical finger drift during a swipe seek: the
- * jump is halved once the finger has drifted about half an inch vertically, and
- * keeps shrinking with further drift. Reproduced from
- * `VideoTouchDelegate.doSeekTouch`.
- */
-private fun vlcSwipeSeekVerticalCoef(driftPx: Float, xdpi: Float): Int =
-  (((abs(driftPx) / xdpi + 0.5f) * 2f).coerceAtLeast(1f)).roundToInt().coerceAtLeast(1)
 
 /**
  * Vertical video rect (top offset, height in px) inside the touch
@@ -366,16 +397,9 @@ fun GestureHandler(
       .toPx()
       .coerceAtLeast(48.dp.toPx())
   }
+  val configuration = LocalConfiguration.current
   val density = LocalDensity.current
-  // VLC measures swipe-seek travel in physical centimetres with xdpi, so the
-  // same finger distance covers the same amount of video on a phone, a foldable
-  // and a tablet.
-  val context = LocalContext.current
-  val xdpi = remember(context) {
-    context.resources.displayMetrics.xdpi
-      .takeIf { it > 0f }
-      ?: context.resources.displayMetrics.densityDpi.toFloat()
-  }
+  val isTablet = remember(configuration) { configuration.smallestScreenWidthDp >= 600 }
 
   // Isolated double-tap state tracking
   var tapCount by remember { mutableStateOf(0) }
@@ -1506,13 +1530,14 @@ fun GestureHandler(
         isVerticalGestureActive,
         horizontalSwipeAcceleration,
         horizontalSwipeSensitivity,
-        xdpi,
+        density,
       ) {
         if (!horizontalSwipeToSeek || areControlsLocked || isVerticalGestureActive) return@pointerInput
 
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
           val startPosition = down.position
+          val startTime = System.currentTimeMillis()
 
           var gestureType: String? = null
           var hasStartedSeeking = false
@@ -1535,15 +1560,22 @@ fun GestureHandler(
                   val currentPosition = change.position
                   val deltaX = currentPosition.x - startPosition.x
                   val deltaY = currentPosition.y - startPosition.y
+                  val timeSinceStart = System.currentTimeMillis() - startTime
 
-                  // VLC starts a swipe seek only once the finger has travelled
-                  // 1 cm horizontally. That is well beyond the touch slop, so
-                  // taps can't trigger a seek, and the 2:1 dominance check
-                  // keeps a vertical drag from being taken as a seek.
-                  val travelCm = deltaX / xdpi * CM_PER_INCH
-                  val isGestureTriggered =
-                    abs(travelCm) >= VLC_SWIPE_SEEK_MIN_TRAVEL_CM &&
-                      abs(deltaX) > abs(deltaY) * 2f
+                  // Tablet-specific responsive swipe gesture vs standard phone gesture.
+                  // Seek distance is normalized by physical finger travel, so the
+                  // pixel gate must not be absurdly low: an ordinary tap (touch slop
+                  // ~8dp, often >18px on high-density tablets) could previously fire
+                  // the swipe-seek, which transiently pauses, exact-seeks and resumes
+                  // — the reported "video pauses/freezes ~0.5-1s after a seek lands"
+                  // on tablets. Require a real swipe: past slop, clear horizontal
+                  // dominance, and a short time gate.
+                  val horizontalSlopPx = with(density) { 24.dp.toPx() }
+                  val isGestureTriggered = if (isTablet) {
+                    abs(deltaX) > horizontalSlopPx && abs(deltaX) > abs(deltaY) * 1.6f && timeSinceStart > 80L
+                  } else {
+                    abs(deltaX) > 30f && abs(deltaX) > abs(deltaY) * 2f && timeSinceStart > 100L
+                  }
 
                   if (gestureType == null &&
                       isGestureTriggered &&
@@ -1568,27 +1600,19 @@ fun GestureHandler(
                   }
 
                   if (gestureType == "horizontal_seek" && hasStartedSeeking) {
-                    // VLC's exact curve when acceleration is on: a quartic on
-                    // the physical finger travel (ten minutes at 8 cm) plus a
-                    // 3 s base, divided by its vertical-drift coefficient.
-                    // Long swipes can cover tens of minutes and are kept short
-                    // of the end. VLC also ignores travel under 1 cm, so
-                    // dragging back into that dead zone returns to where the
-                    // gesture started. With the toggle off, keep the original
-                    // flat distance mapping.
-                    val seekAmount = if (horizontalSwipeAcceleration) {
-                      if (abs(travelCm) >= VLC_SWIPE_SEEK_MIN_TRAVEL_CM) {
-                        vlcSwipeSeekSeconds(
-                          travelCm = travelCm,
-                          verticalDriftCoef = vlcSwipeSeekVerticalCoef(deltaY, xdpi),
-                          sensitivity = seekSensitivity,
-                        )
-                      } else {
-                        0f
-                      }
-                    } else {
-                      secondsPerWidth * (deltaX / size.width.toFloat().coerceAtLeast(1f))
-                    }
+                    // Linear part stays a fraction of the gesture width, so
+                    // precision keeps scaling with the display. The accelerating
+                    // part is VLC's quartic on physical finger travel with a
+                    // soft ceiling, so a comfortable swipe on a phone and on a
+                    // tablet both cover about the same 1-2 minutes and a full
+                    // sweep stays within a few minutes.
+                    val seekAmount = swipeSeekSeconds(
+                      fraction = deltaX / size.width.toFloat().coerceAtLeast(1f),
+                      secondsPerWidth = secondsPerWidth,
+                      travelDp = abs(deltaX) / density.density,
+                      sensitivity = seekSensitivity,
+                      adaptive = horizontalSwipeAcceleration,
+                    )
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
                     val maxDuration = duration?.toFloat() ?: 0f
                     // Stop just short of the very end: landing on it makes mpv

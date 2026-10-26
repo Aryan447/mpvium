@@ -7,7 +7,7 @@
 - SubSource support in online subtitle search: add your SubSource API key in Settings → Subtitles to include SubSource results; downloaded subtitles are unzipped automatically.
 - "Full player colors" toggle (Player Layout > Appearance, on by default) that puts the app theme accent on player icon glyphs while keeping button, pill, and chip backgrounds neutral glass; the seekbar, volume, and brightness sliders also use the accent. Turn it off for neutral icons, where only the seekbar, volume, and brightness sliders use the theme accent.
 - Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
-- Horizontal swipe seeking with VLC Android's exact distance curve, on by default with a toggle under Player → Gestures: short drags stay precise while longer swipes quickly cover minutes.
+- Horizontal swipe seeking with an adaptive distance curve, on by default with a toggle under Player → Gestures: short drags stay precise while longer swipes cover a minute or two instead of seconds.
 - Library-sources hint on Home, Shows, and Movies when the whitelist filter is active, with one-tap access to Settings → Folders.
 - Manual "Mark as" watch status on Home Continue Watching / Up Next / Recently Added (long-press), series episodes (long-press) and whole shows, movie details, and Recently Played selection.
 
@@ -35,7 +35,7 @@
 
 ### Fixed
 
-- Swipe seeking now follows VLC Android's exact curve in physical finger travel: a comfortable 5 cm swipe seeks about 1.5 minutes and a long sweep quickly covers tens of minutes (kept just short of the end of the video), the same on phones and tablets. Previously a full sweep could jump an unpredictable number of minutes depending on the screen.
+- Swipe seeking is now calibrated in physical finger travel: a comfortable 5 cm swipe seeks about 1.5 minutes and a full-screen sweep about 2.5–3 minutes on phones and tablets alike, instead of a full sweep jumping tens of minutes on a phone and over an hour on a tablet; short drags stay precise, the same distance always maps to the same seek, and the sensitivity slider scales the whole curve.
 - Compose Material 3 1.5.0-beta01 compatibility for dropdown menus, the seekbar, and glass navigation item colors.
 - Clean show titles no longer include trailing release-group tags such as `-edge2020`.
 - Home sections can be reordered and toggled (featured banner, Continue Watching, Up Next, Recently Added, Shows, Movies, folders) in Appearance > Home.

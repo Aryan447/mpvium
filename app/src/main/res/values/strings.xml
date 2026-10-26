@@ -191,8 +191,8 @@
   <string name="pref_player_gestures_horizontal_swipe_sensitivity_summary">Adjust how much distance is covered per swipe</string>
   <string name="pref_player_gestures_vertical_swipe_sensitivity">Vertical swipe sensitivity</string>
   <string name="pref_player_gestures_vertical_swipe_sensitivity_summary">Adjust how much volume and brightness change per swipe</string>
-  <string name="pref_player_gestures_horizontal_swipe_acceleration">VLC-style swipe seek</string>
-  <string name="pref_player_gestures_horizontal_swipe_acceleration_summary">VLC\'s exact curve: short swipes stay precise while longer swipes quickly cover minutes; turn off for a flat mapping</string>
+  <string name="pref_player_gestures_horizontal_swipe_acceleration">Adaptive swipe seek</string>
+  <string name="pref_player_gestures_horizontal_swipe_acceleration_summary">Distance-based curve: short drags stay precise while longer swipes cover a minute or two</string>
   <string name="pref_player_gestures_hold_for_multiple_speed">Hold for multi - x speed</string>
   <string name="pref_player_gestures_hold_action">Hold gesture action</string>
   <string name="pref_player_gestures_hold_action_summary">Choose what happens when you press and hold the video</string>
