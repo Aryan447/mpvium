@@ -28,13 +28,13 @@ export const shots: Shot[] = [
     wide: true,
   },
   {
-    src: "/screenshots/mpvium-dark-default-home.png",
+    src: "/screenshots/mpvium-dark-default-home.jpg",
     alt: "mpvium home library",
     title: "Home",
     caption: "Continue watching & browse.",
   },
   {
-    src: "/screenshots/mpvium-dark-default-movies.png",
+    src: "/screenshots/mpvium-dark-default-movies.jpg",
     alt: "mpvium movies grid",
     title: "Movies",
     caption: "Poster grid with durations.",
@@ -46,7 +46,7 @@ export const shots: Shot[] = [
     caption: "Shows, movies & folders.",
   },
   {
-    src: "/screenshots/mpvium-movie-showcase.png",
+    src: "/screenshots/mpvium-movie-showcase.jpg",
     alt: "mpvium movie details",
     title: "Details",
     caption: "Movie showcase view.",
