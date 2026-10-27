@@ -23,19 +23,19 @@ import { links } from "../data/site";
 
     {
       changelog.length === 0 ? (
-        <p class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 text-[var(--muted)]">
+        <p class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-[var(--muted)] sm:p-6">
           No changelog entries yet.
         </p>
       ) : (
         changelog.map((entry) => (
-          <section class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+          <section class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
             <h2 class="text-xl font-extrabold text-[var(--primary)]">{entry.version}</h2>
             {entry.groups.map((group) => (
               <div class="mt-4">
                 <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)]">
                   {group.heading}
                 </h3>
-                <ul class="mt-2 list-disc space-y-1.5 pl-5 text-[15px]">
+                <ul class="mt-2 list-disc space-y-1.5 break-words pl-5 text-[15px]">
                   {group.items.map((parts) => (
                     <li>
                       {parts.map((part) =>

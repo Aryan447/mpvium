@@ -21,47 +21,63 @@ const apks = [
       Download<span class="text-[var(--primary)]">.</span>
     </h1>
     <p class="mx-auto mb-8 mt-2 max-w-xl text-[var(--muted)]">
-      Free and open source, no ads or trackers. Buttons below resolve to the latest
-      arm64-v8a APKs automatically.
+      Free and open source, no ads or trackers. Download buttons resolve to the
+      latest arm64-v8a APKs; preview is enabled when a preview release exists.
     </p>
 
     <div class="flex flex-wrap justify-center gap-3">
       <a
         id="dl-stable"
         href={links.latestRelease}
-        class="inline-block rounded-full bg-[var(--primary)] px-7 py-3.5 text-base font-bold text-[#1A1206] hover:brightness-110"
+        class="inline-block w-full rounded-full bg-[var(--primary)] px-5 py-3.5 text-base font-bold text-[#1A1206] hover:brightness-110 sm:w-auto sm:px-7"
       >
         Download Stable (arm64-v8a)
       </a>
       <a
         id="dl-preview"
         aria-disabled="true"
-        class="inline-block cursor-not-allowed rounded-full border border-[var(--border)] px-7 py-3.5 text-base font-bold text-[var(--text)] opacity-50"
+        class="inline-block w-full cursor-not-allowed rounded-full border border-[var(--border)] px-5 py-3.5 text-base font-bold text-[var(--text)] opacity-50 sm:w-auto sm:px-7"
       >
         Checking preview…
       </a>
     </div>
     <p id="dl-meta" class="mt-3 text-[13px] text-[var(--muted)]">Resolving latest versions…</p>
 
-    <div class="mt-10 overflow-hidden rounded-2xl border border-[var(--border)] text-left">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="bg-[var(--surface2)] text-left">
-            <th class="px-5 py-3 font-bold">APK</th>
-            <th class="px-5 py-3 font-bold">Devices</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            apks.map((row) => (
-              <tr class="border-t border-[var(--border)] bg-[var(--surface)]">
-                <td class="px-5 py-3 font-mono text-[13px] text-[var(--primary)]">{row.file}</td>
-                <td class="px-5 py-3 text-[var(--muted)]">{row.devices}</td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
+    <div class="mt-10 text-left">
+      <div class="overflow-hidden rounded-2xl border border-[var(--border)] sm:hidden">
+        <div class="bg-[var(--surface2)] px-4 py-3 text-sm font-bold">APK downloads</div>
+        {
+          apks.map((row) => (
+            <div class="border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+              <div class="font-mono text-[13px] font-semibold text-[var(--primary)]">
+                {row.file}
+              </div>
+              <div class="mt-0.5 text-sm text-[var(--muted)]">{row.devices}</div>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="hidden overflow-hidden rounded-2xl border border-[var(--border)] sm:block">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-[var(--surface2)] text-left">
+              <th class="px-5 py-3 font-bold">APK</th>
+              <th class="px-5 py-3 font-bold">Devices</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              apks.map((row) => (
+                <tr class="border-t border-[var(--border)] bg-[var(--surface)]">
+                  <td class="px-5 py-3 font-mono text-[13px] text-[var(--primary)]">{row.file}</td>
+                  <td class="px-5 py-3 text-[var(--muted)]">{row.devices}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <p class="mt-6 text-sm text-[var(--muted)]">

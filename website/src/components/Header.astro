@@ -18,12 +18,13 @@ const nav = [
 <header
   class="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur"
 >
-  <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3">
-    <a href="/" class="flex items-center gap-2.5 font-extrabold tracking-tight">
-      <img src="/icon.png" alt="" aria-hidden="true" class="h-8 w-8 rounded-lg" />
+  <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3">
+    <a href="/" class="flex min-w-0 items-center gap-2.5 font-extrabold tracking-tight">
+      <img src="/icon.png" alt="" aria-hidden="true" class="h-8 w-8 flex-none rounded-lg" />
       <span class="text-lg">mpv<span class="text-[var(--primary)]">ium</span></span>
     </a>
-    <nav class="flex flex-wrap items-center gap-1 text-sm font-semibold" aria-label="Primary">
+
+    <nav class="hidden items-center gap-1 text-sm font-semibold md:flex" aria-label="Primary">
       {
         nav.map((item) => (
           <a
@@ -47,5 +48,105 @@ const nav = [
         GitHub
       </a>
     </nav>
+
+    <button
+      id="menu-toggle"
+      type="button"
+      class="inline-flex h-10 w-10 flex-none items-center justify-center rounded-full border border-[var(--border)] text-[var(--text)] transition-colors hover:border-[var(--primary)] md:hidden"
+      aria-label="Open menu"
+      aria-expanded="false"
+      aria-controls="mobile-nav"
+    >
+      <svg
+        id="menu-open-icon"
+        class="h-5 w-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M4 7h16M4 12h16M4 17h16" />
+      </svg>
+      <svg
+        id="menu-close-icon"
+        class="hidden h-5 w-5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </button>
+  </div>
+
+  <div
+    id="mobile-nav"
+    class="absolute inset-x-0 top-full hidden max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-[var(--border)] bg-[var(--bg)] shadow-[0_20px_40px_-20px_rgba(0,0,0,0.8)] md:hidden"
+  >
+    <nav class="mx-auto flex max-w-5xl flex-col gap-1 px-5 py-3" aria-label="Mobile">
+      {
+        nav.map((item) => (
+          <a
+            href={item.href}
+            aria-current={active === item.key ? "page" : undefined}
+            class:list={[
+              "rounded-xl px-4 py-3 text-[15px] font-semibold transition-colors",
+              active === item.key
+                ? "bg-[var(--primary)] text-[#1A1206]"
+                : "text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)]",
+            ]}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+      <a
+        href={links.github}
+        class="mt-1 rounded-xl border border-[var(--border)] px-4 py-3 text-center text-[15px] font-semibold text-[var(--text)] hover:border-[var(--primary)]"
+      >
+        GitHub
+      </a>
+    </nav>
   </div>
 </header>
+
+<script is:inline>
+  (function () {
+    var toggle = document.getElementById("menu-toggle");
+    var menu = document.getElementById("mobile-nav");
+    var openIcon = document.getElementById("menu-open-icon");
+    var closeIcon = document.getElementById("menu-close-icon");
+    if (!toggle || !menu) return;
+
+    function setOpen(open) {
+      menu.classList.toggle("hidden", !open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+      if (openIcon) openIcon.classList.toggle("hidden", open);
+      if (closeIcon) closeIcon.classList.toggle("hidden", !open);
+    }
+
+    toggle.addEventListener("click", function () {
+      setOpen(menu.classList.contains("hidden"));
+    });
+
+    document.addEventListener("click", function (event) {
+      if (menu.classList.contains("hidden")) return;
+      if (menu.contains(event.target) || toggle.contains(event.target)) return;
+      setOpen(false);
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") setOpen(false);
+    });
+
+    window.addEventListener("resize", function () {
+      if (window.matchMedia("(min-width: 768px)").matches) setOpen(false);
+    });
+  })();
+</script>
