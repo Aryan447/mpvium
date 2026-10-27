@@ -39,12 +39,13 @@ android {
       buildConfigField("boolean", "SCOPED_STORAGE_ONLY", "false")
     }
 
-    create("playstore") {
-      dimension = "distribution"
-      versionNameSuffix = "-playstore"
-      buildConfigField("boolean", "ENABLE_UPDATE_FEATURE", "false")
-      buildConfigField("boolean", "SCOPED_STORAGE_ONLY", "true")
-    }
+    // Play Store flavor disabled.
+    // create("playstore") {
+    //   dimension = "distribution"
+    //   versionNameSuffix = "-playstore"
+    //   buildConfigField("boolean", "ENABLE_UPDATE_FEATURE", "false")
+    //   buildConfigField("boolean", "SCOPED_STORAGE_ONLY", "true")
+    // }
   }
 
   dependenciesInfo {

@@ -27,7 +27,7 @@ If applicable, add screenshots, screen recording, or `adb logcat` excerpt to hel
  - Device: [e.g. Pixel 7]
  - Android version: [e.g. Android 15]
  - App version: [e.g. v1.1.6 / commit SHA]
- - APK flavor + ABI: [e.g. standard arm64-v8a / playstore universal]
+ - APK flavor + ABI: [e.g. standard arm64-v8a / standard universal]
  - Install source: [GitHub Releases / CI artifact / local build]
 
 **Additional context**

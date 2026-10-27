@@ -104,7 +104,6 @@ Useful build variants include:
 
 ```bash
 bash ./gradlew assembleStandardRelease
-bash ./gradlew assemblePlaystoreRelease
 bash ./gradlew assembleStandardPreview
 ```
 

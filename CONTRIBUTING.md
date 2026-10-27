@@ -23,7 +23,6 @@ Useful variants:
 
 ```bash
 bash ./gradlew assembleStandardRelease
-bash ./gradlew assemblePlaystoreRelease
 bash ./gradlew assembleStandardPreview
 ```
 
@@ -64,7 +63,7 @@ Before opening an issue:
 - Search existing issues (open + closed).
 - Use the Bug report or Feature request template.
 - Include: device model, Android version, app version (or commit SHA),
-  APK flavor (`standard` / `playstore`, `arm64-v8a` / `universal` etc.),
+  APK flavor (`standard`, `arm64-v8a` / `universal` etc.),
   steps to reproduce, expected vs actual, logs / screenshots.
 
 Do not include keystores, passwords, tokens, or private media links.
@@ -131,9 +130,6 @@ license (GPL-3.0-or-later) and that you have the right to contribute them
 ## Flavors
 
 - `standard` — full-featured build with update support
-- `playstore` — Google Play-compatible build with restricted storage behavior
-
-If a bug is flavor-specific, state which flavor you tested.
 
 ## Communication
 
