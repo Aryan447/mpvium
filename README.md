@@ -34,10 +34,14 @@ features or bugs.
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/mpvium-dark-default-home.png" width="220" alt="Home library" />
-  <img src="docs/screenshots/mpvium-dark-default-movies.png" width="220" alt="Movies grid" />
-  <img src="docs/screenshots/mpvium-player.jpg" width="220" alt="Player" />
-  <img src="docs/screenshots/mpvium-movie-showcase.png" width="220" alt="Movie details" />
+  <img src="docs/screenshots/mpvium-dark-default-home.jpg" width="220" alt="Home library" />
+  <img src="docs/screenshots/mpvium-dark-default-movies.jpg" width="220" alt="Movies grid" />
+  <img src="docs/screenshots/mpvium-movie-showcase.jpg" width="220" alt="Movie details" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/mpvium-player.jpg" width="380" alt="Player" />
+  <img src="docs/screenshots/mpvium-player-skip-intro.jpg" width="380" alt="Player with skip intro" />
 </p>
 
 <p align="center">
@@ -50,6 +54,7 @@ features or bugs.
 - Material 3 interface with light and dark themes
 - Picture-in-picture and background playback
 - Gesture controls, zoom, and screen orientation controls
+- One-tap intro and recap skipping with a countdown chip and offline cache
 - Chapters, playlists, playback history, and resume support
 - External subtitles and audio tracks
 - Local media browsing with folder and tree views
@@ -108,7 +113,6 @@ The generated APKs are written to `app/build/outputs/apk/`.
 ## Flavors
 
 - `standard` — full-featured build with update support
-- `playstore` — Google Play-compatible build with restricted storage behavior
 
 ## Contributing
 

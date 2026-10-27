@@ -21,6 +21,13 @@ export const shots: Shot[] = [
     wide: true,
   },
   {
+    src: "/screenshots/mpvium-player-skip-intro.jpg",
+    alt: "mpvium player with skip intro",
+    title: "Skip intro",
+    caption: "One tap past intros and recaps.",
+    wide: true,
+  },
+  {
     src: "/screenshots/mpvium-dark-default-home.png",
     alt: "mpvium home library",
     title: "Home",
