@@ -116,6 +116,7 @@ object AppearancePreferencesScreen : Screen {
                                     selected = darkMode,
                                     labelOf = { darkModeLabels.getValue(it) },
                                     onSelect = { preferences.darkMode.set(it) },
+                                    equalWidth = true,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(MaterialTheme.spacing.medium),
