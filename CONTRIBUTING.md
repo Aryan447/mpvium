@@ -97,6 +97,28 @@ the PR — maintainers can help.
 - Kotlin + Compose conventions already in the tree win over personal style.
 - Run `git diff --check` before committing.
 
+### Settings search
+
+Every searchable settings row is wired up in three places. Missing any of them
+means the search result still opens the page, but at the top with no highlight.
+
+1. **Registry key** — add the entry to `SearchablePreferences` in
+   `ui/preferences/SearchablePreference.kt` with a namespaced `key`
+   (`appearance.amoled`, `player.gestures.swipe_sensitivity`). Keys must be
+   unique and not blank; `SearchablePreferencesKeyTest` fails otherwise.
+2. **Row anchor** — pass the same key to the row
+   (`HapticSwitchPreference(highlightKey = "...")` or `modifier =
+   Modifier.settingsHighlight("...")` on the row). For a result that should
+   highlight a whole section card, use `PreferenceCard(highlightKey = "...")`
+   instead.
+3. **Item index** — add `key to itemIndex` to the screen's anchor map (for
+   example `appearanceAnchors`) so the screen can scroll to the LazyColumn item
+   that owns the row. Screens call `SettingsHighlightEffect(screen,
+   listState, anchors)` once and pass the same state to their `LazyColumn`.
+
+Both search surfaces call `openSettingsPreference(...)`; do not navigate to a
+settings screen directly from a search result.
+
 ### Native / JNI changes
 
 Be extra careful with C/C++ and JNI under `app/src/main/jni/` (if touched):

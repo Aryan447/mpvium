@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Forward10
@@ -45,6 +46,22 @@ import me.zhanghai.compose.preference.FooterPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
+/**
+ * Registry key -> LazyColumn item index for the items that hold searchable rows.
+ */
+private val gestureAnchors: Map<String, Int> = mapOf(
+  "gestures.page" to 0,
+  "gestures.double_tap_seek_duration" to 1,
+  "gestures.double_tap_seek_area" to 1,
+  "gestures.double_tap_left" to 1,
+  "gestures.double_tap_center" to 1,
+  "gestures.double_tap_right" to 1,
+  "gestures.single_tap_center" to 1,
+  "gestures.media_previous" to 3,
+  "gestures.media_play" to 3,
+  "gestures.media_next" to 3,
+)
+
 @Serializable
 object GesturePreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -53,6 +70,13 @@ object GesturePreferencesScreen : Screen {
     val preferences = koinInject<GesturePreferences>()
     val context = LocalContext.current
     val useSingleTapForCenter by preferences.useSingleTapForCenter.collectAsState()
+    val listState = rememberLazyListState()
+
+    SettingsHighlightEffect(
+      screen = GesturePreferencesScreen,
+      listState = listState,
+      anchors = gestureAnchors,
+    )
 
     var showCustomSeekDialog by remember { mutableStateOf(false) }
     var customSeekValue by remember { mutableStateOf("") }
@@ -64,6 +88,7 @@ object GesturePreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -90,6 +115,7 @@ object GesturePreferencesScreen : Screen {
               }
             },
             values = predefinedValues + listOf(-1),
+            modifier = Modifier.settingsHighlight("gestures.double_tap_seek_duration"),
             valueToText = { value ->
               if (value == -1) {
                 AnnotatedString("Custom")
@@ -162,6 +188,7 @@ object GesturePreferencesScreen : Screen {
             value = doubleTapSeekAreaWidth,
             onValueChange = { preferences.doubleTapSeekAreaWidth.set(it) },
             values = seekAreaValues,
+            modifier = Modifier.settingsHighlight("gestures.double_tap_seek_area"),
             valueToText = { AnnotatedString("${it}%") },
             title = { Text(text = "Double Tap Seek Area Width") },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Tune) },
@@ -180,6 +207,7 @@ object GesturePreferencesScreen : Screen {
             value = leftDoubleTap,
             onValueChange = { preferences.leftSingleActionGesture.set(it) },
             values = SingleActionGesture.entries,
+            modifier = Modifier.settingsHighlight("gestures.double_tap_left"),
             valueToText = { AnnotatedString(context.getString(it.titleRes)) },
             title = { Text(text = stringResource(R.string.pref_gesture_double_tap_left_title)) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.SwipeLeft) },
@@ -195,6 +223,7 @@ object GesturePreferencesScreen : Screen {
           ExpressiveListPreference(
             value = centerDoubleTap,
             onValueChange = { preferences.centerSingleActionGesture.set(it) },
+            modifier = Modifier.settingsHighlight("gestures.double_tap_center"),
             values =
               listOf(
                 SingleActionGesture.None,
@@ -223,6 +252,7 @@ object GesturePreferencesScreen : Screen {
           ExpressiveListPreference(
             value = rightDoubleTap,
             onValueChange = { preferences.rightSingleActionGesture.set(it) },
+            modifier = Modifier.settingsHighlight("gestures.double_tap_right"),
             values = SingleActionGesture.entries,
             valueToText = { AnnotatedString(context.getString(it.titleRes)) },
             title = { Text(text = stringResource(R.string.pref_gesture_double_tap_right_title)) },
@@ -238,6 +268,7 @@ object GesturePreferencesScreen : Screen {
           HapticSwitchPreference(
             value = useSingleTapForCenter,
             onValueChange = { preferences.useSingleTapForCenter.set(it) },
+            highlightKey = "gestures.single_tap_center",
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Gesture) },
             title = {
               Text(
@@ -273,6 +304,7 @@ object GesturePreferencesScreen : Screen {
           ExpressiveListPreference(
             value = mediaPreviousGesture,
             onValueChange = { preferences.mediaPreviousGesture.set(it) },
+            modifier = Modifier.settingsHighlight("gestures.media_previous"),
             values = SingleActionGesture.entries,
             valueToText = { AnnotatedString(context.getString(it.titleRes)) },
             title = { Text(text = stringResource(R.string.pref_gesture_media_previous)) },
@@ -288,6 +320,7 @@ object GesturePreferencesScreen : Screen {
           ExpressiveListPreference(
             value = mediaPlayGesture,
             onValueChange = { preferences.mediaPlayGesture.set(it) },
+            modifier = Modifier.settingsHighlight("gestures.media_play"),
             values =
               listOf(
                 SingleActionGesture.None,
@@ -308,6 +341,7 @@ object GesturePreferencesScreen : Screen {
           ExpressiveListPreference(
             value = mediaNextGesture,
             onValueChange = { preferences.mediaNextGesture.set(it) },
+            modifier = Modifier.settingsHighlight("gestures.media_next"),
             values = SingleActionGesture.entries,
             valueToText = { AnnotatedString(context.getString(it.titleRes)) },
             title = { Text(text = stringResource(R.string.pref_gesture_media_next)) },
