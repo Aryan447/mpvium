@@ -506,9 +506,7 @@ fun GestureHandler(
                     val actualSubPos = 100
                     MPVLib.setPropertyInt("sub-pos", actualSubPos)
                     MPVLib.setPropertyInt("secondary-sub-pos", (actualSubPos - 10).coerceIn(0, 110))
-                    if (subtitlesPreferences.persistSubPos.get()) {
-                      subtitlesPreferences.subPos.set(actualSubPos)
-                    }
+                    viewModel.saveSubtitleSettings(subPos = actualSubPos)
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.playerUpdate.update {
                       PlayerUpdates.SubtitlePosition(actualSubPos, isReset = true)
@@ -1048,8 +1046,8 @@ fun GestureHandler(
             } else if (pointerCount > 1) {
               // Multi-finger gesture detected
               longPressJob.cancel()
-              if (subtitleDragActive && subtitlesPreferences.persistSubPos.get()) {
-                subtitlesPreferences.subPos.set(lastSubtitlePos)
+              if (subtitleDragActive) {
+                viewModel.saveSubtitleSettings(subPos = lastSubtitlePos)
               }
               subtitleDragActive = false
               if (holdControlsActive) {
@@ -1084,8 +1082,8 @@ fun GestureHandler(
           longPressJob.cancel()
 
           // Subtitle drag ended: the new position sticks, the pill auto-clears
-          if (subtitleDragActive && subtitlesPreferences.persistSubPos.get()) {
-            subtitlesPreferences.subPos.set(lastSubtitlePos)
+          if (subtitleDragActive) {
+            viewModel.saveSubtitleSettings(subPos = lastSubtitlePos)
           }
           subtitleDragActive = false
 
@@ -1354,9 +1352,7 @@ fun GestureHandler(
             val tracker = subtitleTwoFingerTapTracker
             if (subtitleScaleStarted) {
               // Persist once when the pinch ends, not on every frame.
-              if (abs(subtitleScale - subtitlesPreferences.subScale.get()) > 0.001f) {
-                subtitlesPreferences.subScale.set(subtitleScale)
-              }
+              viewModel.saveSubtitleSettings(subScale = subtitleScale)
               tracker.clear()
             } else {
               val now = System.currentTimeMillis()
@@ -1386,7 +1382,7 @@ fun GestureHandler(
                 if (isDoubleTap) {
                   tracker.clear()
                   MPVLib.setPropertyFloat("sub-scale", 1f)
-                  subtitlesPreferences.subScale.set(1f)
+                  viewModel.saveSubtitleSettings(subScale = 1f)
                   haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                   viewModel.playerUpdate.update {
                     PlayerUpdates.SubtitleScale(100, isReset = true)

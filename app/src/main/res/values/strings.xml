@@ -367,6 +367,16 @@
   <string name="player_sheets_sub_position">Position</string>
   <string name="pref_subtitles_persist_pos_title">Persist subtitle position</string>
   <string name="pref_subtitles_persist_pos_summary">Save moved subtitle position across all videos</string>
+  <string name="pref_subtitles_scope_title">Subtitle position memory</string>
+  <string name="pref_subtitles_scope_global">All videos</string>
+  <string name="pref_subtitles_scope_global_summary">One subtitle position and scale for every video</string>
+  <string name="pref_subtitles_scope_per_title">Per show or movie</string>
+  <string name="pref_subtitles_scope_per_title_summary">Remember position and scale for each show or movie separately</string>
+  <string name="pref_subtitles_clear_profiles">Clear all subtitle profiles</string>
+  <string name="pref_subtitles_clear_profiles_summary">Remove the saved subtitle position and scale for every show and movie</string>
+  <string name="pref_subtitles_clear_profiles_confirmation">Delete all saved per-title subtitle settings? Each show and movie will go back to the global defaults.</string>
+  <string name="toast_subtitle_profiles_cleared">Subtitle profiles cleared</string>
+  <string name="player_sheets_sub_forget_title">Forget this title\'s subtitle settings</string>
   <string name="subtitle_double_tap_to_reset">Double-tap subtitle to reset position</string>
   <string name="subtitle_position_format">Subtitles: %d</string>
   <string name="subtitle_position_reset">Subtitles reset (%d)</string>

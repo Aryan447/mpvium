@@ -1,5 +1,10 @@
 ## Unreleased
 
+### Added
+
+- Subtitle position and scale can now be remembered per show or movie. Choose "Per show or movie" under Settings → Subtitles; episodes of one show share a setting, other shows and movies keep their own, and each profile is restored before the first subtitle appears.
+- "Forget this title's subtitle settings" in the player's subtitle sheet, and "Clear all subtitle profiles" in Settings → Subtitles.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
