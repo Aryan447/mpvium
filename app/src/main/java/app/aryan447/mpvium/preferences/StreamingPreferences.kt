@@ -15,6 +15,10 @@ class StreamingPreferences(
 
   // Sort orders for the Movies grid, all derived from local file data.
   val movieSort = preferenceStore.getEnum("streaming_movie_sort", MovieSort.NAME)
+
+  // Layout mode preferences (Grid or List)
+  val layoutShows = preferenceStore.getEnum("layout_shows", MediaLayoutMode.GRID)
+  val layoutMovies = preferenceStore.getEnum("layout_movies", MediaLayoutMode.GRID)
 }
 
 /**

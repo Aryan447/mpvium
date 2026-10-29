@@ -193,6 +193,19 @@ object FolderListScreen : Screen {
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
 
+    // Sync scroll positions when toggling between list and grid
+    LaunchedEffect(mediaLayoutMode) {
+      if (mediaLayoutMode == MediaLayoutMode.GRID) {
+        if (listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0) {
+          gridState.scrollToItem(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
+        }
+      } else {
+        if (gridState.firstVisibleItemIndex != 0 || gridState.firstVisibleItemScrollOffset != 0) {
+          listState.scrollToItem(gridState.firstVisibleItemIndex, gridState.firstVisibleItemScrollOffset)
+        }
+      }
+    }
+
     // Top bar turns glassy (like the bottom pill bar) once content scrolls
     val topBarScrolled by remember(mediaLayoutMode, listState, gridState) {
       derivedStateOf {
@@ -375,6 +388,12 @@ object FolderListScreen : Screen {
             scrolled = topBarScrolled,
             onBackClick = null,
             onCancelSelection = { selectionManager.clear() },
+            onLayoutToggleClick = {
+              browserPreferences.layoutFolders.set(
+                if (mediaLayoutMode == MediaLayoutMode.GRID) MediaLayoutMode.LIST else MediaLayoutMode.GRID
+              )
+            },
+            layoutMode = mediaLayoutMode,
             onSortClick = { sortDialogOpen.value = true },
             onSearchClick = { isSearching = !isSearching },
             onSettingsClick = {
