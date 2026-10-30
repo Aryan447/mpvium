@@ -20,8 +20,10 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.RippleConfiguration
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -208,6 +210,90 @@ private fun ThemeTransitionContent(content: @Composable () -> Unit) {
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.Default }
 val LocalThemeSource = staticCompositionLocalOf { ThemeSource.APP_THEME }
 
+/**
+ * Clean neutral cinema base color schemes for the content-reactive Aura theme.
+ * Completely free of the purple/pink tints from [AppTheme.Default].
+ */
+fun getAuraDarkColorScheme(isAmoled: Boolean = false): androidx.compose.material3.ColorScheme {
+    return darkColorScheme(
+        primary = Color(0xFFE5A93C),
+        onPrimary = Color(0xFF3F2E00),
+        primaryContainer = Color(0xFF5A4300),
+        onPrimaryContainer = Color(0xFFFFDF9E),
+        secondary = Color(0xFFD4C4A8),
+        onSecondary = Color(0xFF38301B),
+        secondaryContainer = Color(0xFF50462F),
+        onSecondaryContainer = Color(0xFFF1E0C3),
+        tertiary = Color(0xFFE5BEA2),
+        onTertiary = Color(0xFF432A15),
+        tertiaryContainer = Color(0xFF5C3F28),
+        onTertiaryContainer = Color(0xFFFFDCBE),
+        error = Color(0xFFFFB4AB),
+        onError = Color(0xFF690005),
+        errorContainer = Color(0xFF93000A),
+        onErrorContainer = Color(0xFFFFDAD6),
+        background = if (isAmoled) backgroundPureBlack else Color(0xFF111113),
+        onBackground = Color(0xFFE4E4E8),
+        surface = if (isAmoled) surfacePureBlack else Color(0xFF111113),
+        onSurface = Color(0xFFE4E4E8),
+        surfaceVariant = if (isAmoled) Color(0xFF242426) else Color(0xFF2A2A2F),
+        onSurfaceVariant = Color(0xFFC6C6CD),
+        outline = Color(0xFF8E8E95),
+        outlineVariant = Color(0xFF45454B),
+        scrim = Color(0xFF000000),
+        inverseSurface = Color(0xFFE4E4E8),
+        inverseOnSurface = Color(0xFF1B1B1E),
+        inversePrimary = Color(0xFF7A5800),
+        surfaceDim = if (isAmoled) surfaceDimPureBlack else Color(0xFF0E0E10),
+        surfaceBright = if (isAmoled) surfaceBrightPureBlack else Color(0xFF323236),
+        surfaceContainerLowest = if (isAmoled) surfaceContainerLowestPureBlack else Color(0xFF09090B),
+        surfaceContainerLow = if (isAmoled) surfaceContainerLowPureBlack else Color(0xFF161618),
+        surfaceContainer = if (isAmoled) surfaceContainerPureBlack else Color(0xFF1C1C1F),
+        surfaceContainerHigh = if (isAmoled) surfaceContainerHighPureBlack else Color(0xFF242428),
+        surfaceContainerHighest = if (isAmoled) surfaceContainerHighestPureBlack else Color(0xFF2C2C31),
+    )
+}
+
+fun getAuraLightColorScheme(): androidx.compose.material3.ColorScheme {
+    return lightColorScheme(
+        primary = Color(0xFF7A5800),
+        onPrimary = Color.White,
+        primaryContainer = Color(0xFFFFDF9E),
+        onPrimaryContainer = Color(0xFF261900),
+        secondary = Color(0xFF685E48),
+        onSecondary = Color.White,
+        secondaryContainer = Color(0xFFF1E0C3),
+        onSecondaryContainer = Color(0xFF221A08),
+        tertiary = Color(0xFF775940),
+        onTertiary = Color.White,
+        tertiaryContainer = Color(0xFFFFDCBE),
+        onTertiaryContainer = Color(0xFF2B1705),
+        error = Color(0xFFBA1A1A),
+        onError = Color.White,
+        errorContainer = Color(0xFFFFDAD6),
+        onErrorContainer = Color(0xFF93000A),
+        background = Color(0xFFF9F9FB),
+        onBackground = Color(0xFF1A1A1E),
+        surface = Color(0xFFF9F9FB),
+        onSurface = Color(0xFF1A1A1E),
+        surfaceVariant = Color(0xFFE1E1E7),
+        onSurfaceVariant = Color(0xFF45454B),
+        outline = Color(0xFF75757C),
+        outlineVariant = Color(0xFFC5C5CC),
+        scrim = Color(0xFF000000),
+        inverseSurface = Color(0xFF2E2E33),
+        inverseOnSurface = Color(0xFFF2F2F7),
+        inversePrimary = Color(0xFFE5A93C),
+        surfaceDim = Color(0xFFDADAE0),
+        surfaceBright = Color(0xFFF9F9FB),
+        surfaceContainerLowest = Color(0xFFFFFFFF),
+        surfaceContainerLow = Color(0xFFF3F3F7),
+        surfaceContainer = Color(0xFFEDEDF2),
+        surfaceContainerHigh = Color(0xFFE7E7EC),
+        surfaceContainerHighest = Color(0xFFE1E1E7),
+    )
+}
+
 // ============================================================================
 // Main Theme
 // ============================================================================
@@ -231,6 +317,9 @@ fun MpviumTheme(content: @Composable () -> Unit) {
     }
 
     val baseColorScheme = when {
+        themeSource == ThemeSource.CONTENT -> {
+            if (useDarkTheme) getAuraDarkColorScheme(amoledMode) else getAuraLightColorScheme()
+        }
         appTheme.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             when {
                 useDarkTheme && amoledMode -> {

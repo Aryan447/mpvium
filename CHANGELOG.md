@@ -6,6 +6,7 @@
 
 ### Fixed
 
+- Appearance: neutralized Aura theme base surfaces and containers to eliminate Default theme purple/pink tints, and matched the Aura preview card to standard theme cards without red glow.
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
 

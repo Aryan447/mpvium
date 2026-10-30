@@ -33,6 +33,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.getAuraDarkColorScheme
+import app.aryan447.mpvium.ui.theme.getAuraLightColorScheme
 
 /**
  * A theme preview card that displays a mini preview of the app UI with the theme's colors.
@@ -196,7 +198,9 @@ fun ThemePreviewCard(
 }
 
 /**
- * Preview card for the dynamic "Match content" theme option.
+ * Preview card for the dynamic "Match content" (Aura) theme option.
+ * Uses the same preview card structure as standard themes with neutral cinema surfaces
+ * and warm fallback accents, with no glow overlay.
  */
 @Composable
 fun ContentThemePreviewCard(
@@ -205,16 +209,11 @@ fun ContentThemePreviewCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colorScheme = if (isDarkMode) getAuraDarkColorScheme(isAmoled = false) else getAuraLightColorScheme()
     val selectionColor = MaterialTheme.colorScheme.primary
     val borderWidth = if (isSelected) 3.dp else 1.dp
     val borderColor = if (isSelected) selectionColor else Color.Transparent
     val elevation = if (isSelected) 8.dp else 2.dp
-
-    val bgColor = if (isDarkMode) Color(0xFF141218) else Color(0xFFFBF8FD)
-    val cardSurface = if (isDarkMode) Color(0xFF2B2930) else Color(0xFFE6E0E9)
-    val accentColor = if (isDarkMode) Color(0xFFFFB4AB) else Color(0xFF904A43)
-    val secondaryColor = if (isDarkMode) Color(0xFFE7BDB6) else Color(0xFF775651)
-    val glowColor = if (isDarkMode) Color(0xFFFF5449) else Color(0xFFB3261E)
 
     Column(
         modifier = modifier
@@ -226,6 +225,7 @@ fun ContentThemePreviewCard(
             },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // Theme preview card
         Box(
             modifier = Modifier
                 .size(width = 90.dp, height = 140.dp)
@@ -236,35 +236,24 @@ fun ContentThemePreviewCard(
                     spotColor = if (isSelected) selectionColor.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.2f),
                 )
                 .clip(RoundedCornerShape(12.dp))
-                .background(bgColor)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(colorScheme.surface, colorScheme.surface)
+                    )
+                )
                 .border(
                     width = borderWidth,
                     color = borderColor,
                     shape = RoundedCornerShape(12.dp)
                 ),
         ) {
-            // Ambient spotlight bloom simulation
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                glowColor.copy(alpha = if (isDarkMode) 0.55f else 0.35f),
-                                Color.Transparent,
-                            ),
-                            radius = 90f,
-                        )
-                    )
-            )
-
             // Inner content
             Column(
                 modifier = Modifier
                     .matchParentSize()
                     .padding(if (isSelected) 3.dp else 1.dp)
                     .clip(RoundedCornerShape(if (isSelected) 9.dp else 11.dp))
+                    .background(colorScheme.background)
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -274,15 +263,15 @@ fun ContentThemePreviewCard(
                         .fillMaxWidth()
                         .height(16.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(cardSurface)
+                        .background(colorScheme.surfaceVariant)
                 )
 
-                // Middle section - card with poster accent
+                // Middle section - card with toggle
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(32.dp),
-                    color = cardSurface,
+                    color = colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(6.dp),
                 ) {
                     Row(
@@ -292,17 +281,19 @@ fun ContentThemePreviewCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
+                        // Toggle representation
                         Box(
                             modifier = Modifier
                                 .size(width = 24.dp, height = 12.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(accentColor)
+                                .background(colorScheme.primary)
                         )
+                        // Accent indicator
                         Box(
                             modifier = Modifier
                                 .size(10.dp)
                                 .clip(CircleShape)
-                                .background(glowColor)
+                                .background(colorScheme.tertiary)
                         )
                     }
                 }
@@ -313,7 +304,7 @@ fun ContentThemePreviewCard(
                         .fillMaxWidth()
                         .height(14.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(cardSurface)
+                        .background(colorScheme.surfaceVariant)
                 )
 
                 // Bottom accent dot
@@ -325,7 +316,7 @@ fun ContentThemePreviewCard(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(secondaryColor)
+                            .background(colorScheme.secondary)
                     )
                 }
             }
