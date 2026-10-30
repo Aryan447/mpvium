@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -78,6 +79,13 @@ import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
+/**
+ * Registry key -> LazyColumn item index for the items that hold searchable rows.
+ */
+private val foldersAnchors: Map<String, Int> = mapOf(
+  "folders.page" to 0,
+)
+
 @Serializable
 object FoldersPreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -101,6 +109,13 @@ object FoldersPreferencesScreen : Screen {
     var whitelistSelectionState by remember { mutableStateOf(SelectionState<String>()) }
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showClearWhitelistDialog by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+
+    SettingsHighlightEffect(
+      screen = FoldersPreferencesScreen,
+      listState = listState,
+      anchors = foldersAnchors,
+    )
 
     val blacklistedFoldersList = remember(blacklistedFolders) { blacklistedFolders.toList() }
     val whitelistedFoldersList = remember(whitelistedFolders) { whitelistedFolders.toList() }
@@ -209,6 +224,7 @@ object FoldersPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier = Modifier
             .fillMaxSize()
             .padding(padding),

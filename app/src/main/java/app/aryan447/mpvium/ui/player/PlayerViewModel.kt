@@ -595,6 +595,11 @@ class PlayerViewModel(
       val uriString = uri.toString()
       if (_externalSubtitles.contains(uriString)) {
         android.util.Log.d("PlayerViewModel", "Subtitle already tracked, skipping: $uriString")
+        if (!silent) {
+          withContext(Dispatchers.Main) {
+            showToast(host.context.getString(R.string.player_sheets_subtitle_already_added))
+          }
+        }
         return@launch
       }
 

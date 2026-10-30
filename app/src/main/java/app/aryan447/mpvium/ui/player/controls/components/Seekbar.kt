@@ -76,7 +76,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.SeekbarStyle
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList
@@ -84,6 +86,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -204,6 +207,11 @@ fun SeekbarWithTimers(
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  // Chapter markers are purely decorative: the preference only gates the gaps
+  // drawn in the track, never the chapter data itself (sheet, chapter list,
+  // Current Chapter button and skip gestures stay untouched).
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val showChapterMarkers by appearancePreferences.chaptersInSeekbar.collectAsState()
   var isUserInteracting by remember { mutableStateOf(false) }
   var userPosition by remember { mutableFloatStateOf(position) }
 
@@ -374,6 +382,7 @@ fun SeekbarWithTimers(
             isPaused = paused,
             isScrubbing = isUserInteracting,
             seekbarStyle = SeekbarStyle.Standard,
+            showChapterMarkers = showChapterMarkers,
             // Touch handled by parent overlay (single gesture handler).
             onSeek = { },
             onSeekFinished = { },
@@ -390,6 +399,7 @@ fun SeekbarWithTimers(
             isScrubbing = isUserInteracting,
             useWavySeekbar = true,
             seekbarStyle = SeekbarStyle.Wavy,
+            showChapterMarkers = showChapterMarkers,
             onSeek = { }, // Touch handled by parent
             onSeekFinished = { }, // Touch handled by parent
             loopStart = loopStart,
@@ -404,6 +414,7 @@ fun SeekbarWithTimers(
             isPaused = paused,
             isScrubbing = isUserInteracting,
             seekbarStyle = SeekbarStyle.Thick,
+            showChapterMarkers = showChapterMarkers,
             // Touch handled by parent overlay (single gesture handler).
             onSeek = { },
             onSeekFinished = { },
@@ -525,6 +536,7 @@ private fun SquigglySeekbar(
   isScrubbing: Boolean,
   useWavySeekbar: Boolean,
   seekbarStyle: SeekbarStyle,
+  showChapterMarkers: Boolean = true,
   onSeek: (Float) -> Unit,
   onSeekFinished: () -> Unit,
   loopStart: Float? = null,
@@ -673,15 +685,20 @@ private fun SquigglySeekbar(
     val clipTop = lineAmplitude + strokeWidth
 
     val chapterGapHalf = 1.dp.toPx()
-    val chapterGaps = if (totalWidth > 0f && duration > 0f && chapters.isNotEmpty()) {
-      chapters.mapNotNull { chapter ->
-        val chapterStart = chapter.start
-        if (chapterStart > 0f && chapterStart < duration) {
-          val chapterPx = (chapterStart / duration) * totalWidth
-          (chapterPx - chapterGapHalf) to (chapterPx + chapterGapHalf)
-        } else null
+    // Markers off => no gaps at all, so the track draws as one continuous
+    // path. Only the gap list changes; the rail height is untouched.
+    val chapterGaps =
+      if (showChapterMarkers && totalWidth > 0f && duration > 0f && chapters.isNotEmpty()) {
+        chapters.mapNotNull { chapter ->
+          val chapterStart = chapter.start
+          if (chapterStart > 0f && chapterStart < duration) {
+            val chapterPx = (chapterStart / duration) * totalWidth
+            (chapterPx - chapterGapHalf) to (chapterPx + chapterGapHalf)
+          } else null
+        }
+      } else {
+        emptyList()
       }
-    } else emptyList()
 
     fun drawPathWithGaps(
       startX: Float,
@@ -837,6 +854,7 @@ fun StandardSeekbar(
     isScrubbing: Boolean = false,
     useWavySeekbar: Boolean = false,
     seekbarStyle: SeekbarStyle = SeekbarStyle.Standard,
+    showChapterMarkers: Boolean = true,
     onSeek: (Float) -> Unit,
     onSeekFinished: () -> Unit,
     loopStart: Float? = null,
@@ -933,7 +951,9 @@ fun StandardSeekbar(
                 val thumbGapStart = (playedPx - gapHalf).coerceIn(0f, size.width)
                 val thumbGapEnd = (playedPx + gapHalf).coerceIn(0f, size.width)
 
-                val chapterGaps = if (chapters.isNotEmpty()) {
+                // Markers off => no gaps, the range draws as one segment.
+                // Track height is unaffected, so the bar never shifts.
+                val chapterGaps = if (showChapterMarkers && chapters.isNotEmpty()) {
                     chapters.mapNotNull { chapter ->
                         val chapterStart = chapter.start
                         if (chapterStart > min && chapterStart < max) {
