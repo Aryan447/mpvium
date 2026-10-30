@@ -6,6 +6,9 @@ permissions:
 on:
   push:
     tags:
+      # Release candidates: v1.4.0-rc1, v1.4.0-rc2, ...
+      - 'v*-rc*'
+      # Legacy preview tags, kept so re-pushing an old tag still builds.
       - 'v*-preview*'
       - 'v*.preview*'
 
