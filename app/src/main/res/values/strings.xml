@@ -341,6 +341,10 @@
   <string name="pref_about_oss_libraries">Libraries</string>
   <string name="player_sheets_add_ext_sub">Add external subtitles</string>
   <string name="player_sheets_add_ext_audio">Add external audio tracks</string>
+  <string name="player_sheets_online_results">Online Results (%1$d)</string>
+  <string name="player_sheets_pick_title_for_subtitles">Pick a title on the left to load subtitles</string>
+  <string name="player_sheets_subtitle_download">Download subtitle</string>
+  <string name="player_sheets_subtitle_already_added">Subtitle already added</string>
   <string name="player_sheets_tracks_off">Off</string>
   <string name="player_sheets_track_title_w_lang" translatable="false">#%d: %s (%s)</string>
   <string name="player_sheets_track_title_wo_lang" translatable="false">#%d: %s</string>
