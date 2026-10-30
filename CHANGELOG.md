@@ -2,6 +2,8 @@
 
 ### Added
 
+- Subtitle position and scale can now be remembered per show or movie. Choose "Per show or movie" under Settings → Subtitles; episodes of one show share a setting, other shows and movies keep their own, and each profile is restored before the first subtitle appears.
+- "Forget this title's subtitle settings" in the player's subtitle sheet, and "Clear all subtitle profiles" in Settings → Subtitles.
 - Settings search now lands on the exact option: the page scrolls to the matching row, brings it fully into view, and tints it for about 1.6 seconds while screen readers announce it. Results that point at a whole section highlight that card instead of an inner row.
 - Toggle to hide chapter markers in the seekbar (Settings → Appearance → Seekbar). Chapters, the chapters sheet and skip-chapter gestures are unaffected.
 - Grid and list layout toggle per tab across Shows, Movies, and Folders tabs, persisting choices across app restarts.

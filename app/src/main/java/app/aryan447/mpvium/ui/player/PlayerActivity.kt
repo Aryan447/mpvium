@@ -37,10 +37,12 @@ import androidx.lifecycle.lifecycleScope
 import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.databinding.PlayerLayoutBinding
 import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.domain.subtitles.SubtitleProfileKeyResolver
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.PlayerPreferences
+import app.aryan447.mpvium.preferences.SubtitleScope
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.ui.player.controls.PlayerControls
 import app.aryan447.mpvium.ui.theme.MpviumTheme
@@ -164,6 +166,12 @@ class PlayerActivity :
    * Current video file name being played.
    */
   private var fileName = ""
+
+  /**
+   * Increments for every subtitle-profile playback request so a stale load
+   * cannot start playback after a newer file was requested.
+   */
+  private var subtitleProfileRequestId = 0
 
   /**
    * Unique identifier for the current media, used for saving/loading playback state.
@@ -401,7 +409,11 @@ class PlayerActivity :
     // Set HTTP headers (including referer) BEFORE playing the file
     setHttpHeadersFromExtras(intent.extras)
 
-    getPlayableUri(intent)?.let(player::playFile)
+    getPlayableUri(intent)?.let { playableUri ->
+      prepareSubtitleProfileForPlayback(playableUri) {
+        player.playFile(playableUri)
+      }
+    }
 
     // Only set orientation immediately if NOT in Video mode
     // For Video mode, wait for video-params/aspect to become available
@@ -1991,6 +2003,44 @@ class PlayerActivity :
   }
 
   /**
+   * Resolves and loads the per-title subtitle profile before the file starts.
+   *
+   * The MPV subtitle properties are set before playFile/loadfile so the first
+   * subtitle frame already uses the saved position and scale. When the scope is
+   * GLOBAL (or no title key can be resolved) the global defaults are applied.
+   */
+  private fun prepareSubtitleProfileForPlayback(
+    mediaPath: String?,
+    onReady: () -> Unit,
+  ) {
+    val requestId = ++subtitleProfileRequestId
+    val key = if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+      SubtitleProfileKeyResolver.resolve(fileName, mediaPath)
+    } else {
+      null
+    }
+    lifecycleScope.launch {
+      viewModel.loadSubtitleProfile(key)
+      // A newer request (playlist skip / new intent) superseded this one.
+      if (requestId != subtitleProfileRequestId) return@launch
+      withContext(Dispatchers.Main) {
+        if (requestId != subtitleProfileRequestId) return@withContext
+        viewModel.applySubtitleProfile(viewModel.currentSubtitleProfile.value)
+        onReady()
+      }
+    }
+  }
+
+  fun saveCurrentSubtitleSettings(
+    subPos: Int? = null,
+    subScale: Float? = null,
+  ) = viewModel.saveSubtitleSettings(subPos, subScale)
+
+  fun forgetCurrentSubtitleProfile() = viewModel.forgetCurrentSubtitleProfile()
+
+  val currentSubtitleProfile get() = viewModel.currentSubtitleProfile
+
+  /**
    * Applies all saved subtitle preferences when a file is loaded.
    * This ensures subtitle customizations (font, colors, position, etc.) persist across videos.
    */
@@ -2021,10 +2071,7 @@ class PlayerActivity :
     MPVLib.setPropertyString("sub-scale-by-window", scaleValue)
     MPVLib.setPropertyString("sub-use-margins", scaleValue)
 
-    MPVLib.setPropertyFloat("sub-scale", subtitlesPreferences.subScale.get())
-    val subPos = subtitlesPreferences.subPos.get()
-    MPVLib.setPropertyInt("sub-pos", subPos)
-    MPVLib.setPropertyInt("secondary-sub-pos", (subPos - 10).coerceIn(0, 110))
+    viewModel.applySubtitleProfile(viewModel.currentSubtitleProfile.value)
 
     Log.d(TAG, "Applied subtitle preferences")
   }
@@ -2430,9 +2477,11 @@ class PlayerActivity :
 
     // Load the new file
     getPlayableUri(intent)?.let { uri ->
-      // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
-      lifecycleScope.launch(Dispatchers.Default) {
-        MPVLib.command("loadfile", uri)
+      prepareSubtitleProfileForPlayback(uri) {
+        // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
+        lifecycleScope.launch(Dispatchers.Default) {
+          MPVLib.command("loadfile", uri)
+        }
       }
     }
   }
@@ -3138,9 +3187,11 @@ class PlayerActivity :
     }
 
     // Load the new video
-    // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
-    lifecycleScope.launch(Dispatchers.Default) {
-      MPVLib.command("loadfile", playableUri)
+    prepareSubtitleProfileForPlayback(playableUri) {
+      // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
+      lifecycleScope.launch(Dispatchers.Default) {
+        MPVLib.command("loadfile", playableUri)
+      }
     }
 
     // Update media title (this will trigger UI update)
