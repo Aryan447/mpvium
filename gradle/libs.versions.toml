@@ -20,6 +20,7 @@ material = "1.14.0"
 preferenceKtx = "1.2.1"
 constraintlayout = "2.2.2"
 junit = "4.13.2"
+palette = "1.0.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -49,6 +50,7 @@ androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runt
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version = "1.1.0" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version = "1.2.0" }
+androidx-palette = { module = "androidx.palette:palette-ktx", version.ref = "palette" }
 seeker = "com.github.abdallahmehiz:seeker:2.0.1"
 mediainfo-lib = "com.github.aryan447:mediainfoAndroid:v1.0.0-fix"
 

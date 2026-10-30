@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Added
+
+- Optional "Aura" content-reactive theme (Settings → Appearance → Theme, off by default): accent and ambient glow colors dynamically follow the poster of the most recently played in-progress video or detail screen, with contrast enforcement, muddy color rejection, and smooth cross-fading.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.

@@ -194,3 +194,160 @@ fun ThemePreviewCard(
         )
     }
 }
+
+/**
+ * Preview card for the dynamic "Match content" theme option.
+ */
+@Composable
+fun ContentThemePreviewCard(
+    isSelected: Boolean,
+    isDarkMode: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val selectionColor = MaterialTheme.colorScheme.primary
+    val borderWidth = if (isSelected) 3.dp else 1.dp
+    val borderColor = if (isSelected) selectionColor else Color.Transparent
+    val elevation = if (isSelected) 8.dp else 2.dp
+
+    val bgColor = if (isDarkMode) Color(0xFF141218) else Color(0xFFFBF8FD)
+    val cardSurface = if (isDarkMode) Color(0xFF2B2930) else Color(0xFFE6E0E9)
+    val accentColor = if (isDarkMode) Color(0xFFFFB4AB) else Color(0xFF904A43)
+    val secondaryColor = if (isDarkMode) Color(0xFFE7BDB6) else Color(0xFF775651)
+    val glowColor = if (isDarkMode) Color(0xFFFF5449) else Color(0xFFB3261E)
+
+    Column(
+        modifier = modifier
+            .width(100.dp)
+            .pointerInput(Unit) {
+                detectTapGestures {
+                    onClick()
+                }
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 90.dp, height = 140.dp)
+                .shadow(
+                    elevation = elevation,
+                    shape = RoundedCornerShape(12.dp),
+                    ambientColor = if (isSelected) selectionColor.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.2f),
+                    spotColor = if (isSelected) selectionColor.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.2f),
+                )
+                .clip(RoundedCornerShape(12.dp))
+                .background(bgColor)
+                .border(
+                    width = borderWidth,
+                    color = borderColor,
+                    shape = RoundedCornerShape(12.dp)
+                ),
+        ) {
+            // Ambient spotlight bloom simulation
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                glowColor.copy(alpha = if (isDarkMode) 0.55f else 0.35f),
+                                Color.Transparent,
+                            ),
+                            radius = 90f,
+                        )
+                    )
+            )
+
+            // Inner content
+            Column(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(if (isSelected) 3.dp else 1.dp)
+                    .clip(RoundedCornerShape(if (isSelected) 9.dp else 11.dp))
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // Top bar simulation
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(cardSurface)
+                )
+
+                // Middle section - card with poster accent
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(32.dp),
+                    color = cardSurface,
+                    shape = RoundedCornerShape(6.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(width = 24.dp, height = 12.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(accentColor)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(glowColor)
+                        )
+                    }
+                }
+
+                // Bottom section - button simulation
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(cardSurface)
+                )
+
+                // Bottom accent dot
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(secondaryColor)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Theme name
+        Text(
+            text = stringResource(app.aryan447.mpvium.R.string.pref_appearance_theme_source_content),
+            style = MaterialTheme.typography.bodySmall,
+            fontSize = 11.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}

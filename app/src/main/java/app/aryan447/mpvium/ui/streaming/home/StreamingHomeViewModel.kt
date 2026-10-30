@@ -15,6 +15,7 @@ import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.domain.streaming.model.StreamingCategory
+import app.aryan447.mpvium.ui.theme.ContentThemeManager
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,7 @@ class StreamingHomeViewModel(
   private val seriesDetector: SeriesDetector by inject(SeriesDetector::class.java)
   private val metadataRepository: StreamingMetadataRepository by inject(StreamingMetadataRepository::class.java)
   private val introSkipRepository: IntroSkipRepository by inject(IntroSkipRepository::class.java)
+  private val contentThemeManager: ContentThemeManager by inject(ContentThemeManager::class.java)
 
   private val _uiState = MutableStateFlow(StreamingHomeUiState())
   val uiState: StateFlow<StreamingHomeUiState> = _uiState.asStateFlow()
@@ -66,6 +68,7 @@ class StreamingHomeViewModel(
           } else {
             val reordered = state.continueWatching.toMutableList()
             reordered.add(0, reordered.removeAt(index))
+            updateContentThemePoster(reordered)
             state.copy(continueWatching = reordered)
           }
         }
@@ -94,11 +97,11 @@ class StreamingHomeViewModel(
     viewModelScope.launch(Dispatchers.IO) {
       runCatching { ContinueWatchingDismissals.dismiss(item) }
       _uiState.update { state ->
-        state.copy(
-          continueWatching = state.continueWatching.filterNot {
-            ContinueWatchingDismissals.keyFor(it) == key
-          },
-        )
+        val remaining = state.continueWatching.filterNot {
+          ContinueWatchingDismissals.keyFor(it) == key
+        }
+        updateContentThemePoster(remaining)
+        state.copy(continueWatching = remaining)
       }
     }
   }
@@ -160,11 +163,18 @@ class StreamingHomeViewModel(
         val hero = cachedSeries.firstOrNull { it.lastWatchedEpisode != null && !it.lastWatchedEpisode.isWatched }
           ?: cachedSeries.firstOrNull()
 
+        val enrichedContinueWatching = enrichContinueWatchingPosters(
+          detected.continueWatching,
+          cachedSeries,
+          cachedMovies,
+        )
+        updateContentThemePoster(enrichedContinueWatching)
+
         _uiState.update {
           it.copy(
             isLoading = false,
             heroSeries = hero,
-            continueWatching = detected.continueWatching,
+            continueWatching = enrichedContinueWatching,
             series = cachedSeries,
             movies = cachedMovies,
             folders = detected.folders,
@@ -209,7 +219,42 @@ class StreamingHomeViewModel(
         }
         enriched
       }
+
+      // Re-enrich continue watching items with newly fetched posters
+      _uiState.update { state ->
+        val updatedCw = enrichContinueWatchingPosters(state.continueWatching, state.series, state.movies)
+        updateContentThemePoster(updatedCw)
+        state.copy(continueWatching = updatedCw)
+      }
     }
+  }
+
+  private fun enrichContinueWatchingPosters(
+    items: List<ContinueWatchingItem>,
+    series: List<LocalSeries>,
+    movies: List<LocalMovie>,
+  ): List<ContinueWatchingItem> =
+    items.map { item ->
+      if (item.posterUrl != null && item.backdropUrl != null) return@map item
+      if (item.isSeries) {
+        val s = series.find { it.id == item.seriesId }
+        item.copy(
+          posterUrl = item.posterUrl ?: s?.posterUrl,
+          backdropUrl = item.backdropUrl ?: s?.backdropUrl ?: s?.posterUrl,
+        )
+      } else {
+        val m = movies.find { it.video.id == item.video.id || it.title.equals(item.title, ignoreCase = true) }
+        item.copy(
+          posterUrl = item.posterUrl ?: m?.posterUrl,
+          backdropUrl = item.backdropUrl ?: m?.backdropUrl ?: m?.posterUrl,
+        )
+      }
+    }
+
+  private fun updateContentThemePoster(continueWatching: List<ContinueWatchingItem>) {
+    val mostRecent = continueWatching.firstOrNull { it.playbackPositionMs > 0 } ?: continueWatching.firstOrNull()
+    val poster = mostRecent?.posterUrl ?: mostRecent?.backdropUrl
+    contentThemeManager.setContinueWatchingItem(poster)
   }
 
   private fun prefetchIntroWindows(titles: Set<String>) {
@@ -230,11 +275,17 @@ class StreamingHomeViewModel(
         val detected = seriesDetector.detectLibrary()
         val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
         val cachedMovies = detected.movies.map { metadataRepository.applyCachedMovie(it) }
+        val enrichedContinueWatching = enrichContinueWatchingPosters(
+          detected.continueWatching,
+          cachedSeries,
+          cachedMovies,
+        )
+        updateContentThemePoster(enrichedContinueWatching)
         _uiState.update {
           it.copy(
             heroSeries = cachedSeries.firstOrNull { s -> s.lastWatchedEpisode != null && !s.lastWatchedEpisode.isWatched }
               ?: cachedSeries.firstOrNull(),
-            continueWatching = detected.continueWatching,
+            continueWatching = enrichedContinueWatching,
             series = cachedSeries,
             movies = cachedMovies,
             folders = detected.folders,

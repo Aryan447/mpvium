@@ -8,6 +8,7 @@ import app.aryan447.mpvium.repository.explain.ExplainRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.repository.wyzie.SubsourceProvider
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
+import app.aryan447.mpvium.ui.theme.ContentThemeManager
 import okhttp3.OkHttpClient
 import org.koin.dsl.module
 import org.koin.android.ext.koin.androidContext
@@ -29,4 +30,5 @@ val domainModule = module {
     single { SeriesDetector(androidContext(), get()) }
     single { StreamingArtworkStore(androidContext(), get()) }
     single { StreamingMetadataRepository(androidContext(), get(), get(), get(), get()) }
+    single { ContentThemeManager(androidContext(), get(), get()) }
 }

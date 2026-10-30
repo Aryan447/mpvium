@@ -87,6 +87,11 @@ import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.theme.ContentThemed
+import app.aryan447.mpvium.ui.theme.ContentThemeManager
+import app.aryan447.mpvium.ui.theme.ThemeSource
 import app.aryan447.mpvium.utils.media.MediaUtils
 import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
 import app.aryan447.mpvium.utils.permission.PermissionUtils
@@ -110,6 +115,9 @@ data class MovieDetailScreen(
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
+    val appearancePreferences = koinInject<AppearancePreferences>()
+    val contentThemeManager = koinInject<ContentThemeManager>()
+    val themeSource by appearancePreferences.themeSource.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     var movie by remember { mutableStateOf<LocalMovie?>(null) }
@@ -201,7 +209,18 @@ data class MovieDetailScreen(
       }
     }
 
-    Scaffold { innerPadding ->
+    val currentPoster = movie?.posterUrl ?: movie?.backdropUrl
+    LaunchedEffect(currentPoster) {
+      if (!currentPoster.isNullOrBlank()) {
+        contentThemeManager.onDetailScreenOpened(currentPoster)
+      }
+    }
+
+    ContentThemed(
+      artworkUrl = currentPoster,
+      enabled = themeSource == ThemeSource.CONTENT,
+    ) {
+      Scaffold { innerPadding ->
       if (isLoading) {
         Box(
           modifier = Modifier
@@ -463,8 +482,9 @@ data class MovieDetailScreen(
         }
       }
     }
+  }
 
-    pendingDeletion?.let { video ->
+  pendingDeletion?.let { video ->
       DeleteConfirmationDialog(
         isOpen = true,
         onDismiss = { pendingDeletion = null },

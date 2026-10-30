@@ -5,12 +5,15 @@ import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.ThemeSource
 
 class AppearancePreferences(
   preferenceStore: PreferenceStore,
 ) {
   val darkMode = preferenceStore.getEnum("dark_mode", DarkMode.System)
   val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Default)
+  val themeSource = preferenceStore.getEnum("theme_source", ThemeSource.APP_THEME)
+  val lastDetailArtworkPath = preferenceStore.getString("last_detail_artwork_path", "")
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
   val playerFullColors = preferenceStore.getBoolean("full_player_colors", false)
   val pillNavigationBar = preferenceStore.getBoolean("pill_navigation_bar", true)

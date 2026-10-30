@@ -73,6 +73,31 @@ class StreamingArtworkStore(
 
   private fun diskFile(url: String) = File(diskDir, diskFileName(url))
 
+  /**
+   * Return the cached on-disk artwork file for [url], or null if not yet cached.
+   * Performs no network requests.
+   */
+  fun getCachedFile(url: String): File? {
+    if (url.isBlank()) return null
+    val file = diskFile(url)
+    if (file.isFile && file.length() > 0L) return file
+    val legacy = File(diskDir, legacyDiskFileName(url, DEFAULT_MAX_DIMENSION))
+    if (legacy.isFile && legacy.length() > 0L) return legacy
+    return null
+  }
+
+  /**
+   * Resolves an artwork file from either a local absolute file path or a cached URL.
+   */
+  fun findArtworkFile(urlOrPath: String?): File? {
+    if (urlOrPath.isNullOrBlank()) return null
+    if (urlOrPath.startsWith("/")) {
+      val file = File(urlOrPath)
+      if (file.isFile && file.length() > 0L) return file
+    }
+    return getCachedFile(urlOrPath)
+  }
+
   fun getFromMemory(url: String, maxDimension: Int = DEFAULT_MAX_DIMENSION): Bitmap? =
     memoryCache.get(memoryKey(url, maxDimension))
 

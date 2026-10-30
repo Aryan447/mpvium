@@ -92,6 +92,11 @@ import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.theme.ContentThemed
+import app.aryan447.mpvium.ui.theme.ContentThemeManager
+import app.aryan447.mpvium.ui.theme.ThemeSource
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
@@ -119,6 +124,9 @@ data class SeriesDetailScreen(
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
+    val appearancePreferences = koinInject<AppearancePreferences>()
+    val contentThemeManager = koinInject<ContentThemeManager>()
+    val themeSource by appearancePreferences.themeSource.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     var series by remember { mutableStateOf<LocalSeries?>(null) }
@@ -219,7 +227,18 @@ data class SeriesDetailScreen(
       }
     }
 
-    Scaffold { innerPadding ->
+    val currentPoster = series?.posterUrl ?: series?.backdropUrl
+    LaunchedEffect(currentPoster) {
+      if (!currentPoster.isNullOrBlank()) {
+        contentThemeManager.onDetailScreenOpened(currentPoster)
+      }
+    }
+
+    ContentThemed(
+      artworkUrl = currentPoster,
+      enabled = themeSource == ThemeSource.CONTENT,
+    ) {
+      Scaffold { innerPadding ->
       if (isLoading) {
         Box(
           modifier = Modifier
@@ -521,8 +540,9 @@ data class SeriesDetailScreen(
         }
       }
     }
+  }
 
-    MarkAsDialog(
+  MarkAsDialog(
       isOpen = markAsEpisode != null,
       selectedCount = 1,
       onDismiss = { markAsEpisode = null },

@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +60,7 @@ import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.ui.preferences.components.ThemePicker
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.ThemeSource
 import app.aryan447.mpvium.ui.theme.spacing
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
@@ -109,6 +111,8 @@ object AppearancePreferencesScreen : Screen {
 
                     item {
                         PreferenceCard {
+                            val themeSource by preferences.themeSource.collectAsState()
+
                             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                                 // Dark mode selector
                                 ExpressiveChoiceRow(
@@ -128,11 +132,13 @@ object AppearancePreferencesScreen : Screen {
                             // AMOLED mode state - need it before theme picker
                             val amoledMode by preferences.amoledMode.collectAsState()
 
-                            // Theme picker - Aniyomi style
+                            // Theme picker - Aniyomi style with Match Content option
                             ThemePicker(
                                 currentTheme = appTheme,
+                                themeSource = themeSource,
                                 isDarkMode = isDarkMode,
                                 onThemeSelected = { preferences.appTheme.set(it) },
+                                onThemeSourceSelected = { preferences.themeSource.set(it) },
                                 modifier = Modifier.padding(vertical = 8.dp),
                             )
 

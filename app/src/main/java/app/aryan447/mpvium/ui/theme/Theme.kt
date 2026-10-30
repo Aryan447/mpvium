@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.view.View
 import androidx.annotation.StringRes
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -24,6 +25,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,10 +37,12 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ClipOp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -202,6 +206,7 @@ private fun ThemeTransitionContent(content: @Composable () -> Unit) {
 }
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.Default }
+val LocalThemeSource = staticCompositionLocalOf { ThemeSource.APP_THEME }
 
 // ============================================================================
 // Main Theme
@@ -211,9 +216,11 @@ val LocalAppTheme = staticCompositionLocalOf { AppTheme.Default }
 @Composable
 fun MpviumTheme(content: @Composable () -> Unit) {
     val preferences = koinInject<AppearancePreferences>()
+    val contentThemeManager = koinInject<ContentThemeManager>()
     val darkMode by preferences.darkMode.collectAsState()
     val amoledMode by preferences.amoledMode.collectAsState()
     val appTheme by preferences.appTheme.collectAsState()
+    val themeSource by preferences.themeSource.collectAsState()
     val darkTheme = isSystemInDarkTheme()
     val context = LocalContext.current
 
@@ -223,7 +230,7 @@ fun MpviumTheme(content: @Composable () -> Unit) {
         DarkMode.System -> darkTheme
     }
 
-    val colorScheme = when {
+    val baseColorScheme = when {
         appTheme.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             when {
                 useDarkTheme && amoledMode -> {
@@ -248,12 +255,46 @@ fun MpviumTheme(content: @Composable () -> Unit) {
         else -> appTheme.getLightColorScheme()
     }
 
+    // Dynamic content palette extraction: derives accents from Continue Watching poster
+    val contentPalette by contentThemeManager.observePalette(
+        isDark = useDarkTheme,
+        isAmoled = amoledMode && useDarkTheme,
+        surfaceColor = baseColorScheme.surface,
+    ).collectAsState()
+
+    val shouldUseContentTheme = themeSource == ThemeSource.CONTENT && contentPalette != null
+    val targetPrimary = if (shouldUseContentTheme) contentPalette!!.primary else baseColorScheme.primary
+    val targetSecondary = if (shouldUseContentTheme) contentPalette!!.secondary else baseColorScheme.secondary
+    val targetTertiary = if (shouldUseContentTheme) contentPalette!!.tertiary else baseColorScheme.tertiary
+    val targetPrimaryContainer = if (shouldUseContentTheme) contentPalette!!.primaryContainer else baseColorScheme.primaryContainer
+    val targetSecondaryContainer = if (shouldUseContentTheme) contentPalette!!.secondaryContainer else baseColorScheme.secondaryContainer
+    val targetTertiaryContainer = if (shouldUseContentTheme) contentPalette!!.tertiaryContainer else baseColorScheme.tertiaryContainer
+
+    // Cross-fade on change matching the glow entrance timing (900ms)
+    val animSpec = tween<Color>(durationMillis = 900, easing = FastOutSlowInEasing)
+    val animatedPrimary by animateColorAsState(targetPrimary, animationSpec = animSpec, label = "ThemePrimary")
+    val animatedSecondary by animateColorAsState(targetSecondary, animationSpec = animSpec, label = "ThemeSecondary")
+    val animatedTertiary by animateColorAsState(targetTertiary, animationSpec = animSpec, label = "ThemeTertiary")
+    val animatedPrimaryContainer by animateColorAsState(targetPrimaryContainer, animationSpec = animSpec, label = "ThemePrimaryContainer")
+    val animatedSecondaryContainer by animateColorAsState(targetSecondaryContainer, animationSpec = animSpec, label = "ThemeSecondaryContainer")
+    val animatedTertiaryContainer by animateColorAsState(targetTertiaryContainer, animationSpec = animSpec, label = "ThemeTertiaryContainer")
+
+    val colorScheme = baseColorScheme.copy(
+        primary = animatedPrimary,
+        secondary = animatedSecondary,
+        tertiary = animatedTertiary,
+        primaryContainer = animatedPrimaryContainer,
+        secondaryContainer = animatedSecondaryContainer,
+        tertiaryContainer = animatedTertiaryContainer,
+    )
+
     // Provide theme transition state first, OUTSIDE MaterialTheme
     CompositionLocalProvider(
         LocalSpacing provides Spacing(),
         LocalThemeTransitionState provides rememberThemeTransitionState(),
         LocalAppTheme provides appTheme,
-        LocalGlass provides (appTheme == AppTheme.Glass),
+        LocalThemeSource provides themeSource,
+        LocalGlass provides (appTheme == AppTheme.Glass && themeSource == ThemeSource.APP_THEME),
     ) {
         ThemeTransitionContent {
             MaterialTheme(
@@ -263,6 +304,61 @@ fun MpviumTheme(content: @Composable () -> Unit) {
                 motionScheme = MotionScheme.expressive(),
             )
         }
+    }
+}
+
+/**
+ * Local theme override for detail screens (Movie/Series) to follow their own artwork poster
+ * when [ThemeSource.CONTENT] is active.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ContentThemed(
+    artworkUrl: String?,
+    enabled: Boolean,
+    content: @Composable () -> Unit,
+) {
+    if (!enabled || artworkUrl.isNullOrBlank()) {
+        content()
+        return
+    }
+    val contentThemeManager = koinInject<ContentThemeManager>()
+    val currentScheme = MaterialTheme.colorScheme
+    val background = currentScheme.background
+    val isDark = background.luminance() < 0.5f
+    val isAmoled = isDark && background.luminance() < 0.001f
+
+    val palette by contentThemeManager.observePaletteForArtwork(
+        artworkUrlOrPath = artworkUrl,
+        isDark = isDark,
+        isAmoled = isAmoled,
+        surfaceColor = currentScheme.surface,
+    ).collectAsState()
+
+    if (palette == null) {
+        content()
+    } else {
+        val animSpec = tween<Color>(durationMillis = 900, easing = FastOutSlowInEasing)
+        val animatedPrimary by animateColorAsState(palette!!.primary, animationSpec = animSpec, label = "DetailPrimary")
+        val animatedSecondary by animateColorAsState(palette!!.secondary, animationSpec = animSpec, label = "DetailSecondary")
+        val animatedTertiary by animateColorAsState(palette!!.tertiary, animationSpec = animSpec, label = "DetailTertiary")
+        val animatedPrimaryContainer by animateColorAsState(palette!!.primaryContainer, animationSpec = animSpec, label = "DetailPrimaryContainer")
+        val animatedSecondaryContainer by animateColorAsState(palette!!.secondaryContainer, animationSpec = animSpec, label = "DetailSecondaryContainer")
+        val animatedTertiaryContainer by animateColorAsState(palette!!.tertiaryContainer, animationSpec = animSpec, label = "DetailTertiaryContainer")
+
+        MaterialTheme(
+            colorScheme = currentScheme.copy(
+                primary = animatedPrimary,
+                secondary = animatedSecondary,
+                tertiary = animatedTertiary,
+                primaryContainer = animatedPrimaryContainer,
+                secondaryContainer = animatedSecondaryContainer,
+                tertiaryContainer = animatedTertiaryContainer,
+            ),
+            typography = MaterialTheme.typography,
+            motionScheme = MaterialTheme.motionScheme,
+            content = content,
+        )
     }
 }
 

@@ -21,25 +21,34 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.ThemeSource
 
 /**
  * A horizontal scrollable theme picker with preview cards.
- * Displays all available themes with visual previews.
+ * Displays all available themes with visual previews, including the dynamic Match Content theme option.
  */
 @Composable
 fun ThemePicker(
     currentTheme: AppTheme,
+    themeSource: ThemeSource,
     isDarkMode: Boolean,
     onThemeSelected: (AppTheme) -> Unit,
+    onThemeSourceSelected: (ThemeSource) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
     val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(Unit) {
-        val index = AppTheme.entries.indexOf(currentTheme)
-        if (index >= 0) {
-            listState.animateScrollToItem(maxOf(0, index - 1))
+        if (themeSource == ThemeSource.CONTENT) {
+            listState.animateScrollToItem(2)
+        } else {
+            val index = AppTheme.entries.indexOf(currentTheme)
+            if (index >= 0) {
+                // If index >= 2 (Cinema and onward), account for Aura at position 2
+                val scrollIndex = if (index >= 2) index + 1 else index
+                listState.animateScrollToItem(maxOf(0, scrollIndex - 1))
+            }
         }
     }
 
@@ -59,14 +68,71 @@ fun ThemePicker(
             contentPadding = PaddingValues(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            items(AppTheme.entries) { theme ->
+            // 1. Default static theme
+            item(key = "theme_default") {
+                val theme = AppTheme.Default
+                val isSelected = themeSource == ThemeSource.APP_THEME && currentTheme == theme
                 ThemePreviewCard(
                     theme = theme,
-                    isSelected = theme == currentTheme,
+                    isSelected = isSelected,
                     isDarkMode = isDarkMode,
                     onClick = {
-                        if (theme != currentTheme) {
+                        if (!isSelected) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onThemeSourceSelected(ThemeSource.APP_THEME)
+                            onThemeSelected(theme)
+                        }
+                    },
+                )
+            }
+
+            // 2. Dynamic (Material You)
+            item(key = "theme_dynamic") {
+                val theme = AppTheme.Dynamic
+                val isSelected = themeSource == ThemeSource.APP_THEME && currentTheme == theme
+                ThemePreviewCard(
+                    theme = theme,
+                    isSelected = isSelected,
+                    isDarkMode = isDarkMode,
+                    onClick = {
+                        if (!isSelected) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onThemeSourceSelected(ThemeSource.APP_THEME)
+                            onThemeSelected(theme)
+                        }
+                    },
+                )
+            }
+
+            // 3. Aura (Artistic Dynamic Content Theme)
+            item(key = "theme_aura") {
+                val isSelected = themeSource == ThemeSource.CONTENT
+                ContentThemePreviewCard(
+                    isSelected = isSelected,
+                    isDarkMode = isDarkMode,
+                    onClick = {
+                        if (!isSelected) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onThemeSourceSelected(ThemeSource.CONTENT)
+                        }
+                    },
+                )
+            }
+
+            // 4. Cinema and remaining themes (Noir Cinema, Glass, Forest, etc.)
+            items(
+                items = AppTheme.entries.filter { it != AppTheme.Default && it != AppTheme.Dynamic },
+                key = { "theme_${it.name}" },
+            ) { theme ->
+                val isSelected = themeSource == ThemeSource.APP_THEME && currentTheme == theme
+                ThemePreviewCard(
+                    theme = theme,
+                    isSelected = isSelected,
+                    isDarkMode = isDarkMode,
+                    onClick = {
+                        if (!isSelected) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onThemeSourceSelected(ThemeSource.APP_THEME)
                             onThemeSelected(theme)
                         }
                     },

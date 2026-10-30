@@ -120,6 +120,8 @@ import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.LocalAppTheme
+import app.aryan447.mpvium.ui.theme.LocalThemeSource
+import app.aryan447.mpvium.ui.theme.ThemeSource
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.media.MediaUtils
 import app.aryan447.mpvium.utils.media.VideoWatchStatusOps
@@ -856,6 +858,7 @@ private fun buildRecentlyAdded(
 
 @Composable
 private fun themeBadgeLabel(): String? {
+  if (LocalThemeSource.current == ThemeSource.CONTENT) return "AURA"
   return when (LocalAppTheme.current) {
     AppTheme.Cinema -> "CINEMA"
     AppTheme.NoirCinema -> "NOIR"
