@@ -8,7 +8,7 @@ latest release and preview builds.
 | Version | Supported          |
 | ------- | ------------------ |
 | Latest `v*` release | :white_check_mark: |
-| Latest `v*-preview*` | :white_check_mark: |
+| Latest `v*-rc*` release candidate | :white_check_mark: |
 | Older releases | :x: (please upgrade and re-test) |
 
 User-facing fixes are tracked in [`CHANGELOG.md`](CHANGELOG.md).

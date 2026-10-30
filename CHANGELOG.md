@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Changed
+
+- Pre-release builds are now tagged as release candidates (for example `v1.4.0-rc1`) instead of `v1.4.0-preview.1`.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.

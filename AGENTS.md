@@ -134,7 +134,7 @@ Source of truth for GitHub release notes.
 ## How to update
 
 1. Add new user-facing changes under `Unreleased` while you work.
-2. When tagging a preview (`v*-preview*`) or release (`v*`), rename
+2. When tagging an RC (`v*-rc*`, e.g. `v1.4.0-rc1`) or release (`v*`), rename
    `Unreleased` to the new version and add a fresh empty `Unreleased`.
 3. Keep entries short and user-facing. Group by `Added`, `Changed`, `Fixed`.
 4. Paste the version section into the GitHub release body (checksums are
