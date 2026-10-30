@@ -12,7 +12,9 @@ jobs:
   release-for-github:
     name: "Release for GitHub"
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.ref, 'preview') }}
+    # Skip any pre-release tag: rc (v1.4.0-rc1) and legacy preview tags.
+    if: >-
+      ${{ !contains(github.ref, 'rc') && !contains(github.ref, 'preview') }}
 
     steps:
       - name: Checkout repo

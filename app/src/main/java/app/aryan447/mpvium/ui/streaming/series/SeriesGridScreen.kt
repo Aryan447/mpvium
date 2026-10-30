@@ -70,18 +70,22 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.domain.subtitles.SubtitleProfileRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
 import app.aryan447.mpvium.preferences.SeriesSort
 import app.aryan447.mpvium.preferences.StreamingPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
+import app.aryan447.mpvium.ui.browser.components.MediaLayoutToggleButton
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
+import app.aryan447.mpvium.ui.streaming.components.SeriesListRow
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
@@ -105,6 +109,7 @@ object SeriesGridScreen : Screen {
     val streamingPreferences = koinInject<StreamingPreferences>()
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
     // Empty-state hint (issue #87): when whitelist-only leaves no results,
     // offer a one-tap route to Settings → Folders.
@@ -151,6 +156,12 @@ object SeriesGridScreen : Screen {
             presentSeriesIds = detected.series.map { it.id }.toSet(),
           )
         }
+        // Drop saved subtitle profiles for shows with zero episodes left.
+        runCatching {
+          subtitleProfileRepository.pruneStaleProfiles(
+            presentSeriesIds = detected.series.map { it.id }.toSet(),
+          )
+        }
         val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
         seriesList = cachedSeries
         isLoading = false
@@ -188,6 +199,7 @@ object SeriesGridScreen : Screen {
     var seriesFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val seriesFilter = SeriesWatchFilter.entries[seriesFilterOrdinal.coerceIn(SeriesWatchFilter.entries.indices)]
     val seriesSort by streamingPreferences.seriesSort.collectAsState()
+    val mediaLayoutMode by streamingPreferences.layoutShows.collectAsState()
     val seriesSortOptions = remember {
       SeriesSort.entries.map { SortOption(it, it.label) }
     }
@@ -274,6 +286,15 @@ object SeriesGridScreen : Screen {
               }
             },
             actions = {
+              MediaLayoutToggleButton(
+                layoutMode = mediaLayoutMode,
+                onToggle = {
+                  streamingPreferences.layoutShows.set(
+                    if (mediaLayoutMode == MediaLayoutMode.GRID) MediaLayoutMode.LIST else MediaLayoutMode.GRID
+                  )
+                },
+                modifier = Modifier.padding(horizontal = 2.dp),
+              )
               IconButton(onClick = { isSearching = true }) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
@@ -304,6 +325,7 @@ object SeriesGridScreen : Screen {
               onClearSearch = { searchQuery = "" },
               columns = columns,
               gridState = gridState,
+              mediaLayoutMode = mediaLayoutMode,
               navigationBarHeight = navigationBarHeight,
               isRefreshing = isRefreshing,
               onRefresh = { refreshKey++ },
@@ -341,6 +363,7 @@ object SeriesGridScreen : Screen {
           onClearSearch = { searchQuery = "" },
           columns = columns,
           gridState = gridState,
+          mediaLayoutMode = mediaLayoutMode,
           navigationBarHeight = navigationBarHeight,
           isRefreshing = isRefreshing,
           onRefresh = { refreshKey++ },
@@ -369,6 +392,7 @@ private fun SeriesGridContent(
   onClearSearch: () -> Unit,
   columns: Int,
   gridState: LazyGridState,
+  mediaLayoutMode: MediaLayoutMode,
   navigationBarHeight: Dp,
   isRefreshing: MutableState<Boolean>,
   onRefresh: suspend () -> Unit,
@@ -424,6 +448,8 @@ private fun SeriesGridContent(
       },
     )
   } else {
+    val isGridMode = mediaLayoutMode == MediaLayoutMode.GRID
+    val actualColumns = if (isGridMode) columns else 1
     PullRefreshBox(
       isRefreshing = isRefreshing,
       onRefresh = onRefresh,
@@ -433,7 +459,7 @@ private fun SeriesGridContent(
         .padding(innerPadding),
     ) {
       LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GridCells.Fixed(actualColumns),
         state = gridState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -443,9 +469,9 @@ private fun SeriesGridContent(
           bottom = navigationBarHeight + 24.dp,
         ),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(if (isGridMode) 14.dp else 6.dp),
       ) {
-        item(span = { GridItemSpan(columns) }) {
+        item(span = { GridItemSpan(actualColumns) }) {
           Column {
             LibraryFilterBar(
               options = SeriesWatchFilter.entries,
@@ -463,12 +489,19 @@ private fun SeriesGridContent(
             )
           }
         }
-        items(filteredSeries, key = { "grid_series_${it.id}" }) { series ->
-          SeriesPosterCard(
-            series = series,
-            onClick = { onSeriesClick(series) },
-            cardWidth = 180.dp,
-          )
+        items(filteredSeries, key = { "series_${it.id}" }) { series ->
+          if (isGridMode) {
+            SeriesPosterCard(
+              series = series,
+              onClick = { onSeriesClick(series) },
+              cardWidth = 180.dp,
+            )
+          } else {
+            SeriesListRow(
+              series = series,
+              onClick = { onSeriesClick(series) },
+            )
+          }
         }
       }
     }

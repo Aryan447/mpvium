@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -80,6 +81,25 @@ import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.TwoTargetIconButtonPreference
 import org.koin.compose.koinInject
 
+/**
+ * Registry key -> LazyColumn item index for the items that hold searchable rows.
+ */
+private val advancedAnchors: Map<String, Int> = mapOf(
+  "advanced.page" to 0,
+  "advanced.export" to 1,
+  "advanced.import" to 1,
+  "advanced.mpv_conf_storage" to 3,
+  "advanced.mpv_conf" to 3,
+  "advanced.input_conf" to 3,
+  "advanced.recently_played" to 7,
+  "advanced.clear_history" to 7,
+  "advanced.clear_config_cache" to 9,
+  "advanced.clear_thumbnail_cache" to 9,
+  "advanced.clear_fonts_cache" to 9,
+  "advanced.verbose_logging" to 11,
+  "advanced.dump_logs" to 11,
+)
+
 @Serializable
 object AdvancedPreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -94,6 +114,13 @@ object AdvancedPreferencesScreen : Screen {
     var showExportDialog by remember { mutableStateOf(false) }
     var importStats by remember { mutableStateOf<SettingsManager.ImportStats?>(null) }
     var exportStats by remember { mutableStateOf<SettingsManager.ExportStats?>(null) }
+    val listState = rememberLazyListState()
+
+    SettingsHighlightEffect(
+      screen = AdvancedPreferencesScreen,
+      listState = listState,
+      anchors = advancedAnchors,
+    )
 
     // Export settings launcher
     val exportLauncher =
@@ -238,6 +265,7 @@ object AdvancedPreferencesScreen : Screen {
           }
         val mpvConfStorageLocation by preferences.mpvConfStorageUri.collectAsState()
         LazyColumn(
+          state = listState,
           modifier = Modifier
             .fillMaxSize()
             .padding(padding),
@@ -251,6 +279,7 @@ object AdvancedPreferencesScreen : Screen {
             PreferenceCard {
               Preference(
                 title = { Text(text = "Export Settings") },
+                modifier = Modifier.settingsHighlight("advanced.export"),
                 summary = {
                   Text(
                     text = "Export settings to an XML file",
@@ -269,6 +298,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(text = "Import Settings") },
+                modifier = Modifier.settingsHighlight("advanced.import"),
                 summary = {
                   Text(
                     text = "Import settings from an XML file",
@@ -355,6 +385,7 @@ object AdvancedPreferencesScreen : Screen {
 
               TwoTargetIconButtonPreference(
                 title = { Text(stringResource(R.string.pref_advanced_mpv_conf_storage_location)) },
+                modifier = Modifier.settingsHighlight("advanced.mpv_conf_storage"),
                 summary = {
                   if (mpvConfStorageLocation.isNotBlank()) {
                     Text(
@@ -379,6 +410,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_mpv_conf)) },
+                modifier = Modifier.settingsHighlight("advanced.mpv_conf"),
                 summary = {
                   val firstLine = mpvConf.lines().firstOrNull()
                   if (firstLine != null && firstLine.isNotBlank()) {
@@ -405,6 +437,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_input_conf)) },
+                modifier = Modifier.settingsHighlight("advanced.input_conf"),
                 summary = {
                   val firstLine = inputConf.lines().firstOrNull()
                   if (firstLine != null && firstLine.isNotBlank()) {
@@ -535,6 +568,7 @@ object AdvancedPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = enableRecentlyPlayed,
                 onValueChange = preferences.enableRecentlyPlayed::set,
+                highlightKey = "advanced.recently_played",
                 title = { Text(stringResource(R.string.pref_advanced_enable_recently_played_title)) },
                 summary = {
                   Text(
@@ -551,6 +585,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_clear_playback_history)) },
+                modifier = Modifier.settingsHighlight("advanced.clear_history"),
                 icon = {
                   PreferenceRowIcon(icon = Icons.Outlined.Delete)
                 },
@@ -608,6 +643,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(text = "Clear config cache") },
+                modifier = Modifier.settingsHighlight("advanced.clear_config_cache"),
                 summary = {
                   Text(
                     text = "Clear the cached mpv.conf settings",
@@ -640,6 +676,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(text = "Clear thumbnail cache") },
+                modifier = Modifier.settingsHighlight("advanced.clear_thumbnail_cache"),
                 summary = {
                   Text(
                     text = "Delete all cached video thumbnails (will regenerate as you browse folders)",
@@ -681,6 +718,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(text = stringResource(id = R.string.pref_advanced_clear_fonts_cache)) },
+                modifier = Modifier.settingsHighlight("advanced.clear_fonts_cache"),
                 summary = {
                   Text(
                     text = "Remove all cached subtitle fonts",
@@ -733,6 +771,7 @@ object AdvancedPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = verboseLogging,
                 onValueChange = preferences.verboseLogging::set,
+                highlightKey = "advanced.verbose_logging",
                 title = { Text(stringResource(R.string.pref_advanced_verbose_logging_title)) },
                 summary = {
                   Text(
@@ -749,6 +788,7 @@ object AdvancedPreferencesScreen : Screen {
 
               Preference(
                 title = { Text(stringResource(R.string.pref_advanced_dump_logs_title)) },
+                modifier = Modifier.settingsHighlight("advanced.dump_logs"),
                 summary = {
                   Text(
                     stringResource(R.string.pref_advanced_dump_logs_summary),

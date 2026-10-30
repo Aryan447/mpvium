@@ -25,6 +25,9 @@
   <string name="pref_appearance_pill_nav_title">Floating pill navigation bar</string>
   <string name="pref_appearance_pill_nav_summary">Show the bottom bar as a floating rounded pill</string>
   <string name="pref_appearance_category_bottom_nav">Bottom navigation</string>
+  <string name="pref_appearance_category_seekbar">Seekbar</string>
+  <string name="pref_appearance_chapters_in_seekbar_title">Chapter markers</string>
+  <string name="pref_appearance_chapters_in_seekbar_summary">Show gaps in the seekbar at chapter boundaries</string>
   <string name="pref_appearance_show_bottom_nav_labels_title">Show tab labels</string>
   <string name="pref_appearance_show_bottom_nav_labels_summary">Show text under bottom navigation icons</string>
   <string name="pref_appearance_bottom_nav_tabs_summary">Choose which tabs appear in the bottom bar</string>
@@ -346,6 +349,10 @@
   <string name="pref_about_oss_libraries">Libraries</string>
   <string name="player_sheets_add_ext_sub">Add external subtitles</string>
   <string name="player_sheets_add_ext_audio">Add external audio tracks</string>
+  <string name="player_sheets_online_results">Online Results (%1$d)</string>
+  <string name="player_sheets_pick_title_for_subtitles">Pick a title on the left to load subtitles</string>
+  <string name="player_sheets_subtitle_download">Download subtitle</string>
+  <string name="player_sheets_subtitle_already_added">Subtitle already added</string>
   <string name="player_sheets_tracks_off">Off</string>
   <string name="player_sheets_track_title_w_lang" translatable="false">#%d: %s (%s)</string>
   <string name="player_sheets_track_title_wo_lang" translatable="false">#%d: %s</string>
@@ -372,6 +379,16 @@
   <string name="player_sheets_sub_position">Position</string>
   <string name="pref_subtitles_persist_pos_title">Persist subtitle position</string>
   <string name="pref_subtitles_persist_pos_summary">Save moved subtitle position across all videos</string>
+  <string name="pref_subtitles_scope_title">Subtitle position memory</string>
+  <string name="pref_subtitles_scope_global">All videos</string>
+  <string name="pref_subtitles_scope_global_summary">One subtitle position and scale for every video</string>
+  <string name="pref_subtitles_scope_per_title">Per show or movie</string>
+  <string name="pref_subtitles_scope_per_title_summary">Remember position and scale for each show or movie separately</string>
+  <string name="pref_subtitles_clear_profiles">Clear all subtitle profiles</string>
+  <string name="pref_subtitles_clear_profiles_summary">Remove the saved subtitle position and scale for every show and movie</string>
+  <string name="pref_subtitles_clear_profiles_confirmation">Delete all saved per-title subtitle settings? Each show and movie will go back to the global defaults.</string>
+  <string name="toast_subtitle_profiles_cleared">Subtitle profiles cleared</string>
+  <string name="player_sheets_sub_forget_title">Forget this title\'s subtitle settings</string>
   <string name="subtitle_double_tap_to_reset">Double-tap subtitle to reset position</string>
   <string name="subtitle_position_format">Subtitles: %d</string>
   <string name="subtitle_position_reset">Subtitles reset (%d)</string>
@@ -613,6 +630,8 @@
   <string name="no_folders_or_supported_files">No folders or supported files</string>
   <string name="hello_world">Hello world</string>
   <!-- M3U Playlist Strings -->
+  <string name="switch_to_list_view">Switch to list view</string>
+  <string name="switch_to_grid_view">Switch to grid view</string>
   <string name="playlist_add_m3u_title">Add M3U Playlist</string>
   <string name="playlist_add_m3u_description">Enter the URL of an M3U playlist file</string>
   <string name="playlist_url_label">Playlist URL</string>
@@ -639,4 +658,6 @@
   <string name="mark_as_none_summary">Clear any status and show as plain unplayed</string>
   <string name="mark_as_updated">Watch status updated</string>
   <string name="mark_as_failed">Failed to update watch status</string>
+  <!-- Settings search -->
+  <string name="settings_highlight_announced">Highlighted: %1$s</string>
 </resources>

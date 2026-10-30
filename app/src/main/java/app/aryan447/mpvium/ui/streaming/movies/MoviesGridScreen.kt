@@ -70,20 +70,24 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.domain.subtitles.SubtitleProfileRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
 import app.aryan447.mpvium.preferences.MovieSort
 import app.aryan447.mpvium.preferences.StreamingPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
+import app.aryan447.mpvium.ui.browser.components.MediaLayoutToggleButton
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
+import app.aryan447.mpvium.ui.streaming.components.MovieListRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
@@ -110,6 +114,7 @@ object MoviesGridScreen : Screen {
     val streamingPreferences = koinInject<StreamingPreferences>()
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
     // Empty-state hint (issue #87): when whitelist-only leaves no results,
@@ -165,6 +170,14 @@ object MoviesGridScreen : Screen {
             }.toSet(),
           )
         }
+        // Drop saved subtitle profiles for deleted movies.
+        runCatching {
+          subtitleProfileRepository.pruneStaleProfiles(
+            presentMovieKeys = detected.movies.map {
+              StreamingMetadataRepository.movieKeyFor(it.title, it.year)
+            }.toSet(),
+          )
+        }
         val cachedMovies = libraryMovies.map { metadataRepository.applyCachedMovie(it) }
         movieList = cachedMovies
         isLoading = false
@@ -203,6 +216,7 @@ object MoviesGridScreen : Screen {
     var movieFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val movieFilter = MovieWatchFilter.entries[movieFilterOrdinal.coerceIn(MovieWatchFilter.entries.indices)]
     val movieSort by streamingPreferences.movieSort.collectAsState()
+    val mediaLayoutMode by streamingPreferences.layoutMovies.collectAsState()
     val movieSortOptions = remember {
       MovieSort.entries.map { SortOption(it, it.label) }
     }
@@ -287,6 +301,15 @@ object MoviesGridScreen : Screen {
               }
             },
             actions = {
+              MediaLayoutToggleButton(
+                layoutMode = mediaLayoutMode,
+                onToggle = {
+                  streamingPreferences.layoutMovies.set(
+                    if (mediaLayoutMode == MediaLayoutMode.GRID) MediaLayoutMode.LIST else MediaLayoutMode.GRID
+                  )
+                },
+                modifier = Modifier.padding(horizontal = 2.dp),
+              )
               IconButton(onClick = { isSearching = true }) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
@@ -317,6 +340,7 @@ object MoviesGridScreen : Screen {
               onClearSearch = { searchQuery = "" },
               columns = columns,
               gridState = gridState,
+              mediaLayoutMode = mediaLayoutMode,
               navigationBarHeight = navigationBarHeight,
               isRefreshing = isRefreshing,
               onRefresh = { refreshKey++ },
@@ -355,6 +379,7 @@ object MoviesGridScreen : Screen {
           onClearSearch = { searchQuery = "" },
           columns = columns,
           gridState = gridState,
+          mediaLayoutMode = mediaLayoutMode,
           navigationBarHeight = navigationBarHeight,
           isRefreshing = isRefreshing,
           onRefresh = { refreshKey++ },
@@ -404,6 +429,7 @@ private fun MoviesGridContent(
   onClearSearch: () -> Unit,
   columns: Int,
   gridState: LazyGridState,
+  mediaLayoutMode: MediaLayoutMode,
   navigationBarHeight: Dp,
   isRefreshing: MutableState<Boolean>,
   onRefresh: suspend () -> Unit,
@@ -460,6 +486,8 @@ private fun MoviesGridContent(
       },
     )
   } else {
+    val isGridMode = mediaLayoutMode == MediaLayoutMode.GRID
+    val actualColumns = if (isGridMode) columns else 1
     PullRefreshBox(
       isRefreshing = isRefreshing,
       onRefresh = onRefresh,
@@ -469,7 +497,7 @@ private fun MoviesGridContent(
         .padding(innerPadding),
     ) {
       LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GridCells.Fixed(actualColumns),
         state = gridState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -479,9 +507,9 @@ private fun MoviesGridContent(
           bottom = navigationBarHeight + 24.dp,
         ),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(if (isGridMode) 14.dp else 6.dp),
       ) {
-        item(span = { GridItemSpan(columns) }) {
+        item(span = { GridItemSpan(actualColumns) }) {
           Column {
             LibraryFilterBar(
               options = MovieWatchFilter.entries,
@@ -499,13 +527,21 @@ private fun MoviesGridContent(
             )
           }
         }
-        items(filteredMovies, key = { "grid_movie_${it.video.id}" }) { movie ->
-          MoviePosterCard(
-            movie = movie,
-            onClick = { onMovieClick(movie) },
-            onLongClick = { onMovieLongClick(movie) },
-            cardWidth = 180.dp,
-          )
+        items(filteredMovies, key = { "movie_${it.video.id}" }) { movie ->
+          if (isGridMode) {
+            MoviePosterCard(
+              movie = movie,
+              onClick = { onMovieClick(movie) },
+              onLongClick = { onMovieLongClick(movie) },
+              cardWidth = 180.dp,
+            )
+          } else {
+            MovieListRow(
+              movie = movie,
+              onClick = { onMovieClick(movie) },
+              onLongClick = { onMovieLongClick(movie) },
+            )
+          }
         }
       }
     }
