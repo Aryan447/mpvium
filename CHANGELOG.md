@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Added
+
+- Toggle to hide chapter markers in the seekbar (Settings → Appearance → Seekbar). Chapters, the chapters sheet and skip-chapter gestures are unaffected.
+
 ### Changed
 
 - Online subtitle search results now show a parsed title plus compact quality tags (resolution, source, codec, audio, release group) instead of raw, wrapping release filenames.
