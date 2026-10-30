@@ -12,6 +12,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.player.TrackNode
@@ -140,7 +141,13 @@ fun SubtitleTrackRow(
     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
   ) {
     Checkbox(checked = isSelected, onCheckedChange = { tickToggle() })
-    Text(title, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.weight(1f))
+    Text(
+      title,
+      fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.weight(1f),
+    )
     if (isExternal) {
       IconButton(onClick = onRemove) { Icon(Icons.Default.Delete, contentDescription = null) }
     }
