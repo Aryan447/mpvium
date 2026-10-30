@@ -28,7 +28,7 @@ media browsing, and support for local and network media.
 Philosophy: sane defaults, pro-level control — opinionated for everyday
 watching, fully customizable for pros.
 
-The project is actively developed. Preview builds may contain unfinished
+The project is actively developed. Pre-release builds may contain unfinished
 features or bugs.
 
 ## Screenshots
@@ -78,8 +78,9 @@ The repository may provide several APKs for different CPU architectures:
 | `x86` | 32-bit Intel/AMD devices |
 | `x86_64` | 64-bit Intel/AMD devices |
 
-Preview builds are intended for testing and may be available through the
-project’s [preview releases](https://github.com/aryan447/mpvium/releases).
+Release candidate (RC) builds are intended for testing and are published as
+pre-releases on the [releases page](https://github.com/aryan447/mpvium/releases)
+with tags such as `v1.4.0-rc1`.
 
 ## Build from source
 
