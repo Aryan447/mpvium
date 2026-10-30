@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Layers
@@ -59,6 +60,20 @@ import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
+/**
+ * Registry key -> LazyColumn item index for the items that hold searchable rows.
+ */
+private val decoderAnchors: Map<String, Int> = mapOf(
+  "decoder.page" to 0,
+  "decoder.default" to 1,
+  "decoder.gpu_next" to 3,
+  "decoder.vulkan" to 3,
+  "decoder.debanding" to 5,
+  "decoder.yuv420p" to 5,
+  "decoder.anime4k" to 5,
+  "decoder.shader_peek" to 5,
+)
+
 @Serializable
 object DecoderPreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +84,13 @@ object DecoderPreferencesScreen : Screen {
     val isVulkanSupported = remember { VulkanUtils.isVulkanSupported(context) }
     val useVulkan by preferences.useVulkan.collectAsState()
     var showGpuNextWarning by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+
+    SettingsHighlightEffect(
+      screen = DecoderPreferencesScreen,
+      listState = listState,
+      anchors = decoderAnchors,
+    )
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(R.string.pref_decoder))
@@ -76,6 +98,7 @@ object DecoderPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -109,6 +132,7 @@ object DecoderPreferencesScreen : Screen {
               ExpressiveListPreference(
                 value = defaultDecoder,
                 onValueChange = { preferences.defaultDecoder.set(it) },
+                modifier = Modifier.settingsHighlight("decoder.default"),
                 values = Decoder.defaultOptions,
                 valueToText = { AnnotatedString(it.title) },
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Memory) },
@@ -143,6 +167,7 @@ object DecoderPreferencesScreen : Screen {
                     }
                 },
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Speed) },
+                highlightKey = "decoder.gpu_next",
                 title = { Text(stringResource(R.string.pref_decoder_gpu_next_title)) },
                 summary = {
                   Text(
@@ -203,6 +228,7 @@ object DecoderPreferencesScreen : Screen {
               // val useVulkan by preferences.useVulkan.collectAsState() // Moved to Content() top-level for cross-card access
               HapticSwitchPreference(
                 value = useVulkan,
+                highlightKey = "decoder.vulkan",
                 onValueChange = { enabled ->
                   preferences.useVulkan.set(enabled)
                   // When Vulkan is disabled, ensure Anime4K and GPU Next are not both enabled
@@ -242,6 +268,7 @@ object DecoderPreferencesScreen : Screen {
               ExpressiveListPreference(
                 value = debanding,
                 onValueChange = { preferences.debanding.set(it) },
+                modifier = Modifier.settingsHighlight("decoder.debanding"),
                 values = Debanding.entries,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Tune) },
                 title = { Text(stringResource(R.string.pref_decoder_debanding_title)) },
@@ -261,6 +288,7 @@ object DecoderPreferencesScreen : Screen {
                 onValueChange = {
                   preferences.useYUV420P.set(it)
                 },
+                highlightKey = "decoder.yuv420p",
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Layers) },
                 title = { Text(stringResource(R.string.pref_decoder_yuv420p_title)) },
                 summary = {
@@ -282,6 +310,7 @@ object DecoderPreferencesScreen : Screen {
                         preferences.gpuNext.set(false)
                     }
                 },
+                highlightKey = "decoder.anime4k",
                 title = { Text(stringResource(R.string.pref_anime4k_title)) },
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Refresh) },
                 summary = {
@@ -322,6 +351,7 @@ object DecoderPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = shaderPeekSuggest,
                 onValueChange = { preferences.shaderPeekSuggest.set(it) },
+                highlightKey = "decoder.shader_peek",
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Visibility) },
                 title = { Text(stringResource(R.string.pref_decoder_shader_peek_title)) },
                 summary = {

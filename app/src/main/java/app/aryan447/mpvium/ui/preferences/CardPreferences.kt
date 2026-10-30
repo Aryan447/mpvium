@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -70,18 +71,25 @@ private val IconBoxShape = RoundedCornerShape(SettingsIconBoxCorner)
  * Premium card container for grouped preferences.
  * Non-glass theme gets a hairline outline + soft tonal fill so groups
  * read as layered surfaces; glass theme keeps its specular treatment.
+ *
+ * Pass [highlightKey] for search results that point at the whole card (for
+ * example a section like "Bottom navigation tabs") so the card container
+ * itself is tinted and brought into view.
  */
 @Composable
 fun PreferenceCard(
   modifier: Modifier = Modifier,
+  highlightKey: String? = null,
   content: @Composable ColumnScope.() -> Unit,
 ) {
   val isGlass = LocalGlass.current
   val dark = androidx.compose.foundation.isSystemInDarkTheme()
+  val highlight = rememberSettingsHighlightVisual(highlightKey)
   Card(
     modifier = modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp, vertical = 8.dp)
+      .bringIntoViewRequester(highlight.requester)
       .glassSheen(SettingsCardShape, isGlass),
     shape = SettingsCardShape,
     colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
@@ -93,11 +101,13 @@ fun PreferenceCard(
     ),
     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
   ) {
-    Column(
-      modifier = Modifier.padding(vertical = 6.dp),
-      verticalArrangement = Arrangement.spacedBy(0.dp),
-    ) {
-      content()
+    Box(modifier = Modifier.fillMaxWidth().background(highlight.color)) {
+      Column(
+        modifier = Modifier.padding(vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
+      ) {
+        content()
+      }
     }
   }
 }
@@ -354,7 +364,8 @@ fun PreferenceRowIcon(
 
 /**
  * A switch preference row that plays a haptic tick on toggle.
- * Same API as the underlying library switch.
+ * Same API as the underlying library switch, plus [highlightKey] so settings
+ * search can tint and reveal this exact row.
  */
 @Composable
 fun HapticSwitchPreference(
@@ -365,6 +376,7 @@ fun HapticSwitchPreference(
   enabled: Boolean = true,
   summary: @Composable (() -> Unit)? = null,
   icon: @Composable (() -> Unit)? = null,
+  highlightKey: String? = null,
 ) {
   val haptic = LocalHapticFeedback.current
   me.zhanghai.compose.preference.SwitchPreference(
@@ -374,7 +386,7 @@ fun HapticSwitchPreference(
       onValueChange(it)
     },
     title = title,
-    modifier = modifier,
+    modifier = modifier.settingsHighlight(highlightKey),
     enabled = enabled,
     summary = summary,
     icon = icon,

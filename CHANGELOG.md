@@ -2,6 +2,7 @@
 
 ### Added
 
+- Settings search now lands on the exact option: the page scrolls to the matching row, brings it fully into view, and tints it for about 1.6 seconds while screen readers announce it. Results that point at a whole section highlight that card instead of an inner row.
 - Toggle to hide chapter markers in the seekbar (Settings → Appearance → Seekbar). Chapters, the chapters sheet and skip-chapter gestures are unaffected.
 
 ### Changed

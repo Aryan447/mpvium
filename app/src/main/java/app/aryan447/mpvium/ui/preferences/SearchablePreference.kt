@@ -7,8 +7,16 @@ import app.aryan447.mpvium.presentation.Screen
 /**
  * Represents a searchable preference item.
  * Used to index all preferences for the settings search feature.
+ *
+ * [key] identifies the row the result should land on. It is namespaced by the
+ * owning settings screen (for example `appearance.amoled`) and must be unique
+ * across the registry; the row applies it through
+ * `Modifier.settingsHighlight(...)` (or `PreferenceCard(highlightKey = ...)` for
+ * a whole section card) and the screen maps it to a LazyColumn item index in
+ * its anchor map.
  */
 data class SearchablePreference(
+    val key: String,
     @StringRes val titleRes: Int? = null,
     val title: String? = null,
     @StringRes val summaryRes: Int? = null,
@@ -26,6 +34,7 @@ object SearchablePreferences {
         buildList {
             // Appearance preferences
             add(SearchablePreference(
+                key = "appearance.page",
                 titleRes = R.string.pref_appearance_title,
                 summaryRes = R.string.pref_appearance_summary,
                 keywords = listOf("theme", "dark", "light", "amoled", "material you", "color", "appearance", "glass", "transparent", "blur", "cinema", "noir"),
@@ -33,6 +42,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.amoled",
                 titleRes = R.string.pref_appearance_amoled_mode_title,
                 summaryRes = R.string.pref_appearance_amoled_mode_summary,
                 keywords = listOf("amoled", "black", "dark", "oled", "pure black"),
@@ -40,6 +50,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.pill_navigation",
                 titleRes = R.string.pref_appearance_pill_nav_title,
                 summaryRes = R.string.pref_appearance_pill_nav_summary,
                 keywords = listOf("pill", "floating", "navigation bar", "one ui", "ios", "rounded", "bottom bar"),
@@ -47,6 +58,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.bottom_nav_labels",
                 titleRes = R.string.pref_appearance_show_bottom_nav_labels_title,
                 summaryRes = R.string.pref_appearance_show_bottom_nav_labels_summary,
                 keywords = listOf("bottom", "navigation", "labels", "tabs", "text", "icons", "pill", "hide"),
@@ -54,6 +66,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.bottom_nav_tabs",
                 titleRes = R.string.pref_appearance_category_bottom_nav,
                 summaryRes = R.string.pref_appearance_bottom_nav_tabs_summary,
                 keywords = listOf("bottom", "navigation", "tabs", "home", "shows", "movies", "folders", "library", "hide", "remove", "customize"),
@@ -61,6 +74,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.unlimited_name_lines",
                 titleRes = R.string.pref_appearance_unlimited_name_lines_title,
                 summaryRes = R.string.pref_appearance_unlimited_name_lines_summary,
                 keywords = listOf("name", "full", "truncate", "lines", "display"),
@@ -68,6 +82,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.unplayed_old_label",
                 titleRes = R.string.pref_appearance_show_unplayed_old_video_label_title,
                 summaryRes = R.string.pref_appearance_show_unplayed_old_video_label_summary,
                 keywords = listOf("unplayed", "old", "label", "video", "new", "indicator"),
@@ -75,12 +90,14 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.unplayed_old_days",
                 titleRes = R.string.pref_appearance_unplayed_old_video_days_title,
                 keywords = listOf("days", "old", "video", "threshold", "time"),
                 category = "Appearance",
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.auto_scroll",
                 titleRes = R.string.pref_appearance_auto_scroll_title,
                 summaryRes = R.string.pref_appearance_auto_scroll_summary,
                 keywords = listOf("scroll", "auto", "last played", "resume", "position"),
@@ -88,6 +105,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.network_thumbnails",
                 titleRes = R.string.pref_appearance_show_network_thumbnails_title,
                 summaryRes = R.string.pref_appearance_show_network_thumbnails_summary,
                 keywords = listOf("network", "thumbnail", "stream", "preview", "images"),
@@ -95,6 +113,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.featured_hero",
                 titleRes = R.string.pref_appearance_show_featured_hero_title,
                 summaryRes = R.string.pref_appearance_show_featured_hero_summary,
                 keywords = listOf("featured", "hero", "banner", "home", "spotlight", "hide", "remove"),
@@ -102,6 +121,7 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.home_sections",
                 titleRes = R.string.pref_appearance_category_home,
                 summaryRes = R.string.pref_appearance_home_sections_summary,
                 keywords = listOf("home", "sections", "reorder", "order", "continue watching", "up next", "recently added", "hide", "show", "customize"),
@@ -111,6 +131,7 @@ object SearchablePreferences {
 
             // Layout preferences
             add(SearchablePreference(
+                key = "layout.page",
                 titleRes = R.string.pref_layout_title,
                 summaryRes = R.string.pref_layout_summary,
                 keywords = listOf("layout", "controls", "buttons", "player", "customize", "arrange"),
@@ -118,30 +139,35 @@ object SearchablePreferences {
                 screen = PlayerControlsPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "layout.controls.top_right",
                 titleRes = R.string.pref_layout_top_right_controls,
                 keywords = listOf("controls", "top", "right", "landscape", "buttons"),
                 category = "Appearance",
                 screen = PlayerControlsPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "layout.controls.bottom_right",
                 titleRes = R.string.pref_layout_bottom_right_controls,
                 keywords = listOf("controls", "bottom", "right", "landscape", "buttons"),
                 category = "Appearance",
                 screen = PlayerControlsPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "layout.controls.bottom_left",
                 titleRes = R.string.pref_layout_bottom_left_controls,
                 keywords = listOf("controls", "bottom", "left", "landscape", "buttons"),
                 category = "Appearance",
                 screen = PlayerControlsPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "layout.controls.portrait_bottom",
                 titleRes = R.string.pref_layout_portrait_bottom_controls,
                 keywords = listOf("controls", "portrait", "bottom", "buttons"),
                 category = "Appearance",
                 screen = PlayerControlsPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "layout.player_colors",
                 titleRes = R.string.pref_player_colors_title,
                 summaryRes = R.string.pref_player_colors_summary_off,
                 keywords = listOf("player", "colors", "theme", "buttons", "seekbar", "sliders", "full"),
@@ -149,6 +175,7 @@ object SearchablePreferences {
                 screen = PlayerControlsPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "layout.hide_buttons_background",
                 titleRes = R.string.pref_appearance_hide_player_buttons_background_title,
                 summaryRes = R.string.pref_appearance_hide_player_buttons_background_summary,
                 keywords = listOf("hide", "background", "buttons", "transparent", "player"),
@@ -156,6 +183,7 @@ object SearchablePreferences {
                 screen = PlayerControlsPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "layout.controls_hide_after",
                 titleRes = R.string.pref_player_display_hide_player_control_time,
                 keywords = listOf("time", "hide", "controls", "disappear", "timeout", "ms"),
                 category = "Appearance",
@@ -164,6 +192,7 @@ object SearchablePreferences {
 
             // Player preferences
             add(SearchablePreference(
+                key = "player.page",
                 titleRes = R.string.pref_player,
                 summaryRes = R.string.pref_player_summary,
                 keywords = listOf("player", "orientation", "gestures", "controls", "playback"),
@@ -171,30 +200,35 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.orientation",
                 titleRes = R.string.pref_player_orientation,
                 keywords = listOf("orientation", "landscape", "portrait", "rotate", "screen"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.save_position_on_quit",
                 titleRes = R.string.pref_player_save_position_on_quit,
                 keywords = listOf("save", "position", "resume", "remember", "progress"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.close_after_eof",
                 titleRes = R.string.pref_player_close_after_eof,
                 keywords = listOf("close", "end", "playback", "quit", "finish"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.remember_brightness",
                 titleRes = R.string.pref_player_remember_brightness,
                 keywords = listOf("brightness", "remember", "display", "screen"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.autoplay",
                 titleRes = R.string.pref_autoplay_title,
                 summaryRes = R.string.pref_autoplay_summary,
                 keywords = listOf("autoplay", "playlist", "next", "previous", "folder", "navigation"),
@@ -202,6 +236,7 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.autoplay_next",
                 titleRes = R.string.pref_autoplay_next_video_title,
                 summaryRes = R.string.pref_autoplay_next_video_summary,
                 keywords = listOf("autoplay", "next", "video", "auto", "advance", "continuous"),
@@ -209,6 +244,7 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.episode_header",
                 titleRes = R.string.pref_player_episode_header,
                 summaryRes = R.string.pref_player_episode_header_summary_on,
                 keywords = listOf("episode", "clean", "title", "season", "filename", "header", "movie", "year"),
@@ -216,6 +252,7 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.auto_pip",
                 titleRes = R.string.pref_auto_pip_title,
                 summaryRes = R.string.pref_auto_pip_summary,
                 keywords = listOf("pip", "picture", "auto", "navigation", "home", "back"),
@@ -223,42 +260,49 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.double_tap_ovals",
                 titleRes = R.string.show_splash_ovals_on_double_tap_to_seek,
                 keywords = listOf("oval", "circle", "double tap", "seek", "visual", "feedback"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.double_tap_time",
                 titleRes = R.string.show_time_on_double_tap_to_seek,
                 keywords = listOf("time", "double tap", "seek", "overlay", "timestamp"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.precise_seeking",
                 titleRes = R.string.pref_player_use_precise_seeking,
                 keywords = listOf("precise", "seek", "keyframes", "accurate", "navigation"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.brightness",
                 titleRes = R.string.pref_player_gestures_brightness,
                 keywords = listOf("brightness", "gesture", "swipe", "display", "control"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.volume",
                 titleRes = R.string.pref_player_gestures_volume,
                 keywords = listOf("volume", "gesture", "swipe", "audio", "sound"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.pinch_to_zoom",
                 titleRes = R.string.pref_player_gestures_pinch_to_zoom,
                 keywords = listOf("zoom", "pinch", "gesture", "scale", "crop", "video"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.pinch_to_resize_subtitles",
                 titleRes = R.string.pref_player_gestures_pinch_to_resize_subtitles,
                 summaryRes = R.string.pref_player_gestures_pinch_to_resize_subtitles_summary,
                 keywords = listOf("subtitle", "pinch", "resize", "scale", "font", "gesture", "reset"),
@@ -266,12 +310,14 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.horizontal_swipe_seek",
                 titleRes = R.string.pref_player_gestures_horizontal_swipe_to_seek,
                 keywords = listOf("horizontal", "swipe", "seek", "gesture", "left", "right"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.horizontal_swipe_speed",
                 titleRes = R.string.pref_player_gestures_horizontal_swipe_speed,
                 summaryRes = R.string.pref_player_gestures_horizontal_swipe_speed_summary,
                 keywords = listOf("horizontal", "swipe", "seek", "speed", "seconds", "centimetre", "centimeter", "distance", "sensitivity", "precise"),
@@ -279,6 +325,7 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.full_swipe",
                 titleRes = R.string.pref_player_gestures_full_swipe,
                 summaryRes = R.string.pref_player_gestures_full_swipe_summary,
                 keywords = listOf("full", "swipe", "seek", "three", "minutes", "whole", "video", "end", "distance", "tablet"),
@@ -286,6 +333,7 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.swipe_sensitivity",
                 titleRes = R.string.pref_player_gestures_vertical_swipe_sensitivity,
                 summaryRes = R.string.pref_player_gestures_vertical_swipe_sensitivity_summary,
                 keywords = listOf("vertical", "swipe", "sensitivity", "volume", "brightness", "gesture"),
@@ -293,6 +341,7 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.hold_action",
                 titleRes = R.string.pref_player_gestures_hold_action,
                 summaryRes = R.string.pref_player_gestures_hold_action_summary,
                 keywords = listOf("hold", "gesture", "action", "speed", "brightness", "volume", "long press"),
@@ -300,12 +349,14 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.gestures.hold_speed",
                 titleRes = R.string.pref_player_gestures_hold_for_multiple_speed,
                 keywords = listOf("hold", "speed", "multiple", "playback", "tempo", "rate"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.dynamic_speed_overlay",
                 titleRes = R.string.pref_dynamic_speed_overlay_title,
                 summaryRes = R.string.pref_dynamic_speed_overlay_summary,
                 keywords = listOf("dynamic", "speed", "overlay", "control", "hold", "swipe"),
@@ -313,24 +364,28 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.controls.allow_gestures_in_panels",
                 titleRes = R.string.pref_player_controls_allow_gestures_in_panels,
                 keywords = listOf("gestures", "panels", "controls", "overlay", "enable"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.controls.swap_volume_and_brightness",
                 titleRes = R.string.swap_the_volume_and_brightness_slider,
                 keywords = listOf("swap", "volume", "brightness", "slider", "left", "right"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.controls.loading_circle",
                 titleRes = R.string.pref_player_controls_show_loading_circle,
                 keywords = listOf("loading", "circle", "indicator", "buffer", "progress"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.show_vignette",
                 titleRes = R.string.pref_player_show_vignette,
                 summaryRes = R.string.pref_player_show_vignette_summary,
                 keywords = listOf("vignette", "gradient", "scrim", "dim", "background", "controls"),
@@ -338,18 +393,21 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.display.status_bar",
                 titleRes = R.string.pref_player_display_show_status_bar,
                 keywords = listOf("status bar", "navigation", "system", "show", "hide", "immersive"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.display.navigation_bar",
                 titleRes = R.string.pref_show_navigation_bar_title,
                 keywords = listOf("navigation bar", "controls", "system", "show", "hide"),
                 category = "Player",
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.display.reduce_motion",
                 titleRes = R.string.pref_player_display_reduce_player_animation,
                 keywords = listOf("reduce", "animation", "motion", "performance", "smooth"),
                 category = "Player",
@@ -358,6 +416,7 @@ object SearchablePreferences {
 
             // Gesture preferences
             add(SearchablePreference(
+                key = "gestures.page",
                 titleRes = R.string.pref_gesture,
                 summaryRes = R.string.pref_gesture_summary,
                 keywords = listOf("gesture", "double tap", "swipe", "media controls", "touch"),
@@ -365,12 +424,14 @@ object SearchablePreferences {
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.double_tap_seek_duration",
                 titleRes = R.string.pref_player_double_tap_seek_duration,
                 keywords = listOf("seek", "duration", "double tap", "time", "seconds"),
                 category = "Gestures",
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.double_tap_seek_area",
                 titleRes = R.string.pref_double_tap_seek_area_width_title,
                 summaryRes = R.string.pref_double_tap_seek_area_width_summary,
                 keywords = listOf("area", "width", "double tap", "seek", "region", "percent"),
@@ -378,24 +439,28 @@ object SearchablePreferences {
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.double_tap_left",
                 titleRes = R.string.pref_gesture_double_tap_left_title,
                 keywords = listOf("double tap", "left", "seek", "backward", "rewind"),
                 category = "Gestures",
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.double_tap_center",
                 titleRes = R.string.pref_gesture_double_tap_center_title,
                 keywords = listOf("double tap", "center", "play", "pause", "action"),
                 category = "Gestures",
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.double_tap_right",
                 titleRes = R.string.pref_gesture_double_tap_right_title,
                 keywords = listOf("double tap", "right", "seek", "forward", "advance"),
                 category = "Gestures",
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.single_tap_center",
                 titleRes = R.string.pref_gesture_use_single_tap_for_center_title,
                 summaryRes = R.string.pref_gesture_use_single_tap_for_center_summary,
                 keywords = listOf("single", "tap", "center", "play", "pause"),
@@ -403,24 +468,28 @@ object SearchablePreferences {
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.media_previous",
                 titleRes = R.string.pref_gesture_media_previous,
                 keywords = listOf("media", "previous", "gesture", "control", "backward"),
                 category = "Gestures",
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.media_play",
                 titleRes = R.string.pref_gesture_media_play,
                 keywords = listOf("media", "play", "pause", "gesture", "control"),
                 category = "Gestures",
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "gestures.media_next",
                 titleRes = R.string.pref_gesture_media_next,
                 keywords = listOf("media", "next", "gesture", "control", "forward"),
                 category = "Gestures",
                 screen = GesturePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.tap_thumbnail_to_select",
                 titleRes = R.string.pref_gesture_tap_thumbnail_to_select_title,
                 summaryRes = R.string.pref_gesture_tap_thumbnail_to_select_summary,
                 keywords = listOf("thumbnail", "tap", "select", "play", "preview"),
@@ -430,6 +499,7 @@ object SearchablePreferences {
 
             // Folder preferences
             add(SearchablePreference(
+                key = "folders.page",
                 titleRes = R.string.pref_folders_title,
                 summaryRes = R.string.pref_folders_summary,
                 keywords = listOf("folders", "blacklist", "whitelist", "allow", "only", "hide", "exclude", "manage"),
@@ -439,6 +509,7 @@ object SearchablePreferences {
 
             // Decoder preferences
             add(SearchablePreference(
+                key = "decoder.page",
                 titleRes = R.string.pref_decoder,
                 summaryRes = R.string.pref_decoder_summary,
                 keywords = listOf("decoder", "hardware", "gpu", "debanding", "video"),
@@ -446,6 +517,7 @@ object SearchablePreferences {
                 screen = DecoderPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "decoder.default",
                 titleRes = R.string.pref_decoder_default_title,
                 summaryRes = R.string.pref_decoder_default_summary,
                 keywords = listOf(
@@ -456,6 +528,7 @@ object SearchablePreferences {
                 screen = DecoderPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "decoder.gpu_next",
                 titleRes = R.string.pref_decoder_gpu_next_title,
                 summaryRes = R.string.pref_decoder_gpu_next_summary,
                 keywords = listOf("gpu", "next", "rendering", "backend", "vulkan", "opengl"),
@@ -463,6 +536,7 @@ object SearchablePreferences {
                 screen = DecoderPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "decoder.vulkan",
                 titleRes = R.string.pref_decoder_vulkan_title,
                 summaryRes = R.string.pref_decoder_vulkan_summary,
                 keywords = listOf("vulkan", "gpu", "rendering", "graphics", "api", "performance"),
@@ -470,12 +544,14 @@ object SearchablePreferences {
                 screen = DecoderPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "decoder.debanding",
                 titleRes = R.string.pref_decoder_debanding_title,
                 keywords = listOf("deband", "banding", "gradient", "visual", "quality"),
                 category = "Decoder",
                 screen = DecoderPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "decoder.yuv420p",
                 titleRes = R.string.pref_decoder_yuv420p_title,
                 summaryRes = R.string.pref_decoder_yuv420p_summary,
                 keywords = listOf("yuv420p", "chroma", "subsampling", "format", "compatibility"),
@@ -483,6 +559,7 @@ object SearchablePreferences {
                 screen = DecoderPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "decoder.anime4k",
                 titleRes = R.string.pref_anime4k_title,
                 summaryRes = R.string.pref_anime4k_summary,
                 keywords = listOf("anime4k", "upscale", "shader", "anime", "upscale"),
@@ -490,6 +567,7 @@ object SearchablePreferences {
                 screen = DecoderPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "decoder.shader_peek",
                 titleRes = R.string.pref_decoder_shader_peek_title,
                 summaryRes = R.string.pref_decoder_shader_peek_summary,
                 keywords = listOf("upscale", "suggest", "shader", "anime4k", "peek", "button"),
@@ -499,6 +577,7 @@ object SearchablePreferences {
 
             // Subtitle preferences
             add(SearchablePreference(
+                key = "subtitles.page",
                 titleRes = R.string.pref_subtitles,
                 summaryRes = R.string.pref_subtitles_summary,
                 keywords = listOf("subtitles", "subs", "language", "fonts", "text", "wyzie", "subdl", "subsource"),
@@ -506,6 +585,7 @@ object SearchablePreferences {
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.search",
                 titleRes = R.string.pref_subtitle_search_title,
                 summaryRes = R.string.pref_subtitle_search_summary,
                 keywords = listOf("subtitle", "search", "online", "download", "wyzie", "subdl", "subs", "subsource"),
@@ -513,12 +593,14 @@ object SearchablePreferences {
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.preferred_languages",
                 titleRes = R.string.pref_preferred_languages,
                 keywords = listOf("language", "preferred", "subtitle", "audio", "locale", "code"),
                 category = "Subtitles",
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.autoload",
                 titleRes = R.string.pref_subtitles_autoload_title,
                 summaryRes = R.string.pref_subtitles_autoload_summary,
                 keywords = listOf("autoload", "automatic", "subtitles", "external", "load"),
@@ -526,6 +608,7 @@ object SearchablePreferences {
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.override_ass",
                 titleRes = R.string.player_sheets_sub_override_ass,
                 summaryRes = R.string.player_sheets_sub_override_ass_subtitle,
                 keywords = listOf("ass", "override", "subtitle", "ssa", "format", "style"),
@@ -533,6 +616,7 @@ object SearchablePreferences {
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.scale_by_window",
                 titleRes = R.string.player_sheets_sub_scale_by_window,
                 summaryRes = R.string.player_sheets_sub_scale_by_window_summary,
                 keywords = listOf("scale", "window", "subtitle", "size", "resize", "fit"),
@@ -540,12 +624,14 @@ object SearchablePreferences {
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.fonts_dir",
                 titleRes = R.string.pref_subtitles_fonts_dir,
                 keywords = listOf("fonts", "directory", "subtitle", "custom", "folder"),
                 category = "Subtitles",
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.explain_translation",
                 titleRes = R.string.pref_explain_translation_lang_title,
                 summaryRes = R.string.pref_explain_translation_lang_summary,
                 keywords = listOf("explain", "translation", "language", "dictionary", "word", "meaning"),
@@ -555,6 +641,7 @@ object SearchablePreferences {
 
             // Audio preferences
             add(SearchablePreference(
+                key = "audio.page",
                 titleRes = R.string.pref_audio,
                 summaryRes = R.string.pref_audio_summary,
                 keywords = listOf("audio", "language", "channels", "pitch", "sound"),
@@ -562,12 +649,14 @@ object SearchablePreferences {
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.preferred_languages",
                 titleRes = R.string.pref_preferred_languages,
                 keywords = listOf("language", "preferred", "subtitle", "audio", "locale", "code"),
                 category = "Audio",
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.pitch_correction",
                 titleRes = R.string.pref_audio_pitch_correction_title,
                 summaryRes = R.string.pref_audio_pitch_correction_summary,
                 keywords = listOf("pitch", "correction", "speed", "audio", "sound"),
@@ -575,6 +664,7 @@ object SearchablePreferences {
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.volume_normalization",
                 titleRes = R.string.pref_audio_volume_normalization_title,
                 summaryRes = R.string.pref_audio_volume_normalization_summary,
                 keywords = listOf("volume", "normalization", "loudness", "audio", "sound"),
@@ -582,24 +672,28 @@ object SearchablePreferences {
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.background_playback",
                 titleRes = R.string.background_playback_title,
                 keywords = listOf("background", "playback", "audio", "service", "music"),
                 category = "Audio",
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.channels",
                 titleRes = R.string.pref_audio_channels,
                 keywords = listOf("channels", "audio", "stereo", "surround", "output", "sound"),
                 category = "Audio",
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.volume_boost",
                 titleRes = R.string.pref_audio_volume_boost_cap,
                 keywords = listOf("volume", "boost", "cap", "maximum", "amplify"),
                 category = "Audio",
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.volume_step",
                 titleRes = R.string.pref_audio_volume_step_title,
                 summaryRes = R.string.pref_audio_volume_step_summary,
                 keywords = listOf("volume", "step", "button", "keys", "increment"),
@@ -607,6 +701,7 @@ object SearchablePreferences {
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.volume_min_limit",
                 titleRes = R.string.pref_audio_volume_min_limit_title,
                 summaryRes = R.string.pref_audio_volume_min_limit_summary,
                 keywords = listOf("volume", "minimum", "limit", "floor", "quiet"),
@@ -614,6 +709,7 @@ object SearchablePreferences {
                 screen = AudioPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "audio.volume_max_limit",
                 titleRes = R.string.pref_audio_volume_max_limit_title,
                 summaryRes = R.string.pref_audio_volume_max_limit_summary,
                 keywords = listOf("volume", "maximum", "limit", "ceiling", "loud", "cap"),
@@ -623,6 +719,7 @@ object SearchablePreferences {
 
             // Advanced preferences
             add(SearchablePreference(
+                key = "advanced.page",
                 titleRes = R.string.pref_advanced,
                 summaryRes = R.string.pref_advanced_summary,
                 keywords = listOf("advanced", "mpv", "config", "logs", "debug"),
@@ -630,6 +727,7 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.export",
                 titleRes = R.string.pref_export_settings_title,
                 summaryRes = R.string.pref_export_settings_summary,
                 keywords = listOf("export", "backup", "settings", "xml", "save"),
@@ -637,6 +735,7 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.import",
                 titleRes = R.string.pref_import_settings_title,
                 summaryRes = R.string.pref_import_settings_summary,
                 keywords = listOf("import", "restore", "settings", "xml", "load"),
@@ -644,24 +743,28 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.mpv_conf_storage",
                 titleRes = R.string.pref_advanced_mpv_conf_storage_location,
                 keywords = listOf("storage", "location", "directory", "folder", "config"),
                 category = "Advanced",
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.mpv_conf",
                 titleRes = R.string.pref_advanced_mpv_conf,
                 keywords = listOf("mpv", "conf", "config", "configuration", "settings"),
                 category = "Advanced",
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.input_conf",
                 titleRes = R.string.pref_advanced_input_conf,
                 keywords = listOf("input", "conf", "keybindings", "shortcuts", "keys", "controls"),
                 category = "Advanced",
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.recently_played",
                 titleRes = R.string.pref_advanced_enable_recently_played_title,
                 summaryRes = R.string.pref_advanced_enable_recently_played_summary,
                 keywords = listOf("recently", "played", "history", "enable", "track"),
@@ -669,12 +772,14 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.clear_history",
                 titleRes = R.string.pref_advanced_clear_playback_history,
                 keywords = listOf("clear", "history", "playback", "reset", "delete"),
                 category = "Advanced",
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.clear_config_cache",
                 titleRes = R.string.pref_clear_config_cache_title,
                 summaryRes = R.string.pref_clear_config_cache_summary,
                 keywords = listOf("clear", "config", "cache", "mpv", "settings"),
@@ -682,6 +787,7 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.clear_thumbnail_cache",
                 titleRes = R.string.pref_clear_thumbnail_cache_title,
                 summaryRes = R.string.pref_clear_thumbnail_cache_summary,
                 keywords = listOf("clear", "thumbnail", "cache", "preview", "images"),
@@ -689,12 +795,14 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.clear_fonts_cache",
                 titleRes = R.string.pref_advanced_clear_fonts_cache,
                 keywords = listOf("clear", "fonts", "cache", "reset"),
                 category = "Advanced",
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.verbose_logging",
                 titleRes = R.string.pref_advanced_verbose_logging_title,
                 summaryRes = R.string.pref_advanced_verbose_logging_summary,
                 keywords = listOf("verbose", "logging", "debug", "output"),
@@ -702,6 +810,7 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.dump_logs",
                 titleRes = R.string.pref_advanced_dump_logs_title,
                 summaryRes = R.string.pref_advanced_dump_logs_summary,
                 keywords = listOf("logs", "debug", "dump", "share", "export"),
@@ -711,6 +820,7 @@ object SearchablePreferences {
 
             // About
             add(SearchablePreference(
+                key = "about.page",
                 titleRes = R.string.pref_about_title,
                 summaryRes = R.string.pref_about_summary,
                 keywords = listOf("about", "version", "licenses", "acknowledgments", "info", "app"),
@@ -719,6 +829,15 @@ object SearchablePreferences {
             ))
         }
     }
+
+    private val keyIndex: Map<String, SearchablePreference> by lazy {
+        allPreferences.associateBy { it.key }
+    }
+
+    /**
+     * The preference registered under [key], or null when the key is unknown.
+     */
+    fun byKey(key: String): SearchablePreference? = keyIndex[key]
 
     /**
      * Search preferences by query.

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Headset
@@ -36,6 +37,22 @@ import me.zhanghai.compose.preference.SliderPreference
 import me.zhanghai.compose.preference.TextFieldPreference
 import org.koin.compose.koinInject
 
+/**
+ * Registry key -> LazyColumn item index for the items that hold searchable rows.
+ */
+private val audioAnchors: Map<String, Int> = mapOf(
+  "audio.page" to 0,
+  "audio.preferred_languages" to 1,
+  "audio.pitch_correction" to 3,
+  "audio.volume_normalization" to 3,
+  "audio.background_playback" to 3,
+  "audio.channels" to 3,
+  "audio.volume_boost" to 5,
+  "audio.volume_step" to 5,
+  "audio.volume_min_limit" to 5,
+  "audio.volume_max_limit" to 5,
+)
+
 @Serializable
 object AudioPreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +60,13 @@ object AudioPreferencesScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val preferences = koinInject<AudioPreferences>()
+    val listState = rememberLazyListState()
+
+    SettingsHighlightEffect(
+      screen = AudioPreferencesScreen,
+      listState = listState,
+      anchors = audioAnchors,
+    )
 
     Scaffold(
       topBar = {
@@ -51,6 +75,7 @@ object AudioPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -67,6 +92,7 @@ object AudioPreferencesScreen : Screen {
             value = preferredLanguages,
             onValueChange = { preferences.preferredLanguages.set(it) },
             textToValue = { it },
+            modifier = Modifier.settingsHighlight("audio.preferred_languages"),
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Translate) },
             title = { Text(stringResource(R.string.pref_preferred_languages)) },
             summary = {
@@ -106,6 +132,7 @@ object AudioPreferencesScreen : Screen {
           HapticSwitchPreference(
             value = audioPitchCorrection,
             onValueChange = { preferences.audioPitchCorrection.set(it) },
+            highlightKey = "audio.pitch_correction",
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Tune) },
             title = { Text(stringResource(R.string.pref_audio_pitch_correction_title)) },
             summary = {
@@ -121,6 +148,7 @@ object AudioPreferencesScreen : Screen {
           HapticSwitchPreference(
             value = volumeNormalization,
             onValueChange = { preferences.volumeNormalization.set(it) },
+            highlightKey = "audio.volume_normalization",
             icon = { PreferenceRowIcon(icon = Icons.Outlined.GraphicEq) },
             title = { Text(stringResource(R.string.pref_audio_volume_normalization_title)) },
             summary = {
@@ -136,6 +164,7 @@ object AudioPreferencesScreen : Screen {
           HapticSwitchPreference(
             value = automaticBackgroundPlayback,
             onValueChange = { preferences.automaticBackgroundPlayback.set(it) },
+            highlightKey = "audio.background_playback",
             icon = { PreferenceRowIcon(icon = Icons.Outlined.PlaylistPlay) },
             title = { Text(stringResource(R.string.background_playback_title)) },
           )
@@ -145,6 +174,7 @@ object AudioPreferencesScreen : Screen {
           ExpressiveListPreference(
             value = audioChannel,
             onValueChange = { preferences.audioChannels.set(it) },
+            modifier = Modifier.settingsHighlight("audio.channels"),
             values = AudioChannels.entries,
             valueToText = { AnnotatedString(context.getString(it.title)) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Headset) },
@@ -169,6 +199,7 @@ object AudioPreferencesScreen : Screen {
           SliderPreference(
             value = volumeBoostCap.toFloat(),
             onValueChange = { preferences.volumeBoostCap.set(it.toInt()) },
+            modifier = Modifier.settingsHighlight("audio.volume_boost"),
             icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeUp) },
             title = { Text(stringResource(R.string.pref_audio_volume_boost_cap)) },
             valueRange = 0f..200f,
@@ -191,6 +222,7 @@ object AudioPreferencesScreen : Screen {
           SliderPreference(
             value = volumeStep.toFloat(),
             onValueChange = { preferences.volumeStep.set(it.toInt()) },
+            modifier = Modifier.settingsHighlight("audio.volume_step"),
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Settings) },
             title = { Text(stringResource(R.string.pref_audio_volume_step_title)) },
             valueRange = 1f..5f,
@@ -210,6 +242,7 @@ object AudioPreferencesScreen : Screen {
           SliderPreference(
             value = volumeMinLimit.toFloat(),
             onValueChange = { preferences.volumeMinLimit.set(it.toInt()) },
+            modifier = Modifier.settingsHighlight("audio.volume_min_limit"),
             icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeOff) },
             title = { Text(stringResource(R.string.pref_audio_volume_min_limit_title)) },
             valueRange = 0f..100f,
@@ -228,6 +261,7 @@ object AudioPreferencesScreen : Screen {
           SliderPreference(
             value = volumeMaxLimit.toFloat(),
             onValueChange = { preferences.volumeMaxLimit.set(it.toInt()) },
+            modifier = Modifier.settingsHighlight("audio.volume_max_limit"),
             icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeUp) },
             title = { Text(stringResource(R.string.pref_audio_volume_max_limit_title)) },
             valueRange = 0f..100f,

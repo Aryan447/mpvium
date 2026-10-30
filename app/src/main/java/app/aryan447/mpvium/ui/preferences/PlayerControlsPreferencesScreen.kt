@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -77,6 +78,20 @@ enum class ControlRegion {
   PORTRAIT_BOTTOM,
 }
 
+/**
+ * Registry key -> LazyColumn item index for the items that hold searchable rows.
+ */
+private val playerControlsAnchors: Map<String, Int> = mapOf(
+  "layout.page" to 0,
+  "layout.controls.top_right" to 1,
+  "layout.controls.bottom_right" to 1,
+  "layout.controls.bottom_left" to 1,
+  "layout.controls.portrait_bottom" to 3,
+  "layout.player_colors" to 11,
+  "layout.hide_buttons_background" to 11,
+  "layout.controls_hide_after" to 11,
+)
+
 @Serializable
 object PlayerControlsPreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -91,6 +106,13 @@ object PlayerControlsPreferencesScreen : Screen {
     val bottomRState by appearancePrefs.bottomRightControls.collectAsState()
     val bottomLState by appearancePrefs.bottomLeftControls.collectAsState()
     val portraitBottomState by appearancePrefs.portraitBottomControls.collectAsState()
+    val listState = rememberLazyListState()
+
+    SettingsHighlightEffect(
+      screen = PlayerControlsPreferencesScreen,
+      listState = listState,
+      anchors = playerControlsAnchors,
+    )
 
     val topRightButtons = remember(topRState) {
       appearancePrefs.parseButtons(topRState, mutableSetOf())
@@ -115,6 +137,7 @@ object PlayerControlsPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -129,6 +152,7 @@ object PlayerControlsPreferencesScreen : Screen {
             PreferenceCard {
               PreferenceCategoryWithEditButton(
                 title = stringResource(id = R.string.pref_layout_top_right_controls),
+                highlightKey = "layout.controls.top_right",
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.TOP_RIGHT))
                 },
@@ -139,6 +163,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
               PreferenceCategoryWithEditButton(
                 title = stringResource(id = R.string.pref_layout_bottom_right_controls),
+                highlightKey = "layout.controls.bottom_right",
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_RIGHT))
                 },
@@ -149,6 +174,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
               PreferenceCategoryWithEditButton(
                 title = stringResource(id = R.string.pref_layout_bottom_left_controls),
+                highlightKey = "layout.controls.bottom_left",
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_LEFT))
                 },
@@ -168,6 +194,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
               PreferenceCategoryWithEditButton(
                 title = stringResource(id = R.string.pref_layout_portrait_bottom_controls),
+                highlightKey = "layout.controls.portrait_bottom",
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.PORTRAIT_BOTTOM))
                 },
@@ -236,6 +263,7 @@ object PlayerControlsPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = playerFullColors,
                 onValueChange = { appearancePrefs.playerFullColors.set(it) },
+                highlightKey = "layout.player_colors",
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Palette) },
                 title = {
                   Text(
@@ -260,6 +288,7 @@ object PlayerControlsPreferencesScreen : Screen {
               HapticSwitchPreference(
                 value = hidePlayerButtonsBackground,
                 onValueChange = { appearancePrefs.hidePlayerButtonsBackground.set(it) },
+                highlightKey = "layout.hide_buttons_background",
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.VisibilityOff) },
                 title = {
                   Text(
@@ -293,6 +322,7 @@ object PlayerControlsPreferencesScreen : Screen {
                     AnnotatedString("$value ms")
                   }
                 },
+                modifier = Modifier.settingsHighlight("layout.controls_hide_after"),
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Timer) },
                 title = { Text(text = stringResource(R.string.pref_player_display_hide_player_control_time)) },
                 summary = {
@@ -365,11 +395,13 @@ object PlayerControlsPreferencesScreen : Screen {
   private fun PreferenceCategoryWithEditButton(
     title: String,
     onClick: () -> Unit,
+    highlightKey: String? = null,
   ) {
     Row(
       modifier =
         Modifier
           .fillMaxWidth()
+          .settingsHighlight(highlightKey)
           .clickable(onClick = onClick)
           .padding(horizontal = 16.dp, vertical = 12.dp),
       verticalAlignment = Alignment.CenterVertically,

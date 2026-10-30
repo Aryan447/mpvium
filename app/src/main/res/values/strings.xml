@@ -641,4 +641,6 @@
   <string name="mark_as_none_summary">Clear any status and show as plain unplayed</string>
   <string name="mark_as_updated">Watch status updated</string>
   <string name="mark_as_failed">Failed to update watch status</string>
+  <!-- Settings search -->
+  <string name="settings_highlight_announced">Highlighted: %1$s</string>
 </resources>
