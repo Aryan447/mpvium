@@ -70,6 +70,7 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.domain.subtitles.SubtitleProfileRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.preferences.FoldersPreferences
@@ -110,6 +111,7 @@ object MoviesGridScreen : Screen {
     val streamingPreferences = koinInject<StreamingPreferences>()
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
     // Empty-state hint (issue #87): when whitelist-only leaves no results,
@@ -160,6 +162,14 @@ object MoviesGridScreen : Screen {
         // Remaining movies reuse their cache with no re-scrape.
         runCatching {
           metadataRepository.pruneStaleMetadata(
+            presentMovieKeys = detected.movies.map {
+              StreamingMetadataRepository.movieKeyFor(it.title, it.year)
+            }.toSet(),
+          )
+        }
+        // Drop saved subtitle profiles for deleted movies.
+        runCatching {
+          subtitleProfileRepository.pruneStaleProfiles(
             presentMovieKeys = detected.movies.map {
               StreamingMetadataRepository.movieKeyFor(it.title, it.year)
             }.toSet(),

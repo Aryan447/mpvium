@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Accessibility
+import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Delete
@@ -56,6 +57,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +69,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.subtitles.SubtitleProfileRepository
+import app.aryan447.mpvium.preferences.SubtitleScope
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
@@ -110,6 +114,7 @@ object SubtitlesPreferencesScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val preferences = koinInject<SubtitlesPreferences>()
+    val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
     val fileManager = koinInject<FileManager>()
     val listState = rememberLazyListState()
 
@@ -130,6 +135,7 @@ object SubtitlesPreferencesScreen : Screen {
         var customFontEntries by remember { mutableStateOf<List<CustomFontEntry>>(emptyList()) }
         var fontLoadTrigger by remember { mutableIntStateOf(0) }
         var isLoadingFonts by remember { mutableStateOf(false) }
+        val profileScope = rememberCoroutineScope()
 
         val locationPicker =
           rememberLauncherForActivityResult(
@@ -196,7 +202,7 @@ object SubtitlesPreferencesScreen : Screen {
         ) {
           // === GENERAL SECTION ===
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.general), count = 7)
+            PreferenceSectionHeader(title = stringResource(R.string.general), count = 9)
           }
 
           item {
@@ -335,6 +341,95 @@ object SubtitlesPreferencesScreen : Screen {
                   PreferenceRowIcon(icon = Icons.Outlined.Save)
                 },
               )
+
+              PreferenceDivider()
+
+              val subtitleScope by preferences.subtitleScope.collectAsState()
+              ExpressiveListPreference(
+                value = subtitleScope,
+                onValueChange = { preferences.subtitleScope.set(it) },
+                values = SubtitleScope.entries,
+                valueToText = {
+                  AnnotatedString(
+                    stringResource(
+                      when (it) {
+                        SubtitleScope.GLOBAL -> R.string.pref_subtitles_scope_global
+                        SubtitleScope.PER_TITLE -> R.string.pref_subtitles_scope_per_title
+                      },
+                    ),
+                  )
+                },
+                title = { Text(stringResource(R.string.pref_subtitles_scope_title)) },
+                summary = {
+                  Text(
+                    stringResource(
+                      when (subtitleScope) {
+                        SubtitleScope.GLOBAL -> R.string.pref_subtitles_scope_global_summary
+                        SubtitleScope.PER_TITLE -> R.string.pref_subtitles_scope_per_title_summary
+                      },
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Bookmarks)
+                },
+              )
+
+              PreferenceDivider()
+
+              var showClearProfilesDialog by remember { mutableStateOf(false) }
+              Preference(
+                title = {
+                  Text(
+                    stringResource(R.string.pref_subtitles_clear_profiles),
+                    color = MaterialTheme.colorScheme.error,
+                  )
+                },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_subtitles_clear_profiles_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                onClick = { showClearProfilesDialog = true },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Delete)
+                },
+              )
+
+              if (showClearProfilesDialog) {
+                AlertDialog(
+                  onDismissRequest = { showClearProfilesDialog = false },
+                  containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
+                  title = { Text(stringResource(R.string.pref_subtitles_clear_profiles)) },
+                  text = { Text(stringResource(R.string.pref_subtitles_clear_profiles_confirmation)) },
+                  confirmButton = {
+                    TextButton(
+                      onClick = {
+                        showClearProfilesDialog = false
+                        profileScope.launch(Dispatchers.IO) {
+                          runCatching { subtitleProfileRepository.clearAll() }
+                          withContext(Dispatchers.Main) {
+                            android.widget.Toast.makeText(
+                              context,
+                              R.string.toast_subtitle_profiles_cleared,
+                              android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                          }
+                        }
+                      },
+                    ) {
+                      Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                    }
+                  },
+                  dismissButton = {
+                    TextButton(onClick = { showClearProfilesDialog = false }) {
+                      Text(stringResource(android.R.string.cancel))
+                    }
+                  },
+                )
+              }
 
               PreferenceDivider()
 
