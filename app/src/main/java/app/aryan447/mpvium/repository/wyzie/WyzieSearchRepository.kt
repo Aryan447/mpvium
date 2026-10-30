@@ -680,19 +680,25 @@ class WyzieSearchRepository(
                 val urlExtension = subtitle.url.substringAfterLast("/", "").substringBefore("?").substringAfterLast(".", "")
                 body to (subtitle.format?.lowercase() ?: urlExtension.takeIf { it.isNotEmpty() } ?: "srt")
             }
+            val safeExtension = extension
+                .lowercase()
+                .replace(Regex("""[^a-z0-9]"""), "")
+                .ifBlank { "srt" }
 
             val saveFolderUri = preferences.subtitleSaveFolder.get()
             val folderName = ChecksumUtils.getCRC32(mediaTitle)
-            val fullTitle = mediaTitle.substringBeforeLast(".")
-            val langCode = subtitle.language ?: "en"
-            val subFileName = "${fullTitle}.${langCode}.$extension"
+            val langCode = subtitle.language?.lowercase()?.takeIf { it.isNotBlank() } ?: "en"
+            val baseName = SubtitleFileNameBuilder.baseName(mediaTitle, langCode, subtitle)
 
             if (saveFolderUri.isNotBlank()) {
                 val parentDir = DocumentFile.fromTreeUri(context, Uri.parse(saveFolderUri))
                 if (parentDir?.exists() == true) {
                     var movieDir = parentDir.findFile(folderName) ?: parentDir.createDirectory(folderName)
                     if (movieDir != null) {
-                        val subFile = movieDir.findFile(subFileName) ?: movieDir.createFile("application/octet-stream", subFileName)
+                        val subFileName = SubtitleFileNameBuilder.uniqueName(baseName, safeExtension) {
+                            movieDir.findFile(it) != null
+                        }
+                        val subFile = movieDir.createFile("application/octet-stream", subFileName)
                         if (subFile != null) {
                             context.contentResolver.openOutputStream(subFile.uri)?.use { it.write(bytes) }
                             return@withContext Result.success(subFile.uri)
@@ -703,6 +709,9 @@ class WyzieSearchRepository(
 
             val internalMoviesDir = File(context.getExternalFilesDir(null), "Movies")
             val movieDir = File(internalMoviesDir, folderName).apply { if (!exists()) mkdirs() }
+            val subFileName = SubtitleFileNameBuilder.uniqueName(baseName, safeExtension) {
+                File(movieDir, it).exists()
+            }
             val file = File(movieDir, subFileName)
             FileOutputStream(file).use { it.write(bytes) }
             Result.success(Uri.fromFile(file))

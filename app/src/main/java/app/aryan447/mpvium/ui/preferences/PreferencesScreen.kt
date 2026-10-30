@@ -180,7 +180,7 @@ object PreferencesScreen : Screen {
               DashboardSearchResults(
                 query = query,
                 results = results,
-                onOpen = { backstack.add(it.screen) },
+                onOpen = { openSettingsPreference(backstack, it) },
                 modifier = Modifier.fillMaxSize(),
               )
             } else {
@@ -628,7 +628,7 @@ private fun DashboardSearchResults(
         }
         items(
           items = results,
-          key = { "${it.titleRes}_${it.category}_${it.screen}" },
+          key = { it.key },
         ) { preference ->
           SettingsSearchResultRow(
             preference = preference,

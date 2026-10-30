@@ -21,6 +21,9 @@ import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.domain.subtitles.SubtitleProfile
+import app.aryan447.mpvium.domain.subtitles.SubtitleProfileRepository
+import app.aryan447.mpvium.preferences.SubtitleScope
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
 import app.aryan447.mpvium.utils.media.ChecksumUtils
@@ -99,6 +102,12 @@ class PlayerViewModel(
   private val decoderPreferences: app.aryan447.mpvium.preferences.DecoderPreferences by inject()
   private val anime4kManager: app.aryan447.mpvium.domain.anime4k.Anime4KManager by inject()
   private val browserPreferences: app.aryan447.mpvium.preferences.BrowserPreferences by inject()
+  private val subtitleProfileRepository: SubtitleProfileRepository by inject()
+
+  // Current per-title subtitle profile. Null when scope is GLOBAL or when the
+  // current title has no saved profile yet.
+  val subtitleProfileKey = MutableStateFlow<String?>(null)
+  val currentSubtitleProfile = MutableStateFlow<SubtitleProfile?>(null)
 
   // Playlist items for the playlist sheet
   private val _playlistItems = kotlinx.coroutines.flow.MutableStateFlow<List<app.aryan447.mpvium.ui.player.controls.components.sheets.PlaylistItem>>(emptyList())
@@ -497,6 +506,68 @@ class PlayerViewModel(
 
   // ==================== Audio/Subtitle Management ====================
 
+  /**
+   * Switches the active profile key and loads its saved position/scale.
+   * Called before playback starts so the first subtitle frame already uses the
+   * per-title values instead of briefly showing the global default.
+   */
+  suspend fun loadSubtitleProfile(key: String?) {
+    subtitleProfileKey.value = key
+    currentSubtitleProfile.value =
+      if (key == null) null else runCatching { subtitleProfileRepository.getProfile(key) }.getOrNull()
+  }
+
+  fun applySubtitleProfile(profile: SubtitleProfile?) {
+    val subPos = profile?.subPos ?: subtitlesPreferences.subPos.get()
+    val subScale = profile?.subScale ?: subtitlesPreferences.subScale.get()
+    MPVLib.setPropertyFloat("sub-scale", subScale)
+    MPVLib.setPropertyFloat("secondary-sub-scale", subScale)
+    MPVLib.setPropertyInt("sub-pos", subPos)
+    MPVLib.setPropertyInt("secondary-sub-pos", (subPos - 10).coerceIn(0, 110))
+  }
+
+  /**
+   * Persists a subtitle position/scale change. In PER_TITLE scope this writes
+   * the current title's profile; in GLOBAL scope it preserves the existing
+   * persistSubPos/scale preference behaviour. Call this when a gesture ends,
+   * not on every frame.
+   */
+  fun saveSubtitleSettings(
+    subPos: Int? = null,
+    subScale: Float? = null,
+  ) {
+    val resolvedPos = subPos ?: MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+    val resolvedScale = subScale ?: MPVLib.getPropertyFloat("sub-scale") ?: subtitlesPreferences.subScale.get()
+
+    if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+      val key = subtitleProfileKey.value ?: return
+      currentSubtitleProfile.value = SubtitleProfile(
+        subPos = resolvedPos,
+        subScale = resolvedScale,
+        updatedAt = System.currentTimeMillis(),
+      )
+      viewModelScope.launch(Dispatchers.IO) {
+        runCatching { subtitleProfileRepository.saveProfile(key, resolvedPos, resolvedScale) }
+      }
+    } else {
+      if (subPos != null && subtitlesPreferences.persistSubPos.get()) {
+        subtitlesPreferences.subPos.set(resolvedPos)
+      }
+      if (subScale != null) {
+        subtitlesPreferences.subScale.set(resolvedScale)
+      }
+    }
+  }
+
+  fun forgetCurrentSubtitleProfile() {
+    val key = subtitleProfileKey.value ?: return
+    currentSubtitleProfile.value = null
+    applySubtitleProfile(null)
+    viewModelScope.launch(Dispatchers.IO) {
+      runCatching { subtitleProfileRepository.clearProfile(key) }
+    }
+  }
+
   fun addAudio(uri: Uri) {
     viewModelScope.launch(Dispatchers.IO) {
       runCatching {
@@ -524,6 +595,11 @@ class PlayerViewModel(
       val uriString = uri.toString()
       if (_externalSubtitles.contains(uriString)) {
         android.util.Log.d("PlayerViewModel", "Subtitle already tracked, skipping: $uriString")
+        if (!silent) {
+          withContext(Dispatchers.Main) {
+            showToast(host.context.getString(R.string.player_sheets_subtitle_already_added))
+          }
+        }
         return@launch
       }
 

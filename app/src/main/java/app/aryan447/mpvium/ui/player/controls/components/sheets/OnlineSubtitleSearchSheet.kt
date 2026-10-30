@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.components.PlayerSheet
@@ -35,6 +36,7 @@ import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.utils.media.MediaInfoParser
+import app.aryan447.mpvium.utils.media.SubtitleReleaseParser
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -132,12 +134,13 @@ fun OnlineSubtitleSearchSheet(
     return
   }
 
-  val items = remember(searchResults, isSearching, isOnlineSectionExpanded) {
+  val onlineHeader = stringResource(R.string.player_sheets_online_results, searchResults.size)
+  val items = remember(searchResults, isSearching, isOnlineSectionExpanded, onlineHeader) {
     val list = mutableListOf<OnlineSubtitleItem>()
 
     // Online Search Results section
     if (searchResults.isNotEmpty() || isSearching) {
-        list.add(OnlineSubtitleItem.Header("Online Results (${searchResults.size})"))
+        list.add(OnlineSubtitleItem.Header(onlineHeader))
         if (isOnlineSectionExpanded) {
             list.addAll(searchResults.map { OnlineSubtitleItem.OnlineTrack(it) })
         }
@@ -227,11 +230,14 @@ fun OnlineSubtitleSearchSheet(
             WyzieSubtitleRow(
                 subtitle = item.subtitle,
                 onDownload = { onDownloadOnline(item.subtitle) },
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = 2.dp)
+                modifier = Modifier.padding(
+                    horizontal = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.extraSmall
+                )
             )
         }
         is OnlineSubtitleItem.Header -> {
-            val isOnlineHeader = item.title.startsWith("Online Results")
+            val isOnlineHeader = item.title == onlineHeader
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -408,7 +414,7 @@ private fun TwoPaneSubtitleSearch(
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
             Text(
-              text = "Online Results (${searchResults.size})",
+              text = stringResource(R.string.player_sheets_online_results, searchResults.size),
               style = MaterialTheme.typography.labelLarge,
               color = MaterialTheme.colorScheme.primary,
               fontWeight = FontWeight.Bold,
@@ -430,7 +436,7 @@ private fun TwoPaneSubtitleSearch(
                       onDownload = { onDownloadOnline(subtitle) },
                       modifier = Modifier.padding(
                         horizontal = MaterialTheme.spacing.small,
-                        vertical = 2.dp
+                        vertical = MaterialTheme.spacing.extraSmall
                       )
                     )
                   }
@@ -448,7 +454,7 @@ private fun TwoPaneSubtitleSearch(
               }
               else -> {
                 Text(
-                  text = "Pick a title on the left to load subtitles",
+                  text = stringResource(R.string.player_sheets_pick_title_for_subtitles),
                   style = MaterialTheme.typography.bodyMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
                   textAlign = TextAlign.Center,
@@ -564,31 +570,86 @@ fun WyzieSubtitleRow(
     onDownload: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val release = remember(subtitle.displayName) {
+        SubtitleReleaseParser.parse(subtitle.displayName)
+    }
+    val title = remember(release, subtitle.displayName) {
+        val base = release.title.ifBlank { subtitle.displayName }
+        release.year?.let { "$base ($it)" } ?: base
+    }
+    val quality = remember(release) { release.qualityTags.joinToString(" · ") }
+    val details = remember(subtitle) {
+        buildList {
+            add(subtitle.displayLanguage)
+            if (subtitle.isHearingImpaired) add("HI")
+            subtitle.source?.takeIf { it.isNotBlank() }?.let(::add)
+            subtitle.format?.takeIf { it.isNotBlank() }?.let { add(it.uppercase()) }
+        }.distinct().joinToString(" · ")
+    }
+    val languageCode = remember(subtitle.language, subtitle.displayLanguage) {
+        subtitle.language?.take(2)?.uppercase()?.takeIf { it.length == 2 }
+            ?: subtitle.displayLanguage.take(2).uppercase()
+    }
+
     Surface(
         modifier = modifier.fillMaxWidth().clickable { onDownload() },
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(MaterialTheme.spacing.small),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = subtitle.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = subtitle.displayLanguage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                    subtitle.source?.let { Text(text = " • $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
-                    subtitle.format?.let { Text(text = " • ${it.uppercase()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = languageCode,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (quality.isNotBlank()) {
+                    Text(
+                        text = quality,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Text(
+                    text = details,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             IconButton(onClick = onDownload) {
-                Icon(imageVector = Icons.Default.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    contentDescription = stringResource(R.string.player_sheets_subtitle_download),
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

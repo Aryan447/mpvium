@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.activity.compose.LocalActivity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AlignVerticalCenter
 import androidx.compose.material.icons.filled.EditOff
@@ -25,10 +26,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.SubtitleScope
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.preferences.preference.deleteAndGet
 import app.aryan447.mpvium.presentation.components.ExpandableCard
 import app.aryan447.mpvium.presentation.components.SliderItem
+import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.controls.CARDS_MAX_WIDTH
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import app.aryan447.mpvium.ui.player.controls.panelCardsColors
@@ -41,6 +44,9 @@ import org.koin.compose.koinInject
 @Composable
 fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
   val preferences = koinInject<SubtitlesPreferences>()
+  val activity = LocalActivity.current as? PlayerActivity
+  val subtitleScope by preferences.subtitleScope.collectPreferenceAsState()
+  val currentProfile = activity?.currentSubtitleProfile?.collectAsState()?.value
   var isExpanded by remember { mutableStateOf(true) }
   ExpandableCard(
     isExpanded,
@@ -91,8 +97,15 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
           value = subScale ?: preferences.subScale.get(),
           valueText = (subScale ?: preferences.subScale.get()).toFixed(2).toString(),
           onChange = {
-            preferences.subScale.set(it)
             MPVLib.setPropertyFloat("sub-scale", it)
+          },
+          onChangeFinished = {
+            val scale = MPVLib.getPropertyFloat("sub-scale") ?: preferences.subScale.get()
+            if (activity != null) {
+              activity.saveCurrentSubtitleSettings(subScale = scale)
+            } else {
+              preferences.subScale.set(scale)
+            }
           },
           max = 5f,
           icon = {
@@ -108,11 +121,16 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
           value = subPos ?: preferences.subPos.get(),
           valueText = (subPos ?: preferences.subPos.get()).toString(),
           onChange = {
-            if (persistSubPos) {
-              preferences.subPos.set(it)
-            }
             MPVLib.setPropertyInt("sub-pos", it)
             MPVLib.setPropertyInt("secondary-sub-pos", (it - 10).coerceIn(0, 110))
+          },
+          onChangeFinished = {
+            val position = MPVLib.getPropertyInt("sub-pos") ?: preferences.subPos.get()
+            if (activity != null) {
+              activity.saveCurrentSubtitleSettings(subPos = position)
+            } else if (persistSubPos) {
+              preferences.subPos.set(position)
+            }
           },
           max = 150,
           icon = {
@@ -128,6 +146,24 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
           title = { Text(stringResource(R.string.pref_subtitles_persist_pos_title)) },
           summary = { Text(stringResource(R.string.pref_subtitles_persist_pos_summary)) },
         )
+        if (subtitleScope == SubtitleScope.PER_TITLE && currentProfile != null) {
+          Row(
+            modifier =
+              Modifier
+                .fillMaxWidth()
+                .padding(end = MaterialTheme.spacing.medium),
+            horizontalArrangement = Arrangement.End,
+          ) {
+            TextButton(
+              onClick = { activity?.forgetCurrentSubtitleProfile() },
+            ) {
+              Row {
+                Icon(Icons.Default.EditOff, null)
+                Text(stringResource(R.string.player_sheets_sub_forget_title))
+              }
+            }
+          }
+        }
         Row(
           modifier =
             Modifier
@@ -153,6 +189,9 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
               val scaleValue = if (defaultScaleByWindow) "yes" else "no"
               MPVLib.setPropertyString("sub-scale-by-window", scaleValue)
               MPVLib.setPropertyString("sub-use-margins", scaleValue)
+              if (subtitleScope == SubtitleScope.PER_TITLE) {
+                activity?.forgetCurrentSubtitleProfile()
+              }
             },
           ) {
             Row {

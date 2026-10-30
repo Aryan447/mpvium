@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -30,6 +31,7 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.components.PlayerSheet
 import app.aryan447.mpvium.ui.player.TrackNode
 import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.utils.media.SubtitleReleaseParser
 import kotlinx.collections.immutable.ImmutableList
 
 @Composable
@@ -108,11 +110,19 @@ fun AddTrackRow(
 fun getTrackTitle(
   track: TrackNode,
 ): String {
-  // Handle external subtitles
+  // Handle external subtitles with a readable name instead of the raw file name.
   if (track.isSubtitle && track.external == true && track.externalFilename != null) {
     val decoded = Uri.decode(track.externalFilename)
     val fileName = decoded.substringAfterLast("/")
-    return stringResource(R.string.player_sheets_track_title_wo_lang, track.id, fileName)
+    val release = remember(fileName) { SubtitleReleaseParser.parse(fileName) }
+    val label = remember(release, track.lang, fileName) {
+      buildList {
+        add(release.title.ifBlank { fileName })
+        release.releaseGroup?.let(::add)
+        track.lang?.takeIf { it.isNotBlank() && !it.equals("und", ignoreCase = true) }?.let(::add)
+      }.distinct().joinToString(" · ")
+    }
+    return stringResource(R.string.player_sheets_track_title_wo_lang, track.id, label)
   }
 
   // Build title from available metadata

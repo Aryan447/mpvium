@@ -70,6 +70,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.domain.subtitles.SubtitleProfileRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.preferences.FoldersPreferences
 import app.aryan447.mpvium.preferences.MediaLayoutMode
@@ -108,6 +109,7 @@ object SeriesGridScreen : Screen {
     val streamingPreferences = koinInject<StreamingPreferences>()
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
     // Empty-state hint (issue #87): when whitelist-only leaves no results,
     // offer a one-tap route to Settings → Folders.
@@ -151,6 +153,12 @@ object SeriesGridScreen : Screen {
         // Remaining shows reuse their cache with no re-scrape.
         runCatching {
           metadataRepository.pruneStaleMetadata(
+            presentSeriesIds = detected.series.map { it.id }.toSet(),
+          )
+        }
+        // Drop saved subtitle profiles for shows with zero episodes left.
+        runCatching {
+          subtitleProfileRepository.pruneStaleProfiles(
             presentSeriesIds = detected.series.map { it.id }.toSet(),
           )
         }
