@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -81,6 +82,13 @@ object AppearancePreferencesScreen : Screen {
         val darkModeLabels = DarkMode.entries.associateWith { stringResource(it.titleRes) }
         val appTheme by preferences.appTheme.collectAsState()
         val haptic = LocalHapticFeedback.current
+        val listState = rememberLazyListState()
+
+        SettingsHighlightEffect(
+            screen = AppearancePreferencesScreen,
+            listState = listState,
+            anchors = appearanceAnchors,
+        )
 
         // Determine if we're in dark mode for theme preview
         val isDarkMode = when (darkMode) {
@@ -96,6 +104,7 @@ object AppearancePreferencesScreen : Screen {
         ) { padding ->
             ProvidePreferenceLocals {
                 LazyColumn(
+                    state = listState,
                     modifier =
                     Modifier
                         .fillMaxSize()
@@ -145,6 +154,7 @@ object AppearancePreferencesScreen : Screen {
                                 onValueChange = { newValue ->
                                     preferences.amoledMode.set(newValue)
                                 },
+                                highlightKey = "appearance.amoled",
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.DarkMode) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_amoled_mode_title)) },
                                 summary = {
@@ -169,6 +179,7 @@ object AppearancePreferencesScreen : Screen {
                                 onValueChange = { newValue ->
                                     preferences.pillNavigationBar.set(newValue)
                                 },
+                                highlightKey = "appearance.pill_navigation",
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Smartphone) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_pill_nav_title)) },
                                 summary = {
@@ -188,6 +199,7 @@ object AppearancePreferencesScreen : Screen {
                                 onValueChange = { newValue ->
                                     preferences.showBottomNavLabels.set(newValue)
                                 },
+                                highlightKey = "appearance.bottom_nav_labels",
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.TextFields) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_title)) },
                                 summary = {
@@ -237,7 +249,7 @@ object AppearancePreferencesScreen : Screen {
                     }
 
                     item {
-                        PreferenceCard {
+                        PreferenceCard(highlightKey = "appearance.bottom_nav_tabs") {
                             val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
                             Text(
                                 text = stringResource(id = R.string.pref_appearance_bottom_nav_tabs_summary),
@@ -283,6 +295,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = unlimitedNameLines,
                                 onValueChange = { preferences.unlimitedNameLines.set(it) },
+                                highlightKey = "appearance.unlimited_name_lines",
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.WrapText) },
                                 title = {
                                     Text(
@@ -303,6 +316,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = showUnplayedOldVideoLabel,
                                 onValueChange = { preferences.showUnplayedOldVideoLabel.set(it) },
+                                highlightKey = "appearance.unplayed_old_label",
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.NewReleases) },
                                 title = {
                                     Text(
@@ -323,6 +337,7 @@ object AppearancePreferencesScreen : Screen {
                             SliderPreference(
                                 value = unplayedOldVideoDays.toFloat(),
                                 onValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
+                                modifier = Modifier.settingsHighlight("appearance.unplayed_old_days"),
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Schedule) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_title)) },
                                 valueRange = 1f..30f,
@@ -346,6 +361,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = autoScrollToLastPlayed,
                                 onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
+                                highlightKey = "appearance.auto_scroll",
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.ArrowDownward) },
                                 title = {
                                     Text(text = stringResource(R.string.pref_appearance_auto_scroll_title))
@@ -387,6 +403,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = tapThumbnailToSelect,
                                 onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
+                                highlightKey = "appearance.tap_thumbnail_to_select",
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.TouchApp) },
                                 title = {
                                     Text(
@@ -407,6 +424,7 @@ object AppearancePreferencesScreen : Screen {
                             HapticSwitchPreference(
                                 value = showNetworkThumbnails,
                                 onValueChange = { preferences.showNetworkThumbnails.set(it) },
+                                highlightKey = "appearance.network_thumbnails",
                                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Cloud) },
                                 title = {
                                     Text(
@@ -431,7 +449,7 @@ object AppearancePreferencesScreen : Screen {
                     }
 
                     item {
-                        PreferenceCard {
+                        PreferenceCard(highlightKey = "appearance.home_sections") {
                             Text(
                                 text = stringResource(id = R.string.pref_appearance_home_sections_summary),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -473,6 +491,11 @@ object AppearancePreferencesScreen : Screen {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         preferences.moveHomeSection(section, 1)
                                     },
+                                    highlightKey = if (section == HomeSection.FEATURED) {
+                                        "appearance.featured_hero"
+                                    } else {
+                                        null
+                                    },
                                 )
                             }
                             PreferenceDivider()
@@ -493,6 +516,27 @@ object AppearancePreferencesScreen : Screen {
         }
     }
 }
+
+/**
+ * Registry key -> LazyColumn item index for the items that hold searchable rows.
+ * One card can hold several rows, so the row itself is brought into view after
+ * the item scrolls in.
+ */
+private val appearanceAnchors: Map<String, Int> = mapOf(
+    "appearance.page" to 0,
+    "appearance.amoled" to 1,
+    "appearance.pill_navigation" to 1,
+    "appearance.bottom_nav_labels" to 1,
+    "appearance.bottom_nav_tabs" to 3,
+    "appearance.unlimited_name_lines" to 5,
+    "appearance.unplayed_old_label" to 5,
+    "appearance.unplayed_old_days" to 5,
+    "appearance.auto_scroll" to 5,
+    "appearance.network_thumbnails" to 5,
+    "appearance.tap_thumbnail_to_select" to 5,
+    "appearance.featured_hero" to 7,
+    "appearance.home_sections" to 7,
+)
 
 private fun homeSectionIcon(section: HomeSection): ImageVector =
     when (section) {
@@ -515,11 +559,13 @@ private fun HomeSectionRow(
     canMoveDown: Boolean,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    highlightKey: String? = null,
 ) {
     val haptic = LocalHapticFeedback.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .settingsHighlight(highlightKey)
             .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

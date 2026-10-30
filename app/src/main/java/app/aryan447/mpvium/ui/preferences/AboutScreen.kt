@@ -93,6 +93,14 @@ import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
 
+/**
+ * Registry key -> anchor index. About is a scrolling Column, not a LazyColumn,
+ * so the only searchable entry is the hero card at the top.
+ */
+private val aboutAnchors: Map<String, Int> = mapOf(
+  "about.page" to 0,
+)
+
 @Serializable
 object AboutScreen : Screen {
   @Suppress("DEPRECATION")
@@ -110,6 +118,12 @@ object AboutScreen : Screen {
     val buildType = BuildConfig.BUILD_TYPE
     val deviceInfo = remember { collectDeviceInfo() }
     var deviceInfoCopied by remember { mutableStateOf(false) }
+
+    SettingsHighlightEffect(
+      screen = AboutScreen,
+      listState = null,
+      anchors = aboutAnchors,
+    )
     val iconEnter = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val iconExit = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
