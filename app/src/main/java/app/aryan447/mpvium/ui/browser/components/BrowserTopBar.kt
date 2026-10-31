@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.GlassKind
@@ -86,6 +87,8 @@ fun BrowserTopBar(
   modifier: Modifier = Modifier,
   onBackClick: (() -> Unit)? = null,
   onSortClick: (() -> Unit)? = null,
+  onLayoutToggleClick: (() -> Unit)? = null,
+  layoutMode: MediaLayoutMode? = null,
   onSearchClick: (() -> Unit)? = null,
   onSettingsClick: (() -> Unit)? = null,
   onDeleteClick: (() -> Unit)? = null,
@@ -130,6 +133,8 @@ fun BrowserTopBar(
       title = title,
       onBackClick = onBackClick,
       onSortClick = onSortClick,
+      onLayoutToggleClick = onLayoutToggleClick,
+      layoutMode = layoutMode,
       onSearchClick = onSearchClick,
       onSettingsClick = onSettingsClick,
       additionalActions = additionalActions,
@@ -149,6 +154,8 @@ private fun NormalTopBar(
   title: String,
   onBackClick: (() -> Unit)?,
   onSortClick: (() -> Unit)?,
+  onLayoutToggleClick: (() -> Unit)?,
+  layoutMode: MediaLayoutMode?,
   onSearchClick: (() -> Unit)?,
   onSettingsClick: (() -> Unit)?,
   additionalActions: @Composable RowScope.() -> Unit,
@@ -272,6 +279,13 @@ private fun NormalTopBar(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
+      }
+      if (onLayoutToggleClick != null && layoutMode != null) {
+        MediaLayoutToggleButton(
+          layoutMode = layoutMode,
+          onToggle = onLayoutToggleClick,
+          modifier = Modifier.padding(horizontal = 2.dp),
+        )
       }
       if (onSortClick != null) {
         IconButton(

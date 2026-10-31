@@ -608,6 +608,8 @@
   <string name="no_folders_or_supported_files">No folders or supported files</string>
   <string name="hello_world">Hello world</string>
   <!-- M3U Playlist Strings -->
+  <string name="switch_to_list_view">Switch to list view</string>
+  <string name="switch_to_grid_view">Switch to grid view</string>
   <string name="playlist_add_m3u_title">Add M3U Playlist</string>
   <string name="playlist_add_m3u_description">Enter the URL of an M3U playlist file</string>
   <string name="playlist_url_label">Playlist URL</string>
