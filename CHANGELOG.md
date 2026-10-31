@@ -11,7 +11,8 @@
 - Optional "Aura" content-reactive theme (Settings → Appearance → Theme, off by default): accent and ambient glow colors dynamically follow the poster of the most recently played in-progress video or detail screen, with contrast enforcement, muddy color rejection, and smooth cross-fading.
 
 ### Changed
-
+- Grid and list layout toggle per tab across Shows, Movies, and Folders tabs, persisting choices across app restarts.
+- Inline list view for Shows and Movies tabs with poster thumbnail, title, year, duration/episodes, rating, and watch progress.
 - Online subtitle search results now show a parsed title plus compact quality tags (resolution, source, codec, audio, release group) instead of raw, wrapping release filenames.
 
 ### Fixed
