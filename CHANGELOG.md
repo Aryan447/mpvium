@@ -8,6 +8,8 @@
 - Toggle to hide chapter markers in the seekbar (Settings → Appearance → Seekbar). Chapters, the chapters sheet and skip-chapter gestures are unaffected.
 
 ### Changed
+- Grid and list layout toggle per tab across Shows, Movies, and Folders tabs, persisting choices across app restarts.
+- Inline list view for Shows and Movies tabs with poster thumbnail, title, year, duration/episodes, rating, and watch progress.
 
 - Online subtitle search results now show a parsed title plus compact quality tags (resolution, source, codec, audio, release group) instead of raw, wrapping release filenames.
 
