@@ -3,6 +3,7 @@ package app.aryan447.mpvium.ui.preferences
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Animation
 import androidx.compose.material.icons.outlined.AspectRatio
@@ -71,6 +72,44 @@ object PlayerPreferencesScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val preferences = koinInject<PlayerPreferences>()
+    val listState = rememberLazyListState()
+    val highlightState = rememberSettingsHighlightState(
+      screen = PlayerPreferencesScreen,
+      listState = listState,
+      keyToIndex = mapOf(
+        "player.general" to 1,
+        "player.orientation" to 1,
+        "player.save_position_on_quit" to 1,
+        "player.close_after_eof" to 1,
+        "player.autoplay" to 3,
+        "player.autoplay_next" to 1,
+        "player.episode_header" to 3,
+        "player.remember_brightness" to 5,
+        "player.auto_pip" to 5,
+        "player.seek_splash_ovals" to 7,
+        "player.seek_show_time" to 7,
+        "player.use_precise_seeking" to 7,
+        "player.gestures.brightness" to 9,
+        "player.gestures.volume" to 9,
+        "player.gestures.pinch_to_zoom" to 9,
+        "player.gestures.pinch_to_resize_subtitles" to 9,
+        "player.gestures.horizontal_swipe_to_seek" to 9,
+        "player.gestures.horizontal_swipe_speed" to 9,
+        "player.gestures.full_swipe" to 9,
+        "player.gestures.swipe_sensitivity" to 9,
+        "player.gestures.hold_action" to 9,
+        "player.gestures.hold_speed" to 9,
+        "player.gestures.dynamic_speed_overlay" to 9,
+        "player.gestures.allow_in_panels" to 11,
+        "player.gestures.swap_volume_brightness" to 11,
+        "player.controls.loading_circle" to 11,
+        "player.controls.vignette" to 11,
+        "player.display.status_bar" to 13,
+        "player.display.navigation_bar" to 13,
+        "player.display.reduce_animation" to 13,
+      ),
+    )
+
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(id = R.string.pref_player))
@@ -78,6 +117,7 @@ object PlayerPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -89,7 +129,13 @@ object PlayerPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "player.general",
+                isCard = true,
+              ),
+            ) {
               val orientation by preferences.orientation.collectAsState()
               ExpressiveListPreference(
                 value = orientation,
@@ -104,6 +150,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.orientation"),
               )
 
               PreferenceDivider()
@@ -114,6 +161,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.savePositionOnQuit::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.History) },
                 title = { Text(stringResource(R.string.pref_player_save_position_on_quit)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.save_position_on_quit"),
               )
 
               PreferenceDivider()
@@ -143,6 +191,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.closeAfterReachingEndOfVideo::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Close) },
                 title = { Text(stringResource(id = R.string.pref_player_close_after_eof)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.close_after_eof"),
               )
 
               PreferenceDivider()
@@ -162,6 +211,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.autoplay_next"),
               )
             }
           }
@@ -190,6 +240,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.episode_header"),
               )
 
               if (showEpisodeHeader) {
@@ -229,6 +280,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.autoplay"),
               )
             }
           }
@@ -245,6 +297,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.rememberBrightness::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.BrightnessMedium) },
                 title = { Text(text = stringResource(R.string.pref_player_remember_brightness)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.remember_brightness"),
               )
 
               PreferenceDivider()
@@ -261,6 +314,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.auto_pip"),
               )
 
               PreferenceDivider()
@@ -296,6 +350,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.showDoubleTapOvals::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Gesture) },
                 title = { Text(stringResource(R.string.show_splash_ovals_on_double_tap_to_seek)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.seek_splash_ovals"),
               )
 
               PreferenceDivider()
@@ -306,6 +361,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.showSeekTimeWhileSeeking::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Schedule) },
                 title = { Text(stringResource(R.string.show_time_on_double_tap_to_seek)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.seek_show_time"),
               )
 
               PreferenceDivider()
@@ -316,6 +372,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.usePreciseSeeking::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.GpsFixed) },
                 title = { Text(stringResource(R.string.pref_player_use_precise_seeking)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.use_precise_seeking"),
               )
 
               PreferenceDivider()
@@ -380,6 +437,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.brightnessGesture::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.BrightnessMedium) },
                 title = { Text(stringResource(R.string.pref_player_gestures_brightness)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.brightness"),
               )
 
               PreferenceDivider()
@@ -390,6 +448,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.volumeGesture::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeUp) },
                 title = { Text(stringResource(R.string.pref_player_gestures_volume)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.volume"),
               )
 
               PreferenceDivider()
@@ -400,6 +459,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.pinchToZoomGesture::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.ZoomIn) },
                 title = { Text(stringResource(R.string.pref_player_gestures_pinch_to_zoom)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.pinch_to_zoom"),
               )
 
               PreferenceDivider()
@@ -416,6 +476,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.pinch_to_resize_subtitles"),
               )
 
               PreferenceDivider()
@@ -426,6 +487,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.horizontalSwipeToSeek::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Swipe) },
                 title = { Text(stringResource(R.string.pref_player_gestures_horizontal_swipe_to_seek)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.horizontal_swipe_to_seek"),
               )
 
               PreferenceDivider()
@@ -452,6 +514,7 @@ object PlayerPreferencesScreen : Screen {
                 },
                 onSliderValueChange = { preferences.horizontalSwipeSecondsPerCm.set(it.roundToInt().toFloat()) },
                 sliderValue = horizontalSwipeSecondsPerCm,
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.horizontal_swipe_speed"),
               )
 
               PreferenceDivider()
@@ -470,6 +533,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.full_swipe"),
               )
 
               PreferenceDivider()
@@ -490,6 +554,7 @@ object PlayerPreferencesScreen : Screen {
                 },
                 onSliderValueChange = { preferences.verticalSwipeSensitivity.set(it.toFixed(2)) },
                 sliderValue = verticalSwipeSensitivity,
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.swipe_sensitivity"),
               )
 
               PreferenceDivider()
@@ -508,6 +573,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.hold_action"),
               )
 
               if (holdGestureMode == HoldGestureMode.SpeedBoost) {
@@ -532,6 +598,7 @@ object PlayerPreferencesScreen : Screen {
                   },
                   onSliderValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
                   sliderValue = holdForMultipleSpeed,
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.hold_speed"),
                 )
 
                 PreferenceDivider()
@@ -547,7 +614,8 @@ object PlayerPreferencesScreen : Screen {
                       "Show advance overlay for speed control during long press and swipe",
                       color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                  }
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.dynamic_speed_overlay"),
                 )
               } else {
                 PreferenceDivider()
@@ -580,6 +648,7 @@ object PlayerPreferencesScreen : Screen {
                     text = stringResource(id = R.string.pref_player_controls_allow_gestures_in_panels),
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.allow_in_panels"),
               )
 
               PreferenceDivider()
@@ -590,6 +659,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.swapVolumeAndBrightness::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.SwapHoriz) },
                 title = { Text(stringResource(R.string.swap_the_volume_and_brightness_slider)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.swap_volume_brightness"),
               )
 
               PreferenceDivider()
@@ -600,6 +670,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.showLoadingCircle::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Refresh) },
                 title = { Text(stringResource(R.string.pref_player_controls_show_loading_circle)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.loading_circle"),
               )
 
               PreferenceDivider()
@@ -616,6 +687,7 @@ object PlayerPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.vignette"),
               )
             }
           }
@@ -632,6 +704,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.showSystemStatusBar::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Smartphone) },
                 title = { Text(stringResource(R.string.pref_player_display_show_status_bar)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.display.status_bar"),
               )
 
               PreferenceDivider()
@@ -642,6 +715,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.showSystemNavigationBar::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.PhoneAndroid) },
                 title = { Text("Show navigation bar with controls") },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.display.navigation_bar"),
               )
 
               PreferenceDivider()
@@ -652,6 +726,7 @@ object PlayerPreferencesScreen : Screen {
                 onValueChange = preferences.reduceMotion::set,
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Animation) },
                 title = { Text(stringResource(R.string.pref_player_display_reduce_player_animation)) },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.display.reduce_animation"),
               )
             }
           }

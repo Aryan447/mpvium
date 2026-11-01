@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Fullscreen
 import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Translate
@@ -67,6 +69,8 @@ import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.SubtitleScope
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.repository.wyzie.WyzieEncodings
@@ -95,6 +99,7 @@ object SubtitlesPreferencesScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val preferences = koinInject<SubtitlesPreferences>()
+    val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
     val fileManager = koinInject<FileManager>()
 
     Scaffold(
@@ -165,7 +170,24 @@ object SubtitlesPreferencesScreen : Screen {
             preferences.subtitleSaveFolder.set(uri.toString())
           }
 
+        val listState = rememberLazyListState()
+        val highlightState = rememberSettingsHighlightState(
+          screen = SubtitlesPreferencesScreen,
+          listState = listState,
+          keyToIndex = mapOf(
+            "subtitles.general" to 1,
+            "subtitles.preferred_languages" to 1,
+            "subtitles.explain_translation_lang" to 1,
+            "subtitles.autoload" to 1,
+            "subtitles.override_ass" to 1,
+            "subtitles.scale_by_window" to 1,
+            "subtitles.fonts_dir" to 1,
+            "subtitles.search" to 3,
+          ),
+        )
+
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -177,10 +199,20 @@ object SubtitlesPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "subtitles.general",
+                isCard = true,
+              ),
+            ) {
 
               val preferredLanguages by preferences.preferredLanguages.collectAsState()
               TextFieldPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.preferred_languages",
+                ),
                 value = preferredLanguages,
                 onValueChange = preferences.preferredLanguages::set,
                 textToValue = { it },
@@ -218,6 +250,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val explainTranslationLang by preferences.explainTranslationLang.collectAsState()
               ExpressiveListPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.explain_translation_lang",
+                ),
                 value = explainTranslationLang,
                 onValueChange = { preferences.explainTranslationLang.set(it) },
                 values = explainTranslationLanguages,
@@ -240,6 +276,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val autoload by preferences.autoloadMatchingSubtitles.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.autoload",
+                ),
                 value = autoload,
                 onValueChange = { preferences.autoloadMatchingSubtitles.set(it) },
                 title = { Text(stringResource(R.string.pref_subtitles_autoload_title)) },
@@ -258,6 +298,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val overrideAss by preferences.overrideAssSubs.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.override_ass",
+                ),
                 value = overrideAss,
                 onValueChange = { preferences.overrideAssSubs.set(it) },
                 title = { Text(stringResource(R.string.player_sheets_sub_override_ass)) },
@@ -276,6 +320,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val scaleByWindow by preferences.scaleByWindow.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.scale_by_window",
+                ),
                 value = scaleByWindow,
                 onValueChange = { preferences.scaleByWindow.set(it) },
                 title = { Text(stringResource(R.string.player_sheets_sub_scale_by_window)) },
@@ -310,10 +358,44 @@ object SubtitlesPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              val subtitleScope by preferences.subtitleScope.collectAsState()
+              ExpressiveListPreference(
+                value = subtitleScope,
+                onValueChange = { preferences.subtitleScope.set(it) },
+                values = SubtitleScope.entries,
+                valueToText = { scope ->
+                  androidx.compose.ui.text.AnnotatedString(
+                    when (scope) {
+                      SubtitleScope.GLOBAL -> stringResource(R.string.pref_subtitles_scope_global)
+                      SubtitleScope.PER_TITLE -> stringResource(R.string.pref_subtitles_scope_per_title)
+                    }
+                  )
+                },
+                title = { Text(stringResource(R.string.pref_subtitles_scope_title)) },
+                summary = {
+                  Text(
+                    when (subtitleScope) {
+                      SubtitleScope.GLOBAL -> stringResource(R.string.pref_subtitles_scope_global_summary)
+                      SubtitleScope.PER_TITLE -> stringResource(R.string.pref_subtitles_scope_per_title_summary)
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Layers)
+                },
+              )
+
+              PreferenceDivider()
+
               // Directory picker preference with reload and clear icons on the right
               Box(
                 modifier =
                   Modifier
+                    .settingsHighlightTarget(
+                      state = highlightState,
+                      key = "subtitles.fonts_dir",
+                    )
                     .fillMaxWidth()
                     .clickable { locationPicker.launch(null) }
                     .padding(vertical = 16.dp, horizontal = 16.dp),
@@ -411,7 +493,13 @@ object SubtitlesPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "subtitles.search",
+                isCard = true,
+              ),
+            ) {
               // Location display
               Box(
                 modifier = Modifier
@@ -639,6 +727,59 @@ object SubtitlesPreferencesScreen : Screen {
                   },
                   dismissButton = {
                     TextButton(onClick = { showClearDialog = false }) {
+                      Text(stringResource(android.R.string.cancel))
+                    }
+                  }
+                )
+              }
+
+              PreferenceDivider()
+
+              var showClearProfilesDialog by remember { mutableStateOf(false) }
+
+              Preference(
+                title = { Text(stringResource(R.string.pref_subtitles_clear_all_profiles), color = MaterialTheme.colorScheme.error) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_subtitles_clear_all_profiles_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                onClick = { showClearProfilesDialog = true },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Delete)
+                },
+              )
+
+              if (showClearProfilesDialog) {
+                AlertDialog(
+                  onDismissRequest = { showClearProfilesDialog = false },
+                  containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
+                  title = { Text(stringResource(R.string.pref_subtitles_clear_all_profiles_dialog_title)) },
+                  text = { Text(stringResource(R.string.pref_subtitles_clear_all_profiles_dialog_message)) },
+                  confirmButton = {
+                    TextButton(
+                      onClick = {
+                        showClearProfilesDialog = false
+                        scope.launch(Dispatchers.IO) {
+                          runCatching {
+                            subtitleProfileRepository.clearAllProfiles()
+                            withContext(Dispatchers.Main) {
+                              android.widget.Toast.makeText(context, R.string.toast_subtitle_profiles_cleared, android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                          }.onFailure { e ->
+                            withContext(Dispatchers.Main) {
+                              android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                          }
+                        }
+                      }
+                    ) {
+                      Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                    }
+                  },
+                  dismissButton = {
+                    TextButton(onClick = { showClearProfilesDialog = false }) {
                       Text(stringResource(android.R.string.cancel))
                     }
                   }

@@ -44,6 +44,8 @@ import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.SubtitleScope
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import app.aryan447.mpvium.ui.player.controls.PlayerControls
 import app.aryan447.mpvium.ui.theme.MpviumTheme
 import app.aryan447.mpvium.ui.widget.ContinueWatchingWidgetProvider
@@ -136,6 +138,11 @@ class PlayerActivity :
    * Preferences for subtitle settings.
    */
   private val subtitlesPreferences: SubtitlesPreferences by inject()
+
+  /**
+   * Repository for subtitle profiles (position/scale per title).
+   */
+  private val subtitleProfileRepository: SubtitleProfileRepository by inject()
 
   /**
    * Preferences for advanced settings.
@@ -421,6 +428,16 @@ class PlayerActivity :
 
     // Set HTTP headers (including referer) BEFORE playing the file
     setHttpHeadersFromExtras(intent.extras)
+
+    if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE && fileName.isNotBlank()) {
+      val key = subtitleProfileRepository.resolveKey(fileName, intent.data?.path ?: intent.data?.toString())
+      val profile = subtitleProfileRepository.getProfile(key)
+      if (profile != null) {
+        MPVLib.setPropertyFloat("sub-scale", profile.subScale)
+        MPVLib.setPropertyInt("sub-pos", profile.subPos)
+        MPVLib.setPropertyInt("secondary-sub-pos", (profile.subPos - 10).coerceIn(0, 110))
+      }
+    }
 
     getPlayableUri(intent)?.let(player::playFile)
 
@@ -1849,7 +1866,7 @@ class PlayerActivity :
     // Don't force media-title for m3u/m3u8 streams - let MPV provide it
     if (!isCurrentStreamM3U()) {
       MPVLib.setPropertyString("force-media-title", fileName)
-      viewModel.setMediaTitle(fileName)
+      viewModel.setMediaTitle(fileName, intent.data?.path ?: intent.data?.toString())
     }
 
     viewModel.unpause()
@@ -2061,10 +2078,27 @@ class PlayerActivity :
     MPVLib.setPropertyString("sub-scale-by-window", scaleValue)
     MPVLib.setPropertyString("sub-use-margins", scaleValue)
 
-    MPVLib.setPropertyFloat("sub-scale", subtitlesPreferences.subScale.get())
-    val subPos = subtitlesPreferences.subPos.get()
-    MPVLib.setPropertyInt("sub-pos", subPos)
-    MPVLib.setPropertyInt("secondary-sub-pos", (subPos - 10).coerceIn(0, 110))
+    val effectiveScale: Float
+    val effectivePos: Int
+    if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+      val filePath = intent.data?.path ?: intent.data?.toString()
+      val key = subtitleProfileRepository.resolveKey(fileName, filePath)
+      val profile = subtitleProfileRepository.getProfile(key)
+      if (profile != null) {
+        effectiveScale = profile.subScale
+        effectivePos = profile.subPos
+      } else {
+        effectiveScale = subtitlesPreferences.subScale.get()
+        effectivePos = subtitlesPreferences.subPos.get()
+      }
+    } else {
+      effectiveScale = subtitlesPreferences.subScale.get()
+      effectivePos = subtitlesPreferences.subPos.get()
+    }
+
+    MPVLib.setPropertyFloat("sub-scale", effectiveScale)
+    MPVLib.setPropertyInt("sub-pos", effectivePos)
+    MPVLib.setPropertyInt("secondary-sub-pos", (effectivePos - 10).coerceIn(0, 110))
 
     Log.d(TAG, "Applied subtitle preferences")
   }
@@ -3272,6 +3306,16 @@ class PlayerActivity :
       }
     }
 
+    if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE && fileName.isNotBlank()) {
+      val key = subtitleProfileRepository.resolveKey(fileName, uri.path ?: uri.toString())
+      val profile = subtitleProfileRepository.getProfile(key)
+      val pos = profile?.subPos ?: subtitlesPreferences.subPos.get()
+      val scale = profile?.subScale ?: subtitlesPreferences.subScale.get()
+      MPVLib.setPropertyFloat("sub-scale", scale)
+      MPVLib.setPropertyInt("sub-pos", pos)
+      MPVLib.setPropertyInt("secondary-sub-pos", (pos - 10).coerceIn(0, 110))
+    }
+
     // Load the new video
     // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
     lifecycleScope.launch(Dispatchers.Default) {
@@ -3283,7 +3327,7 @@ class PlayerActivity :
     val isM3U = uri.toString().lowercase().contains(".m3u8") || uri.toString().lowercase().contains(".m3u")
     if (!isM3U) {
       MPVLib.setPropertyString("force-media-title", fileName)
-      viewModel.setMediaTitle(fileName)
+      viewModel.setMediaTitle(fileName, uri.path ?: uri.toString())
     }
 
     // Update media session metadata

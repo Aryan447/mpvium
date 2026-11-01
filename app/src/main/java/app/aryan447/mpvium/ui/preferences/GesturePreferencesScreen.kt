@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Forward10
@@ -57,6 +58,24 @@ object GesturePreferencesScreen : Screen {
     var showCustomSeekDialog by remember { mutableStateOf(false) }
     var customSeekValue by remember { mutableStateOf("") }
 
+    val listState = rememberLazyListState()
+    val highlightState = rememberSettingsHighlightState(
+      screen = GesturePreferencesScreen,
+      listState = listState,
+      keyToIndex = mapOf(
+        "gestures.general" to 1,
+        "gestures.double_tap_seek_duration" to 1,
+        "gestures.double_tap_seek_area_width" to 1,
+        "gestures.double_tap_left" to 1,
+        "gestures.double_tap_center" to 1,
+        "gestures.double_tap_right" to 1,
+        "gestures.single_tap_center" to 1,
+        "gestures.media_previous" to 3,
+        "gestures.media_play" to 3,
+        "gestures.media_next" to 3,
+      ),
+    )
+
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(R.string.pref_gesture))
@@ -64,6 +83,7 @@ object GesturePreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -74,12 +94,22 @@ object GesturePreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "gestures.general",
+                isCard = true,
+              ),
+            ) {
           val doubleTapSeekDuration by preferences.doubleTapToSeekDuration.collectAsState()
           val predefinedValues = listOf(3, 5, 10, 15, 20, 25, 30)
           val isCustomValue = !predefinedValues.contains(doubleTapSeekDuration)
 
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.double_tap_seek_duration",
+            ),
             value = if (isCustomValue) -1 else doubleTapSeekDuration,
             onValueChange = { newValue ->
               if (newValue == -1) {
@@ -159,6 +189,10 @@ object GesturePreferencesScreen : Screen {
           val seekAreaValues = listOf(20, 25, 30, 35, 40, 45)
 
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.double_tap_seek_area_width",
+            ),
             value = doubleTapSeekAreaWidth,
             onValueChange = { preferences.doubleTapSeekAreaWidth.set(it) },
             values = seekAreaValues,
@@ -177,6 +211,10 @@ object GesturePreferencesScreen : Screen {
 
           val leftDoubleTap by preferences.leftSingleActionGesture.collectAsState()
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.double_tap_left",
+            ),
             value = leftDoubleTap,
             onValueChange = { preferences.leftSingleActionGesture.set(it) },
             values = SingleActionGesture.entries,
@@ -193,6 +231,10 @@ object GesturePreferencesScreen : Screen {
 
           val centerDoubleTap by preferences.centerSingleActionGesture.collectAsState()
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.double_tap_center",
+            ),
             value = centerDoubleTap,
             onValueChange = { preferences.centerSingleActionGesture.set(it) },
             values =
@@ -221,6 +263,10 @@ object GesturePreferencesScreen : Screen {
 
           val rightDoubleTap by preferences.rightSingleActionGesture.collectAsState()
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.double_tap_right",
+            ),
             value = rightDoubleTap,
             onValueChange = { preferences.rightSingleActionGesture.set(it) },
             values = SingleActionGesture.entries,
@@ -236,6 +282,10 @@ object GesturePreferencesScreen : Screen {
           PreferenceDivider()
 
           HapticSwitchPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.single_tap_center",
+            ),
             value = useSingleTapForCenter,
             onValueChange = { preferences.useSingleTapForCenter.set(it) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Gesture) },
@@ -271,6 +321,10 @@ object GesturePreferencesScreen : Screen {
             PreferenceCard {
           val mediaPreviousGesture by preferences.mediaPreviousGesture.collectAsState()
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.media_previous",
+            ),
             value = mediaPreviousGesture,
             onValueChange = { preferences.mediaPreviousGesture.set(it) },
             values = SingleActionGesture.entries,
@@ -286,6 +340,10 @@ object GesturePreferencesScreen : Screen {
           PreferenceDivider()
           val mediaPlayGesture by preferences.mediaPlayGesture.collectAsState()
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.media_play",
+            ),
             value = mediaPlayGesture,
             onValueChange = { preferences.mediaPlayGesture.set(it) },
             values =
@@ -306,6 +364,10 @@ object GesturePreferencesScreen : Screen {
           PreferenceDivider()
           val mediaNextGesture by preferences.mediaNextGesture.collectAsState()
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "gestures.media_next",
+            ),
             value = mediaNextGesture,
             onValueChange = { preferences.mediaNextGesture.set(it) },
             values = SingleActionGesture.entries,
