@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,6 +74,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
@@ -83,6 +86,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import org.koin.compose.koinInject
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -201,9 +205,13 @@ fun SeekbarWithTimers(
   seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
   loopStart: Float? = null,
   loopEnd: Float? = null,
+  chaptersInSeekbar: Boolean? = null,
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  val appearancePreferences = if (LocalInspectionMode.current) null else koinInject<AppearancePreferences>()
+  val prefChaptersInSeekbar by appearancePreferences?.chaptersInSeekbar?.collectAsState() ?: remember { mutableStateOf(false) }
+  val showChapters = chaptersInSeekbar ?: prefChaptersInSeekbar
   var isUserInteracting by remember { mutableStateOf(false) }
   var userPosition by remember { mutableFloatStateOf(position) }
 
@@ -379,6 +387,7 @@ fun SeekbarWithTimers(
             onSeekFinished = { },
             loopStart = loopStart,
             loopEnd = loopEnd,
+            chaptersInSeekbar = showChapters,
           )
         }
         SeekbarStyle.Wavy -> {
@@ -394,6 +403,7 @@ fun SeekbarWithTimers(
             onSeekFinished = { }, // Touch handled by parent
             loopStart = loopStart,
             loopEnd = loopEnd,
+            chaptersInSeekbar = showChapters,
           )
         }
         SeekbarStyle.Thick -> {
@@ -409,6 +419,7 @@ fun SeekbarWithTimers(
             onSeekFinished = { },
             loopStart = loopStart,
             loopEnd = loopEnd,
+            chaptersInSeekbar = showChapters,
           )
         }
       }
@@ -529,6 +540,7 @@ private fun SquigglySeekbar(
   onSeekFinished: () -> Unit,
   loopStart: Float? = null,
   loopEnd: Float? = null,
+  chaptersInSeekbar: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val primaryColor = MaterialTheme.colorScheme.primary
@@ -673,7 +685,7 @@ private fun SquigglySeekbar(
     val clipTop = lineAmplitude + strokeWidth
 
     val chapterGapHalf = 1.dp.toPx()
-    val chapterGaps = if (totalWidth > 0f && duration > 0f && chapters.isNotEmpty()) {
+    val chapterGaps = if (chaptersInSeekbar && totalWidth > 0f && duration > 0f && chapters.isNotEmpty()) {
       chapters.mapNotNull { chapter ->
         val chapterStart = chapter.start
         if (chapterStart > 0f && chapterStart < duration) {
@@ -841,6 +853,7 @@ fun StandardSeekbar(
     onSeekFinished: () -> Unit,
     loopStart: Float? = null,
     loopEnd: Float? = null,
+    chaptersInSeekbar: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -933,7 +946,7 @@ fun StandardSeekbar(
                 val thumbGapStart = (playedPx - gapHalf).coerceIn(0f, size.width)
                 val thumbGapEnd = (playedPx + gapHalf).coerceIn(0f, size.width)
 
-                val chapterGaps = if (chapters.isNotEmpty()) {
+                val chapterGaps = if (chaptersInSeekbar && chapters.isNotEmpty()) {
                     chapters.mapNotNull { chapter ->
                         val chapterStart = chapter.start
                         if (chapterStart > min && chapterStart < max) {

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.DarkMode
@@ -192,6 +193,35 @@ object AppearancePreferencesScreen : Screen {
                                 summary = {
                                     Text(
                                         text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_summary),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                            )
+                        }
+                    }
+
+                    item {
+                        PreferenceSectionHeader(
+                            title = stringResource(id = R.string.pref_appearance_category_seekbar),
+                            count = 1,
+                        )
+                    }
+
+                    item {
+                        PreferenceCard {
+                            val chaptersInSeekbar by preferences.chaptersInSeekbar.collectAsState()
+                            HapticSwitchPreference(
+                                value = chaptersInSeekbar,
+                                onValueChange = { preferences.chaptersInSeekbar.set(it) },
+                                icon = { PreferenceRowIcon(icon = Icons.Outlined.Bookmarks) },
+                                title = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_chapters_in_seekbar_title),
+                                    )
+                                },
+                                summary = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_chapters_in_seekbar_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },

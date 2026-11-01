@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Added
+
+- Option to hide video chapter markers in the seekbar (Settings → Appearance → Seekbar).
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
