@@ -526,6 +526,13 @@ object SearchablePreferences {
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                titleRes = R.string.pref_subtitles_scope_title,
+                summaryRes = R.string.pref_subtitles_scope_global_summary,
+                keywords = listOf("subtitle", "scope", "profile", "per-title", "show", "movie", "position", "scale"),
+                category = "Subtitles",
+                screen = SubtitlesPreferencesScreen,
+            ))
+            add(SearchablePreference(
                 titleRes = R.string.player_sheets_sub_override_ass,
                 summaryRes = R.string.player_sheets_sub_override_ass_subtitle,
                 keywords = listOf("ass", "override", "subtitle", "ssa", "format", "style"),

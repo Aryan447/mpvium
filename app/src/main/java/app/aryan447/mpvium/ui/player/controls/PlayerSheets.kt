@@ -32,7 +32,15 @@ import org.koin.compose.koinInject
 import androidx.compose.runtime.collectAsState as composeCollectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.ui.player.PlayerUpdates
+import `is`.xyz.mpv.MPVLib
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun PlayerSheets(
@@ -82,7 +90,10 @@ fun PlayerSheets(
           onAddSubtitle(it)
         }
 
+      val context = LocalContext.current
+      val coroutineScope = rememberCoroutineScope()
       val subtitlesPreferences = koinInject<app.aryan447.mpvium.preferences.SubtitlesPreferences>()
+      val subtitleProfileRepository = koinInject<app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository>()
       val savedPickerPath = subtitlesPreferences.pickerPath.get()
 
       val currentMediaTitle = viewModel.currentMediaTitle
@@ -134,6 +145,29 @@ fun PlayerSheets(
         onOpenSubtitleSettings = { onOpenPanel(Panels.SubtitleSettings) },
         onOpenSubtitleDelay = { onOpenPanel(Panels.SubtitleDelay) },
         onOpenOnlineSearch = { onShowSheet(Sheets.OnlineSubtitleSearch) },
+        onForgetSubtitleSettings = {
+          val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+          val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+          val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+          coroutineScope.launch(Dispatchers.IO) {
+            subtitleProfileRepository.deleteProfile(key)
+            val defaultPos = subtitlesPreferences.subPos.get()
+            val defaultScale = subtitlesPreferences.subScale.get()
+            MPVLib.setPropertyInt("sub-pos", defaultPos)
+            MPVLib.setPropertyInt("secondary-sub-pos", (defaultPos - 10).coerceIn(0, 110))
+            MPVLib.setPropertyFloat("sub-scale", defaultScale)
+            withContext(Dispatchers.Main) {
+              android.widget.Toast.makeText(
+                context,
+                R.string.toast_subtitle_settings_forgotten,
+                android.widget.Toast.LENGTH_SHORT
+              ).show()
+              viewModel.playerUpdate.update {
+                PlayerUpdates.SubtitlePosition(defaultPos, isReset = true)
+              }
+            }
+          }
+        },
         onDismissRequest = onDismissRequest
       )
     }

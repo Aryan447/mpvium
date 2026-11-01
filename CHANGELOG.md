@@ -1,5 +1,10 @@
 ## Unreleased
 
+### Added
+
+- Subtitle scope setting (Global or Per-title): remember subtitle position and scale per show or per movie instead of one global pair.
+- Reset actions: forget subtitle settings for the current title from the subtitle sheet, and a global "Clear all subtitle profiles" option in Settings → Subtitles.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.

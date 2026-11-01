@@ -11,6 +11,7 @@ import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.ContinueWatchingDismissals
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
@@ -46,6 +47,7 @@ class StreamingHomeViewModel(
   private val seriesDetector: SeriesDetector by inject(SeriesDetector::class.java)
   private val metadataRepository: StreamingMetadataRepository by inject(StreamingMetadataRepository::class.java)
   private val introSkipRepository: IntroSkipRepository by inject(IntroSkipRepository::class.java)
+  private val subtitleProfileRepository: SubtitleProfileRepository by inject(SubtitleProfileRepository::class.java)
 
   private val _uiState = MutableStateFlow(StreamingHomeUiState())
   val uiState: StateFlow<StreamingHomeUiState> = _uiState.asStateFlow()
@@ -152,6 +154,14 @@ class StreamingHomeViewModel(
         }
         runCatching {
           introSkipRepository.pruneStale(presentIntroTitles)
+        }
+        runCatching {
+          subtitleProfileRepository.pruneStale(
+            presentSeriesIds = detected.series.map { it.id }.toSet(),
+            presentMovieKeys = detected.movies.map {
+              StreamingMetadataRepository.movieKeyFor(it.title, it.year)
+            }.toSet(),
+          )
         }
 
         // Pick Hero banner: first in-progress series or highest episode count series

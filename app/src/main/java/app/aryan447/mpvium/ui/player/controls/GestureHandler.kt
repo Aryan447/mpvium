@@ -65,6 +65,8 @@ import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.SubtitleScope
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.components.LeftSideOvalShape
 import app.aryan447.mpvium.presentation.components.RightSideOvalShape
@@ -285,6 +287,7 @@ fun GestureHandler(
   val audioPreferences = koinInject<AudioPreferences>()
   val gesturePreferences = koinInject<GesturePreferences>()
   val subtitlesPreferences = koinInject<SubtitlesPreferences>()
+  val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
   val panelShown by viewModel.panelShown.collectAsState()
   val allowGesturesInPanels by playerPreferences.allowGesturesInPanels.collectAsState()
   val paused by MPVLib.propBoolean["pause"].collectAsState()
@@ -506,7 +509,15 @@ fun GestureHandler(
                     val actualSubPos = 100
                     MPVLib.setPropertyInt("sub-pos", actualSubPos)
                     MPVLib.setPropertyInt("secondary-sub-pos", (actualSubPos - 10).coerceIn(0, 110))
-                    if (subtitlesPreferences.persistSubPos.get()) {
+                    if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                      val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+                      val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+                      val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+                      val currentScale = MPVLib.getPropertyFloat("sub-scale") ?: subtitlesPreferences.subScale.get()
+                      coroutineScope.launch(Dispatchers.IO) {
+                        subtitleProfileRepository.saveProfile(key, subPos = actualSubPos, subScale = currentScale)
+                      }
+                    } else if (subtitlesPreferences.persistSubPos.get()) {
                       subtitlesPreferences.subPos.set(actualSubPos)
                     }
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1048,8 +1059,18 @@ fun GestureHandler(
             } else if (pointerCount > 1) {
               // Multi-finger gesture detected
               longPressJob.cancel()
-              if (subtitleDragActive && subtitlesPreferences.persistSubPos.get()) {
-                subtitlesPreferences.subPos.set(lastSubtitlePos)
+              if (subtitleDragActive) {
+                if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                  val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+                  val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+                  val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+                  val currentScale = MPVLib.getPropertyFloat("sub-scale") ?: subtitlesPreferences.subScale.get()
+                  coroutineScope.launch(Dispatchers.IO) {
+                    subtitleProfileRepository.saveProfile(key, subPos = lastSubtitlePos, subScale = currentScale)
+                  }
+                } else if (subtitlesPreferences.persistSubPos.get()) {
+                  subtitlesPreferences.subPos.set(lastSubtitlePos)
+                }
               }
               subtitleDragActive = false
               if (holdControlsActive) {
@@ -1084,8 +1105,18 @@ fun GestureHandler(
           longPressJob.cancel()
 
           // Subtitle drag ended: the new position sticks, the pill auto-clears
-          if (subtitleDragActive && subtitlesPreferences.persistSubPos.get()) {
-            subtitlesPreferences.subPos.set(lastSubtitlePos)
+          if (subtitleDragActive) {
+            if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+              val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+              val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+              val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+              val currentScale = MPVLib.getPropertyFloat("sub-scale") ?: subtitlesPreferences.subScale.get()
+              coroutineScope.launch(Dispatchers.IO) {
+                subtitleProfileRepository.saveProfile(key, subPos = lastSubtitlePos, subScale = currentScale)
+              }
+            } else if (subtitlesPreferences.persistSubPos.get()) {
+              subtitlesPreferences.subPos.set(lastSubtitlePos)
+            }
           }
           subtitleDragActive = false
 
@@ -1354,7 +1385,15 @@ fun GestureHandler(
             val tracker = subtitleTwoFingerTapTracker
             if (subtitleScaleStarted) {
               // Persist once when the pinch ends, not on every frame.
-              if (abs(subtitleScale - subtitlesPreferences.subScale.get()) > 0.001f) {
+              if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+                val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+                val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+                val currentPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+                coroutineScope.launch(Dispatchers.IO) {
+                  subtitleProfileRepository.saveProfile(key, subPos = currentPos, subScale = subtitleScale)
+                }
+              } else if (abs(subtitleScale - subtitlesPreferences.subScale.get()) > 0.001f) {
                 subtitlesPreferences.subScale.set(subtitleScale)
               }
               tracker.clear()
@@ -1386,7 +1425,17 @@ fun GestureHandler(
                 if (isDoubleTap) {
                   tracker.clear()
                   MPVLib.setPropertyFloat("sub-scale", 1f)
-                  subtitlesPreferences.subScale.set(1f)
+                  if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                    val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+                    val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+                    val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+                    val currentPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+                    coroutineScope.launch(Dispatchers.IO) {
+                      subtitleProfileRepository.saveProfile(key, subPos = currentPos, subScale = 1f)
+                    }
+                  } else {
+                    subtitlesPreferences.subScale.set(1f)
+                  }
                   haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                   viewModel.playerUpdate.update {
                     PlayerUpdates.SubtitleScale(100, isReset = true)
