@@ -80,6 +80,7 @@ object PlayerPreferencesScreen : Screen {
         "player.general" to 1,
         "player.orientation" to 1,
         "player.save_position_on_quit" to 1,
+        "player.save_position_interval" to 1,
         "player.close_after_eof" to 1,
         "player.autoplay" to 3,
         "player.autoplay_next" to 1,
@@ -181,6 +182,7 @@ object PlayerPreferencesScreen : Screen {
                   )
                 },
                 enabled = savePositionOnQuit,
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.save_position_interval"),
               )
 
               PreferenceDivider()
