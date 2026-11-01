@@ -95,6 +95,9 @@
   <string name="pref_appearance_auto_scroll_summary">Automatically scroll to the last played video when opening video lists</string>
   <string name="pref_appearance_watched_threshold_title">Watched threshold</string>
   <string name="pref_appearance_watched_threshold_summary">Mark video as watched when playback reaches %d%%</string>
+  <string name="pref_appearance_category_seekbar">Seekbar</string>
+  <string name="pref_appearance_chapters_in_seekbar_title">Show chapter markers</string>
+  <string name="pref_appearance_chapters_in_seekbar_summary">Show chapter boundaries on the seekbar track</string>
   <string name="video_label_new">NEW</string>
   <!-- Theme names -->
   <string name="theme_default">Default</string>
@@ -646,4 +649,13 @@
   <string name="mark_as_none_summary">Clear any status and show as plain unplayed</string>
   <string name="mark_as_updated">Watch status updated</string>
   <string name="mark_as_failed">Failed to update watch status</string>
+  <!-- Metadata overrides -->
+  <string name="metadata_edit_title">Edit metadata</string>
+  <string name="metadata_field_title">Title</string>
+  <string name="metadata_field_year">Year</string>
+  <string name="metadata_field_poster">Poster</string>
+  <string name="metadata_change_poster">Change poster</string>
+  <string name="metadata_remove_poster">Remove poster</string>
+  <string name="metadata_reset_automatic">Reset to automatic</string>
+  <string name="metadata_save">Save</string>
 </resources>
