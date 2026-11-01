@@ -112,11 +112,15 @@ object MediaInfoParser {
 
     // ── Regex patterns ───────────────────────────────────────────────────────────
 
-    // Season-Episode: S01E02, S1E2, s01e02, S01 E02 — also captures multi-episode S01E01E02
-    private val SEASON_EPISODE_REGEX = Regex("""[Ss](\d{1,2})[\s._-]*[Ee](\d{1,4})""")
+    // Season-Episode: S01E02, S1E2, s01e02, S01 E02 — also captures multi-episode S01E01E02, S01E01-E02, S01E01-02
+    private val SEASON_EPISODE_REGEX = Regex(
+        """[Ss](\d{1,2})[\s._-]*[Ee](\d{1,4})(?:(?:[\s._-]*[Ee]|\b[Xx]\b|-)\s*(?!480|576|720|1080|2160|\d{3,4}[pPiI]|19\d\d|20\d\d)\d{1,4})*"""
+    )
 
-    // Cross-format: 1x02 format
-    private val CROSS_FORMAT_REGEX = Regex("""\b(\d{1,2})[xX](\d{1,4})\b""")
+    // Cross-format: 1x02 format — also captures multi-episode 1x01-02, 1x01x02
+    private val CROSS_FORMAT_REGEX = Regex(
+        """\b(\d{1,2})[xX](\d{1,4})(?:(?:[xX]|-)\s*(?!480|576|720|1080|2160|\d{3,4}[pPiI]|19\d\d|20\d\d)(?:\d{1,2}[xX])?\d{1,4})*\b"""
+    )
 
     // EP marker: EP05, Ep5 — with word boundary to avoid matching inside words
     private val EP_MARKER_REGEX = Regex("""\b[Ee][Pp](\d{1,4})\b""")
@@ -171,6 +175,47 @@ object MediaInfoParser {
             return ParsedMediaInfo(title = "", type = "movie")
         }
 
+        // If a path was passed (contains '/' or '\'), decompose into folders and filename
+        if (fileName.contains('/') || fileName.contains('\\')) {
+            val normalized = fileName.replace('\\', '/')
+            val segments = normalized.split('/').filter { it.isNotBlank() }
+            if (segments.size > 1) {
+                val leafFile = segments.last()
+                val parentFolder = segments[segments.size - 2]
+                val grandParentFolder = if (segments.size > 2) segments[segments.size - 3] else null
+
+                val leafParsed = parse(leafFile)
+
+                val seasonMatch = Regex("""\b(?:Season|Series|Specials|S)[\s._-]*(\d{1,2})\b""", RegexOption.IGNORE_CASE).find(parentFolder)
+                val folderSeason = seasonMatch?.groupValues?.getOrNull(1)?.toIntOrNull()
+
+                val showFolder = if (folderSeason != null && grandParentFolder != null) grandParentFolder else parentFolder
+
+                val isGenericOrEmptyTitle = leafParsed.title.isBlank() ||
+                        leafParsed.title.lowercase(java.util.Locale.ROOT) in setOf("movie", "video", "film", "sample") ||
+                        leafParsed.title.matches(Regex("""\d{1,3}"""))
+
+                if (isGenericOrEmptyTitle) {
+                    val folderParsed = parse(showFolder)
+                    val effectiveTitle = folderParsed.title.ifBlank { showFolder }
+                    val effectiveYear = leafParsed.year ?: folderParsed.year
+                    val effectiveSeason = folderSeason ?: leafParsed.season ?: folderParsed.season
+                    val isTv = leafParsed.type == "tv" || folderSeason != null || effectiveSeason != null || leafParsed.episode != null
+
+                    return leafParsed.copy(
+                        title = effectiveTitle,
+                        year = effectiveYear,
+                        season = if (isTv) (effectiveSeason ?: 1) else null,
+                        type = if (isTv) "tv" else "movie"
+                    )
+                } else if (folderSeason != null && (leafParsed.type == "tv" || leafParsed.episode != null)) {
+                    return leafParsed.copy(
+                        season = folderSeason
+                    )
+                }
+            }
+        }
+
         // Step 1: Extract S01E02 / 1x02 patterns before any modification
         val seMatch = SEASON_EPISODE_REGEX.find(fileName)
         val crossMatch = CROSS_FORMAT_REGEX.find(fileName)
@@ -207,11 +252,9 @@ object MediaInfoParser {
 
         // Step 2: Extract year (from original filename)
         // Be careful not to grab episode numbers as years — skip if year is part of S01E2020 etc.
-        // A four-digit number at the very start is the title itself
-        // ("2012.mkv", "1917.mkv"), never the release year.
         val yearMatch = findYear(
             fileName, seMatch, crossMatch, epWordMatch, seasonWordMatch, epMarkerMatch
-        )?.takeIf { it.range.first > 0 }
+        )
         val year = yearMatch?.value
 
         // Step 3: Japanese season detection
@@ -249,9 +292,8 @@ object MediaInfoParser {
 
         // Step 7: Try to detect dash-separated episode for anime-style naming
         // Pattern: "Title - 08" or "Title - 08 - Episode Name"
-        // Only if no episode was found yet AND no year-only movie pattern
-        if (episode == null && !(year != null && season == null)) {
-            val dashEpResult = detectDashEpisode(fileName)
+        if (episode == null) {
+            val dashEpResult = detectDashEpisode(fileName, yearMatch)
             if (dashEpResult != null) {
                 episode = dashEpResult.first
                 if (season == null) season = 1
@@ -267,6 +309,34 @@ object MediaInfoParser {
                     val candidateTitle = cleanRawTitle(dashTitleResult, yearToRemove = year)
                     if (candidateTitle.isNotBlank()) {
                         cleanTitle = candidateTitle
+                    }
+                }
+            }
+        }
+
+        // Step 7b: Leading episode pattern (e.g. "01 - Title.mkv" or "01.mkv")
+        if (episode == null) {
+            val stripped = stripBracketsAndExtension(fileName).trim()
+            val leadingMatch = Regex("""^(\d{1,4})\s*[-._]\s*(.+)$""").find(stripped)
+            if (leadingMatch != null) {
+                val ep = leadingMatch.groupValues[1].toIntOrNull()
+                if (ep != null && ep !in setOf(360, 480, 576, 720, 1080, 2160) && ep !in 1900..2100 && ep < 2000) {
+                    episode = ep
+                    if (season == null) season = 1
+                    val epTitle = cleanRawTitle(leadingMatch.groupValues[2], yearToRemove = year)
+                    if (epTitle.isNotBlank()) {
+                        episodeTitle = epTitle
+                    }
+                    cleanTitle = ""
+                }
+            } else {
+                val bareNumMatch = Regex("""^(\d{1,3})$""").find(stripped)
+                if (bareNumMatch != null) {
+                    val ep = bareNumMatch.groupValues[1].toIntOrNull()
+                    if (ep != null) {
+                        episode = ep
+                        if (season == null) season = 1
+                        cleanTitle = ""
                     }
                 }
             }
@@ -296,6 +366,15 @@ object MediaInfoParser {
         // Step 11: Final cleanup
         cleanTitle = finalCleanup(cleanTitle)
 
+        // Never return a bare year as title
+        var finalYear = year
+        if (cleanTitle.matches(Regex("""^(?:19|20)\d{2}$"""))) {
+            if (finalYear == null || finalYear == cleanTitle) {
+                finalYear = cleanTitle
+                cleanTitle = ""
+            }
+        }
+
         // Step 12: Determine type
         val type = when {
             season != null || episode != null -> "tv"
@@ -304,7 +383,7 @@ object MediaInfoParser {
 
         return ParsedMediaInfo(
             title = cleanTitle,
-            year = year,
+            year = finalYear,
             season = season,
             episode = episode,
             episodeTitle = episodeTitle,
@@ -350,6 +429,21 @@ object MediaInfoParser {
             .toList()
         if (candidates.isEmpty()) return null
 
+        // If any candidate is enclosed in parentheses/brackets (e.g. "(2019)" or "[2019]"),
+        // that is explicitly the release year rather than a title number (e.g. 1917, 2012, 2049).
+        val parenthesised = candidates.filter { match ->
+            val start = match.range.first
+            val end = match.range.last
+            (start > 0 && (fileName[start - 1] == '(' || fileName[start - 1] == '[' || fileName[start - 1] == '【')) &&
+            (end + 1 < fileName.length && (fileName[end + 1] == ')' || fileName[end + 1] == ']' || fileName[end + 1] == '】'))
+        }
+        if (parenthesised.isNotEmpty()) {
+            val beforeMarker = markerStart?.let { marker ->
+                parenthesised.filter { it.range.first < marker }
+            }.orEmpty()
+            return (beforeMarker.ifEmpty { parenthesised }).last()
+        }
+
         // The release year follows the title, so when several year-like
         // numbers exist ("1917.2019", "Blade.Runner.2049.2017") the last one
         // is the release year and earlier ones belong to the title.
@@ -363,22 +457,34 @@ object MediaInfoParser {
 
     // ── Helper: Detect "Title - 08 - Episode Name" anime pattern ─────────────────
 
-    private fun detectDashEpisode(fileName: String): Pair<Int, String?>? {
-        // Match: " - 08 - " or " - 08." or " - 08 ("
-        val match = Regex("""\s+-\s+(\d{1,4})\s*(?:-\s*(.+))?""").find(fileName) ?: return null
-        val ep = match.groupValues[1].toIntOrNull() ?: return null
+    private fun detectDashEpisode(fileName: String, yearMatch: MatchResult? = null): Pair<Int, String?>? {
+        // Match: " - 08 - " or " - 08." or " - 08 (" or "_-_08" or multi-ep " - 01-02" or " - 01v2"
+        val match = Regex("""[\s_]+-[\s_]+(\d{1,4})(?:[vV]\d+)?(?:\s*-\s*\d{1,4})?(?:[\s_]*-(?:[\s_]*(.+))?)?""").find(fileName) ?: return null
+        val rawEp = match.groupValues[1]
+        val ep = rawEp.toIntOrNull() ?: return null
 
         // Guard: don't match resolution/year-like numbers
-        if (ep in setOf(480, 720, 1080, 2160)) return null
+        if (ep in setOf(360, 480, 576, 720, 1080, 2160)) return null
         if (ep in 1900..2100) return null
         if (ep > 1999) return null
+
+        // Guard: if year is present and dash number is before the year,
+        // keep real movies safe (e.g. "District - 9 (2009)" or "Movie - 2 (2020)")
+        // unless it has a leading zero ("Show - 01 (2020)") or an episode title.
+        if (yearMatch != null && match.range.first < yearMatch.range.first) {
+            val hasLeadingZero = rawEp.length > 1 && rawEp.startsWith("0")
+            val hasEpTitle = match.groupValues.getOrNull(2)?.isNotBlank() == true
+            if (!hasLeadingZero && !hasEpTitle) {
+                return null
+            }
+        }
 
         val epTitle = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() }
         return ep to epTitle
     }
 
     private fun detectDashTitleBoundary(fileName: String): String? {
-        val match = Regex("""\s+-\s+\d{1,4}""").find(fileName) ?: return null
+        val match = Regex("""[\s_]+-[\s_]+\d{1,4}""").find(fileName) ?: return null
         return if (match.range.first > 0) fileName.substring(0, match.range.first) else null
     }
 
@@ -422,7 +528,13 @@ object MediaInfoParser {
         // Year as boundary — only if no episode/season markers found,
         // or if year comes after the title but before metadata
         if (candidates.isEmpty() && yearMatch != null) {
-            candidates.add(yearMatch.range.first)
+            val start = yearMatch.range.first
+            val adjustedStart = if (start > 0 && (fileName[start - 1] == '(' || fileName[start - 1] == '[' || fileName[start - 1] == '【')) {
+                start - 1
+            } else {
+                start
+            }
+            candidates.add(adjustedStart)
         }
 
         return candidates.minOrNull()
@@ -455,6 +567,7 @@ object MediaInfoParser {
             .replace(Regex("""\(.*?\)"""), " ")
             .replace(Regex("""【.*?】"""), " ")
             .replace(Regex("""（.*?）"""), " ")
+            .replace(Regex("""\{.*?\}"""), " ")
             .replace(Regex("""\.(${FILE_EXTENSIONS.joinToString("|")})$""", RegexOption.IGNORE_CASE), "")
     }
 
@@ -468,6 +581,7 @@ object MediaInfoParser {
             .replace(Regex("""\(.*?\)"""), " ")
             .replace(Regex("""【.*?】"""), " ")
             .replace(Regex("""（.*?）"""), " ")
+            .replace(Regex("""\{.*?\}"""), " ")
             // Remove file extension
             .replace(Regex("""\.(${FILE_EXTENSIONS.joinToString("|")})$""", RegexOption.IGNORE_CASE), "")
             // Remove audio channel patterns (5.1, 7.1, DDP5.1, DD5.1) before delimiter replacement
