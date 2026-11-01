@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Added
+
+- Settings search direct jump & highlight: tapping a search result from either the settings dashboard inline search or the standalone search screen now navigates directly to the exact option row or section card, smoothly scrolling it into view and momentarily highlighting it with an accent tint.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
