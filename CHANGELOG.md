@@ -2,6 +2,8 @@
 
 ### Added
 
+- Subtitle scope setting (Global or Per-title): remember subtitle position and scale per show or per movie instead of one global pair.
+- Reset actions: forget subtitle settings for the current title from the subtitle sheet, and a global "Clear all subtitle profiles" option in Settings → Subtitles.
 - Metadata overrides: manually edit title, release year, and cover art (via system photo picker) for movies and TV shows from their detail screens; overrides work offline and survive rescans, forced refreshes, and cache migrations.
 - Option to toggle video chapter markers in the seekbar (Settings → Appearance → Seekbar).
 - Settings search direct jump & highlight: tapping a search result from either the settings dashboard inline search or the standalone search screen now navigates directly to the exact option row or section card, smoothly scrolling it into view and momentarily highlighting it with an accent tint.

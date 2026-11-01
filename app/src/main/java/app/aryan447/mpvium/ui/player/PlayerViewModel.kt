@@ -180,6 +180,7 @@ class PlayerViewModel(
 
   // Media title for subtitle association (must be declared before init blocks that reference it)
   var currentMediaTitle: String = ""
+  var currentFilePath: String? = null
   private var lastAutoSelectedMediaTitle: String? = null
 
   // Audio state
@@ -610,7 +611,8 @@ class PlayerViewModel(
     }
   }
 
-  fun setMediaTitle(mediaTitle: String) {
+  fun setMediaTitle(mediaTitle: String, filePath: String? = null) {
+    currentFilePath = filePath ?: MPVLib.getPropertyString("path")
     if (currentMediaTitle != mediaTitle) {
       currentMediaTitle = mediaTitle
       lastAutoSelectedMediaTitle = null
