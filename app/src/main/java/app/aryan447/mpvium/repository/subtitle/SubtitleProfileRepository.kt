@@ -49,6 +49,7 @@ class SubtitleProfileRepository(
     const val CACHE_FILE_NAME = "subtitle_profiles.json"
     const val SERIES_KEY_PREFIX = "series_"
     const val MOVIE_KEY_PREFIX = "movie_"
+    const val SHARED_MOVIE_KEY = "movie_all"
 
     private val SEASON_FOLDER_REGEX =
       Regex("""\b(?:Season|Series|Specials|S)[\s._-]*(\d{1,2})\b""", RegexOption.IGNORE_CASE)
@@ -85,14 +86,11 @@ class SubtitleProfileRepository(
       return "$SERIES_KEY_PREFIX${normalizeKey(stripped)}"
     }
 
-    fun movieKeyFor(movieTitle: String, year: String? = null): String {
-      val base = "$MOVIE_KEY_PREFIX${normalizeKey(movieTitle)}"
-      val normalizedYear = year?.filter { it.isDigit() }?.take(4)?.takeIf { it.length == 4 }
-      return if (normalizedYear != null) "$base@$normalizedYear" else base
-    }
+    fun movieKeyFor(movieTitle: String? = null, year: String? = null): String = SHARED_MOVIE_KEY
 
     fun canonicalKey(key: String): String = when {
-      key.startsWith(SERIES_KEY_PREFIX) || key.startsWith(MOVIE_KEY_PREFIX) -> key
+      key == SHARED_MOVIE_KEY || key.startsWith(MOVIE_KEY_PREFIX) -> SHARED_MOVIE_KEY
+      key.startsWith(SERIES_KEY_PREFIX) -> key
       else -> seriesKeyFor(key)
     }
 
@@ -141,16 +139,7 @@ class SubtitleProfileRepository(
         }
         return seriesKeyFor(seriesId)
       } else {
-        var movieTitle = parsed.title.ifBlank { cleanTitle.substringBeforeLast('.') }
-        var movieYear = parsed.year
-        if (isGenericVideoTitle(movieTitle)) {
-          val movieFolderName = if (parentSeasonNum != null) grandParentName else parentName
-          resolveFolderMedia(movieFolderName)?.let { (fTitle, fYear) ->
-            movieTitle = fTitle
-            movieYear = movieYear ?: fYear
-          }
-        }
-        return movieKeyFor(movieTitle, movieYear)
+        return SHARED_MOVIE_KEY
       }
     }
 
@@ -369,15 +358,15 @@ class SubtitleProfileRepository(
       }
     }
     if (presentMovieKeys != null) {
-      val keepMovies = HashSet<String>()
-      presentMovieKeys.forEach {
-        keepMovies.add(it)
-        keepMovies.add(it.substringBefore('@'))
+      if (presentMovieKeys.isEmpty()) {
+        if (memoryCache.remove(SHARED_MOVIE_KEY) != null) {
+          changed = true
+        }
       }
       val iterator = memoryCache.keys.iterator()
       while (iterator.hasNext()) {
         val key = iterator.next()
-        if (key.startsWith(MOVIE_KEY_PREFIX) && !keepMovies.contains(key)) {
+        if (key.startsWith(MOVIE_KEY_PREFIX) && key != SHARED_MOVIE_KEY) {
           iterator.remove()
           changed = true
         }
