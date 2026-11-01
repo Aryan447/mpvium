@@ -39,6 +39,7 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.player.PlayerUpdates
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 

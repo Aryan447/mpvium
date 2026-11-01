@@ -254,6 +254,18 @@ class SubtitleProfileRepository(
     }
   }
 
+  fun resolveKey(mediaTitle: String, filePath: String? = null): String =
+    Companion.resolveKey(mediaTitle, filePath)
+
+  fun seriesKeyFor(seriesId: String): String =
+    Companion.seriesKeyFor(seriesId)
+
+  fun movieKeyFor(movieTitle: String, year: String? = null): String =
+    Companion.movieKeyFor(movieTitle, year)
+
+  fun canonicalKey(key: String): String =
+    Companion.canonicalKey(key)
+
   fun getProfile(key: String): SubtitleProfile? {
     ensureCacheLoadedSync()
     val canonical = canonicalKey(key)
