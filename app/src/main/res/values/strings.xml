@@ -179,6 +179,11 @@
   <string name="pref_player_title_mode_two">Two lines</string>
   <string name="pref_player_title_mode_episode">Episode/title only</string>
   <string name="pref_player_remember_brightness">Remember display brightness</string>
+  <string name="pref_player_save_position_interval">Save position every</string>
+  <string name="pref_player_save_position_interval_15s">15 s</string>
+  <string name="pref_player_save_position_interval_30s">30 s</string>
+  <string name="pref_player_save_position_interval_1m">1 min</string>
+  <string name="pref_player_save_position_interval_5m">5 min</string>
   <string name="pref_player_gestures">Gestures</string>
   <string name="pref_player_gestures_brightness">Brightness gestures</string>
   <string name="pref_player_gestures_volume">Volume gestures</string>

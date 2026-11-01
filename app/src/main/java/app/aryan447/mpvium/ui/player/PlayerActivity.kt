@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.player
 
 import android.content.BroadcastReceiver
+import android.content.ComponentCallbacks2
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -36,6 +37,7 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
 import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.databinding.PlayerLayoutBinding
+import app.aryan447.mpvium.domain.playbackstate.PlaybackCheckpointDecider
 import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
@@ -55,12 +57,18 @@ import com.github.k1rakishou.fsaf.FileManager
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.MPVNode
 import `is`.xyz.mpv.Utils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Main player activity that handles video playback using the MPV library.
@@ -225,7 +233,10 @@ class PlayerActivity :
   private var isManualBackgroundPlayback = false // Track manual background playback trigger
   private var noisyReceiverRegistered = false
   private var mpvInitialized = false // Track MPV initialization state
-  private var savePlaybackStateJob: kotlinx.coroutines.Job? = null // Track ongoing save job
+  private var savePlaybackStateJob: Job? = null // Track ongoing save job
+  private var lastSavedCheckpointPosition: Int? = null
+  private var periodicCheckpointJob: Job? = null
+  private var trackObserverJob: Job? = null
   private var wasPlayingBeforePause = false // Track if video was playing before pause
 
   // ==================== Background Playback ====================
@@ -341,6 +352,16 @@ class PlayerActivity :
     setupPlayerControls()
     setupPipHelper()
     setupMediaSession()
+
+    onTaskRemovedCheckpoint = {
+      if (fileName.isNotBlank() && mediaIdentifier.isNotBlank()) {
+        runCatching {
+          kotlinx.coroutines.runBlocking {
+            saveVideoPlaybackState(fileName)?.join()
+          }
+        }
+      }
+    }
 
     playlistId = intent.getIntExtra("playlist_id", -1).takeIf { it != -1 }
     playlistIndex = intent.getIntExtra("playlist_index", 0)
@@ -591,6 +612,10 @@ class PlayerActivity :
       cleanupAudio()
       cleanupReceivers()
       releaseMediaSession()
+
+      if (isFinishing || isUserFinishing) {
+        onTaskRemovedCheckpoint = null
+      }
     }.onFailure { e ->
       Log.e(TAG, "Error during onDestroy", e)
     }
@@ -602,6 +627,11 @@ class PlayerActivity :
     if (!mpvInitialized) return
 
     player.isExiting = true
+
+    periodicCheckpointJob?.cancel()
+    periodicCheckpointJob = null
+    trackObserverJob?.cancel()
+    trackObserverJob = null
 
     // Stop media notification service when activity is destroyed
     endBackgroundPlayback()
@@ -676,10 +706,8 @@ class PlayerActivity :
         restoreSystemUI()
       }
 
-      // OPTIMIZATION: Only save if not finishing (onDestroy will handle final save)
-      if (!isFinishing) {
-        saveVideoPlaybackState(fileName)
-      }
+      // Always save playback state on pause (pause, PiP enter, backgrounding, or finishing)
+      saveVideoPlaybackState(fileName)
 
       // Keep the Continue Watching widget fresh with the just-saved position.
       ContinueWatchingWidgetProvider.refreshAll(this)
@@ -753,6 +781,15 @@ class PlayerActivity :
     }
 
     super.onStop()
+  }
+
+  override fun onTrimMemory(level: Int) {
+    super.onTrimMemory(level)
+    if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+      if (fileName.isNotBlank()) {
+        saveVideoPlaybackState(fileName)
+      }
+    }
   }
 
   override fun onStart() {
@@ -1817,6 +1854,9 @@ class PlayerActivity :
 
     viewModel.unpause()
 
+    startPeriodicCheckpoint()
+    setupTrackChangeObserver()
+
     if (subtitlesPreferences.autoloadMatchingSubtitles.get()) {
       lifecycleScope.launch {
         // For network files played via proxy (SMB/WebDAV/FTP), use the original network file path
@@ -2038,17 +2078,17 @@ class PlayerActivity :
   /**
    * Saves the current playback state to the database.
    *
-   * Uses lifecycleScope to save state; cancels previous pending saves.
+   * Uses applicationScope to save state safely across activity lifecycles.
    *
    * @param mediaTitle The title of the media being played
    */
-  private fun saveVideoPlaybackState(mediaTitle: String) {
+  private fun saveVideoPlaybackState(mediaTitle: String): Job? {
     val snapshotIdentifier = mediaIdentifier
-    if (snapshotIdentifier.isBlank()) return
+    if (snapshotIdentifier.isBlank()) return null
 
     // Snapshot mutable playback values on the main thread before launching IO work
-    val snapshotPos = viewModel.pos
-    val snapshotDuration = viewModel.duration
+    val snapshotPos = viewModel.pos ?: runCatching { MPVLib.getPropertyInt("time-pos") }.getOrNull() ?: 0
+    val snapshotDuration = viewModel.duration ?: runCatching { MPVLib.getPropertyInt("duration") }.getOrNull() ?: 0
     val snapshotSid = player.sid
     val snapshotSecondarySid = player.secondarySid
     val snapshotAid = player.aid
@@ -2056,46 +2096,54 @@ class PlayerActivity :
     val snapshotWatchedThreshold = browserPreferences.watchedThreshold.get()
     val snapshotSavePositionEnabled = playerPreferences.savePositionOnQuit.get()
 
-    // Cancel any previous pending save operation
-    savePlaybackStateJob?.cancel()
+    // Snapshot MPV properties on main thread to avoid accessing MPV after destruction on IO thread
+    val snapshotSpeed = runCatching { MPVLib.getPropertyDouble("speed") }.getOrNull() ?: DEFAULT_PLAYBACK_SPEED
+    val snapshotVideoZoom = runCatching { MPVLib.getPropertyDouble("video-zoom")?.toFloat() }.getOrNull() ?: 0f
+    val snapshotSubDelay = runCatching {
+      ((MPVLib.getPropertyDouble("sub-delay") ?: 0.0) * MILLISECONDS_TO_SECONDS).toInt()
+    }.getOrNull() ?: 0
+    val snapshotSubSpeed = runCatching { MPVLib.getPropertyDouble("sub-speed") }.getOrNull() ?: DEFAULT_SUB_SPEED
+    val snapshotAudioDelay = runCatching {
+      ((MPVLib.getPropertyDouble("audio-delay") ?: 0.0) * MILLISECONDS_TO_SECONDS).toInt()
+    }.getOrNull() ?: 0
 
-    // Launch new save job and track it
-    savePlaybackStateJob = lifecycleScope.launch(Dispatchers.IO) {
+    // Launch new save job in applicationScope so activity destruction cannot cancel it
+    // Do NOT cancel previous jobs, allowing ongoing writes to complete cleanly
+    val job = applicationScope.launch {
       runCatching {
         val oldState = playbackStateRepository.getVideoDataByTitle(snapshotIdentifier)
-        Log.d(TAG, "Saving playback state for: $mediaTitle (identifier: $snapshotIdentifier)")
+        val previousPosition = oldState?.lastPosition ?: lastSavedPositions[snapshotIdentifier]
 
-        val lastPosition = if (!snapshotSavePositionEnabled) {
-          oldState?.lastPosition ?: 0
-        } else {
-          val pos = snapshotPos ?: 0
-          val duration = snapshotDuration ?: 0
-          if (pos < duration - 1) pos else 0
-        }
-        val duration = snapshotDuration ?: 0
+        Log.d(TAG, "Saving playback state for: $mediaTitle (identifier: $snapshotIdentifier, pos: $snapshotPos, duration: $snapshotDuration)")
+
+        val lastPosition = PlaybackCheckpointDecider.calculateSavePosition(
+          currentPosition = snapshotPos,
+          duration = snapshotDuration,
+          lastSavedPosition = previousPosition,
+          savePositionEnabled = snapshotSavePositionEnabled,
+        )
+
+        val duration = snapshotDuration
         val timeRemaining = if (duration > lastPosition) duration - lastPosition else 0
 
         playbackStateRepository.upsert(
           PlaybackStateEntity(
             mediaTitle = snapshotIdentifier,
             lastPosition = lastPosition,
-            playbackSpeed = MPVLib.getPropertyDouble("speed") ?: DEFAULT_PLAYBACK_SPEED,
-            videoZoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f,
+            playbackSpeed = snapshotSpeed,
+            videoZoom = snapshotVideoZoom,
             sid = snapshotSid,
             secondarySid = snapshotSecondarySid,
-            subDelay = ((MPVLib.getPropertyDouble("sub-delay") ?: 0.0) * MILLISECONDS_TO_SECONDS).toInt(),
-            subSpeed = MPVLib.getPropertyDouble("sub-speed") ?: DEFAULT_SUB_SPEED,
+            subDelay = snapshotSubDelay,
+            subSpeed = snapshotSubSpeed,
             aid = snapshotAid,
-            audioDelay =
-              (
-                (MPVLib.getPropertyDouble("audio-delay") ?: 0.0) * MILLISECONDS_TO_SECONDS
-                ).toInt(),
+            audioDelay = snapshotAudioDelay,
             timeRemaining = timeRemaining,
             externalSubtitles = snapshotExternalSubs,
             hasBeenWatched = run {
               val watchedThreshold = snapshotWatchedThreshold
               val durationSeconds = duration.toFloat()
-              val currentPos = snapshotPos ?: 0
+              val currentPos = snapshotPos
 
               // Check if we are at the end (effectively watched)
               // Using a small buffer (1s) to account for float inaccuracies or near-end stops
@@ -2112,6 +2160,11 @@ class PlayerActivity :
             },
           ),
         )
+
+        // Keep last successfully written value
+        lastSavedPositions[snapshotIdentifier] = lastPosition
+        lastSavedCheckpointPosition = lastPosition
+
         // Notify after the latest position is persisted so episode/detail
         // screens refresh with the newly saved remaining time instead of
         // racing ahead with a stale read.
@@ -2120,6 +2173,8 @@ class PlayerActivity :
         Log.e(TAG, "Error saving playback state", e)
       }
     }
+    savePlaybackStateJob = job
+    return job
   }
 
   /**
@@ -2132,13 +2187,14 @@ class PlayerActivity :
    * @return Position in seconds to save
    */
   private fun calculateSavePosition(oldState: PlaybackStateEntity?): Int {
-    if (!playerPreferences.savePositionOnQuit.get()) {
-      return oldState?.lastPosition ?: 0
-    }
-
-    val pos = viewModel.pos ?: 0
-    val duration = viewModel.duration ?: 0
-    return if (pos < duration - 1) pos else 0
+    val pos = viewModel.pos ?: runCatching { MPVLib.getPropertyInt("time-pos") }.getOrNull() ?: 0
+    val duration = viewModel.duration ?: runCatching { MPVLib.getPropertyInt("duration") }.getOrNull() ?: 0
+    return PlaybackCheckpointDecider.calculateSavePosition(
+      currentPosition = pos,
+      duration = duration,
+      lastSavedPosition = oldState?.lastPosition ?: lastSavedPositions[mediaIdentifier],
+      savePositionEnabled = playerPreferences.savePositionOnQuit.get(),
+    )
   }
 
   /**
@@ -2152,6 +2208,10 @@ class PlayerActivity :
 
     return runCatching {
       val state = playbackStateRepository.getVideoDataByTitle(mediaIdentifier)
+      if (state != null) {
+        lastSavedPositions[mediaIdentifier] = state.lastPosition
+        lastSavedCheckpointPosition = state.lastPosition
+      }
 
       applyPlaybackState(state)
       applyDefaultSettings(state)
@@ -2160,6 +2220,81 @@ class PlayerActivity :
     }.onFailure { e ->
       Log.e(TAG, "Error loading playback state", e)
     }.getOrDefault(false)
+  }
+
+  /**
+   * Starts a periodic checkpoint coroutine while media is playing.
+   * Runs in applicationScope so background/PiP playback keeps checkpointing.
+   */
+  private fun startPeriodicCheckpoint() {
+    periodicCheckpointJob?.cancel()
+    periodicCheckpointJob = applicationScope.launch {
+      while (isActive) {
+        val intervalSeconds = playerPreferences.savePositionInterval.get().seconds
+        delay(intervalSeconds * 1000L)
+
+        if (player.isExiting || fileName.isBlank() || mediaIdentifier.isBlank()) continue
+
+        val isPlaying = !(viewModel.paused ?: true)
+        val currentPos = viewModel.pos ?: runCatching { MPVLib.getPropertyInt("time-pos") }.getOrNull() ?: 0
+        val currentDuration = viewModel.duration ?: runCatching { MPVLib.getPropertyInt("duration") }.getOrNull() ?: 0
+        val savePositionEnabled = playerPreferences.savePositionOnQuit.get()
+
+        if (PlaybackCheckpointDecider.shouldPeriodicCheckpoint(
+            isPlaying = isPlaying,
+            currentPosition = currentPos,
+            duration = currentDuration,
+            lastSavedPosition = lastSavedCheckpointPosition,
+            savePositionEnabled = savePositionEnabled,
+          )
+        ) {
+          withContext(Dispatchers.Main) {
+            if (!player.isExiting && fileName.isNotBlank()) {
+              saveVideoPlaybackState(fileName)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Observes track changes to checkpoint user selection (aid, sid, secondarySid)
+   * into the database without creating duplicate rows.
+   */
+  private fun setupTrackChangeObserver() {
+    trackObserverJob?.cancel()
+    trackObserverJob = lifecycleScope.launch {
+      var lastAid: Int? = null
+      var lastSid: Int? = null
+      var lastSecSid: Int? = null
+      var isInitial = true
+
+      MPVLib.propNode["track-list"].collect { _ ->
+        if (!mpvInitialized || player.isExiting || isFinishing) return@collect
+        if (fileName.isBlank() || mediaIdentifier.isBlank()) return@collect
+
+        val currentAid = player.aid
+        val currentSid = player.sid
+        val currentSecSid = player.secondarySid
+
+        if (isInitial) {
+          lastAid = currentAid
+          lastSid = currentSid
+          lastSecSid = currentSecSid
+          isInitial = false
+          return@collect
+        }
+
+        if (currentAid != lastAid || currentSid != lastSid || currentSecSid != lastSecSid) {
+          lastAid = currentAid
+          lastSid = currentSid
+          lastSecSid = currentSecSid
+          Log.d(TAG, "Track changed (aid=$currentAid, sid=$currentSid, secondarySid=$currentSecSid) - saving checkpoint")
+          saveVideoPlaybackState(fileName)
+        }
+      }
+    }
   }
 
   /**
@@ -3412,6 +3547,12 @@ class PlayerActivity :
 
 
   companion object {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val lastSavedPositions = ConcurrentHashMap<String, Int>()
+
+    @Volatile
+    internal var onTaskRemovedCheckpoint: (() -> Unit)? = null
+
     /**
      * Intent action used to return playback result data to the calling activity.
      */

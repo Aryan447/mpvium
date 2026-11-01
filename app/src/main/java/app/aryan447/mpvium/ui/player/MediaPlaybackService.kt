@@ -480,8 +480,14 @@ class MediaPlaybackService :
   }
 
   override fun onTaskRemoved(rootIntent: Intent?) {
-    Log.d(TAG, "Task removed - killing playback and cleaning up service")
+    Log.d(TAG, "Task removed - saving checkpoint and cleaning up service")
     try {
+      try {
+        PlayerActivity.onTaskRemovedCheckpoint?.invoke()
+      } catch (e: Exception) {
+        Log.e(TAG, "Error saving checkpoint in onTaskRemoved", e)
+      }
+
       // Kill MPV playback immediately when task is removed
       try {
         MPVLib.command("quit")

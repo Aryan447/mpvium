@@ -1,7 +1,12 @@
 ## Unreleased
 
+### Added
+
+- Periodic playback checkpoint: saves progress while playing (default every 30 s, configurable under Settings → Player to 15 s, 30 s, 1 min, or 5 min) when playback moves by at least 5 s, surviving process kills, force stops, PiP, and background playback.
+
 ### Fixed
 
+- Playback state persistence: writes are now application-scoped so activity destruction or force-stop cannot drop the final write; saves on pause, stop, track changes, task removal, and memory trim; and guards against overwriting good positions with 0.
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
 
