@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Layers
@@ -69,6 +70,23 @@ object DecoderPreferencesScreen : Screen {
     val isVulkanSupported = remember { VulkanUtils.isVulkanSupported(context) }
     val useVulkan by preferences.useVulkan.collectAsState()
     var showGpuNextWarning by remember { mutableStateOf(false) }
+
+    val listState = rememberLazyListState()
+    val highlightState = rememberSettingsHighlightState(
+      screen = DecoderPreferencesScreen,
+      listState = listState,
+      keyToIndex = mapOf(
+        "decoder.general" to 1,
+        "decoder.default" to 1,
+        "decoder.gpu_next" to 3,
+        "decoder.vulkan" to 3,
+        "decoder.debanding" to 5,
+        "decoder.yuv420p" to 5,
+        "decoder.anime4k" to 5,
+        "decoder.shader_peek" to 5,
+      ),
+    )
+
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(R.string.pref_decoder))
@@ -76,6 +94,7 @@ object DecoderPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -86,7 +105,13 @@ object DecoderPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "decoder.general",
+                isCard = true,
+              ),
+            ) {
               val profile by preferences.profile.collectAsState()
               val currentProfile = MPVProfile.fromValue(profile)
               ExpressiveListPreference(
@@ -107,6 +132,10 @@ object DecoderPreferencesScreen : Screen {
 
               val defaultDecoder by preferences.defaultDecoder.collectAsState()
               ExpressiveListPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "decoder.default",
+                ),
                 value = defaultDecoder,
                 onValueChange = { preferences.defaultDecoder.set(it) },
                 values = Decoder.defaultOptions,
@@ -131,6 +160,10 @@ object DecoderPreferencesScreen : Screen {
             PreferenceCard {
               val gpuNext by preferences.gpuNext.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "decoder.gpu_next",
+                ),
                 value = gpuNext,
                 onValueChange = { enabled ->
                     if (enabled && !gpuNext && !useVulkan) { // Only show warning if Vulkan is disabled
@@ -202,6 +235,10 @@ object DecoderPreferencesScreen : Screen {
 
               // val useVulkan by preferences.useVulkan.collectAsState() // Moved to Content() top-level for cross-card access
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "decoder.vulkan",
+                ),
                 value = useVulkan,
                 onValueChange = { enabled ->
                   preferences.useVulkan.set(enabled)
@@ -240,6 +277,10 @@ object DecoderPreferencesScreen : Screen {
             PreferenceCard {
               val debanding by preferences.debanding.collectAsState()
               ExpressiveListPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "decoder.debanding",
+                ),
                 value = debanding,
                 onValueChange = { preferences.debanding.set(it) },
                 values = Debanding.entries,
@@ -257,6 +298,10 @@ object DecoderPreferencesScreen : Screen {
 
               val useYUV420p by preferences.useYUV420P.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "decoder.yuv420p",
+                ),
                 value = useYUV420p,
                 onValueChange = {
                   preferences.useYUV420P.set(it)
@@ -275,6 +320,10 @@ object DecoderPreferencesScreen : Screen {
 
               val enableAnime4K by preferences.enableAnime4K.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "decoder.anime4k",
+                ),
                 value = enableAnime4K,
                 onValueChange = { enabled ->
                     preferences.enableAnime4K.set(enabled)
@@ -320,6 +369,10 @@ object DecoderPreferencesScreen : Screen {
 
               val shaderPeekSuggest by preferences.shaderPeekSuggest.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "decoder.shader_peek",
+                ),
                 value = shaderPeekSuggest,
                 onValueChange = { preferences.shaderPeekSuggest.set(it) },
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.Visibility) },

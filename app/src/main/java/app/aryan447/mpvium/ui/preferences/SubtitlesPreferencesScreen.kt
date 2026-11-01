@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -165,7 +166,24 @@ object SubtitlesPreferencesScreen : Screen {
             preferences.subtitleSaveFolder.set(uri.toString())
           }
 
+        val listState = rememberLazyListState()
+        val highlightState = rememberSettingsHighlightState(
+          screen = SubtitlesPreferencesScreen,
+          listState = listState,
+          keyToIndex = mapOf(
+            "subtitles.general" to 1,
+            "subtitles.preferred_languages" to 1,
+            "subtitles.explain_translation_lang" to 1,
+            "subtitles.autoload" to 1,
+            "subtitles.override_ass" to 1,
+            "subtitles.scale_by_window" to 1,
+            "subtitles.fonts_dir" to 1,
+            "subtitles.search" to 3,
+          ),
+        )
+
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -177,10 +195,20 @@ object SubtitlesPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "subtitles.general",
+                isCard = true,
+              ),
+            ) {
 
               val preferredLanguages by preferences.preferredLanguages.collectAsState()
               TextFieldPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.preferred_languages",
+                ),
                 value = preferredLanguages,
                 onValueChange = preferences.preferredLanguages::set,
                 textToValue = { it },
@@ -218,6 +246,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val explainTranslationLang by preferences.explainTranslationLang.collectAsState()
               ExpressiveListPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.explain_translation_lang",
+                ),
                 value = explainTranslationLang,
                 onValueChange = { preferences.explainTranslationLang.set(it) },
                 values = explainTranslationLanguages,
@@ -240,6 +272,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val autoload by preferences.autoloadMatchingSubtitles.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.autoload",
+                ),
                 value = autoload,
                 onValueChange = { preferences.autoloadMatchingSubtitles.set(it) },
                 title = { Text(stringResource(R.string.pref_subtitles_autoload_title)) },
@@ -258,6 +294,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val overrideAss by preferences.overrideAssSubs.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.override_ass",
+                ),
                 value = overrideAss,
                 onValueChange = { preferences.overrideAssSubs.set(it) },
                 title = { Text(stringResource(R.string.player_sheets_sub_override_ass)) },
@@ -276,6 +316,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val scaleByWindow by preferences.scaleByWindow.collectAsState()
               HapticSwitchPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.scale_by_window",
+                ),
                 value = scaleByWindow,
                 onValueChange = { preferences.scaleByWindow.set(it) },
                 title = { Text(stringResource(R.string.player_sheets_sub_scale_by_window)) },
@@ -314,6 +358,10 @@ object SubtitlesPreferencesScreen : Screen {
               Box(
                 modifier =
                   Modifier
+                    .settingsHighlightTarget(
+                      state = highlightState,
+                      key = "subtitles.fonts_dir",
+                    )
                     .fillMaxWidth()
                     .clickable { locationPicker.launch(null) }
                     .padding(vertical = 16.dp, horizontal = 16.dp),
@@ -411,7 +459,13 @@ object SubtitlesPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "subtitles.search",
+                isCard = true,
+              ),
+            ) {
               // Location display
               Box(
                 modifier = Modifier

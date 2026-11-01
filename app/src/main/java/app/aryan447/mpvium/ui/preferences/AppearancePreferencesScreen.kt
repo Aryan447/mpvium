@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -88,6 +89,27 @@ object AppearancePreferencesScreen : Screen {
             DarkMode.System -> systemDarkTheme
         }
 
+        val listState = rememberLazyListState()
+        val highlightState = rememberSettingsHighlightState(
+            screen = AppearancePreferencesScreen,
+            listState = listState,
+            keyToIndex = mapOf(
+                "appearance.theme" to 1,
+                "appearance.amoled" to 1,
+                "appearance.pill_nav" to 1,
+                "appearance.bottom_nav_labels" to 1,
+                "appearance.bottom_nav_tabs" to 3,
+                "appearance.unlimited_name_lines" to 5,
+                "appearance.show_unplayed_old_video_label" to 5,
+                "appearance.unplayed_old_video_days" to 5,
+                "appearance.auto_scroll" to 5,
+                "appearance.tap_thumbnail_to_select" to 5,
+                "appearance.show_network_thumbnails" to 5,
+                "appearance.show_featured_hero" to 7,
+                "appearance.home_sections" to 7,
+            ),
+        )
+
         Scaffold(
             topBar = {
                 SettingsTopBar(title = stringResource(R.string.pref_appearance_title))
@@ -95,6 +117,7 @@ object AppearancePreferencesScreen : Screen {
         ) { padding ->
             ProvidePreferenceLocals {
                 LazyColumn(
+                    state = listState,
                     modifier =
                     Modifier
                         .fillMaxSize()
@@ -109,7 +132,11 @@ object AppearancePreferencesScreen : Screen {
 
                     item {
                         PreferenceCard {
-                            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(vertical = 8.dp)
+                                    .settingsHighlightTarget(highlightState, "appearance.theme"),
+                            ) {
                                 // Dark mode selector
                                 ExpressiveChoiceRow(
                                     options = DarkMode.entries,
@@ -156,6 +183,7 @@ object AppearancePreferencesScreen : Screen {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.amoled"),
                                 enabled = darkMode != DarkMode.Light && appTheme != AppTheme.Glass
                             )
 
@@ -176,6 +204,7 @@ object AppearancePreferencesScreen : Screen {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.pill_nav"),
                             )
 
                             PreferenceDivider()
@@ -195,6 +224,7 @@ object AppearancePreferencesScreen : Screen {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.bottom_nav_labels"),
                             )
                         }
                     }
@@ -207,7 +237,13 @@ object AppearancePreferencesScreen : Screen {
                     }
 
                     item {
-                        PreferenceCard {
+                        PreferenceCard(
+                            modifier = Modifier.settingsHighlightTarget(
+                                state = highlightState,
+                                key = "appearance.bottom_nav_tabs",
+                                isCard = true,
+                            ),
+                        ) {
                             val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
                             Text(
                                 text = stringResource(id = R.string.pref_appearance_bottom_nav_tabs_summary),
@@ -264,7 +300,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.unlimited_name_lines"),
                             )
 
                             PreferenceDivider()
@@ -284,7 +321,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.show_unplayed_old_video_label"),
                             )
 
                             PreferenceDivider()
@@ -307,6 +345,7 @@ object AppearancePreferencesScreen : Screen {
                                 },
                                 onSliderValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
                                 sliderValue = unplayedOldVideoDays.toFloat(),
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.unplayed_old_video_days"),
                                 enabled = showUnplayedOldVideoLabel
                             )
 
@@ -325,7 +364,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(R.string.pref_appearance_auto_scroll_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.auto_scroll"),
                             )
 
                             PreferenceDivider()
@@ -368,7 +408,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.tap_thumbnail_to_select"),
                             )
 
                             PreferenceDivider()
@@ -388,7 +429,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.show_network_thumbnails"),
                             )
                         }
                     }
@@ -401,7 +443,13 @@ object AppearancePreferencesScreen : Screen {
                     }
 
                     item {
-                        PreferenceCard {
+                        PreferenceCard(
+                            modifier = Modifier.settingsHighlightTarget(
+                                state = highlightState,
+                                key = "appearance.home_sections",
+                                isCard = true,
+                            ),
+                        ) {
                             Text(
                                 text = stringResource(id = R.string.pref_appearance_home_sections_summary),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -442,6 +490,11 @@ object AppearancePreferencesScreen : Screen {
                                     onMoveDown = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         preferences.moveHomeSection(section, 1)
+                                    },
+                                    modifier = if (section == HomeSection.FEATURED) {
+                                        Modifier.settingsHighlightTarget(highlightState, "appearance.show_featured_hero")
+                                    } else {
+                                        Modifier
                                     },
                                 )
                             }
@@ -485,10 +538,11 @@ private fun HomeSectionRow(
     canMoveDown: Boolean,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
