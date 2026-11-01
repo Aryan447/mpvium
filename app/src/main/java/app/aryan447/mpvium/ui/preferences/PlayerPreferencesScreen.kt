@@ -56,6 +56,7 @@ import app.aryan447.mpvium.ui.player.FullSwipeSeekMode
 import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.PlayerTitleMode
+import app.aryan447.mpvium.ui.player.SavePositionInterval
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
@@ -79,6 +80,7 @@ object PlayerPreferencesScreen : Screen {
         "player.general" to 1,
         "player.orientation" to 1,
         "player.save_position_on_quit" to 1,
+        "player.save_position_interval" to 1,
         "player.close_after_eof" to 1,
         "player.autoplay" to 3,
         "player.autoplay_next" to 1,
@@ -161,6 +163,26 @@ object PlayerPreferencesScreen : Screen {
                 icon = { PreferenceRowIcon(icon = Icons.Outlined.History) },
                 title = { Text(stringResource(R.string.pref_player_save_position_on_quit)) },
                 modifier = Modifier.settingsHighlightTarget(highlightState, "player.save_position_on_quit"),
+              )
+
+              PreferenceDivider()
+
+              val savePositionInterval by preferences.savePositionInterval.collectAsState()
+              ExpressiveListPreference(
+                value = savePositionInterval,
+                onValueChange = preferences.savePositionInterval::set,
+                values = SavePositionInterval.entries,
+                valueToText = { AnnotatedString(stringResource(it.titleRes)) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Timer) },
+                title = { Text(stringResource(R.string.pref_player_save_position_interval)) },
+                summary = {
+                  Text(
+                    text = stringResource(savePositionInterval.titleRes),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                enabled = savePositionOnQuit,
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.save_position_interval"),
               )
 
               PreferenceDivider()

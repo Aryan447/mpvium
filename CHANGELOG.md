@@ -2,14 +2,16 @@
 
 ### Added
 
+- Periodic playback checkpoint: saves progress while playing (default every 30 s, configurable under Settings → Player to 15 s, 30 s, 1 min, or 5 min) when playback moves by at least 5 s, surviving process kills, force stops, PiP, and background playback.
+
+### Fixed
+
+- Playback state persistence: writes are now application-scoped so activity destruction or force-stop cannot drop the final write; saves on pause, stop, track changes, task removal, and memory trim; and guards against overwriting good positions with 0.
 - Subtitle scope setting (Global or Per-title): remember subtitle position and scale per show or per movie instead of one global pair.
 - Reset actions: forget subtitle settings for the current title from the subtitle sheet, and a global "Clear all subtitle profiles" option in Settings → Subtitles.
 - Metadata overrides: manually edit title, release year, and cover art (via system photo picker) for movies and TV shows from their detail screens; overrides work offline and survive rescans, forced refreshes, and cache migrations.
 - Option to toggle video chapter markers in the seekbar (Settings → Appearance → Seekbar).
 - Settings search direct jump & highlight: tapping a search result from either the settings dashboard inline search or the standalone search screen now navigates directly to the exact option row or section card, smoothly scrolling it into view and momentarily highlighting it with an accent tint.
-
-### Fixed
-
 - Media filename parsing: anime episodes with years in titles (e.g. `Jujutsu Kaisen (2020) - 05.mkv`, `Kaguya-sama 2019 - 11.mkv`) are now properly recognized as series episodes rather than movies.
 - Multi-episode media files (`S01E01E02`, `S01E01-E02`, `1x01-02`, `- 01-02`) now parse deterministically to the first episode without leaking trailing episode numbers into episode titles.
 - Series identity: fansub release tags (`[SubsPlease]`, `[1080p]`, CRC hashes, `【】`, underscores) collapse reliably to the same series key as clean titles.

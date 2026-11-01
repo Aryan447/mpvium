@@ -179,6 +179,7 @@ object SubtitlesPreferencesScreen : Screen {
             "subtitles.preferred_languages" to 1,
             "subtitles.explain_translation_lang" to 1,
             "subtitles.autoload" to 1,
+            "subtitles.scope" to 1,
             "subtitles.override_ass" to 1,
             "subtitles.scale_by_window" to 1,
             "subtitles.fonts_dir" to 1,
@@ -360,6 +361,10 @@ object SubtitlesPreferencesScreen : Screen {
 
               val subtitleScope by preferences.subtitleScope.collectAsState()
               ExpressiveListPreference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "subtitles.scope",
+                ),
                 value = subtitleScope,
                 onValueChange = { preferences.subtitleScope.set(it) },
                 values = SubtitleScope.entries,

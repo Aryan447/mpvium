@@ -207,6 +207,13 @@ object SearchablePreferences {
                 screen = PlayerPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "player.save_position_interval",
+                titleRes = R.string.pref_player_save_position_interval,
+                keywords = listOf("save", "position", "interval", "checkpoint", "timer", "frequency"),
+                category = "Player",
+                screen = PlayerPreferencesScreen,
+            ))
+            add(SearchablePreference(
                 key = "player.close_after_eof",
                 titleRes = R.string.pref_player_close_after_eof,
                 keywords = listOf("close", "end", "playback", "quit", "finish"),
@@ -601,6 +608,7 @@ object SearchablePreferences {
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.scope",
                 titleRes = R.string.pref_subtitles_scope_title,
                 summaryRes = R.string.pref_subtitles_scope_global_summary,
                 keywords = listOf("subtitle", "scope", "profile", "per-title", "show", "movie", "position", "scale"),
@@ -608,6 +616,7 @@ object SearchablePreferences {
                 screen = SubtitlesPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "subtitles.override_ass",
                 titleRes = R.string.player_sheets_sub_override_ass,
                 summaryRes = R.string.player_sheets_sub_override_ass_subtitle,
                 keywords = listOf("ass", "override", "subtitle", "ssa", "format", "style"),
