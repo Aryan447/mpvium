@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -66,6 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,8 +76,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.domain.streaming.StreamingArtworkStore
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
@@ -83,6 +87,7 @@ import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
+import app.aryan447.mpvium.ui.streaming.components.EditMetadataSheet
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
@@ -109,6 +114,7 @@ data class MovieDetailScreen(
     val paneBack = LocalDetailPaneBack.current
     val seriesDetector = koinInject<SeriesDetector>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val artworkStore = koinInject<StreamingArtworkStore>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val coroutineScope = rememberCoroutineScope()
 
@@ -118,6 +124,7 @@ data class MovieDetailScreen(
     var reloadKey by remember { mutableIntStateOf(0) }
     var pendingDeletion by remember { mutableStateOf<Video?>(null) }
     var showMatchPicker by remember { mutableStateOf(false) }
+    var showEditMetadataSheet by remember { mutableStateOf(false) }
     var matchOptions by remember { mutableStateOf<List<WyzieTmdbResult>>(emptyList()) }
     var isSearchingMatches by remember { mutableStateOf(false) }
     var matchQuery by remember { mutableStateOf("") }
@@ -307,6 +314,19 @@ data class MovieDetailScreen(
                     .background(Color.Black.copy(alpha = 0.5f)),
                 ) {
                   Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
+                }
+                IconButton(
+                  onClick = { showEditMetadataSheet = true },
+                  modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                  Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = stringResource(R.string.metadata_edit_title),
+                    tint = Color.White,
+                  )
                 }
                 IconButton(
                   onClick = { markAsOpen = true },
@@ -652,6 +672,52 @@ data class MovieDetailScreen(
         },
         tonalElevation = 6.dp,
         shape = MaterialTheme.shapes.extraLarge,
+      )
+    }
+
+    val currentMovieForSheet = movie
+    if (currentMovieForSheet != null) {
+      EditMetadataSheet(
+        isOpen = showEditMetadataSheet,
+        onDismiss = { showEditMetadataSheet = false },
+        currentTitle = currentMovieForSheet.title,
+        currentYear = currentMovieForSheet.year,
+        currentPosterUrl = currentMovieForSheet.posterUrl,
+        fallbackVideo = currentMovieForSheet.video,
+        isSeries = false,
+        onSave = { newTitle, newYear, posterUri, removePoster ->
+          coroutineScope.launch(Dispatchers.IO) {
+            val target = detectedMovie ?: currentMovieForSheet
+            val cached = metadataRepository.getCachedMovieMetadata(target)
+            val finalPosterPath = when {
+              posterUri != null -> artworkStore.storeCustomArtwork(posterUri, keyHint = target.title)
+              removePoster -> null
+              else -> cached?.customPosterPath
+            }
+            val updated = metadataRepository.updateMovieOverrides(
+              movie = target,
+              customTitle = newTitle,
+              customYear = newYear,
+              customPosterPath = finalPosterPath,
+            )
+            withContext(Dispatchers.Main) {
+              movie = updated
+              showEditMetadataSheet = false
+              MediaLibraryEvents.notifyChanged()
+            }
+          }
+        },
+        onResetToAutomatic = {
+          coroutineScope.launch(Dispatchers.IO) {
+            val target = detectedMovie ?: currentMovieForSheet
+            val updated = metadataRepository.resetMovieOverrides(target)
+            withContext(Dispatchers.Main) {
+              movie = updated
+              showEditMetadataSheet = false
+              MediaLibraryEvents.notifyChanged()
+            }
+          }
+        },
       )
     }
   }

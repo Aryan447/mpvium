@@ -634,4 +634,13 @@
   <string name="mark_as_none_summary">Clear any status and show as plain unplayed</string>
   <string name="mark_as_updated">Watch status updated</string>
   <string name="mark_as_failed">Failed to update watch status</string>
+  <!-- Metadata overrides -->
+  <string name="metadata_edit_title">Edit metadata</string>
+  <string name="metadata_field_title">Title</string>
+  <string name="metadata_field_year">Year</string>
+  <string name="metadata_field_poster">Poster</string>
+  <string name="metadata_change_poster">Change poster</string>
+  <string name="metadata_remove_poster">Remove poster</string>
+  <string name="metadata_reset_automatic">Reset to automatic</string>
+  <string name="metadata_save">Save</string>
 </resources>

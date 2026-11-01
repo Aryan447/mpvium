@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Added
+
+- Metadata overrides: manually edit title, release year, and cover art (via system photo picker) for movies and TV shows from their detail screens; overrides work offline and survive rescans, forced refreshes, and cache migrations.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
