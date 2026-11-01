@@ -220,13 +220,13 @@ object SettingsSearchScreen : Screen {
                         }
                         itemsIndexed(
                             items = searchResults,
-                            key = { index, pref -> "${pref.titleRes}_${pref.category}_${pref.screen}_$index".hashCode() }
+                            key = { _, pref -> pref.key }
                         ) { _, preference ->
                             SettingsSearchResultRow(
                                 preference = preference,
                                 onClick = {
                                     keyboardController?.hide()
-                                    backstack.add(preference.screen)
+                                    openSearchResult(backstack, preference)
                                 }
                             )
                         }
