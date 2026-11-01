@@ -2,7 +2,8 @@
 
 ### Added
 
-- Option to hide video chapter markers in the seekbar (Settings → Appearance → Seekbar).
+- Option to toggle video chapter markers in the seekbar (Settings → Appearance → Seekbar).
+- Settings search direct jump & highlight: tapping a search result from either the settings dashboard inline search or the standalone search screen now navigates directly to the exact option row or section card, smoothly scrolling it into view and momentarily highlighting it with an accent tint.
 
 ### Fixed
 

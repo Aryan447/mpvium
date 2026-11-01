@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Headset
@@ -44,6 +45,24 @@ object AudioPreferencesScreen : Screen {
     val context = LocalContext.current
     val preferences = koinInject<AudioPreferences>()
 
+    val listState = rememberLazyListState()
+    val highlightState = rememberSettingsHighlightState(
+      screen = AudioPreferencesScreen,
+      listState = listState,
+      keyToIndex = mapOf(
+        "audio.general" to 1,
+        "audio.preferred_languages" to 1,
+        "audio.pitch_correction" to 3,
+        "audio.volume_normalization" to 3,
+        "audio.background_playback" to 3,
+        "audio.channels" to 3,
+        "audio.volume_boost_cap" to 5,
+        "audio.volume_step" to 5,
+        "audio.volume_min_limit" to 5,
+        "audio.volume_max_limit" to 5,
+      ),
+    )
+
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(R.string.pref_audio))
@@ -51,6 +70,7 @@ object AudioPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -61,9 +81,19 @@ object AudioPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "audio.general",
+                isCard = true,
+              ),
+            ) {
           val preferredLanguages by preferences.preferredLanguages.collectAsState()
           TextFieldPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.preferred_languages",
+            ),
             value = preferredLanguages,
             onValueChange = { preferences.preferredLanguages.set(it) },
             textToValue = { it },
@@ -104,6 +134,10 @@ object AudioPreferencesScreen : Screen {
             PreferenceCard {
           val audioPitchCorrection by preferences.audioPitchCorrection.collectAsState()
           HapticSwitchPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.pitch_correction",
+            ),
             value = audioPitchCorrection,
             onValueChange = { preferences.audioPitchCorrection.set(it) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Tune) },
@@ -119,6 +153,10 @@ object AudioPreferencesScreen : Screen {
           PreferenceDivider()
           val volumeNormalization by preferences.volumeNormalization.collectAsState()
           HapticSwitchPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.volume_normalization",
+            ),
             value = volumeNormalization,
             onValueChange = { preferences.volumeNormalization.set(it) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.GraphicEq) },
@@ -134,6 +172,10 @@ object AudioPreferencesScreen : Screen {
           PreferenceDivider()
           val automaticBackgroundPlayback by preferences.automaticBackgroundPlayback.collectAsState()
           HapticSwitchPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.background_playback",
+            ),
             value = automaticBackgroundPlayback,
             onValueChange = { preferences.automaticBackgroundPlayback.set(it) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.PlaylistPlay) },
@@ -143,6 +185,10 @@ object AudioPreferencesScreen : Screen {
           PreferenceDivider()
           val audioChannel by preferences.audioChannels.collectAsState()
           ExpressiveListPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.channels",
+            ),
             value = audioChannel,
             onValueChange = { preferences.audioChannels.set(it) },
             values = AudioChannels.entries,
@@ -167,6 +213,10 @@ object AudioPreferencesScreen : Screen {
             PreferenceCard {
           val volumeBoostCap by preferences.volumeBoostCap.collectAsState()
           SliderPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.volume_boost_cap",
+            ),
             value = volumeBoostCap.toFloat(),
             onValueChange = { preferences.volumeBoostCap.set(it.toInt()) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeUp) },
@@ -189,6 +239,10 @@ object AudioPreferencesScreen : Screen {
           PreferenceDivider()
           val volumeStep by preferences.volumeStep.collectAsState()
           SliderPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.volume_step",
+            ),
             value = volumeStep.toFloat(),
             onValueChange = { preferences.volumeStep.set(it.toInt()) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.Settings) },
@@ -208,6 +262,10 @@ object AudioPreferencesScreen : Screen {
           PreferenceDivider()
           val volumeMinLimit by preferences.volumeMinLimit.collectAsState()
           SliderPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.volume_min_limit",
+            ),
             value = volumeMinLimit.toFloat(),
             onValueChange = { preferences.volumeMinLimit.set(it.toInt()) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeOff) },
@@ -226,6 +284,10 @@ object AudioPreferencesScreen : Screen {
           PreferenceDivider()
           val volumeMaxLimit by preferences.volumeMaxLimit.collectAsState()
           SliderPreference(
+            modifier = Modifier.settingsHighlightTarget(
+              state = highlightState,
+              key = "audio.volume_max_limit",
+            ),
             value = volumeMaxLimit.toFloat(),
             onValueChange = { preferences.volumeMaxLimit.set(it.toInt()) },
             icon = { PreferenceRowIcon(icon = Icons.Outlined.VolumeUp) },

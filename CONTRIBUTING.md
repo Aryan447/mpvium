@@ -97,6 +97,14 @@ the PR — maintainers can help.
 - Kotlin + Compose conventions already in the tree win over personal style.
 - Run `git diff --check` before committing.
 
+### Settings search integration
+
+When adding a new preference to any settings screen:
+- Add a corresponding `SearchablePreference` to `SearchablePreferences.allPreferences` with a unique, namespaced `key` (e.g. `appearance.amoled`, `player.gestures.swipe_sensitivity`). Keys must be non-blank, dot-namespaced, and globally unique (enforced by unit tests in `SearchablePreferencesTest`).
+- In the destination settings screen, expose its `listState: LazyListState` and connect `rememberSettingsHighlightState(...)` with a `keyToIndex` mapping specifying the `LazyColumn` item index for that key.
+- Apply `Modifier.settingsHighlightTarget(highlightState, key)` to the specific row (or set `isCard = true` if the entire card container is the target).
+- If a searchable row lacks an anchor entry, tapping its search result will safely fall back to opening its destination page at the top without highlighting.
+
 ### Native / JNI changes
 
 Be extra careful with C/C++ and JNI under `app/src/main/jni/` (if touched):
