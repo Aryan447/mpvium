@@ -177,6 +177,15 @@ class SeriesDetector(
       emptyMap()
     }
 
+    val recentPlayedList = try {
+      database.recentlyPlayedDao().getAllRecentlyPlayed()
+    } catch (e: Exception) {
+      Log.w(TAG, "Error fetching recently played", e)
+      emptyList()
+    }
+    val recentTimestampByFileName = recentPlayedList.associate { it.fileName to it.timestamp }
+
+    val rawSeriesMap = mutableMapOf<String, MutableList<Pair<LocalEpisode, Video>>>()
     val seriesTitleById = mutableMapOf<String, String>()
     val seriesYearById = mutableMapOf<String, String?>()
     val detectedMovies = mutableListOf<LocalMovie>()

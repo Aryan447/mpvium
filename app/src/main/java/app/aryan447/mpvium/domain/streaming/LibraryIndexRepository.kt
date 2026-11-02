@@ -80,7 +80,7 @@ class LibraryIndexRepository(
 
     // React to folder preference updates
     scope.launch {
-      foldersPreferences.whitelistedFolders.collectLatest {
+      foldersPreferences.whitelistedFolders.changes().collectLatest {
         isDirty = true
         if (foldersPreferences.libraryScanMode.get() == LibraryScanMode.AUTO && _library.value != null) {
           runCatching { refresh(force = false) }
@@ -88,7 +88,7 @@ class LibraryIndexRepository(
       }
     }
     scope.launch {
-      foldersPreferences.blacklistedFolders.collectLatest {
+      foldersPreferences.blacklistedFolders.changes().collectLatest {
         isDirty = true
         if (foldersPreferences.libraryScanMode.get() == LibraryScanMode.AUTO && _library.value != null) {
           runCatching { refresh(force = false) }
@@ -96,7 +96,7 @@ class LibraryIndexRepository(
       }
     }
     scope.launch {
-      foldersPreferences.whitelistOnlyEnabled.collectLatest {
+      foldersPreferences.whitelistOnlyEnabled.changes().collectLatest {
         isDirty = true
         if (foldersPreferences.libraryScanMode.get() == LibraryScanMode.AUTO && _library.value != null) {
           runCatching { refresh(force = false) }
