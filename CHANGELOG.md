@@ -1,5 +1,11 @@
 ## Unreleased
 
+### Added
+
+- Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
+- Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
+- Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
