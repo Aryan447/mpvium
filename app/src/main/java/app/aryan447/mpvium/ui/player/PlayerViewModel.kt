@@ -25,6 +25,7 @@ import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
 import app.aryan447.mpvium.utils.media.ChecksumUtils
 import app.aryan447.mpvium.utils.media.MediaInfoParser
+import app.aryan447.mpvium.utils.media.SubtitleReleaseParser
 import `is`.xyz.mpv.MPVLib
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -111,6 +112,10 @@ class PlayerViewModel(
   private val _isDownloadingSub = MutableStateFlow(false)
   val isDownloadingSub: StateFlow<Boolean> = _isDownloadingSub.asStateFlow()
 
+  /** URLs of individual search results currently being downloaded. */
+  private val _downloadingSubtitleUrls = MutableStateFlow<Set<String>>(emptySet())
+  val downloadingSubtitleUrls: StateFlow<Set<String>> = _downloadingSubtitleUrls.asStateFlow()
+
   private val _isSearchingSub = MutableStateFlow(false)
   val isSearchingSub: StateFlow<Boolean> = _isSearchingSub.asStateFlow()
 
@@ -180,6 +185,7 @@ class PlayerViewModel(
 
   // Media title for subtitle association (must be declared before init blocks that reference it)
   var currentMediaTitle: String = ""
+  var currentFilePath: String? = null
   private var lastAutoSelectedMediaTitle: String? = null
 
   // Audio state
@@ -333,6 +339,9 @@ class PlayerViewModel(
   // External subtitle tracking
   private val _externalSubtitles = mutableListOf<String>()
   val externalSubtitles: List<String> get() = _externalSubtitles.toList()
+
+  // Friendly labels for downloaded external subtitles, keyed by source URI.
+  private val externalSubtitleLabels = mutableMapOf<String, String>()
 
   // Mapping from mpv internal path/URI to the original source URI (resolves deletion issues)
   private val mpvPathToUriMap = mutableMapOf<String, String>()
@@ -519,11 +528,21 @@ class PlayerViewModel(
     }
   }
 
-  fun addSubtitle(uri: Uri, select: Boolean = true, silent: Boolean = false) {
+  fun addSubtitle(
+    uri: Uri,
+    select: Boolean = true,
+    silent: Boolean = false,
+    displayLabel: String? = null,
+  ) {
     viewModelScope.launch(Dispatchers.IO) {
       val uriString = uri.toString()
       if (_externalSubtitles.contains(uriString)) {
         android.util.Log.d("PlayerViewModel", "Subtitle already tracked, skipping: $uriString")
+        if (!silent) {
+          withContext(Dispatchers.Main) {
+            showToast(host.context.getString(R.string.player_sheets_subtitle_already_added))
+          }
+        }
         return@launch
       }
 
@@ -562,8 +581,12 @@ class PlayerViewModel(
         if (!_externalSubtitles.contains(uriString)) {
           _externalSubtitles.add(uriString)
         }
+        if (!displayLabel.isNullOrBlank()) {
+          externalSubtitleLabels[uriString] = displayLabel
+        }
 
-        val displayName = fileName.take(30).let { if (fileName.length > 30) "$it..." else it }
+        val displayName = displayLabel?.takeIf { it.isNotBlank() }
+          ?: fileName.take(30).let { if (fileName.length > 30) "$it..." else it }
         if (!silent) {
           withContext(Dispatchers.Main) {
             showToast("$displayName added")
@@ -610,12 +633,14 @@ class PlayerViewModel(
     }
   }
 
-  fun setMediaTitle(mediaTitle: String) {
+  fun setMediaTitle(mediaTitle: String, filePath: String? = null) {
+    currentFilePath = filePath ?: MPVLib.getPropertyString("path")
     if (currentMediaTitle != mediaTitle) {
       currentMediaTitle = mediaTitle
       lastAutoSelectedMediaTitle = null
       // Clear external subtitles when media changes
       _externalSubtitles.clear()
+      externalSubtitleLabels.clear()
       // Scan for previously downloaded/added subtitles
       scanLocalSubtitles(mediaTitle)
 
@@ -1006,6 +1031,7 @@ class PlayerViewModel(
 
         if (deleted) {
           _externalSubtitles.remove(originalUriString)
+          externalSubtitleLabels.remove(originalUriString)
           mpvPathToUriMap.remove(mpvPath)
           withContext(Dispatchers.Main) {
             showToast("Subtitle deleted")
@@ -1120,17 +1146,43 @@ class PlayerViewModel(
   }
 
   fun downloadSubtitle(subtitle: WyzieSubtitle) {
+      if (subtitle.url in _downloadingSubtitleUrls.value) return
       viewModelScope.launch {
+          _downloadingSubtitleUrls.update { it + subtitle.url }
           _isDownloadingSub.value = true
-          wyzieRepository.download(subtitle, currentMediaTitle)
-              .onSuccess { uri ->
-                  addSubtitle(uri)
-              }
-              .onFailure {
-                  showToast("Download failed: ${it.message}")
-              }
-          _isDownloadingSub.value = false
+          try {
+              wyzieRepository.download(subtitle, currentMediaTitle)
+                  .onSuccess { uri ->
+                      addSubtitle(uri, displayLabel = subtitleTrackLabel(subtitle))
+                  }
+                  .onFailure {
+                      showToast("Download failed: ${it.message}")
+                  }
+          } finally {
+              _downloadingSubtitleUrls.update { it - subtitle.url }
+              _isDownloadingSub.value = _downloadingSubtitleUrls.value.isNotEmpty()
+          }
       }
+  }
+
+  /** Friendly label for the external track list, e.g. "English · 1080p · WEB-DL · FGT". */
+  private fun subtitleTrackLabel(subtitle: WyzieSubtitle): String {
+      val parsed = SubtitleReleaseParser.parse(subtitle.displayName)
+      val parts = buildList {
+          add(subtitle.displayLanguage)
+          parsed.quality?.let(::add)
+          parsed.source?.let(::add)
+          parsed.videoCodec?.let(::add)
+          (parsed.releaseGroup ?: subtitle.origin)?.let(::add)
+          if (subtitle.isHearingImpaired) add("HI")
+      }
+      return parts.distinct().joinToString(" · ")
+  }
+
+  /** Label for a track's external filename, if it was added from online search. */
+  fun externalSubtitleLabelFor(pathOrUri: String): String? {
+      val uri = mpvPathToUriMap[pathOrUri] ?: pathOrUri
+      return externalSubtitleLabels[uri]
   }
 
 

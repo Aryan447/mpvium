@@ -11,6 +11,7 @@ import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.ContinueWatchingDismissals
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
@@ -46,6 +47,7 @@ class StreamingHomeViewModel(
   private val seriesDetector: SeriesDetector by inject(SeriesDetector::class.java)
   private val metadataRepository: StreamingMetadataRepository by inject(StreamingMetadataRepository::class.java)
   private val introSkipRepository: IntroSkipRepository by inject(IntroSkipRepository::class.java)
+  private val subtitleProfileRepository: SubtitleProfileRepository by inject(SubtitleProfileRepository::class.java)
 
   private val _uiState = MutableStateFlow(StreamingHomeUiState())
   val uiState: StateFlow<StreamingHomeUiState> = _uiState.asStateFlow()
@@ -153,10 +155,29 @@ class StreamingHomeViewModel(
         runCatching {
           introSkipRepository.pruneStale(presentIntroTitles)
         }
+        runCatching {
+          subtitleProfileRepository.pruneStale(
+            presentSeriesIds = detected.series.map { it.id }.toSet(),
+            presentMovieKeys = detected.movies.map {
+              StreamingMetadataRepository.movieKeyFor(it.title, it.year)
+            }.toSet(),
+          )
+        }
 
         // Pick Hero banner: first in-progress series or highest episode count series
         val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
         val cachedMovies = detected.movies.map { metadataRepository.applyCachedMovie(it) }
+        val seriesById = cachedSeries.associateBy { it.id }
+        val movieByVideoId = cachedMovies.associateBy { it.video.id }
+        val enrichedContinueWatching = detected.continueWatching.map { item ->
+          if (item.isSeries) {
+            val s = seriesById[item.seriesId]
+            if (s != null) item.copy(title = s.title, posterUrl = s.posterUrl) else item
+          } else {
+            val m = movieByVideoId[item.video.id]
+            if (m != null) item.copy(title = m.title, posterUrl = m.posterUrl) else item
+          }
+        }
         val hero = cachedSeries.firstOrNull { it.lastWatchedEpisode != null && !it.lastWatchedEpisode.isWatched }
           ?: cachedSeries.firstOrNull()
 
@@ -164,7 +185,7 @@ class StreamingHomeViewModel(
           it.copy(
             isLoading = false,
             heroSeries = hero,
-            continueWatching = detected.continueWatching,
+            continueWatching = enrichedContinueWatching,
             series = cachedSeries,
             movies = cachedMovies,
             folders = detected.folders,
@@ -195,7 +216,14 @@ class StreamingHomeViewModel(
         _uiState.update { state ->
           val updatedHero = if (state.heroSeries?.id == enriched.id) enriched else state.heroSeries
           val updatedSeries = state.series.map { if (it.id == enriched.id) enriched else it }
-          state.copy(heroSeries = updatedHero, series = updatedSeries)
+          val updatedContinueWatching = state.continueWatching.map { item ->
+            if (item.isSeries && item.seriesId == enriched.id) {
+              item.copy(title = enriched.title, posterUrl = enriched.posterUrl)
+            } else {
+              item
+            }
+          }
+          state.copy(heroSeries = updatedHero, series = updatedSeries, continueWatching = updatedContinueWatching)
         }
         enriched
       }
@@ -205,7 +233,14 @@ class StreamingHomeViewModel(
         val enriched = metadataRepository.enrichMovie(movie, forceRefresh = forceRefresh)
         _uiState.update { state ->
           val updatedMovies = state.movies.map { if (it.video.id == enriched.video.id) enriched else it }
-          state.copy(movies = updatedMovies)
+          val updatedContinueWatching = state.continueWatching.map { item ->
+            if (!item.isSeries && item.video.id == enriched.video.id) {
+              item.copy(title = enriched.title, posterUrl = enriched.posterUrl)
+            } else {
+              item
+            }
+          }
+          state.copy(movies = updatedMovies, continueWatching = updatedContinueWatching)
         }
         enriched
       }
@@ -230,11 +265,22 @@ class StreamingHomeViewModel(
         val detected = seriesDetector.detectLibrary()
         val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
         val cachedMovies = detected.movies.map { metadataRepository.applyCachedMovie(it) }
+        val seriesById = cachedSeries.associateBy { it.id }
+        val movieByVideoId = cachedMovies.associateBy { it.video.id }
+        val enrichedContinueWatching = detected.continueWatching.map { item ->
+          if (item.isSeries) {
+            val s = seriesById[item.seriesId]
+            if (s != null) item.copy(title = s.title, posterUrl = s.posterUrl) else item
+          } else {
+            val m = movieByVideoId[item.video.id]
+            if (m != null) item.copy(title = m.title, posterUrl = m.posterUrl) else item
+          }
+        }
         _uiState.update {
           it.copy(
             heroSeries = cachedSeries.firstOrNull { s -> s.lastWatchedEpisode != null && !s.lastWatchedEpisode.isWatched }
               ?: cachedSeries.firstOrNull(),
-            continueWatching = detected.continueWatching,
+            continueWatching = enrichedContinueWatching,
             series = cachedSeries,
             movies = cachedMovies,
             folders = detected.folders,

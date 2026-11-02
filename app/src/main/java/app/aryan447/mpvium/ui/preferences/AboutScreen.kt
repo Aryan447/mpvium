@@ -126,6 +126,10 @@ object AboutScreen : Screen {
       }
     }
 
+    LaunchedEffect(Unit) {
+      SettingsHighlight.consume(AboutScreen)
+    }
+
     // Conditionally initialize update feature based on build config
     val updateViewModel: UpdateViewModel? = if (BuildConfig.ENABLE_UPDATE_FEATURE) {
       viewModel(context as androidx.activity.ComponentActivity)

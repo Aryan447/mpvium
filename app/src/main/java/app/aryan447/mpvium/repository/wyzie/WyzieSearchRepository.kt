@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.utils.media.ChecksumUtils
+import app.aryan447.mpvium.utils.media.SubtitleReleaseParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
@@ -42,6 +43,17 @@ data class WyzieSubtitle(
 ) {
     val displayName: String get() = fileName ?: release ?: media ?: "Unknown Subtitle"
     val displayLanguage: String get() = display ?: language ?: "Unknown"
+
+    /** Number of alternative releases bundled in [releases] (SubSource). */
+    val extraReleaseCount: Int get() = (releases.size - 1).coerceAtLeast(0)
+
+    /** Short code for the leading language badge (`EN`, `ES`, …). */
+    val languageBadge: String
+        get() {
+            val code = language?.trim().orEmpty()
+            if (code.length in 2..3) return code.uppercase()
+            return displayLanguage.trim().take(2).uppercase().ifBlank { "CC" }
+        }
 }
 
 
@@ -335,6 +347,28 @@ class WyzieSearchRepository(
             "bb" to "Breaking Bad",
             "bcs" to "Better Call Saul",
         )
+
+        internal fun sanitizeFileSegment(value: String): String =
+            value.replace(Regex("""[\\/:*?"<>|\u0000-\u001F]"""), "")
+                .replace(Regex("""\s+"""), " ")
+                .trim()
+                .trimEnd('.', ' ')
+
+        /**
+         * Short, stable suffix that identifies a search result. The CRC is
+         * derived from the result URL, so the same result maps to the same file
+         * (and is not added twice), while different results always get separate
+         * files instead of overwriting each other.
+         */
+        internal fun subtitleFileTag(subtitle: WyzieSubtitle): String {
+            val parsed = SubtitleReleaseParser.parse(subtitle.displayName)
+            val descriptor = parsed.releaseGroup ?: subtitle.origin ?: parsed.quality ?: parsed.source
+            val slug = descriptor.orEmpty()
+                .replace(Regex("""[^A-Za-z0-9]+"""), "")
+                .take(12)
+            val hash = ChecksumUtils.getCRC32(subtitle.url).take(8)
+            return if (slug.isBlank()) hash else "$slug-$hash"
+        }
     }
 
     suspend fun search(
@@ -683,9 +717,15 @@ class WyzieSearchRepository(
 
             val saveFolderUri = preferences.subtitleSaveFolder.get()
             val folderName = ChecksumUtils.getCRC32(mediaTitle)
-            val fullTitle = mediaTitle.substringBeforeLast(".")
-            val langCode = subtitle.language ?: "en"
-            val subFileName = "${fullTitle}.${langCode}.$extension"
+            val langCode = sanitizeFileSegment(subtitle.language ?: "en").ifBlank { "en" }
+            // Include a per-result tag so downloading a second subtitle in the
+            // same language creates a new file instead of overwriting the first
+            // (which made the player treat it as the same track and skip it).
+            val baseName = sanitizeFileSegment(mediaTitle.substringBeforeLast("."))
+              .take(80)
+              .ifBlank { "subtitle" }
+            val safeExtension = extension.replace(Regex("""[^A-Za-z0-9]"""), "").ifBlank { "srt" }
+            val subFileName = "$baseName.$langCode.${subtitleFileTag(subtitle)}.$safeExtension"
 
             if (saveFolderUri.isNotBlank()) {
                 val parentDir = DocumentFile.fromTreeUri(context, Uri.parse(saveFolderUri))

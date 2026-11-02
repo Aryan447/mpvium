@@ -23,6 +23,8 @@ data class LocalSeries(
   val lastWatchedEpisode: LocalEpisode? = null,
   val nextEpisodeToWatch: LocalEpisode? = null,
   val seasons: Map<Int, List<LocalEpisode>> = emptyMap(), // Season Number -> Sorted List of Episodes
+  val originalTitle: String? = null,
+  val originalYear: String? = null,
 ) {
   val seasonCount: Int get() = seasons.size
   val isCompleted: Boolean get() = totalEpisodes > 0 && watchedEpisodesCount >= totalEpisodes
@@ -66,6 +68,8 @@ data class LocalMovie(
   val playbackPositionMs: Long = 0L,
   val isWatched: Boolean = false,
   val progressPercentage: Float = 0f,
+  val originalTitle: String? = null,
+  val originalYear: String? = null,
 )
 
 /**

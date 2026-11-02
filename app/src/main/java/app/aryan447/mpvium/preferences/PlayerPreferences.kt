@@ -8,6 +8,7 @@ import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.PlayerTitleMode
 import app.aryan447.mpvium.ui.player.RepeatMode
+import app.aryan447.mpvium.ui.player.SavePositionInterval
 import app.aryan447.mpvium.ui.player.VideoAspect
 
 class PlayerPreferences(
@@ -44,6 +45,7 @@ class PlayerPreferences(
   val showLoadingCircle = preferenceStore.getBoolean("show_loading_circle", true)
   val showVignette = preferenceStore.getBoolean("show_vignette", true)
   val savePositionOnQuit = preferenceStore.getBoolean("save_position", true)
+  val savePositionInterval = preferenceStore.getEnum("save_position_interval", SavePositionInterval.ThirtySeconds)
 
   val closeAfterReachingEndOfVideo = preferenceStore.getBoolean("close_after_eof", true)
 

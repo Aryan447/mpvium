@@ -3,6 +3,7 @@ package app.aryan447.mpvium.domain.streaming
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Log
 import android.util.LruCache
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
@@ -92,6 +94,10 @@ class StreamingArtworkStore(
       return@withContext bitmap
     }
 
+    if (url.startsWith("/") || url.startsWith("file://")) {
+      return@withContext null
+    }
+
     // Card, detail hero and row can ask for the same URL at once. Only one
     // request should hit the network; everyone else reuses its result.
     val lock = downloadLocks.computeIfAbsent(url) { Mutex() }
@@ -131,10 +137,63 @@ class StreamingArtworkStore(
     if (unique.isEmpty()) return
 
     unique.forEach { url ->
+      val directFile = when {
+        url.startsWith("/") -> File(url)
+        url.startsWith("file://") -> File(url.removePrefix("file://"))
+        else -> null
+      }
+      if (directFile != null) {
+        runCatching { directFile.delete() }
+        runCatching { File(diskDir, directFile.name).delete() }
+      }
       runCatching { diskFile(url).delete() }
       removeFromMemory(url)
     }
   }
+
+  /**
+   * Copies user-selected artwork from an [InputStream] into app storage atomically,
+   * matching how downloaded artwork is persisted. Returns the absolute file path.
+   */
+  suspend fun storeCustomArtwork(inputStream: InputStream, keyHint: String = ""): String =
+    withContext(Dispatchers.IO) {
+      val hintPart = if (keyHint.isNotBlank()) "${hash(keyHint)}_" else ""
+      val key = "custom_${hintPart}${System.currentTimeMillis()}_${(1000..9999).random()}"
+      val target = File(diskDir, "$key.$DISK_FILE_EXTENSION")
+      val temp = File(diskDir, "${target.name}.tmp")
+      try {
+        FileOutputStream(temp).use { out ->
+          inputStream.copyTo(out)
+          out.flush()
+          out.fd.sync()
+        }
+        try {
+          Files.move(
+            temp.toPath(),
+            target.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE,
+          )
+        } catch (_: Exception) {
+          Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+        target.absolutePath
+      } catch (e: Exception) {
+        Log.w(TAG, "Failed to store custom artwork: ${e.message}")
+        runCatching { temp.delete() }
+        throw e
+      }
+    }
+
+  /**
+   * Copies user-selected artwork from a content [Uri] into app storage atomically.
+   */
+  suspend fun storeCustomArtwork(uri: Uri, keyHint: String = ""): String =
+    withContext(Dispatchers.IO) {
+      val stream = appContext.contentResolver.openInputStream(uri)
+        ?: throw IllegalStateException("Could not open input stream for $uri")
+      stream.use { storeCustomArtwork(it, keyHint) }
+    }
 
   private fun removeFromMemory(url: String) {
     val keys = memoryCache.snapshot().keys.filter { it.startsWith("$url|") }
@@ -142,6 +201,23 @@ class StreamingArtworkStore(
   }
 
   private fun readFromDisk(url: String, maxDimension: Int): Bitmap? {
+    val directFile = when {
+      url.startsWith("/") -> File(url)
+      url.startsWith("file://") -> File(url.removePrefix("file://"))
+      else -> null
+    }
+    if (directFile != null) {
+      if (directFile.isFile && directFile.length() > 0L) {
+        val bitmap = decodeSampledFile(directFile.absolutePath, maxDimension)
+        if (bitmap != null) return bitmap
+      }
+      val relocated = File(diskDir, directFile.name)
+      if (relocated.isFile && relocated.length() > 0L) {
+        val bitmap = decodeSampledFile(relocated.absolutePath, maxDimension)
+        if (bitmap != null) return bitmap
+      }
+    }
+
     val file = diskFile(url)
     if (file.isFile && file.length() > 0L) {
       val bitmap = decodeSampledFile(file.absolutePath, maxDimension)

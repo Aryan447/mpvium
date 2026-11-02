@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -108,6 +109,22 @@ object PlayerControlsPreferencesScreen : Screen {
       appearancePrefs.parseButtons(portraitBottomState, mutableSetOf())
     }
 
+    val listState = rememberLazyListState()
+    val highlightState = rememberSettingsHighlightState(
+      screen = PlayerControlsPreferencesScreen,
+      listState = listState,
+      keyToIndex = mapOf(
+        "player.controls.layout" to 1,
+        "player.controls.top_right" to 1,
+        "player.controls.bottom_right" to 1,
+        "player.controls.bottom_left" to 1,
+        "player.controls.portrait_bottom" to 3,
+        "player.controls.colors" to 11,
+        "player.controls.hide_buttons_background" to 11,
+        "player.controls.hide_control_time" to 11,
+      ),
+    )
+
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(id = R.string.pref_layout_title))
@@ -115,6 +132,7 @@ object PlayerControlsPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
@@ -126,12 +144,19 @@ object PlayerControlsPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "player.controls.layout",
+                isCard = true,
+              ),
+            ) {
               PreferenceCategoryWithEditButton(
                 title = stringResource(id = R.string.pref_layout_top_right_controls),
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.TOP_RIGHT))
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.top_right"),
               )
               PreferenceIconSummary(buttons = topRightButtons)
 
@@ -142,6 +167,7 @@ object PlayerControlsPreferencesScreen : Screen {
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_RIGHT))
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_right"),
               )
               PreferenceIconSummary(buttons = bottomRightButtons)
 
@@ -152,6 +178,7 @@ object PlayerControlsPreferencesScreen : Screen {
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_LEFT))
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_left"),
               )
               PreferenceIconSummary(buttons = bottomLeftButtons)
             }
@@ -164,13 +191,12 @@ object PlayerControlsPreferencesScreen : Screen {
 
           item {
             PreferenceCard {
-
-
               PreferenceCategoryWithEditButton(
                 title = stringResource(id = R.string.pref_layout_portrait_bottom_controls),
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.PORTRAIT_BOTTOM))
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.portrait_bottom"),
               )
               PreferenceIconSummary(buttons = portraitBottomButtons)
             }
@@ -253,6 +279,7 @@ object PlayerControlsPreferencesScreen : Screen {
                     ),
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.colors"),
               )
 
               PreferenceDivider()
@@ -271,6 +298,7 @@ object PlayerControlsPreferencesScreen : Screen {
                     text = stringResource(id = R.string.pref_appearance_hide_player_buttons_background_summary),
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.hide_buttons_background"),
               )
 
               PreferenceDivider()
@@ -304,6 +332,7 @@ object PlayerControlsPreferencesScreen : Screen {
                     },
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.hide_control_time"),
               )
             }
 
@@ -365,10 +394,11 @@ object PlayerControlsPreferencesScreen : Screen {
   private fun PreferenceCategoryWithEditButton(
     title: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
   ) {
     Row(
       modifier =
-        Modifier
+        modifier
           .fillMaxWidth()
           .clickable(onClick = onClick)
           .padding(horizontal = 16.dp, vertical = 12.dp),
