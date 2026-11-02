@@ -826,6 +826,7 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.lean_seek_cache",
                 titleRes = R.string.pref_advanced_lean_seek_cache_title,
                 summaryRes = R.string.pref_advanced_lean_seek_cache_summary_off,
                 keywords = listOf("lean", "seek", "cache", "demuxer", "ram", "buffer", "fast", "scrub"),

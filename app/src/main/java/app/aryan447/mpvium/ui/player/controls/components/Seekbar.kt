@@ -84,7 +84,6 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.isSystemInDarkTheme
-import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.ui.player.SeekCacheResolver
 import app.aryan447.mpvium.ui.theme.AppTheme
 import dev.vivvvek.seeker.Segment

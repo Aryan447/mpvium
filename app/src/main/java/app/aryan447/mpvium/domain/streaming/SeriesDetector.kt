@@ -161,7 +161,7 @@ class SeriesDetector(
     }
   }
 
-  fun groupMedia(
+  suspend fun groupMedia(
     items: List<Pair<Video, ParsedMediaInfo>>,
     folders: List<VideoFolder>,
   ): DetectedMediaLibrary {
