@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Added
+
+- Opt-in "Lean seek cache" setting (Settings → Advanced) that deepens the demuxer cache around the playhead for faster seeking on local and network sources alike. Automatically sizes forward and backward byte budgets according to memory class and bitrate, clamps to conservative 96 MB forward / 128 MB backward ceilings, and displays seekable cache ranges behind the seekbar rail when enabled.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.

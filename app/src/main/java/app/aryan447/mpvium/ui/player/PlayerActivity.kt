@@ -1,8 +1,10 @@
 package app.aryan447.mpvium.ui.player
 
+import android.app.ActivityManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
+import kotlin.math.roundToInt
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
@@ -401,7 +403,10 @@ class PlayerActivity :
     // Set HTTP headers (including referer) BEFORE playing the file
     setHttpHeadersFromExtras(intent.extras)
 
-    getPlayableUri(intent)?.let(player::playFile)
+    getPlayableUri(intent)?.let { uri ->
+      applySeekCacheOptionsBeforeLoadfile(uri)
+      player.playFile(uri)
+    }
 
     // Only set orientation immediately if NOT in Video mode
     // For Video mode, wait for video-params/aspect to become available
@@ -748,6 +753,8 @@ class PlayerActivity :
       if (!shouldAllowBackgroundPlayback && (isUserFinishing || isFinishing)) {
         viewModel.pause()
       }
+
+      viewModel.updateCachePolling(false)
     }.onFailure { e ->
       Log.e(TAG, "Error during onStop", e)
     }
@@ -777,6 +784,8 @@ class PlayerActivity :
 
       // Reset manual background playback flag when returning to foreground
       isManualBackgroundPlayback = false
+
+      viewModel.updateCachePolling(viewModel.controlsShown.value || viewModel.seekBarShown.value)
     }.onFailure { e ->
       Log.e(TAG, "Error during onStart", e)
     }
@@ -2430,6 +2439,7 @@ class PlayerActivity :
 
     // Load the new file
     getPlayableUri(intent)?.let { uri ->
+      applySeekCacheOptionsBeforeLoadfile(uri)
       // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
       lifecycleScope.launch(Dispatchers.Default) {
         MPVLib.command("loadfile", uri)
@@ -3139,6 +3149,7 @@ class PlayerActivity :
 
     // Load the new video
     // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
+    applySeekCacheOptionsBeforeLoadfile(playableUri)
     lifecycleScope.launch(Dispatchers.Default) {
       MPVLib.command("loadfile", playableUri)
     }
@@ -3347,6 +3358,56 @@ class PlayerActivity :
       "${fileName}_${uri.toString().hashCode()}"
     } else {
       fileName
+    }
+  }
+
+  private fun applySeekCacheOptionsBeforeLoadfile(uriString: String) {
+    if (!advancedPreferences.leanSeekCache.get()) return
+
+    val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+    val memoryClass = activityManager?.memoryClass ?: 256
+    val isLowRam = activityManager?.isLowRamDevice ?: false
+
+    val uri = runCatching { Uri.parse(uriString) }.getOrNull()
+    val scheme = uri?.scheme?.lowercase() ?: ""
+    val isNetwork = scheme.startsWith("http") || scheme == "rtmp" || scheme == "ftp" ||
+      scheme == "rtsp" || scheme == "smb" || scheme == "dav" || scheme == "webdav"
+
+    val fileSizeBytes = if (!isNetwork && scheme == "file") {
+      runCatching { File(uri?.path ?: "").length() }.getOrNull()?.takeIf { it > 0 }
+    } else {
+      null
+    }
+
+    val profile = SeekCacheResolver.resolve(
+      SeekCacheResolver.Input(
+        memoryClassMb = memoryClass,
+        isLowRamDevice = isLowRam,
+        sourceType = if (isNetwork) SeekCacheResolver.SourceType.Network else SeekCacheResolver.SourceType.Local,
+        fileSizeBytes = fileSizeBytes,
+      ),
+    )
+
+    MPVLib.setOptionString("demuxer-max-bytes", "${profile.demuxerMaxBytes}")
+    MPVLib.setOptionString("demuxer-max-back-bytes", "${profile.demuxerMaxBackBytes}")
+    MPVLib.setOptionString("demuxer-readahead-secs", "${profile.demuxerReadaheadSecs.roundToInt()}")
+    MPVLib.setOptionString("cache-secs", "${profile.cacheSecs.roundToInt()}")
+    MPVLib.setOptionString("stream-buffer-size", "${profile.streamBufferSize}")
+
+    runCatching {
+      MPVLib.setPropertyLong("demuxer-max-bytes", profile.demuxerMaxBytes)
+      MPVLib.setPropertyLong("demuxer-max-back-bytes", profile.demuxerMaxBackBytes)
+      MPVLib.setPropertyDouble("demuxer-readahead-secs", profile.demuxerReadaheadSecs)
+      MPVLib.setPropertyDouble("cache-secs", profile.cacheSecs)
+    }
+
+    if (advancedPreferences.verboseLogging.get()) {
+      Log.i(
+        TAG,
+        "SeekCache: source=${profile.sourceType}, forward=${profile.demuxerMaxBytes / (1024 * 1024)}MB, " +
+          "back=${profile.demuxerMaxBackBytes / (1024 * 1024)}MB, readahead=${profile.demuxerReadaheadSecs.roundToInt()}s, " +
+          "cache-secs=${profile.cacheSecs.roundToInt()}s, safeBudget=${profile.safeCombinedBudgetBytes / (1024 * 1024)}MB",
+      )
     }
   }
 

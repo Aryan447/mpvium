@@ -314,6 +314,10 @@
   <string name="pref_advanced_cleared_fonts_cache">Cleared cached fonts</string>
   <string name="pref_advanced_enable_recently_played_title">Recently Played</string>
   <string name="pref_advanced_enable_recently_played_summary">Track and display recently played videos and playlists</string>
+  <string name="pref_advanced_lean_seek_cache_title">Lean seek cache</string>
+  <string name="pref_advanced_lean_seek_cache_summary_off">OFF by default. Keeps more of the video around the playhead in memory so seeking responds faster. Uses more RAM. Changes apply on the next playback start.</string>
+  <string name="pref_advanced_lean_seek_cache_summary_on">%1$d MB forward / %2$d MB back, approximately %3$s each way on this device. Uses more RAM; changes apply on the next playback start.</string>
+  <string name="pref_advanced_lean_seek_cache_summary_on_fallback">%1$d MB forward / %2$d MB back. Actual window depends on bitrate and cache availability. Uses more RAM; changes apply on the next playback start.</string>
   <string name="pref_advanced_features_tooltip">Enable experimental or advanced features such as stats page and Anime4K upscaling</string>
   <string name="pref_anime4k_title">Anime4K upscaling (Experimental)</string>
   <string name="pref_anime4k_summary">Enable Anime4K upscaling filter</string>

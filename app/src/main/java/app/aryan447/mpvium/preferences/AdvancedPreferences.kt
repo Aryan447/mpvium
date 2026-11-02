@@ -10,6 +10,8 @@ class AdvancedPreferences(
   val mpvConf = preferenceStore.getString("mpv.conf")
   val inputConf = preferenceStore.getString("input.conf")
 
+  val leanSeekCache = preferenceStore.getBoolean("lean_seek_cache", false)
+
   val verboseLogging = preferenceStore.getBoolean("verbose_logging", BuildConfig.BUILD_TYPE != "release")
 
   val enabledStatisticsPage = preferenceStore.getInt("enabled_stats_page", 0)

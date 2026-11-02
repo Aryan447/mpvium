@@ -77,12 +77,20 @@ import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.preferences.SeekbarStyle
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.snap
+import androidx.compose.foundation.isSystemInDarkTheme
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.ui.player.SeekCacheResolver
+import app.aryan447.mpvium.ui.theme.AppTheme
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import org.koin.compose.koinInject
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -201,6 +209,9 @@ fun SeekbarWithTimers(
   seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
   loopStart: Float? = null,
   loopEnd: Float? = null,
+  cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange> = persistentListOf(),
+  forwardCacheDuration: Float = 0f,
+  isLeanSeekCacheEnabled: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
@@ -379,6 +390,9 @@ fun SeekbarWithTimers(
             onSeekFinished = { },
             loopStart = loopStart,
             loopEnd = loopEnd,
+            cacheRanges = cacheRanges,
+            forwardCacheDuration = forwardCacheDuration,
+            isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
           )
         }
         SeekbarStyle.Wavy -> {
@@ -394,6 +408,9 @@ fun SeekbarWithTimers(
             onSeekFinished = { }, // Touch handled by parent
             loopStart = loopStart,
             loopEnd = loopEnd,
+            cacheRanges = cacheRanges,
+            forwardCacheDuration = forwardCacheDuration,
+            isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
           )
         }
         SeekbarStyle.Thick -> {
@@ -409,6 +426,9 @@ fun SeekbarWithTimers(
             onSeekFinished = { },
             loopStart = loopStart,
             loopEnd = loopEnd,
+            cacheRanges = cacheRanges,
+            forwardCacheDuration = forwardCacheDuration,
+            isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
           )
         }
       }
@@ -529,10 +549,51 @@ private fun SquigglySeekbar(
   onSeekFinished: () -> Unit,
   loopStart: Float? = null,
   loopEnd: Float? = null,
+  cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange> = persistentListOf(),
+  forwardCacheDuration: Float = 0f,
+  isLeanSeekCacheEnabled: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val primaryColor = MaterialTheme.colorScheme.primary
   val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+  val density = LocalDensity.current
+
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val amoledMode by appearancePreferences.amoledMode.collectAsState()
+  val appTheme by appearancePreferences.appTheme.collectAsState()
+  val isDark = isSystemInDarkTheme()
+
+  val baseAlpha = when {
+    appTheme == AppTheme.Glass -> 0.18f
+    amoledMode && isDark -> 0.24f
+    isDark -> 0.16f
+    else -> 0.12f
+  }
+
+  val isForwardCollapsed = !isPaused && forwardCacheDuration <= 0.1f
+  val targetAlpha = if (isForwardCollapsed) baseAlpha * 0.5f else baseAlpha
+  val cacheBandAlpha by animateFloatAsState(
+    targetValue = targetAlpha,
+    animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+    label = "cacheBandAlpha",
+  )
+
+  val primaryForwardEnd = if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
+    cacheRanges.maxOfOrNull { it.end } ?: 0f
+  } else {
+    0f
+  }
+  var frozenForwardEnd by remember { mutableFloatStateOf(primaryForwardEnd) }
+  LaunchedEffect(isScrubbing) {
+    if (isScrubbing) {
+      frozenForwardEnd = primaryForwardEnd
+    }
+  }
+  val animatedForwardEnd by animateFloatAsState(
+    targetValue = if (isScrubbing) frozenForwardEnd else primaryForwardEnd,
+    animationSpec = if (isScrubbing) snap() else tween(durationMillis = 200, easing = LinearOutSlowInEasing),
+    label = "cacheForwardEnd",
+  )
 
   // Manual Interaction State Tracking
   var isPressed by remember { mutableStateOf(false) }
@@ -728,9 +789,7 @@ private fun SquigglySeekbar(
       }
     }
 
-    // Played segment
-    drawPathWithGaps(0f, totalProgressPx, primaryColor)
-
+    // 1. Unplayed segment (rail)
     if (transitionEnabled) {
       val disabledAlpha = 77f / 255f
       drawPathWithGaps(totalProgressPx, totalWidth, primaryColor.copy(alpha = disabledAlpha))
@@ -743,6 +802,106 @@ private fun SquigglySeekbar(
         cap = StrokeCap.Round,
       )
     }
+
+    // 2. Cache band (gated by leanSeekCache pref only)
+    if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
+      val cacheAmplitude = lineAmplitude * 0.35f * heightFraction
+      val cachePath = Path()
+      cachePath.moveTo(waveStart, centerY)
+      var cX = waveStart
+      var cSign = 1f
+      var cAmp = cSign * cacheAmplitude
+
+      while (cX < waveEnd) {
+        cSign = -cSign
+        val nX = cX + dist
+        val mX = cX + dist / 2f
+        val nAmp = cSign * cacheAmplitude
+        cachePath.cubicTo(
+          mX,
+          centerY + cAmp,
+          mX,
+          centerY + nAmp,
+          nX,
+          centerY + nAmp,
+        )
+        cAmp = nAmp
+        cX = nX
+      }
+
+      val fadeBackwardPx = with(density) { 16.dp.toPx() }
+      val fadeForwardPx = with(density) { 24.dp.toPx() }
+
+      fun drawCachePathWithGaps(
+        startX: Float,
+        endX: Float,
+        brush: Brush,
+      ) {
+        if (endX <= startX) return
+        val relevantGaps = chapterGaps
+          .filter { (gStart, gEnd) -> gEnd > startX && gStart < endX }
+          .sortedBy { it.first }
+
+        var currentPos = startX
+        for ((gStart, gEnd) in relevantGaps) {
+          val segmentEnd = gStart.coerceAtMost(endX)
+          if (segmentEnd > currentPos) {
+            clipRect(
+              left = currentPos,
+              top = centerY - clipTop,
+              right = segmentEnd,
+              bottom = centerY + clipTop,
+            ) {
+              drawPath(
+                path = cachePath,
+                brush = brush,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+              )
+            }
+          }
+          currentPos = gEnd.coerceAtLeast(currentPos)
+        }
+        if (currentPos < endX) {
+          clipRect(
+            left = currentPos,
+            top = centerY - clipTop,
+            right = endX,
+            bottom = centerY + clipTop,
+          ) {
+            drawPath(
+              path = cachePath,
+              brush = brush,
+              style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+            )
+          }
+        }
+      }
+
+      for (range in cacheRanges) {
+        val rStartSec = range.start.coerceIn(0f, duration)
+        val rawEndSec = if (range.end >= primaryForwardEnd) animatedForwardEnd else range.end
+        val rEndSec = rawEndSec.coerceIn(0f, duration)
+        val rStartX = (rStartSec / duration) * totalWidth
+        val rEndX = (rEndSec / duration) * totalWidth
+        val rangeWidth = rEndX - rStartX
+        if (rangeWidth > 1f) {
+          val bRatio = (fadeBackwardPx / rangeWidth).coerceIn(0f, 0.45f)
+          val fRatio = (fadeForwardPx / rangeWidth).coerceIn(0f, 0.45f)
+          val brush = Brush.horizontalGradient(
+            0.0f to primaryColor.copy(alpha = 0f),
+            bRatio to primaryColor.copy(alpha = cacheBandAlpha),
+            (1.0f - fRatio) to primaryColor.copy(alpha = cacheBandAlpha),
+            1.0f to primaryColor.copy(alpha = 0f),
+            startX = rStartX,
+            endX = rEndX,
+          )
+          drawCachePathWithGaps(rStartX, rEndX, brush)
+        }
+      }
+    }
+
+    // 3. Played segment (played fill stays dominant)
+    drawPathWithGaps(0f, totalProgressPx, primaryColor)
 
     // Draw round cap
     val startAmp = kotlin.math.cos(kotlin.math.abs(waveStart) / waveLength * (2f * kotlin.math.PI.toFloat()))
@@ -841,10 +1000,51 @@ fun StandardSeekbar(
     onSeekFinished: () -> Unit,
     loopStart: Float? = null,
     loopEnd: Float? = null,
+    cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange> = persistentListOf(),
+    forwardCacheDuration: Float = 0f,
+    isLeanSeekCacheEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val interactionSource = remember { MutableInteractionSource() }
+    val density = LocalDensity.current
+
+    val appearancePreferences = koinInject<AppearancePreferences>()
+    val amoledMode by appearancePreferences.amoledMode.collectAsState()
+    val appTheme by appearancePreferences.appTheme.collectAsState()
+    val isDark = isSystemInDarkTheme()
+
+    val baseAlpha = when {
+        appTheme == AppTheme.Glass -> 0.18f
+        amoledMode && isDark -> 0.24f
+        isDark -> 0.16f
+        else -> 0.12f
+    }
+
+    val isForwardCollapsed = !isPaused && forwardCacheDuration <= 0.1f
+    val targetAlpha = if (isForwardCollapsed) baseAlpha * 0.5f else baseAlpha
+    val cacheBandAlpha by animateFloatAsState(
+        targetValue = targetAlpha,
+        animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+        label = "standardCacheBandAlpha",
+    )
+
+    val primaryForwardEnd = if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
+        cacheRanges.maxOfOrNull { it.end } ?: 0f
+    } else {
+        0f
+    }
+    var frozenForwardEnd by remember { mutableFloatStateOf(primaryForwardEnd) }
+    LaunchedEffect(isScrubbing) {
+        if (isScrubbing) {
+            frozenForwardEnd = primaryForwardEnd
+        }
+    }
+    val animatedForwardEnd by animateFloatAsState(
+        targetValue = if (isScrubbing) frozenForwardEnd else primaryForwardEnd,
+        animationSpec = if (isScrubbing) snap() else tween(durationMillis = 200, easing = LinearOutSlowInEasing),
+        label = "standardCacheForwardEnd",
+    )
 
     // Animation state (same as SquigglySeekbar). Runs directly in the
     // LaunchedEffect so toggle flapping cancels instead of leaking.
@@ -1008,6 +1208,95 @@ fun StandardSeekbar(
                 // 1. Unplayed Background
                 val unplayedStart = if (isThick) thumbGapEnd else playedPx
                 drawRangeWithGaps(unplayedStart, size.width, chapterGaps, primaryColor.copy(alpha = disabledAlpha))
+
+                // Cache band (gated by leanSeekCache pref only)
+                if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
+                    val fadeBackwardPx = with(density) { 16.dp.toPx() }
+                    val fadeForwardPx = with(density) { 24.dp.toPx() }
+
+                    fun drawCacheSegment(startX: Float, endX: Float, brush: Brush) {
+                        if (endX - startX < 0.5f) return
+
+                        val path = Path()
+                        val isOuterLeft = startX <= 0.5f
+                        val isInnerLeft = isThick && kotlin.math.abs(startX - thumbGapEnd) < 0.5f
+
+                        val cornerRadiusLeft = when {
+                            isOuterLeft -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
+                            isInnerLeft -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
+                            else -> androidx.compose.ui.geometry.CornerRadius.Zero
+                        }
+
+                        val isOuterRight = endX >= size.width - 0.5f
+                        val isInnerRight = isThick && kotlin.math.abs(endX - thumbGapStart) < 0.5f
+
+                        val cornerRadiusRight = when {
+                            isOuterRight -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
+                            isInnerRight -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
+                            else -> androidx.compose.ui.geometry.CornerRadius.Zero
+                        }
+
+                        path.addRoundRect(
+                            androidx.compose.ui.geometry.RoundRect(
+                                left = startX,
+                                top = 0f,
+                                right = endX,
+                                bottom = trackHeight,
+                                topLeftCornerRadius = cornerRadiusLeft,
+                                bottomLeftCornerRadius = cornerRadiusLeft,
+                                topRightCornerRadius = cornerRadiusRight,
+                                bottomRightCornerRadius = cornerRadiusRight
+                            )
+                        )
+                        drawPath(path, brush)
+                    }
+
+                    fun drawCacheRangeWithGaps(
+                        rangeStart: Float,
+                        rangeEnd: Float,
+                        gaps: List<Pair<Float, Float>>,
+                        brush: Brush
+                    ) {
+                        if (rangeEnd <= rangeStart) return
+                        val relevantGaps = gaps
+                            .filter { (gStart, gEnd) -> gEnd > rangeStart && gStart < rangeEnd }
+                            .sortedBy { it.first }
+
+                        var currentPos = rangeStart
+                        for ((gStart, gEnd) in relevantGaps) {
+                            val segmentEnd = gStart.coerceAtMost(rangeEnd)
+                            if (segmentEnd > currentPos) {
+                                drawCacheSegment(currentPos, segmentEnd, brush)
+                            }
+                            currentPos = gEnd.coerceAtLeast(currentPos)
+                        }
+                        if (currentPos < rangeEnd) {
+                            drawCacheSegment(currentPos, rangeEnd, brush)
+                        }
+                    }
+
+                    for (range in cacheRanges) {
+                        val rStartSec = range.start.coerceIn(0f, duration)
+                        val rawEndSec = if (range.end >= primaryForwardEnd) animatedForwardEnd else range.end
+                        val rEndSec = rawEndSec.coerceIn(0f, duration)
+                        val rStartX = (rStartSec / duration) * size.width
+                        val rEndX = (rEndSec / duration) * size.width
+                        val rangeWidth = rEndX - rStartX
+                        if (rangeWidth > 1f) {
+                            val bRatio = (fadeBackwardPx / rangeWidth).coerceIn(0f, 0.45f)
+                            val fRatio = (fadeForwardPx / rangeWidth).coerceIn(0f, 0.45f)
+                            val brush = Brush.horizontalGradient(
+                                0.0f to primaryColor.copy(alpha = 0f),
+                                bRatio to primaryColor.copy(alpha = cacheBandAlpha),
+                                (1.0f - fRatio) to primaryColor.copy(alpha = cacheBandAlpha),
+                                1.0f to primaryColor.copy(alpha = 0f),
+                                startX = rStartX,
+                                endX = rEndX,
+                            )
+                            drawCacheRangeWithGaps(rStartX, rEndX, chapterGaps, brush)
+                        }
+                    }
+                }
 
                 // 2. Played
                 val playedEnd = if (isThick) thumbGapStart else playedPx

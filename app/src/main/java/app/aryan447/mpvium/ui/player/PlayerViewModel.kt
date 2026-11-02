@@ -26,6 +26,7 @@ import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
 import app.aryan447.mpvium.utils.media.ChecksumUtils
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import `is`.xyz.mpv.MPVLib
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
@@ -233,6 +234,15 @@ class PlayerViewModel(
         delay(250)
       }
     }
+
+    // Observe controls visibility and leanSeekCache preference to manage cache polling
+    viewModelScope.launch {
+      combine(controlsShown, seekBarShown, advancedPreferences.leanSeekCache.changes()) { c, s, lean ->
+        (c || s) && lean
+      }.collect { shouldPoll ->
+        updateCachePolling(shouldPoll)
+      }
+    }
   }
   val maxVolume = host.audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
@@ -269,6 +279,15 @@ class PlayerViewModel(
 
   private val _seekBarShown = MutableStateFlow(false)
   val seekBarShown: StateFlow<Boolean> = _seekBarShown.asStateFlow()
+
+  // Demuxer cache state (Spec 17: Lean seek cache)
+  private val _cacheRanges = MutableStateFlow<ImmutableList<SeekCacheResolver.SeekableRange>>(persistentListOf())
+  val cacheRanges: StateFlow<ImmutableList<SeekCacheResolver.SeekableRange>> = _cacheRanges.asStateFlow()
+
+  private val _forwardCacheDuration = MutableStateFlow(0f)
+  val forwardCacheDuration: StateFlow<Float> = _forwardCacheDuration.asStateFlow()
+
+  private var cachePollJob: Job? = null
 
   private val _areControlsLocked = MutableStateFlow(false)
   val areControlsLocked: StateFlow<Boolean> = _areControlsLocked.asStateFlow()
@@ -2405,6 +2424,62 @@ class PlayerViewModel(
     playerUpdate.value = PlayerUpdates.ShowText(if (newState) "V-Flip On" else "V-Flip Off")
   }
 
+  // ==================== Demuxer Cache Polling (Spec 17) ====================
+
+  fun updateCachePolling(isControlsVisible: Boolean) {
+    val enabled = advancedPreferences.leanSeekCache.get()
+    if (!enabled || !isControlsVisible) {
+      cachePollJob?.cancel()
+      cachePollJob = null
+      if (!enabled) {
+        _cacheRanges.value = persistentListOf()
+        _forwardCacheDuration.value = 0f
+      }
+      return
+    }
+
+    if (cachePollJob?.isActive == true) return
+
+    cachePollJob = viewModelScope.launch(Dispatchers.Default) {
+      while (isActive) {
+        pollDemuxerCache()
+        delay(600) // ~1.67 Hz (<= 2 Hz requirement)
+      }
+    }
+  }
+
+  private fun pollDemuxerCache() {
+    val node = runCatching { MPVLib.getPropertyNode("demuxer-cache-state") }.getOrNull()
+    val cacheSecs = runCatching {
+      MPVLib.getPropertyDouble("demuxer-cache-time")
+        ?: MPVLib.getPropertyDouble("demuxer-cache-duration")
+        ?: 0.0
+    }.getOrDefault(0.0).toFloat()
+    _forwardCacheDuration.value = cacheSecs
+
+    val parsed = SeekCacheResolver.parseDemuxerCacheRanges(node)
+    val current = _cacheRanges.value
+    if (hasCacheRangesChanged(current, parsed)) {
+      _cacheRanges.value = parsed.toImmutableList()
+    }
+  }
+
+  private fun hasCacheRangesChanged(
+    current: List<SeekCacheResolver.SeekableRange>,
+    newRanges: List<SeekCacheResolver.SeekableRange>,
+    epsilon: Float = 0.2f,
+  ): Boolean {
+    if (current.size != newRanges.size) return true
+    for (i in current.indices) {
+      val c = current[i]
+      val n = newRanges[i]
+      if (abs(c.start - n.start) > epsilon || abs(c.end - n.end) > epsilon) {
+        return true
+      }
+    }
+    return false
+  }
+
   // ==================== Utility ====================
 
   fun showToast(message: String) {
@@ -2412,6 +2487,8 @@ class PlayerViewModel(
   }
 
   override fun onCleared() {
+    cachePollJob?.cancel()
+    cachePollJob = null
     super.onCleared()
   }
 }
