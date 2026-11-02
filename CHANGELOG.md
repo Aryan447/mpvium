@@ -2,6 +2,7 @@
 
 ### Added
 
+- Promoted Playlists to a first-class bottom-navigation tab (enabled by default) with an empty-state create action and direct access from the main navigation bar.
 - Movies: duration filter chips (30 min+, 1 h+, 1.5 h+) beside the watch-state filter to quickly filter movies by length.
 - Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
 - Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
@@ -10,6 +11,7 @@
 
 ### Changed
 
+- Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
 - Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
 - External subtitle tracks added from online search now show a friendly label (language · quality · source · group) in the subtitle list.
 

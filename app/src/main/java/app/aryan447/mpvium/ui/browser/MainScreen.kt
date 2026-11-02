@@ -70,6 +70,9 @@ import app.aryan447.mpvium.ui.theme.glassNavigationRailItemColors
 import app.aryan447.mpvium.ui.theme.glassRimBrush
 import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import app.aryan447.mpvium.ui.browser.playlist.PlaylistScreen
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
@@ -101,7 +104,7 @@ object MainScreen : Screen {
    * Persisted so it survives process recreation, and consumed by [Content].
    */
   fun requestTab(index: Int) {
-    val clamped = index.coerceIn(0, 4)
+    val clamped = index.coerceIn(0, 5)
     persistentSelectedTab = clamped
     _tabRequest.value = clamped
   }
@@ -150,7 +153,13 @@ object MainScreen : Screen {
     navItems.forEach { tab ->
       ShortNavigationBarItem(
         icon = { Icon(tab.icon, contentDescription = tab.label) },
-        label = if (showLabels) ({ Text(tab.label) }) else null,
+        label = if (showLabels) ({
+          Text(
+            text = tab.label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+          )
+        }) else null,
         selected = selectedCanonicalIndex == tab.canonicalIndex,
         onClick = { onSelectTab(tab.canonicalIndex) },
         colors = glassShortNavigationBarItemColors(),
@@ -162,7 +171,7 @@ object MainScreen : Screen {
   @Composable
   @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
   override fun Content() {
-    // Canonical 0..4 tab id (matches launcher shortcuts). The visible list
+    // Canonical 0..5 tab id (matches launcher shortcuts). The visible list
     // below may hide tabs, so selection is always stored canonically.
     var selectedTabId by rememberSaveable {
       mutableIntStateOf(persistentSelectedTab)
@@ -380,7 +389,13 @@ object MainScreen : Screen {
                 navItems.forEach { tab ->
                   NavigationRailItem(
                     icon = { Icon(tab.icon, contentDescription = tab.label) },
-                    label = if (showBottomNavLabels) ({ Text(tab.label) }) else null,
+                    label = if (showBottomNavLabels) ({
+                      Text(
+                        text = tab.label,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                      )
+                    }) else null,
                     alwaysShowLabel = showBottomNavLabels,
                     selected = selectedTabId == tab.canonicalIndex,
                     onClick = { selectTab(tab.canonicalIndex) },
@@ -425,6 +440,7 @@ object MainScreen : Screen {
               2 -> MoviesGridScreen.Content()
               3 -> FolderListScreen.Content()
               4 -> MoreLibraryScreen.Content()
+              5 -> PlaylistScreen.Content()
             }
           }
         }
@@ -437,3 +453,133 @@ object MainScreen : Screen {
 
 // CompositionLocal for navigation bar height
 val LocalNavigationBarHeight = compositionLocalOf { 0.dp }
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun MainBottomBarPreviewLayout(
+  navItems: List<MainTab>,
+  selectedCanonicalIndex: Int,
+  showLabels: Boolean,
+  pillNavigationBar: Boolean,
+) {
+  if (pillNavigationBar) {
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp)
+        .padding(bottom = 16.dp),
+      contentAlignment = Alignment.Center,
+    ) {
+      Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+      ) {
+        ShortNavigationBar(
+          modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+          containerColor = Color.Transparent,
+          windowInsets = WindowInsets(0, 0, 0, 0),
+          arrangement = ShortNavigationBarArrangement.EqualWeight,
+        ) {
+          navItems.forEach { tab ->
+            ShortNavigationBarItem(
+              icon = { Icon(tab.icon, contentDescription = tab.label) },
+              label = if (showLabels) ({
+                Text(
+                  text = tab.label,
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                )
+              }) else null,
+              selected = selectedCanonicalIndex == tab.canonicalIndex,
+              onClick = {},
+            )
+          }
+        }
+      }
+    }
+  } else {
+    ShortNavigationBar(
+      modifier = Modifier.clip(
+        RoundedCornerShape(
+          topStart = 20.dp,
+          topEnd = 20.dp,
+          bottomStart = 0.dp,
+          bottomEnd = 0.dp,
+        )
+      ),
+      containerColor = MaterialTheme.colorScheme.surfaceContainer,
+      windowInsets = WindowInsets(0, 0, 0, 0),
+      arrangement = ShortNavigationBarArrangement.EqualWeight,
+    ) {
+      navItems.forEach { tab ->
+        ShortNavigationBarItem(
+          icon = { Icon(tab.icon, contentDescription = tab.label) },
+          label = if (showLabels) ({
+            Text(
+              text = tab.label,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+            )
+          }) else null,
+          selected = selectedCanonicalIndex == tab.canonicalIndex,
+          onClick = {},
+        )
+      }
+    }
+  }
+}
+
+@Preview(name = "6 Tabs - 360dp Pill with Labels", widthDp = 360)
+@Composable
+private fun MainBottomBarSixTabsPillWithLabelsPreview() {
+  MaterialTheme {
+    MainBottomBarPreviewLayout(
+      navItems = MainTab.entries,
+      selectedCanonicalIndex = 5,
+      showLabels = true,
+      pillNavigationBar = true,
+    )
+  }
+}
+
+@Preview(name = "6 Tabs - 360dp Pill without Labels", widthDp = 360)
+@Composable
+private fun MainBottomBarSixTabsPillNoLabelsPreview() {
+  MaterialTheme {
+    MainBottomBarPreviewLayout(
+      navItems = MainTab.entries,
+      selectedCanonicalIndex = 5,
+      showLabels = false,
+      pillNavigationBar = true,
+    )
+  }
+}
+
+@Preview(name = "5 Tabs - 360dp Pill with Labels", widthDp = 360)
+@Composable
+private fun MainBottomBarFiveTabsPillWithLabelsPreview() {
+  MaterialTheme {
+    MainBottomBarPreviewLayout(
+      navItems = MainTab.visibleTabs(setOf("HOME", "SHOWS", "MOVIES", "FOLDERS", "LIBRARY")),
+      selectedCanonicalIndex = 0,
+      showLabels = true,
+      pillNavigationBar = true,
+    )
+  }
+}
+
+@Preview(name = "6 Tabs - 360dp Standard with Labels", widthDp = 360)
+@Composable
+private fun MainBottomBarSixTabsStandardWithLabelsPreview() {
+  MaterialTheme {
+    MainBottomBarPreviewLayout(
+      navItems = MainTab.entries,
+      selectedCanonicalIndex = 5,
+      showLabels = true,
+      pillNavigationBar = false,
+    )
+  }
+}
