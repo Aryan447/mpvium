@@ -176,7 +176,7 @@ object FolderListScreen : Screen {
     val foldersWereDeleted by viewModel.foldersWereDeleted.collectAsState()
 
     // Preferences
-    val mediaLayoutMode by browserPreferences.mediaLayoutMode.collectAsState()
+    val mediaLayoutMode by browserPreferences.layoutFolders.collectAsState()
     val folderGridColumnsPortrait by browserPreferences.folderGridColumnsPortrait.collectAsState()
   val folderGridColumnsLandscape by browserPreferences.folderGridColumnsLandscape.collectAsState()
   val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -192,6 +192,18 @@ object FolderListScreen : Screen {
     // UI state - use standalone states to avoid scroll issues with predictive back gesture
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
+
+    var lastLayoutMode by remember { mutableStateOf(mediaLayoutMode) }
+    LaunchedEffect(mediaLayoutMode) {
+      if (lastLayoutMode != mediaLayoutMode) {
+        if (mediaLayoutMode == MediaLayoutMode.GRID) {
+          gridState.scrollToItem(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
+        } else {
+          listState.scrollToItem(gridState.firstVisibleItemIndex, gridState.firstVisibleItemScrollOffset)
+        }
+        lastLayoutMode = mediaLayoutMode
+      }
+    }
 
     // Top bar turns glassy (like the bottom pill bar) once content scrolls
     val topBarScrolled by remember(mediaLayoutMode, listState, gridState) {
@@ -373,6 +385,11 @@ object FolderListScreen : Screen {
             selectedCount = selectionManager.selectedCount,
             totalCount = videoFolders.size,
             scrolled = topBarScrolled,
+            mediaLayoutMode = mediaLayoutMode,
+            onLayoutToggleClick = {
+              val next = if (mediaLayoutMode == MediaLayoutMode.GRID) MediaLayoutMode.LIST else MediaLayoutMode.GRID
+              browserPreferences.layoutFolders.set(next)
+            },
             onBackClick = null,
             onCancelSelection = { selectionManager.clear() },
             onSortClick = { sortDialogOpen.value = true },
@@ -915,7 +932,7 @@ private fun FolderSortDialog(
   val showFolderPath by browserPreferences.showFolderPath.collectAsState()
   val unlimitedNameLines by appearancePreferences.unlimitedNameLines.collectAsState()
   val folderViewMode by browserPreferences.folderViewMode.collectAsState()
-  val mediaLayoutMode by browserPreferences.mediaLayoutMode.collectAsState()
+  val mediaLayoutMode by browserPreferences.layoutFolders.collectAsState()
   val folderGridColumnsPortrait by browserPreferences.folderGridColumnsPortrait.collectAsState()
   val folderGridColumnsLandscape by browserPreferences.folderGridColumnsLandscape.collectAsState()
   val videoGridColumnsPortrait by browserPreferences.videoGridColumnsPortrait.collectAsState()
@@ -1009,7 +1026,7 @@ private fun FolderSortDialog(
       secondOptionIcon = Icons.Filled.GridView,
       isFirstOptionSelected = mediaLayoutMode == MediaLayoutMode.LIST,
       onViewModeChange = { isFirstOption ->
-        browserPreferences.mediaLayoutMode.set(
+        browserPreferences.layoutFolders.set(
           if (isFirstOption) MediaLayoutMode.LIST else MediaLayoutMode.GRID
         )
       },

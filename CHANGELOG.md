@@ -2,6 +2,9 @@
 
 ### Added
 
+- Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
+- Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
+- Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.
 - Periodic playback checkpoint: saves progress while playing (default every 30 s, configurable under Settings → Player to 15 s, 30 s, 1 min, or 5 min) when playback moves by at least 5 s, surviving process kills, force stops, PiP, and background playback.
 
 ### Changed

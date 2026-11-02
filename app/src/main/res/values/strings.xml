@@ -659,6 +659,9 @@
   <string name="mark_as_none_summary">Clear any status and show as plain unplayed</string>
   <string name="mark_as_updated">Watch status updated</string>
   <string name="mark_as_failed">Failed to update watch status</string>
+  <!-- Layout mode toggle -->
+  <string name="action_switch_to_grid">Switch to grid</string>
+  <string name="action_switch_to_list">Switch to list</string>
   <!-- Metadata overrides -->
   <string name="metadata_edit_title">Edit metadata</string>
   <string name="metadata_field_title">Title</string>
