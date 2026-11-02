@@ -78,7 +78,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.media.model.Video
-import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.StreamingArtworkStore
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
@@ -112,7 +112,7 @@ data class MovieDetailScreen(
     val context = LocalContext.current
     val backstack = LocalBackStack.current
     val paneBack = LocalDetailPaneBack.current
-    val seriesDetector = koinInject<SeriesDetector>()
+    val libraryIndexRepository = koinInject<LibraryIndexRepository>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val artworkStore = koinInject<StreamingArtworkStore>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
@@ -133,7 +133,7 @@ data class MovieDetailScreen(
 
     LaunchedEffect(videoId, reloadKey) {
       withContext(Dispatchers.IO) {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary(force = reloadKey > 0)
         val found = detected.movies.find { it.video.id == videoId } ?: detected.movies.find { it.title.equals(movieTitle, ignoreCase = true) }
         if (found != null) {
           detectedMovie = found
@@ -155,7 +155,7 @@ data class MovieDetailScreen(
     // the player without extra network calls or loading flicker.
     fun refreshPlaybackProgress() {
       coroutineScope.launch(Dispatchers.IO) {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary()
         val found = detected.movies.find { it.video.id == videoId }
           ?: detected.movies.find { it.title.equals(movieTitle, ignoreCase = true) }
           ?: return@launch

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
@@ -66,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.LibraryScanMode
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.selection.SelectionState
@@ -92,6 +94,7 @@ object FoldersPreferencesScreen : Screen {
     val blacklistedFolders by preferences.blacklistedFolders.collectAsState()
     val whitelistedFolders by preferences.whitelistedFolders.collectAsState()
     val whitelistOnlyEnabled by preferences.whitelistOnlyEnabled.collectAsState()
+    val libraryScanMode by preferences.libraryScanMode.collectAsState()
     var availableFolders by remember { mutableStateOf<List<VideoFolder>>(emptyList()) }
     var availableWhitelistFolders by remember { mutableStateOf<List<VideoFolder>>(emptyList()) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -250,6 +253,24 @@ object FoldersPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_folders_whitelist_only_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+              )
+              PreferenceDivider()
+              HapticSwitchPreference(
+                value = libraryScanMode == LibraryScanMode.AUTO,
+                onValueChange = { isAuto ->
+                  preferences.libraryScanMode.set(if (isAuto) LibraryScanMode.AUTO else LibraryScanMode.MANUAL)
+                },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Refresh) },
+                title = { Text(stringResource(R.string.pref_folders_scan_mode_title)) },
+                summary = {
+                  Text(
+                    stringResource(
+                      if (libraryScanMode == LibraryScanMode.AUTO) R.string.pref_folders_scan_mode_auto_summary
+                      else R.string.pref_folders_scan_mode_manual_summary
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },

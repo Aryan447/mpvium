@@ -128,12 +128,6 @@ class SeriesDetector(
       val whitelist = foldersPreferences.whitelistedFolders.get()
       val blacklist = foldersPreferences.blacklistedFolders.get()
       val whitelistOnly = foldersPreferences.whitelistOnlyEnabled.get()
-      // User-configurable watched threshold (50-100%). Continue Watching and
-      // Up Next must honor the same value used when saving playback state,
-      // otherwise e.g. 90% stays stuck in Continue Watching (issue #94).
-      val watchedThreshold = runCatching {
-        browserPreferences.watchedThreshold.get().coerceIn(1, 100) / 100f
-      }.getOrDefault(DEFAULT_WATCHED_PERCENTAGE_THRESHOLD)
       val folders = MediaFileRepository.getAllVideoFolders(context).filter { folder ->
         FolderVisibility.isFolderVisible(folder.path, whitelist, blacklist, whitelistOnly)
       }
@@ -153,49 +147,62 @@ class SeriesDetector(
         )
       }
 
-      val playbackStates = try {
-        database.videoDataDao().getAllPlaybackStates().associateBy { it.mediaTitle }
-      } catch (e: Exception) {
-        Log.w(TAG, "Error fetching playback states", e)
-        emptyMap()
-      }
+      val items = allVideos.map { it to MediaInfoParser.parse(it.displayName) }
+      groupMedia(items, folders)
+    } catch (e: Exception) {
+      Log.e(TAG, "Error detecting media library", e)
+      DetectedMediaLibrary(
+        series = emptyList(),
+        movies = emptyList(),
+        continueWatching = emptyList(),
+        folders = emptyList(),
+        totalVideoCount = 0,
+      )
+    }
+  }
 
-      val recentPlayedList = try {
-        database.recentlyPlayedDao().getAllRecentlyPlayed()
-      } catch (e: Exception) {
-        Log.w(TAG, "Error fetching recently played", e)
-        emptyList()
-      }
-      val recentTimestampByFileName = recentPlayedList.associate { it.fileName to it.timestamp }
+  fun groupMedia(
+    items: List<Pair<Video, ParsedMediaInfo>>,
+    folders: List<VideoFolder>,
+  ): DetectedMediaLibrary {
+    return try {
+      val watchedThreshold = runCatching {
+      browserPreferences.watchedThreshold.get().coerceIn(1, 100) / 100f
+    }.getOrDefault(DEFAULT_WATCHED_PERCENTAGE_THRESHOLD)
 
-      val rawSeriesMap = mutableMapOf<String, MutableList<Pair<LocalEpisode, Video>>>()
-      val seriesTitleById = mutableMapOf<String, String>()
-      val seriesYearById = mutableMapOf<String, String?>()
-      val detectedMovies = mutableListOf<LocalMovie>()
-      val continueWatchingList = mutableListOf<ContinueWatchingItem>()
+    val playbackStates = try {
+      database.videoDataDao().getAllPlaybackStates().associateBy { it.mediaTitle }
+    } catch (e: Exception) {
+      Log.w(TAG, "Error fetching playback states", e)
+      emptyMap()
+    }
 
-      // Rule 3: Absolute anime numbering mixed with SxxExx in one folder.
-      // Pre-scan folders: when a folder contains explicit SxxExx/1x02 files,
-      // record its explicit season so bare dash-numbered ("- NN") files in the
-      // same folder are mapped to that same season instead of creating duplicate
-      // episode numbers in Season 1.
-      val explicitSeasonByFolder = mutableMapOf<String, Int>()
-      val explicitEpisodeRegex = Regex("""[Ss](\d{1,2})[\s._-]*[Ee]|\b(\d{1,2})[xX]\d{1,4}\b""")
-      for (video in allVideos) {
-        val parentPath = try { File(video.path).parent ?: "" } catch (_: Exception) { "" }
-        if (parentPath.isBlank()) continue
-        val match = explicitEpisodeRegex.find(video.displayName)
-        if (match != null) {
-          val season = match.groupValues[1].ifBlank { match.groupValues[2] }.toIntOrNull()
-          if (season != null && explicitSeasonByFolder[parentPath] == null) {
-            explicitSeasonByFolder[parentPath] = season
-          }
+    val seriesTitleById = mutableMapOf<String, String>()
+    val seriesYearById = mutableMapOf<String, String?>()
+    val detectedMovies = mutableListOf<LocalMovie>()
+    val continueWatchingList = mutableListOf<ContinueWatchingItem>()
+
+    // Rule 3: Absolute anime numbering mixed with SxxExx in one folder.
+    // Pre-scan folders: when a folder contains explicit SxxExx/1x02 files,
+    // record its explicit season so bare dash-numbered ("- NN") files in the
+    // same folder are mapped to that same season instead of creating duplicate
+    // episode numbers in Season 1.
+    val explicitSeasonByFolder = mutableMapOf<String, Int>()
+    val explicitEpisodeRegex = Regex("""[Ss](\d{1,2})[\s._-]*[Ee]|\b(\d{1,2})[xX]\d{1,4}\b""")
+    for ((video, _) in items) {
+      val parentPath = try { File(video.path).parent ?: "" } catch (_: Exception) { "" }
+      if (parentPath.isBlank()) continue
+      val match = explicitEpisodeRegex.find(video.displayName)
+      if (match != null) {
+        val season = match.groupValues[1].ifBlank { match.groupValues[2] }.toIntOrNull()
+        if (season != null && explicitSeasonByFolder[parentPath] == null) {
+          explicitSeasonByFolder[parentPath] = season
         }
       }
+    }
 
-      for (video in allVideos) {
-        val parsed = MediaInfoParser.parse(video.displayName)
-        val playbackState = playbackStates[video.displayName] ?: playbackStates[video.title]
+    for ((video, parsed) in items) {
+      val playbackState = playbackStates[video.displayName] ?: playbackStates[video.title]
         val positionMs = (playbackState?.lastPosition ?: 0) * 1000L
         val durationMs = video.duration
         val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
@@ -474,10 +481,10 @@ class SeriesDetector(
         movies = detectedMovies.sortedBy { it.title.lowercase(Locale.getDefault()) },
         continueWatching = sortedContinueWatching,
         folders = folders,
-        totalVideoCount = allVideos.size,
+        totalVideoCount = items.size,
       )
     } catch (e: Exception) {
-      Log.e(TAG, "Error detecting media library", e)
+      Log.e(TAG, "Error grouping media library", e)
       DetectedMediaLibrary(
         series = emptyList(),
         movies = emptyList(),
