@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -98,6 +99,14 @@ object FoldersPreferencesScreen : Screen {
     var isLoading by remember { mutableStateOf(false) }
     var isWhitelistLoading by remember { mutableStateOf(false) }
     var selectionState by remember { mutableStateOf(SelectionState<String>()) }
+    val listState = rememberLazyListState()
+    val highlightState = rememberSettingsHighlightState(
+      screen = FoldersPreferencesScreen,
+      listState = listState,
+      keyToIndex = mapOf(
+        "folders.general" to 1,
+      ),
+    )
     var whitelistSelectionState by remember { mutableStateOf(SelectionState<String>()) }
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showClearWhitelistDialog by remember { mutableStateOf(false) }
@@ -209,6 +218,7 @@ object FoldersPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier = Modifier
             .fillMaxSize()
             .padding(padding),
@@ -225,7 +235,13 @@ object FoldersPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "folders.general",
+                isCard = true,
+              ),
+            ) {
               HapticSwitchPreference(
                 value = whitelistOnlyEnabled,
                 onValueChange = { preferences.whitelistOnlyEnabled.set(it) },

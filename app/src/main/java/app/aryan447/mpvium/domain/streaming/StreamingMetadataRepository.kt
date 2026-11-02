@@ -46,7 +46,13 @@ data class CachedMediaMetadata(
   val episodeTitles: Map<String, String> = emptyMap(), // "S1E2" -> title
   val episodeOverviews: Map<String, String> = emptyMap(), // "S1E2" -> overview
   val episodeRatings: Map<String, Float> = emptyMap(), // "S1E2" -> rating
-)
+  val customTitle: String? = null,
+  val customYear: String? = null,
+  val customPosterPath: String? = null,
+) {
+  val hasCustomOverrides: Boolean
+    get() = !customTitle.isNullOrBlank() || !customYear.isNullOrBlank() || !customPosterPath.isNullOrBlank()
+}
 
 /**
  * Fetches and caches TMDb metadata, posters, ratings, backdrops and episode info for series and movies.
@@ -152,7 +158,7 @@ class StreamingMetadataRepository(
     }
   }
 
-  /** Carries user-picked matches from the previous cache generation. */
+  /** Carries user-picked matches and custom overrides from the previous cache generation. */
   private fun migrateManualMatches() {
     val previous = File(context.filesDir, PREVIOUS_CACHE_FILE_NAME)
     if (!previous.exists()) return
@@ -160,10 +166,10 @@ class StreamingMetadataRepository(
       val text = previous.readText()
       if (text.isBlank()) return
       val old = json.decodeFromString<Map<String, CachedMediaMetadata>>(text)
-      val manual = old.filterValues { it.manuallySelected }
-      if (manual.isNotEmpty()) {
-        writeCacheAtomically(json.encodeToString(manual))
-        Log.d(TAG, "Migrated ${manual.size} manually matched metadata entries")
+      val manualOrCustom = old.filterValues { it.manuallySelected || it.hasCustomOverrides }
+      if (manualOrCustom.isNotEmpty()) {
+        writeCacheAtomically(json.encodeToString(manualOrCustom))
+        Log.d(TAG, "Migrated ${manualOrCustom.size} manually matched/overridden metadata entries")
       }
     } catch (e: Exception) {
       Log.w(TAG, "Failed to migrate previous metadata cache", e)
@@ -239,6 +245,7 @@ class StreamingMetadataRepository(
   private fun artworkUrls(metadata: CachedMediaMetadata): List<String> = buildList {
     metadata.posterUrl?.let(::add)
     metadata.backdropUrl?.let(::add)
+    metadata.customPosterPath?.let(::add)
     addAll(metadata.episodeStills.values)
   }
 
@@ -316,7 +323,7 @@ class StreamingMetadataRepository(
 
         val cachedMetadata = CachedMediaMetadata(
           tmdbId = match.id,
-          title = match.title.ifBlank { series.title },
+          title = match.title.ifBlank { series.originalTitle ?: series.title },
           posterUrl = poster,
           backdropUrl = backdrop,
           rating = rating,
@@ -327,6 +334,9 @@ class StreamingMetadataRepository(
           episodeTitles = episodeTitles,
           episodeOverviews = episodeOverviews,
           episodeRatings = episodeRatings,
+          customTitle = cached?.customTitle,
+          customYear = cached?.customYear,
+          customPosterPath = cached?.customPosterPath,
         )
 
         // A manually chosen match may only carry an id, so preserve artwork already in cache
@@ -435,6 +445,9 @@ class StreamingMetadataRepository(
     memoryCache["series_$normalized"]?.tmdbId
       ?: memoryCache[movieKeyFor(title, year)]?.tmdbId
       ?: memoryCache["movie_$normalized"]?.tmdbId
+      ?: memoryCache.values.firstNotNullOfOrNull { cached ->
+        if (cached.customTitle != null && normalizeKey(cached.customTitle) == normalized) cached.tmdbId else null
+      }
   }
 
   /**
@@ -459,10 +472,12 @@ class StreamingMetadataRepository(
         cached.episodeTitles[paddedKey]?.takeIf { it.isNotBlank() }?.let { return@withContext it }
       }
 
-      // Fallback: cached TMDb display title may differ slightly from the
-      // filename-parsed show name (e.g. manual match pick), so scan values.
+      // Fallback: cached TMDb display title or custom title may differ slightly from the
+      // filename-parsed show name (e.g. manual match pick or custom override), so scan values.
       memoryCache.values.firstNotNullOfOrNull { cached ->
-        if (normalizeKey(cached.title) != normalized) return@firstNotNullOfOrNull null
+        val matchesTitle = normalizeKey(cached.title) == normalized ||
+          (cached.customTitle != null && normalizeKey(cached.customTitle) == normalized)
+        if (!matchesTitle) return@firstNotNullOfOrNull null
         cached.episodeTitles[standardKey]?.takeIf { it.isNotBlank() }
           ?: cached.episodeTitles[paddedKey]?.takeIf { it.isNotBlank() }
       }
@@ -507,16 +522,18 @@ class StreamingMetadataRepository(
   ): LocalMovie =
     withContext(Dispatchers.IO) {
       ensureCacheLoaded()
-      val cacheKey = movieKeyFor(movie.title, movie.year)
-      val legacyKey = movieKeyFor(movie.title)
+      val rawMovieTitle = movie.originalTitle ?: movie.title
+      val rawMovieYear = movie.originalYear ?: movie.year
+      val cacheKey = movieKeyFor(rawMovieTitle, rawMovieYear)
+      val legacyKey = movieKeyFor(rawMovieTitle)
       var cached = memoryCache[cacheKey]
 
       // v2 stored one title-only entry per movie. If that entry was a manual
-      // pick, move it to the year-qualified key so it keeps winning without
-      // leaking to a same-name film from another year.
+      // pick or custom override, move it to the year-qualified key so it keeps
+      // winning without leaking to a same-name film from another year.
       if (cached == null && legacyKey != cacheKey) {
         val legacy = memoryCache.remove(legacyKey)
-        if (legacy?.manuallySelected == true) {
+        if (legacy?.manuallySelected == true || legacy?.hasCustomOverrides == true) {
           memoryCache[cacheKey] = legacy
           persistCache()
           cached = legacy
@@ -538,26 +555,29 @@ class StreamingMetadataRepository(
           manualOverride = true
         }
         if (match == null) {
-          val searchResults = wyzieRepository.searchMedia(movie.title).getOrNull() ?: emptyList()
-          match = WyzieMediaMatcher.pickBest(searchResults, "movie", movie.title, movie.year)
+          val searchResults = wyzieRepository.searchMedia(rawMovieTitle).getOrNull() ?: emptyList()
+          match = WyzieMediaMatcher.pickBest(searchResults, "movie", rawMovieTitle, rawMovieYear)
         }
 
         if (match != null) {
           val poster = match.poster?.let { formatImageUrl(it, posterBase) }
           val backdrop = match.backdrop?.let { formatImageUrl(it, backdropBase) }
           val overview = match.overview
-          val year = match.releaseYear ?: movie.year
+          val year = match.releaseYear ?: rawMovieYear
           val rating = if (manualOverride) null else extractRatingFromTmdb(match.id, isTv = false)
 
           val cachedMetadata = CachedMediaMetadata(
             tmdbId = match.id,
-            title = match.title.ifBlank { movie.title },
+            title = match.title.ifBlank { rawMovieTitle },
             posterUrl = poster,
             backdropUrl = backdrop,
             rating = rating,
             overview = overview,
             year = year,
             manuallySelected = manualOverride,
+            customTitle = cached?.customTitle,
+            customYear = cached?.customYear,
+            customPosterPath = cached?.customPosterPath,
           )
 
           val mergedMetadata = if (manualOverride) {
@@ -597,9 +617,11 @@ class StreamingMetadataRepository(
    */
   suspend fun applyCachedMovie(movie: LocalMovie): LocalMovie = withContext(Dispatchers.IO) {
     ensureCacheLoaded()
-    val cacheKey = movieKeyFor(movie.title, movie.year)
+    val rawMovieTitle = movie.originalTitle ?: movie.title
+    val rawMovieYear = movie.originalYear ?: movie.year
+    val cacheKey = movieKeyFor(rawMovieTitle, rawMovieYear)
     val cached = memoryCache[cacheKey]
-      ?: memoryCache[movieKeyFor(movie.title)]?.takeIf { it.manuallySelected }
+      ?: memoryCache[movieKeyFor(rawMovieTitle)]?.takeIf { it.manuallySelected || it.hasCustomOverrides }
       ?: return@withContext movie
     applyMetadataToMovie(movie, cached)
   }
@@ -610,17 +632,152 @@ class StreamingMetadataRepository(
     applyMetadataToSeries(series, cached)
   }
 
-  private fun applyMetadataToMovie(movie: LocalMovie, metadata: CachedMediaMetadata): LocalMovie =
-    movie.copy(
-      posterUrl = metadata.posterUrl ?: movie.posterUrl,
+  suspend fun getCachedMovieMetadata(movie: LocalMovie): CachedMediaMetadata? = withContext(Dispatchers.IO) {
+    ensureCacheLoaded()
+    val rawMovieTitle = movie.originalTitle ?: movie.title
+    val rawMovieYear = movie.originalYear ?: movie.year
+    memoryCache[movieKeyFor(rawMovieTitle, rawMovieYear)]
+      ?: memoryCache[movieKeyFor(rawMovieTitle)]
+  }
+
+  suspend fun getCachedSeriesMetadata(seriesId: String): CachedMediaMetadata? = withContext(Dispatchers.IO) {
+    ensureCacheLoaded()
+    memoryCache[seriesKeyFor(seriesId)]
+  }
+
+  suspend fun updateMovieOverrides(
+    movie: LocalMovie,
+    customTitle: String?,
+    customYear: String?,
+    customPosterPath: String?,
+  ): LocalMovie = withContext(Dispatchers.IO) {
+    ensureCacheLoaded()
+    val rawMovieTitle = movie.originalTitle ?: movie.title
+    val rawMovieYear = movie.originalYear ?: movie.year
+    val cacheKey = movieKeyFor(rawMovieTitle, rawMovieYear)
+    val legacyKey = movieKeyFor(rawMovieTitle)
+    val cached = memoryCache[cacheKey] ?: memoryCache[legacyKey]
+
+    val cleanCustomTitle = customTitle?.trim()?.takeIf { it.isNotBlank() }
+    val cleanCustomYear = customYear?.trim()?.takeIf { it.isNotBlank() }
+    val cleanCustomPosterPath = customPosterPath?.trim()?.takeIf { it.isNotBlank() }
+
+    val updated = cached?.copy(
+      customTitle = cleanCustomTitle,
+      customYear = cleanCustomYear,
+      customPosterPath = cleanCustomPosterPath,
+    ) ?: CachedMediaMetadata(
+      title = rawMovieTitle,
+      year = rawMovieYear,
+      customTitle = cleanCustomTitle,
+      customYear = cleanCustomYear,
+      customPosterPath = cleanCustomPosterPath,
+    )
+
+    deleteReplacedArtwork(cached, updated)
+
+    if (!updated.hasCustomOverrides && updated.tmdbId == null && updated.posterUrl == null) {
+      memoryCache.remove(cacheKey)
+      if (legacyKey != cacheKey) memoryCache.remove(legacyKey)
+    } else {
+      memoryCache[cacheKey] = updated
+      if (legacyKey != cacheKey) memoryCache.remove(legacyKey)
+    }
+
+    persistCache()
+    applyMetadataToMovie(movie, updated)
+  }
+
+  suspend fun resetMovieOverrides(movie: LocalMovie): LocalMovie =
+    updateMovieOverrides(movie, customTitle = null, customYear = null, customPosterPath = null)
+
+  suspend fun updateSeriesOverrides(
+    series: LocalSeries,
+    customTitle: String?,
+    customYear: String?,
+    customPosterPath: String?,
+  ): LocalSeries = withContext(Dispatchers.IO) {
+    ensureCacheLoaded()
+    val cacheKey = seriesKeyFor(series.id)
+    val cached = memoryCache[cacheKey]
+
+    val cleanCustomTitle = customTitle?.trim()?.takeIf { it.isNotBlank() }
+    val cleanCustomYear = customYear?.trim()?.takeIf { it.isNotBlank() }
+    val cleanCustomPosterPath = customPosterPath?.trim()?.takeIf { it.isNotBlank() }
+
+    val updated = cached?.copy(
+      customTitle = cleanCustomTitle,
+      customYear = cleanCustomYear,
+      customPosterPath = cleanCustomPosterPath,
+    ) ?: CachedMediaMetadata(
+      title = series.originalTitle ?: series.title,
+      year = series.originalYear ?: series.year,
+      customTitle = cleanCustomTitle,
+      customYear = cleanCustomYear,
+      customPosterPath = cleanCustomPosterPath,
+    )
+
+    deleteReplacedArtwork(cached, updated)
+
+    if (!updated.hasCustomOverrides && updated.tmdbId == null && updated.posterUrl == null) {
+      memoryCache.remove(cacheKey)
+    } else {
+      memoryCache[cacheKey] = updated
+    }
+
+    persistCache()
+    applyMetadataToSeries(series, updated)
+  }
+
+  suspend fun resetSeriesOverrides(series: LocalSeries): LocalSeries =
+    updateSeriesOverrides(series, customTitle = null, customYear = null, customPosterPath = null)
+
+  private fun applyMetadataToMovie(movie: LocalMovie, metadata: CachedMediaMetadata): LocalMovie {
+    val origTitle = movie.originalTitle ?: movie.title
+    val origYear = movie.originalYear ?: movie.year
+
+    val resolvedTitle = metadata.customTitle?.trim()?.takeIf { it.isNotBlank() }
+      ?: metadata.title.trim().takeIf { it.isNotBlank() }
+      ?: origTitle
+
+    val resolvedYear = metadata.customYear?.trim()?.takeIf { it.isNotBlank() }
+      ?: metadata.year?.trim()?.takeIf { it.isNotBlank() }
+      ?: origYear
+
+    val resolvedPoster = metadata.customPosterPath?.trim()?.takeIf { it.isNotBlank() }
+      ?: metadata.posterUrl?.trim()?.takeIf { it.isNotBlank() }
+      ?: movie.posterUrl
+
+    return movie.copy(
+      title = resolvedTitle,
+      year = resolvedYear,
+      posterUrl = resolvedPoster,
       backdropUrl = metadata.backdropUrl ?: movie.backdropUrl,
       rating = metadata.rating ?: movie.rating,
       overview = metadata.overview ?: movie.overview,
-      year = metadata.year ?: movie.year,
+      genres = if (metadata.genres.isNotEmpty()) metadata.genres else movie.genres,
       tmdbId = metadata.tmdbId ?: movie.tmdbId,
+      originalTitle = origTitle,
+      originalYear = origYear,
     )
+  }
 
   private fun applyMetadataToSeries(series: LocalSeries, metadata: CachedMediaMetadata): LocalSeries {
+    val origTitle = series.originalTitle ?: series.title
+    val origYear = series.originalYear ?: series.year
+
+    val resolvedTitle = metadata.customTitle?.trim()?.takeIf { it.isNotBlank() }
+      ?: metadata.title.trim().takeIf { it.isNotBlank() }
+      ?: origTitle
+
+    val resolvedYear = metadata.customYear?.trim()?.takeIf { it.isNotBlank() }
+      ?: metadata.year?.trim()?.takeIf { it.isNotBlank() }
+      ?: origYear
+
+    val resolvedPoster = metadata.customPosterPath?.trim()?.takeIf { it.isNotBlank() }
+      ?: metadata.posterUrl?.trim()?.takeIf { it.isNotBlank() }
+      ?: series.posterUrl
+
     val enrichedSeasons = series.seasons.mapValues { (seasonNum, episodes) ->
       episodes.map { ep ->
         val epKey = "S${seasonNum}E${ep.episodeNumber}"
@@ -639,15 +796,19 @@ class StreamingMetadataRepository(
     val nextToWatch = allEnrichedEpisodes.find { it.video.id == series.nextEpisodeToWatch?.video?.id }
 
     return series.copy(
-      posterUrl = metadata.posterUrl ?: series.posterUrl,
+      title = resolvedTitle,
+      year = resolvedYear,
+      posterUrl = resolvedPoster,
       backdropUrl = metadata.backdropUrl ?: series.backdropUrl,
       rating = metadata.rating ?: series.rating,
       overview = metadata.overview ?: series.overview,
-      year = metadata.year ?: series.year,
+      genres = if (metadata.genres.isNotEmpty()) metadata.genres else series.genres,
       tmdbId = metadata.tmdbId ?: series.tmdbId,
       seasons = enrichedSeasons,
       lastWatchedEpisode = lastWatched ?: series.lastWatchedEpisode,
       nextEpisodeToWatch = nextToWatch ?: series.nextEpisodeToWatch,
+      originalTitle = origTitle,
+      originalYear = origYear,
     )
   }
 
