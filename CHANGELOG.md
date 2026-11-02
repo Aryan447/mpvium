@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Added
+
+- Movies: duration filter chips (30 min+, 1 h+, 1.5 h+) beside the watch-state filter to quickly filter movies by length.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
