@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.player.controls
 
 import androidx.activity.compose.LocalActivity
+import app.aryan447.mpvium.preferences.AdvancedPreferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -170,6 +171,10 @@ fun PlayerControls(
   val audioPreferences = koinInject<AudioPreferences>()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
+  val advancedPreferences = koinInject<AdvancedPreferences>()
+  val leanSeekCache by advancedPreferences.leanSeekCache.collectAsState()
+  val cacheRanges by viewModel.cacheRanges.collectAsState()
+  val forwardCacheDuration by viewModel.forwardCacheDuration.collectAsState()
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
@@ -910,6 +915,9 @@ fun PlayerControls(
             seekbarStyle = seekbarStyle,
             loopStart = abLoopA?.toFloat(),
             loopEnd = abLoopB?.toFloat(),
+            cacheRanges = cacheRanges,
+            forwardCacheDuration = forwardCacheDuration,
+            isLeanSeekCacheEnabled = leanSeekCache,
           )
         }
 

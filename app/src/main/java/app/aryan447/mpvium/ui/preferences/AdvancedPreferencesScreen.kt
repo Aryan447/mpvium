@@ -1,5 +1,7 @@
 package app.aryan447.mpvium.ui.preferences
 
+import android.app.ActivityManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.Tune
@@ -64,6 +67,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.ConfirmDialog
 import app.aryan447.mpvium.presentation.crash.CrashActivity
+import app.aryan447.mpvium.ui.player.SeekCacheResolver
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
@@ -653,11 +657,43 @@ object AdvancedPreferencesScreen : Screen {
 
           // Cache Section
           item {
-            PreferenceSectionHeader(title = "Cache", count = 3)
+            PreferenceSectionHeader(title = "Cache", count = 4)
           }
 
           item {
             PreferenceCard {
+              val leanSeekCache by preferences.leanSeekCache.collectAsState()
+              val activityManager = remember {
+                context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+              }
+              val memoryClass = activityManager?.memoryClass ?: 256
+              val isLowRam = activityManager?.isLowRamDevice ?: false
+              val seekCacheSubtitle = remember(leanSeekCache, memoryClass, isLowRam) {
+                SeekCacheResolver.formatSettingsSubtitle(
+                  isOn = leanSeekCache,
+                  memoryClassMb = memoryClass,
+                  isLowRamDevice = isLowRam,
+                  context = context,
+                )
+              }
+
+              HapticSwitchPreference(
+                value = leanSeekCache,
+                onValueChange = preferences.leanSeekCache::set,
+                title = { Text(stringResource(R.string.pref_advanced_lean_seek_cache_title)) },
+                summary = {
+                  Text(
+                    text = seekCacheSubtitle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Speed)
+                },
+              )
+
+              PreferenceDivider()
+
               var mpvConf by remember { mutableStateOf(preferences.mpvConf.get()) }
               var isClearThumbsConfirmShown by remember { mutableStateOf(false) }
               val thumbnailRepository = koinInject<ThumbnailRepository>()
