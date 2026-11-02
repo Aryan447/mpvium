@@ -4,8 +4,15 @@
 
 - Periodic playback checkpoint: saves progress while playing (default every 30 s, configurable under Settings → Player to 15 s, 30 s, 1 min, or 5 min) when playback moves by at least 5 s, surviving process kills, force stops, PiP, and background playback.
 
+### Changed
+
+- Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
+- External subtitle tracks added from online search now show a friendly label (language · quality · source · group) in the subtitle list.
+
 ### Fixed
 
+- Adding a second subtitle in the same language from online search now saves a separate file and appears as its own external track, instead of overwriting the first download and being silently ignored.
+- Online subtitle rows show a per-result progress spinner and ignore repeat taps while that result is downloading.
 - Playback state persistence: writes are now application-scoped so activity destruction or force-stop cannot drop the final write; saves on pause, stop, track changes, task removal, and memory trim; and guards against overwriting good positions with 0.
 - Subtitle scope setting (Global or Per-title): remember subtitle position and scale per show or per movie instead of one global pair.
 - Reset actions: forget subtitle settings for the current title from the subtitle sheet, and a global "Clear all subtitle profiles" option in Settings → Subtitles.
