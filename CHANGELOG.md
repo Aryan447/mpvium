@@ -2,6 +2,7 @@
 
 ### Added
 
+- Movies: duration filter chips (30 min+, 1 h+, 1.5 h+) beside the watch-state filter to quickly filter movies by length.
 - Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
 - Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
 - Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.

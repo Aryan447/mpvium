@@ -83,6 +83,7 @@ import app.aryan447.mpvium.preferences.MovieSort
 import app.aryan447.mpvium.preferences.StreamingPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.components.MediaLayoutToggle
@@ -91,6 +92,7 @@ import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
+import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
 import app.aryan447.mpvium.ui.streaming.components.MovieListRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
@@ -231,12 +233,13 @@ object MoviesGridScreen : Screen {
 
     var movieFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val movieFilter = MovieWatchFilter.entries[movieFilterOrdinal.coerceIn(MovieWatchFilter.entries.indices)]
+    val movieDurationFilter by streamingPreferences.movieDurationFilter.collectAsState()
     val movieSort by streamingPreferences.movieSort.collectAsState()
     val movieSortOptions = remember {
       MovieSort.entries.map { SortOption(it, it.label) }
     }
 
-    val filteredMovies = remember(movieList, searchQuery, movieFilter, movieSort) {
+    val filteredMovies = remember(movieList, searchQuery, movieFilter, movieDurationFilter, movieSort) {
       var result = if (searchQuery.isBlank()) {
         movieList
       } else {
@@ -247,6 +250,12 @@ object MoviesGridScreen : Screen {
         MovieWatchFilter.UNWATCHED -> result.filter { !it.isWatched && it.progressPercentage <= 0f }
         MovieWatchFilter.STARTED -> result.filter { !it.isWatched && it.progressPercentage > 0f }
         MovieWatchFilter.WATCHED -> result.filter { it.isWatched }
+      }
+      result = when (movieDurationFilter) {
+        MovieDurationFilter.ALL -> result
+        MovieDurationFilter.AT_LEAST_30M -> result.filter { it.video.duration >= 30 * 60 * 1000L }
+        MovieDurationFilter.AT_LEAST_1H -> result.filter { it.video.duration >= 60 * 60 * 1000L }
+        MovieDurationFilter.AT_LEAST_1H30M -> result.filter { it.video.duration >= 90 * 60 * 1000L }
       }
       result = when (movieSort) {
         MovieSort.NAME -> result.sortedBy { it.title.lowercase() }
@@ -362,6 +371,8 @@ object MoviesGridScreen : Screen {
               refreshEnabled = atTop && !isLoading,
               movieFilter = movieFilter,
               onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
+              movieDurationFilter = movieDurationFilter,
+              onMovieDurationFilterChange = { streamingPreferences.movieDurationFilter.set(it) },
               movieSort = movieSort,
               movieSortOptions = movieSortOptions,
               onMovieSortChange = { streamingPreferences.movieSort.set(it) },
@@ -402,6 +413,8 @@ object MoviesGridScreen : Screen {
           refreshEnabled = atTop && !isLoading,
           movieFilter = movieFilter,
           onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
+          movieDurationFilter = movieDurationFilter,
+          onMovieDurationFilterChange = { streamingPreferences.movieDurationFilter.set(it) },
           movieSort = movieSort,
           movieSortOptions = movieSortOptions,
           onMovieSortChange = { streamingPreferences.movieSort.set(it) },
@@ -453,6 +466,8 @@ private fun MoviesGridContent(
   refreshEnabled: Boolean,
   movieFilter: MovieWatchFilter,
   onMovieFilterChange: (MovieWatchFilter) -> Unit,
+  movieDurationFilter: MovieDurationFilter,
+  onMovieDurationFilterChange: (MovieDurationFilter) -> Unit,
   movieSort: MovieSort,
   movieSortOptions: List<SortOption<MovieSort>>,
   onMovieSortChange: (MovieSort) -> Unit,
@@ -473,16 +488,20 @@ private fun MoviesGridContent(
     }
   } else if (filteredMovies.isEmpty()) {
     val filteringByWatchState = movieFilter != MovieWatchFilter.ALL
+    val filteringByDuration = movieDurationFilter != MovieDurationFilter.ALL
+    val hasFilter = filteringByWatchState || filteringByDuration
     EmptyState(
       icon = Icons.Filled.Movie,
       title = when {
         searchQuery.isNotBlank() -> "No movies found"
+        filteringByWatchState && filteringByDuration -> "No matching movies"
         filteringByWatchState -> "No ${movieFilter.label.lowercase()} movies"
+        filteringByDuration -> "No movies (${movieDurationFilter.label})"
         else -> "No movies detected"
       },
       message = when {
         searchQuery.isNotBlank() -> "No movies match '$searchQuery'"
-        filteringByWatchState -> "Try a different watch-state filter"
+        hasFilter -> "Try a different filter"
         libraryFiltered -> stringResource(R.string.library_sources_banner_message)
         else -> "Add movie files to your device storage to see them here"
       },
@@ -491,13 +510,16 @@ private fun MoviesGridContent(
         .padding(innerPadding),
       actionLabel = when {
         searchQuery.isNotBlank() -> "Clear search"
-        filteringByWatchState -> "Show all"
+        hasFilter -> "Show all"
         libraryFiltered -> stringResource(R.string.library_sources_empty_action)
         else -> null
       },
       onAction = when {
         searchQuery.isNotBlank() -> onClearSearch
-        filteringByWatchState -> ({ onMovieFilterChange(MovieWatchFilter.ALL) })
+        hasFilter -> ({
+          onMovieFilterChange(MovieWatchFilter.ALL)
+          onMovieDurationFilterChange(MovieDurationFilter.ALL)
+        })
         libraryFiltered -> onManageLibrarySources
         else -> null
       },
@@ -526,7 +548,7 @@ private fun MoviesGridContent(
           verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
           item(span = { GridItemSpan(columns) }) {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
               LibraryFilterBar(
                 options = MovieWatchFilter.entries,
                 selected = movieFilter,
@@ -536,6 +558,15 @@ private fun MoviesGridContent(
                 selectedSort = movieSort,
                 onSortSelect = onMovieSortChange,
                 modifier = Modifier.padding(horizontal = 4.dp),
+              )
+              ExpressiveChoiceRow(
+                options = MovieDurationFilter.entries,
+                selected = movieDurationFilter,
+                labelOf = { it.label },
+                onSelect = onMovieDurationFilterChange,
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 4.dp),
               )
               LibraryResultCount(
                 shown = filteredMovies.size,
@@ -565,7 +596,7 @@ private fun MoviesGridContent(
           verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
           item(key = "filter_bar") {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
               LibraryFilterBar(
                 options = MovieWatchFilter.entries,
                 selected = movieFilter,
@@ -575,6 +606,15 @@ private fun MoviesGridContent(
                 selectedSort = movieSort,
                 onSortSelect = onMovieSortChange,
                 modifier = Modifier.padding(horizontal = 4.dp),
+              )
+              ExpressiveChoiceRow(
+                options = MovieDurationFilter.entries,
+                selected = movieDurationFilter,
+                labelOf = { it.label },
+                onSelect = onMovieDurationFilterChange,
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 4.dp),
               )
               LibraryResultCount(
                 shown = filteredMovies.size,
