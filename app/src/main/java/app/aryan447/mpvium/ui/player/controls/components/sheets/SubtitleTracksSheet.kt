@@ -36,6 +36,8 @@ fun SubtitlesSheet(
   onRemoveSubtitle: (Int) -> Unit,
   onOpenOnlineSearch: () -> Unit,
   onDismissRequest: () -> Unit,
+  onForgetSubtitleSettings: (() -> Unit)? = null,
+  externalSubtitleLabel: (TrackNode) -> String? = { null },
   modifier: Modifier = Modifier
 ) {
   val items = remember(tracks) {
@@ -82,7 +84,7 @@ fun SubtitlesSheet(
         is SubtitleItem.Track -> {
           val track = item.node
           SubtitleTrackRow(
-            title = getTrackTitle(track),
+            title = externalSubtitleLabel(track) ?: getTrackTitle(track),
             isSelected = isSubtitleSelected(track.id),
             isExternal = track.external == true,
             onToggle = { onToggleSubtitle(track.id) },
@@ -114,6 +116,35 @@ fun SubtitlesSheet(
       }
     },
     footer = {
+      if (onForgetSubtitleSettings != null) {
+        val haptic = LocalHapticFeedback.current
+        Row(
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .clickable(onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onForgetSubtitleSettings()
+              })
+              .height(56.dp)
+              .padding(horizontal = MaterialTheme.spacing.medium),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+        ) {
+          Icon(
+            Icons.Default.RestartAlt,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.error,
+          )
+          Text(
+            text = stringResource(R.string.player_sheets_forget_subtitle_settings),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.weight(1f),
+          )
+        }
+      }
       Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
     },
     modifier = modifier,

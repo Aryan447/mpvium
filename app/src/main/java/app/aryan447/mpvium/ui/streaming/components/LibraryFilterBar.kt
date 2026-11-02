@@ -131,6 +131,21 @@ enum class MovieWatchFilter(val label: String) {
 }
 
 /**
+ * Duration filters for the Movies grid.
+ */
+enum class MovieDurationFilter(
+  val label: String,
+  val minDurationMs: Long = 0L,
+) {
+  ALL("All", 0L),
+  AT_LEAST_30M("30 min+", 30 * 60 * 1000L),
+  AT_LEAST_1H("1 h+", 60 * 60 * 1000L),
+  AT_LEAST_1H30M("1.5 h+", 90 * 60 * 1000L);
+
+  fun matches(durationMs: Long): Boolean = durationMs >= minDurationMs
+}
+
+/**
  * Result-count line shown above Shows/Movies grids when filters narrow the list.
  */
 @Composable

@@ -119,6 +119,23 @@ keystores, passwords, tokens, or other credentials to the repository.
    `Unreleased` to the version number and start a fresh empty
    `Unreleased` (see `CHANGELOG.md` → How to update).
 
+## Agent skills
+
+Project-scoped agent instructions live in `.opencode/skills/`. Load the matching
+one before working in that area:
+
+| Skill | Use for |
+| --- | --- |
+| `build-verify` | Gradle variants and flags, CI, what may run locally, done-checks |
+| `ui-conventions` | Compose screens, settings, tokens, motion, haptics, insets, RTL, strings |
+| `playback-native` | mpv options, decoders, shaders, gestures, ABI packaging, the mpv AAR |
+| `mediainfo` | `MediaInfoOps`, the media info screen, the JitPack MediaInfo dependency |
+| `release-changelog` | CHANGELOG entries, version bumps, tags, fastlane, release workflows |
+| `commit-messages` | Commit and PR wording that leads with measured outcomes |
+
+`commit-messages` includes `scripts/check-commit-msg.sh`, which flags perf
+subjects without a number and improvement claims without evidence.
+
 ## Development without local installation
 
 GitHub Actions is the preferred fallback when the local machine lacks Android
