@@ -31,9 +31,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -75,6 +75,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -83,7 +84,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
+import app.aryan447.mpvium.domain.streaming.StreamingArtworkStore
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
@@ -93,6 +96,7 @@ import app.aryan447.mpvium.repository.wyzie.WyzieTmdbResult
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.streaming.components.EditMetadataSheet
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
@@ -116,8 +120,9 @@ data class SeriesDetailScreen(
     val context = LocalContext.current
     val backstack = LocalBackStack.current
     val paneBack = LocalDetailPaneBack.current
-    val seriesDetector = koinInject<SeriesDetector>()
+    val libraryIndexRepository = koinInject<LibraryIndexRepository>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val artworkStore = koinInject<StreamingArtworkStore>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val coroutineScope = rememberCoroutineScope()
 
@@ -127,6 +132,7 @@ data class SeriesDetailScreen(
     var reloadKey by remember { mutableIntStateOf(0) }
     var pendingDeletion by remember { mutableStateOf<Pair<String, List<Video>>?>(null) }
     var showMatchPicker by remember { mutableStateOf(false) }
+    var showEditMetadataSheet by remember { mutableStateOf(false) }
     var matchOptions by remember { mutableStateOf<List<WyzieTmdbResult>>(emptyList()) }
     var isSearchingMatches by remember { mutableStateOf(false) }
     var matchQuery by remember { mutableStateOf("") }
@@ -137,7 +143,7 @@ data class SeriesDetailScreen(
 
     LaunchedEffect(seriesId, reloadKey) {
       withContext(Dispatchers.IO) {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary(force = reloadKey > 0)
         val found = detected.series.find { it.id == seriesId }
         if (found != null) {
           series = metadataRepository.applyCachedSeries(found)
@@ -161,7 +167,7 @@ data class SeriesDetailScreen(
     // the selected season.
     fun refreshPlaybackProgress(preserveSeason: Int) {
       coroutineScope.launch(Dispatchers.IO) {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary()
         val found = detected.series.find { it.id == seriesId } ?: return@launch
         val enriched = metadataRepository.enrichSeries(found, forceRefresh = false)
         withContext(Dispatchers.Main) {
@@ -329,6 +335,19 @@ data class SeriesDetailScreen(
                     .background(Color.Black.copy(alpha = 0.5f)),
                 ) {
                   Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
+                }
+                IconButton(
+                  onClick = { showEditMetadataSheet = true },
+                  modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                  Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = stringResource(R.string.metadata_edit_title),
+                    tint = Color.White,
+                  )
                 }
                 IconButton(
                   onClick = { markShowAsOpen = true },
@@ -740,6 +759,52 @@ data class SeriesDetailScreen(
         },
         tonalElevation = 6.dp,
         shape = MaterialTheme.shapes.extraLarge,
+      )
+    }
+
+    val currentSeriesForSheet = series
+    if (currentSeriesForSheet != null) {
+      EditMetadataSheet(
+        isOpen = showEditMetadataSheet,
+        onDismiss = { showEditMetadataSheet = false },
+        currentTitle = currentSeriesForSheet.title,
+        currentYear = currentSeriesForSheet.year,
+        currentPosterUrl = currentSeriesForSheet.posterUrl,
+        fallbackVideo = currentSeriesForSheet.seasons.values.firstOrNull()?.firstOrNull()?.video,
+        isSeries = true,
+        onSave = { newTitle, newYear, posterUri, removePoster ->
+          coroutineScope.launch(Dispatchers.IO) {
+            val target = series ?: return@launch
+            val cached = metadataRepository.getCachedSeriesMetadata(target.id)
+            val finalPosterPath = when {
+              posterUri != null -> artworkStore.storeCustomArtwork(posterUri, keyHint = target.id)
+              removePoster -> null
+              else -> cached?.customPosterPath
+            }
+            val updated = metadataRepository.updateSeriesOverrides(
+              series = target,
+              customTitle = newTitle,
+              customYear = newYear,
+              customPosterPath = finalPosterPath,
+            )
+            withContext(Dispatchers.Main) {
+              series = updated
+              showEditMetadataSheet = false
+              MediaLibraryEvents.notifyChanged()
+            }
+          }
+        },
+        onResetToAutomatic = {
+          coroutineScope.launch(Dispatchers.IO) {
+            val target = series ?: return@launch
+            val updated = metadataRepository.resetSeriesOverrides(target)
+            withContext(Dispatchers.Main) {
+              series = updated
+              showEditMetadataSheet = false
+              MediaLibraryEvents.notifyChanged()
+            }
+          }
+        },
       )
     }
   }

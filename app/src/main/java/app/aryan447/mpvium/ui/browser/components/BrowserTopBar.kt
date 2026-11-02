@@ -104,6 +104,8 @@ fun BrowserTopBar(
   onAddToPlaylistClick: (() -> Unit)? = null,
   onMarkAsClick: (() -> Unit)? = null,
   scrolled: Boolean = true,
+  mediaLayoutMode: app.aryan447.mpvium.preferences.MediaLayoutMode? = null,
+  onLayoutToggleClick: (() -> Unit)? = null,
 ) {
   if (isInSelectionMode) {
     SelectionTopBar(
@@ -136,6 +138,8 @@ fun BrowserTopBar(
       modifier = modifier,
       onTitleLongPress = onTitleLongPress,
       scrolled = scrolled,
+      mediaLayoutMode = mediaLayoutMode,
+      onLayoutToggleClick = onLayoutToggleClick,
     )
   }
 }
@@ -155,6 +159,8 @@ private fun NormalTopBar(
   modifier: Modifier = Modifier,
   onTitleLongPress: (() -> Unit)?,
   scrolled: Boolean = true,
+  mediaLayoutMode: app.aryan447.mpvium.preferences.MediaLayoutMode? = null,
+  onLayoutToggleClick: (() -> Unit)? = null,
 ) {
   val preferences = koinInject<AppearancePreferences>()
   val darkMode by preferences.darkMode.collectAsState()
@@ -272,6 +278,13 @@ private fun NormalTopBar(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
+      }
+      if (onLayoutToggleClick != null && mediaLayoutMode != null) {
+        MediaLayoutToggle(
+          mode = mediaLayoutMode,
+          onToggle = onLayoutToggleClick,
+          modifier = Modifier.padding(horizontal = 2.dp),
+        )
       }
       if (onSortClick != null) {
         IconButton(

@@ -3,9 +3,38 @@
 ### Added
 
 - Opt-in "Lean seek cache" setting (Settings → Advanced) that deepens the demuxer cache around the playhead for faster seeking on local and network sources alike. Automatically sizes forward and backward byte budgets according to memory class and bitrate, clamps to conservative 96 MB forward / 128 MB backward ceilings, and displays seekable cache ranges behind the seekbar rail when enabled.
+- Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
+- Automatic vs manual library scanning mode in Settings → Folders.
+- Promoted Playlists to a first-class bottom-navigation tab (enabled by default) with an empty-state create action and direct access from the main navigation bar.
+- Movies: duration filter chips (30 min+, 1 h+, 1.5 h+) beside the watch-state filter to quickly filter movies by length.
+- Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
+- Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
+- Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.
+- Periodic playback checkpoint: saves progress while playing (default every 30 s, configurable under Settings → Player to 15 s, 30 s, 1 min, or 5 min) when playback moves by at least 5 s, surviving process kills, force stops, PiP, and background playback.
+
+### Changed
+
+- Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
+- Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
+- Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
+- External subtitle tracks added from online search now show a friendly label (language · quality · source · group) in the subtitle list.
 
 ### Fixed
 
+- Adding a second subtitle in the same language from online search now saves a separate file and appears as its own external track, instead of overwriting the first download and being silently ignored.
+- Online subtitle rows show a per-result progress spinner and ignore repeat taps while that result is downloading.
+- Playback state persistence: writes are now application-scoped so activity destruction or force-stop cannot drop the final write; saves on pause, stop, track changes, task removal, and memory trim; and guards against overwriting good positions with 0.
+- Subtitle scope setting (Global or Per-title): remember subtitle position and scale per show or per movie instead of one global pair.
+- Reset actions: forget subtitle settings for the current title from the subtitle sheet, and a global "Clear all subtitle profiles" option in Settings → Subtitles.
+- Metadata overrides: manually edit title, release year, and cover art (via system photo picker) for movies and TV shows from their detail screens; overrides work offline and survive rescans, forced refreshes, and cache migrations.
+- Option to toggle video chapter markers in the seekbar (Settings → Appearance → Seekbar).
+- Settings search direct jump & highlight: tapping a search result from either the settings dashboard inline search or the standalone search screen now navigates directly to the exact option row or section card, smoothly scrolling it into view and momentarily highlighting it with an accent tint.
+- Media filename parsing: anime episodes with years in titles (e.g. `Jujutsu Kaisen (2020) - 05.mkv`, `Kaguya-sama 2019 - 11.mkv`) are now properly recognized as series episodes rather than movies.
+- Multi-episode media files (`S01E01E02`, `S01E01-E02`, `1x01-02`, `- 01-02`) now parse deterministically to the first episode without leaking trailing episode numbers into episode titles.
+- Series identity: fansub release tags (`[SubsPlease]`, `[1080p]`, CRC hashes, `【】`, underscores) collapse reliably to the same series key as clean titles.
+- Folder fallbacks: subfolder episode naming such as `Show/Season 2/01 - Title.mkv` and `Show/01x02.mkv` now correctly resolve show titles, seasons, and episode titles.
+- Mixed episode numbering: folders containing explicit `SxxExx` files now map bare anime dash-numbered (`- NN`) episodes into the same season, preventing show splitting and duplicate episode entries.
+- Title vs release year: movies with numbers in their title (`1917 (2019)`, `2012 (2009)`, `Blade Runner 2049 (2017)`) retain the number in the title and take the year from parentheses; bare years are never returned as titles.
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
 

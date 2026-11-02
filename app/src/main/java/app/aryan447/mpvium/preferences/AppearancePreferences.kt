@@ -18,7 +18,7 @@ class AppearancePreferences(
   val bottomNavTabs =
     preferenceStore.getStringSet(
       "bottom_nav_tabs",
-      setOf("HOME", "SHOWS", "MOVIES", "FOLDERS", "LIBRARY"),
+      app.aryan447.mpvium.ui.browser.MainTab.defaultKeys,
     )
   val onboardingCompleted = preferenceStore.getBoolean("onboarding_completed", false)
   val unlimitedNameLines = preferenceStore.getBoolean("unlimited_name_lines", false)
@@ -35,6 +35,7 @@ class AppearancePreferences(
   val showMoviesSection = preferenceStore.getBoolean("show_movies_section", true)
   val showFoldersSection = preferenceStore.getBoolean("show_folders_section", true)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Wavy)
+  val chaptersInSeekbar = preferenceStore.getBoolean("chapters_in_seekbar", false)
   val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Wavy)
   val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Wavy)
 
