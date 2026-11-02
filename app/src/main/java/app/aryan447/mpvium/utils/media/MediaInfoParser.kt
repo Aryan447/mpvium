@@ -41,7 +41,7 @@ object MediaInfoParser {
     )
 
     // ── Known release groups ─────────────────────────────────────────────────────
-    private val RELEASE_GROUPS = setOf(
+    internal val RELEASE_GROUPS = setOf(
         "YTS", "RARBG", "EVO", "iExTV", "FGT", "PSA", "Batch",
         "HorribleSubs", "SubsPlease", "Erai-raws", "ASW", "Judas",
         "EMBER", "GHOSTS", "ION10", "SPARKS", "AMIABLE", "GECKOS",

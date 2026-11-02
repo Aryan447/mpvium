@@ -146,6 +146,9 @@ fun PlayerSheets(
         onOpenSubtitleSettings = { onOpenPanel(Panels.SubtitleSettings) },
         onOpenSubtitleDelay = { onOpenPanel(Panels.SubtitleDelay) },
         onOpenOnlineSearch = { onShowSheet(Sheets.OnlineSubtitleSearch) },
+        externalSubtitleLabel = { track ->
+          track.externalFilename?.let(viewModel::externalSubtitleLabelFor)
+        },
         onForgetSubtitleSettings = {
           val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
           val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
@@ -176,6 +179,7 @@ fun PlayerSheets(
     Sheets.OnlineSubtitleSearch -> {
       val isSearching by viewModel.isSearchingSub.composeCollectAsState()
       val isDownloading by viewModel.isDownloadingSub.composeCollectAsState()
+      val downloadingUrls by viewModel.downloadingSubtitleUrls.composeCollectAsState()
       val results by viewModel.wyzieSearchResults.composeCollectAsState()
       val isOnlineSectionExpanded by viewModel.isOnlineSectionExpanded.composeCollectAsState()
 
@@ -196,6 +200,7 @@ fun PlayerSheets(
         onDownloadOnline = { viewModel.downloadSubtitle(it) },
         isSearching = isSearching,
         isDownloading = isDownloading,
+        downloadingUrls = downloadingUrls,
         searchResults = results.toImmutableList(),
         isOnlineSectionExpanded = isOnlineSectionExpanded,
         onToggleOnlineSection = { viewModel.toggleOnlineSection() },

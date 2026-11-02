@@ -37,6 +37,7 @@ fun SubtitlesSheet(
   onOpenOnlineSearch: () -> Unit,
   onDismissRequest: () -> Unit,
   onForgetSubtitleSettings: (() -> Unit)? = null,
+  externalSubtitleLabel: (TrackNode) -> String? = { null },
   modifier: Modifier = Modifier
 ) {
   val items = remember(tracks) {
@@ -83,7 +84,7 @@ fun SubtitlesSheet(
         is SubtitleItem.Track -> {
           val track = item.node
           SubtitleTrackRow(
-            title = getTrackTitle(track),
+            title = externalSubtitleLabel(track) ?: getTrackTitle(track),
             isSelected = isSubtitleSelected(track.id),
             isExternal = track.external == true,
             onToggle = { onToggleSubtitle(track.id) },
