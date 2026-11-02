@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import app.aryan447.mpvium.domain.recentlyplayed.repository.RecentlyPlayedRepository
-import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,7 +43,7 @@ class InsightsViewModel(
   application: Application,
 ) : AndroidViewModel(application) {
 
-  private val seriesDetector: SeriesDetector by inject(SeriesDetector::class.java)
+  private val libraryIndexRepository: LibraryIndexRepository by inject(LibraryIndexRepository::class.java)
   private val recentRepo: RecentlyPlayedRepository by inject(RecentlyPlayedRepository::class.java)
 
   private val _uiState = MutableStateFlow(InsightsUiState())
@@ -54,14 +54,14 @@ class InsightsViewModel(
   }
 
   fun refresh() {
-    load()
+    load(force = true)
   }
 
-  private fun load() {
+  private fun load(force: Boolean = false) {
     viewModelScope.launch(Dispatchers.IO) {
       _uiState.update { it.copy(isLoading = true) }
       try {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary(force = force)
         val episodes = detected.series.flatMap { series ->
           series.seasons.values.flatten()
         }

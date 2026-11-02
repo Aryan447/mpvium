@@ -7,8 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import app.aryan447.mpvium.domain.media.model.VideoFolder
-import app.aryan447.mpvium.domain.streaming.SeriesDetector
 import app.aryan447.mpvium.domain.streaming.ContinueWatchingDismissals
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
@@ -43,7 +43,7 @@ class StreamingHomeViewModel(
   application: Application,
 ) : AndroidViewModel(application) {
 
-  private val seriesDetector: SeriesDetector by inject(SeriesDetector::class.java)
+  private val libraryIndexRepository: LibraryIndexRepository by inject(LibraryIndexRepository::class.java)
   private val metadataRepository: StreamingMetadataRepository by inject(StreamingMetadataRepository::class.java)
   private val introSkipRepository: IntroSkipRepository by inject(IntroSkipRepository::class.java)
 
@@ -126,7 +126,7 @@ class StreamingHomeViewModel(
       }
 
       try {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary()
 
         // Evict cached TMDB entries for media that no longer exists, so the
         // disk cache only shrinks when a movie or a whole show is deleted.
@@ -227,7 +227,7 @@ class StreamingHomeViewModel(
   fun refreshMetadata() {
     viewModelScope.launch(Dispatchers.IO) {
       try {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.refresh(force = true)
         val cachedSeries = detected.series.map { metadataRepository.applyCachedSeries(it) }
         val cachedMovies = detected.movies.map { metadataRepository.applyCachedMovie(it) }
         _uiState.update {

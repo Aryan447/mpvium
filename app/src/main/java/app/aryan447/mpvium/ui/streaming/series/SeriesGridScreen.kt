@@ -68,7 +68,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.R
-import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.preferences.FoldersPreferences
@@ -103,7 +103,7 @@ object SeriesGridScreen : Screen {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
     val streamingPreferences = koinInject<StreamingPreferences>()
-    val seriesDetector = koinInject<SeriesDetector>()
+    val libraryIndexRepository = koinInject<LibraryIndexRepository>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
     // Empty-state hint (issue #87): when whitelist-only leaves no results,
@@ -143,7 +143,7 @@ object SeriesGridScreen : Screen {
 
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary(force = isRefreshing.value)
         // Drop cached TMDB entries for shows with zero episodes left.
         // Remaining shows reuse their cache with no re-scrape.
         runCatching {

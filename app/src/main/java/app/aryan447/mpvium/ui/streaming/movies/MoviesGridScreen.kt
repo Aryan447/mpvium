@@ -68,7 +68,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
-import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
@@ -108,7 +108,7 @@ object MoviesGridScreen : Screen {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
     val streamingPreferences = koinInject<StreamingPreferences>()
-    val seriesDetector = koinInject<SeriesDetector>()
+    val libraryIndexRepository = koinInject<LibraryIndexRepository>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
@@ -151,7 +151,7 @@ object MoviesGridScreen : Screen {
 
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary(force = isRefreshing.value)
         // The scanner treats every non-episode file as a movie. Keep reels,
         // trailers, social exports and personal clips out of the Movies grid;
         // they are not deleted or moved, and Folders still lists every file.

@@ -514,6 +514,9 @@
   <string name="pref_folders_clear_all_whitelist">Clear all whitelisted folders</string>
   <string name="pref_folders_clear_all_whitelist_confirm_title">Clear all whitelisted folders?</string>
   <string name="pref_folders_clear_all_whitelist_confirm_message">This will remove all folders from the whitelist and show every folder again. You can add them back later.</string>
+  <string name="pref_folders_scan_mode_title">Automatic library scan</string>
+  <string name="pref_folders_scan_mode_auto_summary">Automatically scans storage when library tabs open</string>
+  <string name="pref_folders_scan_mode_manual_summary">Only scans on pull-to-refresh or manual rescan</string>
   <string name="library_sources_banner_message">Home, Shows and Movies show only whitelisted folders. Folders and Files still show full storage.</string>
   <string name="library_sources_empty_action">Manage library folders</string>
   <!-- M3U Playlist Strings -->

@@ -1,5 +1,14 @@
 ## Unreleased
 
+### Added
+
+- Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
+- Automatic vs manual library scanning mode in Settings → Folders.
+
+### Changed
+
+- Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
+
 ### Fixed
 
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.

@@ -358,8 +358,38 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
 val MIGRATION_8_9 = object : Migration(8, 9) {
   override fun migrate(db: SupportSQLiteDatabase) {
     try {
-      android.util.Log.d("Migration_8_9", "Starting migration from version 8 to 9 (schema repair)")
+      android.util.Log.d("Migration_8_9", "Starting migration from version 8 to 9")
 
+      // ===== 1. Create library_index table for persistent library snapshot =====
+      db.execSQL(
+        """
+        CREATE TABLE IF NOT EXISTS `library_index` (
+          `path` TEXT NOT NULL,
+          `size` INTEGER NOT NULL,
+          `mtimeMs` INTEGER NOT NULL,
+          `parsedTitle` TEXT NOT NULL,
+          `parsedYear` TEXT,
+          `parsedSeason` INTEGER,
+          `parsedEpisode` INTEGER,
+          `parsedEpisodeTitle` TEXT,
+          `parsedType` TEXT NOT NULL,
+          `mediaStoreId` INTEGER NOT NULL,
+          `displayName` TEXT NOT NULL,
+          `durationMs` INTEGER NOT NULL,
+          `dateAdded` INTEGER NOT NULL,
+          `mimeType` TEXT NOT NULL,
+          `bucketId` TEXT NOT NULL,
+          `bucketDisplayName` TEXT NOT NULL,
+          `width` INTEGER NOT NULL,
+          `height` INTEGER NOT NULL,
+          `fps` REAL NOT NULL,
+          `lastScanned` INTEGER NOT NULL,
+          PRIMARY KEY(`path`)
+        )
+        """.trimIndent(),
+      )
+
+      // ===== 2. Schema repair for PlaybackStateEntity if needed =====
       // Check current schema to see if we need to repair
       val cursor = db.query("PRAGMA table_info(PlaybackStateEntity)")
       val existingColumns = mutableSetOf<String>()
@@ -510,5 +540,9 @@ val DatabaseModule =
       PlaylistRepository(
         playlistDao = get<MpviumDatabase>().playlistDao(),
       )
+    }
+
+    single {
+      get<MpviumDatabase>().libraryIndexDao()
     }
   }
