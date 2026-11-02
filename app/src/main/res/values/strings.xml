@@ -95,6 +95,9 @@
   <string name="pref_appearance_auto_scroll_summary">Automatically scroll to the last played video when opening video lists</string>
   <string name="pref_appearance_watched_threshold_title">Watched threshold</string>
   <string name="pref_appearance_watched_threshold_summary">Mark video as watched when playback reaches %d%%</string>
+  <string name="pref_appearance_category_seekbar">Seekbar</string>
+  <string name="pref_appearance_chapters_in_seekbar_title">Show chapter markers</string>
+  <string name="pref_appearance_chapters_in_seekbar_summary">Show chapter boundaries on the seekbar track</string>
   <string name="video_label_new">NEW</string>
   <!-- Theme names -->
   <string name="theme_default">Default</string>
@@ -179,6 +182,11 @@
   <string name="pref_player_title_mode_two">Two lines</string>
   <string name="pref_player_title_mode_episode">Episode/title only</string>
   <string name="pref_player_remember_brightness">Remember display brightness</string>
+  <string name="pref_player_save_position_interval">Save position every</string>
+  <string name="pref_player_save_position_interval_15s">15 s</string>
+  <string name="pref_player_save_position_interval_30s">30 s</string>
+  <string name="pref_player_save_position_interval_1m">1 min</string>
+  <string name="pref_player_save_position_interval_5m">5 min</string>
   <string name="pref_player_gestures">Gestures</string>
   <string name="pref_player_gestures_brightness">Brightness gestures</string>
   <string name="pref_player_gestures_volume">Volume gestures</string>
@@ -271,6 +279,11 @@
   <string name="pref_subtitles_autoload_summary">Automatically load external subtitles with the same name.</string>
   <string name="pref_subtitles_save_location">Subtitle Save Location</string>
   <string name="pref_subtitles_search_online">Online Subtitle Search…</string>
+  <string name="player_sheets_subtitle_download">Download subtitle</string>
+  <string name="player_sheets_subtitle_already_added">Subtitle already added</string>
+  <string name="player_sheets_subtitle_hearing_impaired">Hearing impaired</string>
+  <string name="player_sheets_online_results">Online Results (%1$d)</string>
+  <string name="player_sheets_subtitle_pick_title">Pick a title on the left to load subtitles</string>
   <string name="pref_subtitles_subdl_languages">Subtitle Languages</string>
   <string name="all_languages">All (Selective Filtering)</string>
   <string name="pref_subtitles_clear_downloads">Clear Subtitle Downloads</string>
@@ -367,6 +380,18 @@
   <string name="player_sheets_sub_position">Position</string>
   <string name="pref_subtitles_persist_pos_title">Persist subtitle position</string>
   <string name="pref_subtitles_persist_pos_summary">Save moved subtitle position across all videos</string>
+  <string name="pref_subtitles_scope_title">Subtitle scope</string>
+  <string name="pref_subtitles_scope_global">Global</string>
+  <string name="pref_subtitles_scope_global_summary">Use one position and scale for all videos</string>
+  <string name="pref_subtitles_scope_per_title">Per-title</string>
+  <string name="pref_subtitles_scope_per_title_summary">Remember position and scale per show or movie</string>
+  <string name="pref_subtitles_clear_all_profiles">Clear all subtitle profiles</string>
+  <string name="pref_subtitles_clear_all_profiles_summary">Remove saved subtitle positions and scales for all titles</string>
+  <string name="pref_subtitles_clear_all_profiles_dialog_title">Clear subtitle profiles?</string>
+  <string name="pref_subtitles_clear_all_profiles_dialog_message">This will reset subtitle position and scale to global defaults for all shows and movies.</string>
+  <string name="toast_subtitle_profiles_cleared">Subtitle profiles cleared</string>
+  <string name="player_sheets_forget_subtitle_settings">Forget this title\'s subtitle settings</string>
+  <string name="toast_subtitle_settings_forgotten">Reset subtitle settings to global defaults</string>
   <string name="subtitle_double_tap_to_reset">Double-tap subtitle to reset position</string>
   <string name="subtitle_position_format">Subtitles: %d</string>
   <string name="subtitle_position_reset">Subtitles reset (%d)</string>
@@ -624,6 +649,11 @@
   <string name="playlist_refresh_success">Playlist refreshed successfully</string>
   <string name="playlist_refresh_error">Failed to refresh playlist: %s</string>
   <string name="playlist_m3u_badge">M3U</string>
+  <string name="no_playlists_title">No playlists yet</string>
+  <string name="no_playlists_message">Create a playlist or add one from an M3U URL</string>
+  <string name="no_playlists_found">No playlists found</string>
+  <string name="no_playlists_found_message">Try a different search term</string>
+  <string name="clear_search">Clear search</string>
   <!-- Manual watch status (Mark as) -->
   <string name="mark_as_action">Mark as</string>
   <string name="mark_as_title">Mark %1$d video(s) as</string>
@@ -637,4 +667,21 @@
   <string name="mark_as_none_summary">Clear any status and show as plain unplayed</string>
   <string name="mark_as_updated">Watch status updated</string>
   <string name="mark_as_failed">Failed to update watch status</string>
+  <!-- Movie duration filters -->
+  <string name="movie_duration_filter_all">All</string>
+  <string name="movie_duration_filter_30m">30 min+</string>
+  <string name="movie_duration_filter_1h">1 h+</string>
+  <string name="movie_duration_filter_1h30m">1.5 h+</string>
+  <!-- Layout mode toggle -->
+  <string name="action_switch_to_grid">Switch to grid</string>
+  <string name="action_switch_to_list">Switch to list</string>
+  <!-- Metadata overrides -->
+  <string name="metadata_edit_title">Edit metadata</string>
+  <string name="metadata_field_title">Title</string>
+  <string name="metadata_field_year">Year</string>
+  <string name="metadata_field_poster">Poster</string>
+  <string name="metadata_change_poster">Change poster</string>
+  <string name="metadata_remove_poster">Remove poster</string>
+  <string name="metadata_reset_automatic">Reset to automatic</string>
+  <string name="metadata_save">Save</string>
 </resources>

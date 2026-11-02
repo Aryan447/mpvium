@@ -36,6 +36,7 @@ class SubtitlesPreferences(
   val justification = preferenceStore.getEnum("sub_justify", SubtitleJustification.Auto)
   val subPos = preferenceStore.getInt("sub_pos", 100)
   val persistSubPos = preferenceStore.getBoolean("sub_persist_pos", false)
+  val subtitleScope = preferenceStore.getEnum("sub_scope", SubtitleScope.GLOBAL)
 
   val overrideAssSubs = preferenceStore.getBoolean("sub_override_ass")
   val scaleByWindow = preferenceStore.getBoolean("sub_scale_by_window", true)
@@ -68,4 +69,9 @@ enum class SubtitleJustification(
   Center("center", Icons.Default.FormatAlignCenter),
   Right("right", Icons.AutoMirrored.Default.FormatAlignRight),
   Auto("auto", Icons.Default.FormatAlignJustify),
+}
+
+enum class SubtitleScope {
+  GLOBAL,
+  PER_TITLE,
 }

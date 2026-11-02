@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.browser
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
@@ -13,7 +14,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
  *
  * Each key is persisted in the bottom_nav_tabs preference set and the
  * canonical index preserves the historical 0..4 mapping used by launcher
- * shortcuts and MainScreen.requestTab.
+ * shortcuts and MainScreen.requestTab, with PLAYLISTS at canonical index 5.
+ * All tabs (including PLAYLISTS) are enabled by default.
  */
 enum class MainTab(
   val key: String,
@@ -26,6 +28,7 @@ enum class MainTab(
   MOVIES("MOVIES", 2, Icons.Filled.Movie, "Movies"),
   FOLDERS("FOLDERS", 3, Icons.Filled.Folder, "Folders"),
   LIBRARY("LIBRARY", 4, Icons.Filled.VideoLibrary, "Library"),
+  PLAYLISTS("PLAYLISTS", 5, Icons.AutoMirrored.Filled.PlaylistPlay, "Playlists"),
   ;
 
   companion object {

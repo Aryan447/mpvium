@@ -7,6 +7,7 @@ import app.aryan447.mpvium.domain.streaming.StreamingArtworkStore
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.explain.ExplainRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import app.aryan447.mpvium.repository.wyzie.SubsourceProvider
 import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import okhttp3.OkHttpClient
@@ -31,4 +32,5 @@ val domainModule = module {
     single { LibraryIndexRepository(androidContext(), get(), get(), get()) }
     single { StreamingArtworkStore(androidContext(), get()) }
     single { StreamingMetadataRepository(androidContext(), get(), get(), get(), get()) }
+    single { SubtitleProfileRepository(androidContext(), get(), get()) }
 }

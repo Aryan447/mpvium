@@ -2,6 +2,7 @@ package app.aryan447.mpvium.preferences
 
 import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
+import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
 
 /**
  * Preferences for the Shows and Movies library tabs.
@@ -15,6 +16,12 @@ class StreamingPreferences(
 
   // Sort orders for the Movies grid, all derived from local file data.
   val movieSort = preferenceStore.getEnum("streaming_movie_sort", MovieSort.NAME)
+
+  // Duration filter for the Movies grid.
+  val movieDurationFilter = preferenceStore.getEnum(
+    "streaming_movie_duration_filter",
+    MovieDurationFilter.ALL,
+  )
 }
 
 /**
