@@ -18,7 +18,7 @@ class AppearancePreferences(
   val bottomNavTabs =
     preferenceStore.getStringSet(
       "bottom_nav_tabs",
-      setOf("HOME", "SHOWS", "MOVIES", "FOLDERS", "LIBRARY"),
+      app.aryan447.mpvium.ui.browser.MainTab.defaultKeys,
     )
   val onboardingCompleted = preferenceStore.getBoolean("onboarding_completed", false)
   val unlimitedNameLines = preferenceStore.getBoolean("unlimited_name_lines", false)

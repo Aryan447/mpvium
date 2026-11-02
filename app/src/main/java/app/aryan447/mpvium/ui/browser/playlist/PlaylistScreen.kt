@@ -65,7 +65,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.database.repository.PlaylistRepository
 import app.aryan447.mpvium.preferences.BrowserPreferences
@@ -180,6 +183,7 @@ object PlaylistScreen : Screen {
     )
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
           if (isSearching) {
             // Search mode - show search bar
@@ -191,7 +195,7 @@ object PlaylistScreen : Screen {
                   onSearch = { },
                   expanded = false,
                   onExpandedChange = { },
-                  placeholder = { Text("Search playlists...") },
+                  placeholder = { Text(stringResource(R.string.search_playlists)) },
                   leadingIcon = {
                     Icon(
                       imageVector = Icons.Filled.Search,
@@ -207,7 +211,7 @@ object PlaylistScreen : Screen {
                     ) {
                       Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Cancel",
+                        contentDescription = stringResource(R.string.cancel),
                       )
                     }
                   },
@@ -227,11 +231,13 @@ object PlaylistScreen : Screen {
             }
           } else {
             BrowserTopBar(
-              title = "Playlists",
+              title = stringResource(R.string.playlists),
               isInSelectionMode = selectionManager.isInSelectionMode,
               selectedCount = selectionManager.selectedCount,
               totalCount = playlistsWithCount.size,
-              onBackClick = null,
+              onBackClick = if (backStack.size > 1) {
+                { backStack.removeLastOrNull() }
+              } else null,
               onCancelSelection = { selectionManager.clear() },
               isSingleSelection = selectionManager.isSingleSelection,
               onSearchClick = { isSearching = true },
@@ -254,7 +260,7 @@ object PlaylistScreen : Screen {
             ExtendedFloatingActionButton(
               onClick = { showPlaylistActionSheet = true },
               icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-              text = { Text("Create Playlist") },
+              text = { Text(stringResource(R.string.create_playlist)) },
               modifier = Modifier.padding(bottom = navigationBarHeight),
             containerColor = if (LocalGlass.current) {
               glassFrostColor(isDark = isSystemInDarkTheme(), kind = GlassKind.Chip)
@@ -275,9 +281,9 @@ object PlaylistScreen : Screen {
           ) {
             EmptyState(
               icon = Icons.Filled.Search,
-              title = "No playlists found",
-              message = "Try a different search term",
-              actionLabel = "Clear search",
+              title = stringResource(R.string.no_playlists_found),
+              message = stringResource(R.string.no_playlists_found_message),
+              actionLabel = stringResource(R.string.clear_search),
               onAction = { searchQuery = "" },
             )
           }
@@ -288,16 +294,13 @@ object PlaylistScreen : Screen {
               .padding(paddingValues),
             contentAlignment = Alignment.Center,
           ) {
-            Column(
-              horizontalAlignment = Alignment.CenterHorizontally,
-              verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-              EmptyState(
-                icon = Icons.AutoMirrored.Outlined.PlaylistAdd,
-                title = "No playlists yet",
-                message = "Create a playlist or add one from an m3u URL",
-              )
-            }
+            EmptyState(
+              icon = Icons.AutoMirrored.Outlined.PlaylistAdd,
+              title = stringResource(R.string.no_playlists_title),
+              message = stringResource(R.string.no_playlists_message),
+              actionLabel = stringResource(R.string.create_playlist),
+              onAction = { showPlaylistActionSheet = true },
+            )
           }
         } else {
           PlaylistListContent(
