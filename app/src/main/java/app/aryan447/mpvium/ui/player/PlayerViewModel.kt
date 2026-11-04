@@ -240,15 +240,6 @@ class PlayerViewModel(
         delay(250)
       }
     }
-
-    // Observe controls visibility and leanSeekCache preference to manage cache polling
-    viewModelScope.launch {
-      combine(controlsShown, seekBarShown, advancedPreferences.leanSeekCache.changes()) { c, s, lean ->
-        (c || s) && lean
-      }.collect { shouldPoll ->
-        updateCachePolling(shouldPoll)
-      }
-    }
   }
   val maxVolume = host.audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
@@ -436,6 +427,18 @@ class PlayerViewModel(
           MPVLib.setPropertyString("hr-seek", if (shouldUsePreciseSeeking) "yes" else "no")
           MPVLib.setPropertyString("hr-seek-framedrop", "yes")
         }
+      }
+    }
+
+    // Observe controls visibility and leanSeekCache preference to manage cache polling.
+    // Must stay in this (later) init block: `controlsShown`/`seekBarShown` are declared
+    // above the previous init block, so referencing them there collects null flows and
+    // crashes the ViewModel with a NullPointerException inside Flow.combine.
+    viewModelScope.launch {
+      combine(controlsShown, seekBarShown, advancedPreferences.leanSeekCache.changes()) { c, s, lean ->
+        (c || s) && lean
+      }.collect { shouldPoll ->
+        updateCachePolling(shouldPoll)
       }
     }
   }
@@ -2511,25 +2514,9 @@ class PlayerViewModel(
 
     val parsed = SeekCacheResolver.parseDemuxerCacheRanges(node)
     val current = _cacheRanges.value
-    if (hasCacheRangesChanged(current, parsed)) {
+    if (SeekCacheResolver.hasCacheRangesChanged(current, parsed)) {
       _cacheRanges.value = parsed.toImmutableList()
     }
-  }
-
-  private fun hasCacheRangesChanged(
-    current: List<SeekCacheResolver.SeekableRange>,
-    newRanges: List<SeekCacheResolver.SeekableRange>,
-    epsilon: Float = 0.2f,
-  ): Boolean {
-    if (current.size != newRanges.size) return true
-    for (i in current.indices) {
-      val c = current[i]
-      val n = newRanges[i]
-      if (abs(c.start - n.start) > epsilon || abs(c.end - n.end) > epsilon) {
-        return true
-      }
-    }
-    return false
   }
 
   // ==================== Utility ====================
