@@ -1587,7 +1587,7 @@ fun GestureHandler(
 
                     gestureType = "horizontal_seek"
                     hasStartedSeeking = true
-                    initialVideoPosition = position?.toFloat() ?: 0f
+                    initialVideoPosition = (MPVLib.getPropertyDouble("time-pos") ?: position?.toDouble() ?: 0.0).toFloat()
 
                     // Pause before seeking to prevent decoder stalls.
                     // Transient: keeps audio focus for an instant resume.
