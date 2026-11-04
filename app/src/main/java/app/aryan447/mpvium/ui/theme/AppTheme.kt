@@ -354,7 +354,6 @@ fun buildAmoledColorScheme(
     surfaceBright = primaryDark.copy(alpha = 0.06f).compositeOver(Color(0xFF2A2A2A)),
   )
 }
-}
 
 // Extension functions for color manipulation
 private fun Color.darken(factor: Float): Color {
