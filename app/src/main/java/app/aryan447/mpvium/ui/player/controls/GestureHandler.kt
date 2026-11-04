@@ -1587,7 +1587,10 @@ fun GestureHandler(
 
                     gestureType = "horizontal_seek"
                     hasStartedSeeking = true
-                    initialVideoPosition = (MPVLib.getPropertyDouble("time-pos") ?: position?.toDouble() ?: 0.0).toFloat()
+                    initialVideoPosition =
+                      (MPVLib.getPropertyDouble("time-pos")
+                        ?: position?.toDouble()
+                        ?: 0.0).toFloat()
 
                     // Pause before seeking to prevent decoder stalls.
                     // Transient: keeps audio focus for an instant resume.
@@ -1614,20 +1617,24 @@ fun GestureHandler(
                       fullSwipeSeconds = fullSwipeSeconds,
                     )
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
-                    val maxDuration = duration?.toFloat() ?: 0f
-                    // Stop just short of the very end: landing on it makes mpv
-                    // report EOF and "close after the end of playback" would
-                    // exit the player mid-swipe. Never clamps below the position
-                    // the gesture started from, so the guard itself can't seek
-                    // backwards when the video is already on its last second.
-                    val seekCeiling = if (maxDuration > 0f) {
-                      (maxDuration - SWIPE_SEEK_EOF_GUARD_SECONDS)
-                        .coerceAtLeast(initialVideoPosition)
-                        .coerceAtMost(maxDuration)
+                    // Prefer the live mpv duration if the Compose state has not
+                    // received it yet. A missing duration must NOT clamp every
+                    // forward seek to zero.
+                    val maxDuration = (duration?.toFloat()?.takeIf { it > 0f }
+                      ?: MPVLib.getPropertyDouble("duration")?.toFloat()?.takeIf { it > 0f })
+                      ?: 0f
+
+                    // Stop just short of EOF when duration is known. If duration
+                    // is temporarily unavailable, keep the calculated target.
+                    val clampedPosition = if (maxDuration > 0f) {
+                      targetPosition.coerceAtMost(
+                        (maxDuration - SWIPE_SEEK_EOF_GUARD_SECONDS)
+                          .coerceAtLeast(initialVideoPosition)
+                          .coerceAtMost(maxDuration),
+                      )
                     } else {
-                      maxDuration
+                      targetPosition
                     }
-                    val clampedPosition = targetPosition.coerceAtMost(seekCeiling)
                     lastClampedPosition = clampedPosition
 
                     // Quantize to whole seconds with rounding (not truncation) so tiny
@@ -1638,8 +1645,11 @@ fun GestureHandler(
                     val currentPos = previewSecond
                     val seekDelta = previewSecond - initialVideoPosition.roundToInt()
 
-                    // Fast keyframe seek during active drag for fluid 60fps preview updates
-                    viewModel.seekTo(previewSecond, isScrubbing = true)
+                    // Do not issue a new mpv seek on every pointer event.
+                    // Rapid queued seeks can complete out of order: a later
+                    // forward seek may briefly land, then an older seek can
+                    // pull playback back. Keep the preview responsive while
+                    // dragging and apply ONE exact seek when the gesture ends.
 
                     // Format and display time position updates
                     val currentTimeStr = formatSeekTime(currentPos)
@@ -1892,3 +1902,4 @@ fun MovingChevron(
             }
     )
 }
+
