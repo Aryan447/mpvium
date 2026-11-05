@@ -58,6 +58,7 @@ import app.aryan447.mpvium.preferences.GesturePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
+import app.aryan447.mpvium.ui.browser.MainTab
 import app.aryan447.mpvium.ui.preferences.components.ThemePicker
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
@@ -82,6 +83,29 @@ object AppearancePreferencesScreen : Screen {
         val darkModeLabels = DarkMode.entries.associateWith { stringResource(it.titleRes) }
         val appTheme by preferences.appTheme.collectAsState()
         val haptic = LocalHapticFeedback.current
+
+        val unifiedTitlesTab by preferences.unifiedTitlesTab.collectAsState()
+        val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
+        val tabsToShow = remember(unifiedTitlesTab) {
+            if (unifiedTitlesTab) {
+                listOf(
+                    MainTab.HOME,
+                    MainTab.TITLES,
+                    MainTab.FOLDERS,
+                    MainTab.LIBRARY,
+                    MainTab.PLAYLISTS,
+                )
+            } else {
+                listOf(
+                    MainTab.HOME,
+                    MainTab.SHOWS,
+                    MainTab.MOVIES,
+                    MainTab.FOLDERS,
+                    MainTab.LIBRARY,
+                    MainTab.PLAYLISTS,
+                )
+            }
+        }
 
         // Determine if we're in dark mode for theme preview
         val isDarkMode = when (darkMode) {
@@ -260,29 +284,6 @@ object AppearancePreferencesScreen : Screen {
                         }
                     }
 
-                    val unifiedTitlesTab by preferences.unifiedTitlesTab.collectAsState()
-                    val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
-                    val tabsToShow = remember(unifiedTitlesTab) {
-                        if (unifiedTitlesTab) {
-                            listOf(
-                                app.aryan447.mpvium.ui.browser.MainTab.HOME,
-                                app.aryan447.mpvium.ui.browser.MainTab.TITLES,
-                                app.aryan447.mpvium.ui.browser.MainTab.FOLDERS,
-                                app.aryan447.mpvium.ui.browser.MainTab.LIBRARY,
-                                app.aryan447.mpvium.ui.browser.MainTab.PLAYLISTS,
-                            )
-                        } else {
-                            listOf(
-                                app.aryan447.mpvium.ui.browser.MainTab.HOME,
-                                app.aryan447.mpvium.ui.browser.MainTab.SHOWS,
-                                app.aryan447.mpvium.ui.browser.MainTab.MOVIES,
-                                app.aryan447.mpvium.ui.browser.MainTab.FOLDERS,
-                                app.aryan447.mpvium.ui.browser.MainTab.LIBRARY,
-                                app.aryan447.mpvium.ui.browser.MainTab.PLAYLISTS,
-                            )
-                        }
-                    }
-
                     item {
                         PreferenceSectionHeader(
                             title = stringResource(id = R.string.pref_appearance_category_bottom_nav),
@@ -318,7 +319,7 @@ object AppearancePreferencesScreen : Screen {
                                         preferences.bottomNavTabs.set(updated)
                                     }
                                 },
-                                icon = { PreferenceRowIcon(icon = androidx.compose.material.icons.Icons.Filled.Movie) },
+                                icon = { PreferenceRowIcon(icon = Icons.Outlined.Movie) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unified_titles_tab_title)) },
                                 summary = { Text(text = stringResource(id = R.string.pref_appearance_unified_titles_tab_summary)) },
                             )
