@@ -108,12 +108,6 @@ object MainScreen : Screen {
    * Movies filter preselected.
    */
   fun requestTab(index: Int) {
-    if (index == 2) {
-      TitlesScreen.preselectFilter(TitlesTypeFilter.MOVIES)
-      persistentSelectedTab = 1
-      _tabRequest.value = 1
-      return
-    }
     val clamped = index.coerceIn(0, 5)
     persistentSelectedTab = clamped
     _tabRequest.value = clamped
@@ -252,14 +246,15 @@ object MainScreen : Screen {
     val tabRequest by _tabRequest.collectAsState()
 
     // Consume any pending external tab request (e.g. launcher shortcut).
-    // Historical index 2 opens Titles with Movies filter preselected.
+    // Historical index 2 opens Titles with Movies filter preselected when
+    // unified Titles tab is active, or the separate Movies tab if enabled.
     // A hidden tab falls back to the first visible tab so the bar always
     // shows a selected indicator.
     LaunchedEffect(tabRequest, navItems) {
       tabRequest?.let { requested ->
         _tabRequest.value = null
         val target =
-          if (requested == 2) {
+          if (requested == 2 && navItems.none { it == MainTab.MOVIES }) {
             TitlesScreen.preselectFilter(TitlesTypeFilter.MOVIES)
             1
           } else if (navItems.any { it.canonicalIndex == requested }) {
@@ -450,8 +445,8 @@ object MainScreen : Screen {
           ) {
             when (targetTab) {
               0 -> StreamingHomeScreen.Content()
-              1 -> TitlesScreen().Content()
-              2 -> TitlesScreen(TitlesTypeFilter.MOVIES).Content()
+              1 -> if (navItems.any { it == MainTab.SHOWS }) SeriesGridScreen.Content() else TitlesScreen().Content()
+              2 -> if (navItems.any { it == MainTab.MOVIES }) MoviesGridScreen.Content() else TitlesScreen(TitlesTypeFilter.MOVIES).Content()
               3 -> FolderListScreen.Content()
               4 -> MoreLibraryScreen.Content()
               5 -> PlaylistScreen.Content()
@@ -552,7 +547,7 @@ internal fun MainBottomBarPreviewLayout(
 private fun MainBottomBarFiveTabsPillWithLabelsPreview() {
   MaterialTheme {
     MainBottomBarPreviewLayout(
-      navItems = MainTab.entries,
+      navItems = MainTab.visibleTabs(MainTab.defaultKeys),
       selectedCanonicalIndex = 5,
       showLabels = true,
       pillNavigationBar = true,
@@ -565,7 +560,7 @@ private fun MainBottomBarFiveTabsPillWithLabelsPreview() {
 private fun MainBottomBarFiveTabsPillNoLabelsPreview() {
   MaterialTheme {
     MainBottomBarPreviewLayout(
-      navItems = MainTab.entries,
+      navItems = MainTab.visibleTabs(MainTab.defaultKeys),
       selectedCanonicalIndex = 5,
       showLabels = false,
       pillNavigationBar = true,
@@ -591,7 +586,7 @@ private fun MainBottomBarFourTabsPillWithLabelsPreview() {
 private fun MainBottomBarFiveTabsStandardWithLabelsPreview() {
   MaterialTheme {
     MainBottomBarPreviewLayout(
-      navItems = MainTab.entries,
+      navItems = MainTab.visibleTabs(MainTab.defaultKeys),
       selectedCanonicalIndex = 5,
       showLabels = true,
       pillNavigationBar = false,

@@ -10,7 +10,7 @@ class MainTabsTest {
   @Test
   fun entries_containsAllExpectedTabsInCanonicalOrder() {
     val entries = MainTab.entries
-    assertEquals(5, entries.size)
+    assertEquals(7, entries.size)
 
     assertEquals("HOME", entries[0].key)
     assertEquals(0, entries[0].canonicalIndex)
@@ -20,25 +20,32 @@ class MainTabsTest {
     assertEquals(1, entries[1].canonicalIndex)
     assertEquals("Titles", entries[1].label)
 
-    assertEquals("FOLDERS", entries[2].key)
-    assertEquals(3, entries[2].canonicalIndex)
-    assertEquals("Folders", entries[2].label)
+    assertEquals("SHOWS", entries[2].key)
+    assertEquals(1, entries[2].canonicalIndex)
+    assertEquals("TV Shows", entries[2].label)
 
-    assertEquals("LIBRARY", entries[3].key)
-    assertEquals(4, entries[3].canonicalIndex)
-    assertEquals("Library", entries[3].label)
+    assertEquals("MOVIES", entries[3].key)
+    assertEquals(2, entries[3].canonicalIndex)
+    assertEquals("Movies", entries[3].label)
 
-    assertEquals("PLAYLISTS", entries[4].key)
-    assertEquals(5, entries[4].canonicalIndex)
-    assertEquals("Playlists", entries[4].label)
+    assertEquals("FOLDERS", entries[4].key)
+    assertEquals(3, entries[4].canonicalIndex)
+    assertEquals("Folders", entries[4].label)
+
+    assertEquals("LIBRARY", entries[5].key)
+    assertEquals(4, entries[5].canonicalIndex)
+    assertEquals("Library", entries[5].label)
+
+    assertEquals("PLAYLISTS", entries[6].key)
+    assertEquals(5, entries[6].canonicalIndex)
+    assertEquals("Playlists", entries[6].label)
   }
 
   @Test
   fun fromCanonicalIndex_mapsCorrectly() {
     assertEquals(MainTab.HOME, MainTab.fromCanonicalIndex(0))
     assertEquals(MainTab.TITLES, MainTab.fromCanonicalIndex(1))
-    // Index 2 is reserved for historical Movies tab, resolving to TITLES
-    assertEquals(MainTab.TITLES, MainTab.fromCanonicalIndex(2))
+    assertEquals(MainTab.MOVIES, MainTab.fromCanonicalIndex(2))
     assertEquals(MainTab.FOLDERS, MainTab.fromCanonicalIndex(3))
     assertEquals(MainTab.LIBRARY, MainTab.fromCanonicalIndex(4))
     assertEquals(MainTab.PLAYLISTS, MainTab.fromCanonicalIndex(5))
@@ -51,9 +58,8 @@ class MainTabsTest {
   fun fromKey_mapsCorrectly() {
     assertEquals(MainTab.HOME, MainTab.fromKey("HOME"))
     assertEquals(MainTab.TITLES, MainTab.fromKey("TITLES"))
-    // Historical SHOWS and MOVIES map to TITLES
-    assertEquals(MainTab.TITLES, MainTab.fromKey("SHOWS"))
-    assertEquals(MainTab.TITLES, MainTab.fromKey("MOVIES"))
+    assertEquals(MainTab.SHOWS, MainTab.fromKey("SHOWS"))
+    assertEquals(MainTab.MOVIES, MainTab.fromKey("MOVIES"))
     assertEquals(MainTab.FOLDERS, MainTab.fromKey("FOLDERS"))
     assertEquals(MainTab.LIBRARY, MainTab.fromKey("LIBRARY"))
     assertEquals(MainTab.PLAYLISTS, MainTab.fromKey("PLAYLISTS"))
@@ -70,15 +76,23 @@ class MainTabsTest {
   }
 
   @Test
-  fun visibleTabs_withAllKeys_returnsAllTabsInCanonicalOrder() {
+  fun visibleTabs_withAllDefaultKeys_returnsFiveTabsInCanonicalOrder() {
     val visible = MainTab.visibleTabs(MainTab.defaultKeys)
     assertEquals(5, visible.size)
     assertEquals(listOf(MainTab.HOME, MainTab.TITLES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS), visible)
   }
 
   @Test
-  fun visibleTabs_withHistoricalShowsOrMoviesKey_mapsToTitles() {
-    val enabled = setOf("HOME", "MOVIES", "FOLDERS", "LIBRARY", "PLAYLISTS")
+  fun visibleTabs_withSeparateShowsAndMoviesKeys_returnsSixTabsInCanonicalOrder() {
+    val enabled = setOf("HOME", "SHOWS", "MOVIES", "FOLDERS", "LIBRARY", "PLAYLISTS")
+    val visible = MainTab.visibleTabs(enabled)
+    assertEquals(6, visible.size)
+    assertEquals(listOf(MainTab.HOME, MainTab.SHOWS, MainTab.MOVIES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS), visible)
+  }
+
+  @Test
+  fun visibleTabs_whenTitlesEnabled_suppressesShowsAndMovies() {
+    val enabled = setOf("HOME", "TITLES", "SHOWS", "MOVIES", "FOLDERS", "LIBRARY", "PLAYLISTS")
     val visible = MainTab.visibleTabs(enabled)
     assertEquals(5, visible.size)
     assertEquals(listOf(MainTab.HOME, MainTab.TITLES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS), visible)
@@ -101,16 +115,16 @@ class MainTabsTest {
   }
 
   @Test
-  fun visibleTabs_whenEmptySet_fallsBackToAllTabs() {
+  fun visibleTabs_whenEmptySet_fallsBackToDefaultTabs() {
     val visible = MainTab.visibleTabs(emptySet())
     assertEquals(5, visible.size)
-    assertEquals(MainTab.entries.toList(), visible)
+    assertEquals(listOf(MainTab.HOME, MainTab.TITLES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS), visible)
   }
 
   @Test
-  fun visibleTabs_whenOnlyUnknownKeys_fallsBackToAllTabs() {
+  fun visibleTabs_whenOnlyUnknownKeys_fallsBackToDefaultTabs() {
     val visible = MainTab.visibleTabs(setOf("NONEXISTENT", "ANOTHER_INVALID"))
     assertEquals(5, visible.size)
-    assertEquals(MainTab.entries.toList(), visible)
+    assertEquals(listOf(MainTab.HOME, MainTab.TITLES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS), visible)
   }
 }

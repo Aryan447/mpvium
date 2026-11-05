@@ -23,6 +23,8 @@
   <string name="pref_appearance_show_bottom_nav_labels_title">Show tab labels</string>
   <string name="pref_appearance_show_bottom_nav_labels_summary">Show text under bottom navigation icons</string>
   <string name="pref_appearance_bottom_nav_tabs_summary">Choose which tabs appear in the bottom bar</string>
+  <string name="pref_appearance_unified_titles_tab_title">Unified Titles tab</string>
+  <string name="pref_appearance_unified_titles_tab_summary">Combine TV Shows and Movies into a single Titles tab</string>
   <!-- Onboarding -->
   <string name="onboarding_skip">Skip</string>
   <string name="onboarding_next">Next</string>

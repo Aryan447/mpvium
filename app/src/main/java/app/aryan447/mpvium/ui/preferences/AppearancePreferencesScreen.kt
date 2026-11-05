@@ -100,6 +100,7 @@ object AppearancePreferencesScreen : Screen {
                 "appearance.pill_nav" to 1,
                 "appearance.bottom_nav_labels" to 1,
                 "appearance.bottom_nav_tabs" to 3,
+                "appearance.unified_titles_tab" to 3,
                 "appearance.unlimited_name_lines" to 5,
                 "appearance.show_unplayed_old_video_label" to 5,
                 "appearance.unplayed_old_video_days" to 5,
@@ -259,10 +260,33 @@ object AppearancePreferencesScreen : Screen {
                         }
                     }
 
+                    val unifiedTitlesTab by preferences.unifiedTitlesTab.collectAsState()
+                    val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
+                    val tabsToShow = remember(unifiedTitlesTab) {
+                        if (unifiedTitlesTab) {
+                            listOf(
+                                app.aryan447.mpvium.ui.browser.MainTab.HOME,
+                                app.aryan447.mpvium.ui.browser.MainTab.TITLES,
+                                app.aryan447.mpvium.ui.browser.MainTab.FOLDERS,
+                                app.aryan447.mpvium.ui.browser.MainTab.LIBRARY,
+                                app.aryan447.mpvium.ui.browser.MainTab.PLAYLISTS,
+                            )
+                        } else {
+                            listOf(
+                                app.aryan447.mpvium.ui.browser.MainTab.HOME,
+                                app.aryan447.mpvium.ui.browser.MainTab.SHOWS,
+                                app.aryan447.mpvium.ui.browser.MainTab.MOVIES,
+                                app.aryan447.mpvium.ui.browser.MainTab.FOLDERS,
+                                app.aryan447.mpvium.ui.browser.MainTab.LIBRARY,
+                                app.aryan447.mpvium.ui.browser.MainTab.PLAYLISTS,
+                            )
+                        }
+                    }
+
                     item {
                         PreferenceSectionHeader(
                             title = stringResource(id = R.string.pref_appearance_category_bottom_nav),
-                            count = app.aryan447.mpvium.ui.browser.MainTab.entries.size,
+                            count = tabsToShow.size + 1,
                         )
                     }
 
@@ -274,14 +298,32 @@ object AppearancePreferencesScreen : Screen {
                                 isCard = true,
                             ),
                         ) {
-                            val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
                             Text(
                                 text = stringResource(id = R.string.pref_appearance_bottom_nav_tabs_summary),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             )
-                            app.aryan447.mpvium.ui.browser.MainTab.entries.forEachIndexed { tabIndex, tab ->
+                            HapticSwitchPreference(
+                                value = unifiedTitlesTab,
+                                onValueChange = { enabled ->
+                                    preferences.unifiedTitlesTab.set(enabled)
+                                    val current = preferences.bottomNavTabs.get()
+                                    val updated = if (enabled) {
+                                        (current - "SHOWS" - "MOVIES") + "TITLES"
+                                    } else {
+                                        (current - "TITLES") + setOf("SHOWS", "MOVIES")
+                                    }
+                                    if (updated.isNotEmpty()) {
+                                        preferences.bottomNavTabs.set(updated)
+                                    }
+                                },
+                                icon = { PreferenceRowIcon(icon = androidx.compose.material.icons.Icons.Filled.Movie) },
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_unified_titles_tab_title)) },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_unified_titles_tab_summary)) },
+                            )
+                            PreferenceDivider()
+                            tabsToShow.forEachIndexed { tabIndex, tab ->
                                 val isEnabled = tab.key in bottomNavTabs
                                 // Keep at least one tab: disable turning off the last one.
                                 val canToggle = isEnabled && bottomNavTabs.size > 1 || !isEnabled
@@ -299,7 +341,7 @@ object AppearancePreferencesScreen : Screen {
                                     title = { Text(text = tab.label) },
                                     enabled = canToggle,
                                 )
-                                if (tabIndex < app.aryan447.mpvium.ui.browser.MainTab.entries.size - 1) {
+                                if (tabIndex < tabsToShow.size - 1) {
                                     PreferenceDivider()
                                 }
                             }
