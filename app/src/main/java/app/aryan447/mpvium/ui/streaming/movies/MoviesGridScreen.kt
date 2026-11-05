@@ -83,7 +83,6 @@ import app.aryan447.mpvium.preferences.MovieSort
 import app.aryan447.mpvium.preferences.StreamingPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
-import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.components.MediaLayoutToggle
@@ -554,19 +553,14 @@ private fun MoviesGridContent(
                 selected = movieFilter,
                 labelOf = { it.label },
                 onSelect = onMovieFilterChange,
+                secondaryOptions = MovieDurationFilter.entries,
+                secondarySelected = movieDurationFilter,
+                secondaryLabelOf = { it.label },
+                onSecondarySelect = onMovieDurationFilterChange,
                 sorts = movieSortOptions,
                 selectedSort = movieSort,
                 onSortSelect = onMovieSortChange,
                 modifier = Modifier.padding(horizontal = 4.dp),
-              )
-              ExpressiveChoiceRow(
-                options = MovieDurationFilter.entries,
-                selected = movieDurationFilter,
-                labelOf = { it.label },
-                onSelect = onMovieDurationFilterChange,
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 4.dp),
               )
               LibraryResultCount(
                 shown = filteredMovies.size,
@@ -602,19 +596,14 @@ private fun MoviesGridContent(
                 selected = movieFilter,
                 labelOf = { it.label },
                 onSelect = onMovieFilterChange,
+                secondaryOptions = MovieDurationFilter.entries,
+                secondarySelected = movieDurationFilter,
+                secondaryLabelOf = { it.label },
+                onSecondarySelect = onMovieDurationFilterChange,
                 sorts = movieSortOptions,
                 selectedSort = movieSort,
                 onSortSelect = onMovieSortChange,
                 modifier = Modifier.padding(horizontal = 4.dp),
-              )
-              ExpressiveChoiceRow(
-                options = MovieDurationFilter.entries,
-                selected = movieDurationFilter,
-                labelOf = { it.label },
-                onSelect = onMovieDurationFilterChange,
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 4.dp),
               )
               LibraryResultCount(
                 shown = filteredMovies.size,

@@ -54,10 +54,6 @@ fun <F, S> LibraryFilterBar(
   onSortSelect: (S) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val haptic = LocalHapticFeedback.current
-  var sortExpanded by remember { mutableStateOf(false) }
-  val activeSortLabel = sorts.firstOrNull { it.value == selectedSort }?.label
-
   Row(
     modifier = modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
@@ -70,41 +66,101 @@ fun <F, S> LibraryFilterBar(
       modifier = Modifier.weight(1f),
     )
 
-    Box {
-      FilledTonalIconButton(
-        onClick = { sortExpanded = true },
-        modifier = Modifier.padding(start = 8.dp),
-        colors = IconButtonDefaults.filledTonalIconButtonColors(
-          containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
-          contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
-        ),
-      ) {
-        Icon(
-          imageVector = Icons.AutoMirrored.Filled.Sort,
-          contentDescription = "Sort${activeSortLabel?.let { ": $it" } ?: ""}",
+    SortMenuButton(
+      sorts = sorts,
+      selectedSort = selectedSort,
+      onSortSelect = onSortSelect,
+    )
+  }
+}
+
+/**
+ * Same row as the single-group [LibraryFilterBar], with a second chip group
+ * trailing the first on the same scrolling line instead of below it.
+ */
+@Composable
+fun <F, D, S> LibraryFilterBar(
+  options: List<F>,
+  selected: F,
+  labelOf: (F) -> String,
+  onSelect: (F) -> Unit,
+  secondaryOptions: List<D>,
+  secondarySelected: D,
+  secondaryLabelOf: (D) -> String,
+  onSecondarySelect: (D) -> Unit,
+  sorts: List<SortOption<S>>,
+  selectedSort: S,
+  onSortSelect: (S) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  Row(
+    modifier = modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    ExpressiveChoiceRow(
+      options = options,
+      selected = selected,
+      labelOf = labelOf,
+      onSelect = onSelect,
+      secondaryOptions = secondaryOptions,
+      secondarySelected = secondarySelected,
+      secondaryLabelOf = secondaryLabelOf,
+      onSecondarySelect = onSecondarySelect,
+      modifier = Modifier.weight(1f),
+    )
+
+    SortMenuButton(
+      sorts = sorts,
+      selectedSort = selectedSort,
+      onSortSelect = onSortSelect,
+    )
+  }
+}
+
+@Composable
+private fun <S> SortMenuButton(
+  sorts: List<SortOption<S>>,
+  selectedSort: S,
+  onSortSelect: (S) -> Unit,
+) {
+  val haptic = LocalHapticFeedback.current
+  var sortExpanded by remember { mutableStateOf(false) }
+  val activeSortLabel = sorts.firstOrNull { it.value == selectedSort }?.label
+
+  Box {
+    FilledTonalIconButton(
+      onClick = { sortExpanded = true },
+      modifier = Modifier.padding(start = 8.dp),
+      colors = IconButtonDefaults.filledTonalIconButtonColors(
+        containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
+        contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
+      ),
+    ) {
+      Icon(
+        imageVector = Icons.AutoMirrored.Filled.Sort,
+        contentDescription = "Sort${activeSortLabel?.let { ": $it" } ?: ""}",
+      )
+    }
+    DropdownMenu(
+      expanded = sortExpanded,
+      onDismissRequest = { sortExpanded = false },
+      containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
+    ) {
+      sorts.forEach { sort ->
+        val isSelected = sort.value == selectedSort
+        DropdownMenuItem(
+          text = { Text(sort.label) },
+          leadingIcon = if (isSelected) {
+            { Icon(Icons.Filled.Check, contentDescription = null) }
+          } else {
+            null
+          },
+          onClick = {
+            sortExpanded = false
+            if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onSortSelect(sort.value)
+          },
         )
-      }
-      DropdownMenu(
-        expanded = sortExpanded,
-        onDismissRequest = { sortExpanded = false },
-        containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
-      ) {
-        sorts.forEach { sort ->
-          val isSelected = sort.value == selectedSort
-          DropdownMenuItem(
-            text = { Text(sort.label) },
-            leadingIcon = if (isSelected) {
-              { Icon(Icons.Filled.Check, contentDescription = null) }
-            } else {
-              null
-            },
-            onClick = {
-              sortExpanded = false
-              if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-              onSortSelect(sort.value)
-            },
-          )
-        }
       }
     }
   }

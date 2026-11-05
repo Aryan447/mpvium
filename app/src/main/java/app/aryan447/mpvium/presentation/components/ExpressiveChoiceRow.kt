@@ -4,7 +4,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ButtonDefaults
@@ -25,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassToggleButtonColors
+import app.aryan447.mpvium.ui.theme.spacing
 
 /**
  * Single-choice row built from connected Material 3 Expressive toggle
@@ -71,18 +75,83 @@ fun <T> ExpressiveChoiceRow(
       modifier = modifier,
       horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
     ) {
-      itemsIndexed(options, key = { _, option -> labelOf(option) }) { index, option ->
-        ChoiceToggle(
-          label = labelOf(option),
-          isSelected = option == selected,
-          index = index,
-          count = options.size,
-          centered = false,
-          colors = colors,
-          onSelect = { onSelect(option) },
-        )
-      }
+      choiceItems(
+        options = options,
+        selected = selected,
+        labelOf = labelOf,
+        onSelect = onSelect,
+        colors = colors,
+      )
     }
+  }
+}
+
+/**
+ * Two linked choice groups sharing one scrolling line, e.g. a watch-state
+ * filter followed by a duration filter. Each group keeps its own connected
+ * button shapes and stays tappable independently, so the row reads as two
+ * groups without costing a second line of vertical space.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun <T, U> ExpressiveChoiceRow(
+  options: List<T>,
+  selected: T,
+  labelOf: (T) -> String,
+  onSelect: (T) -> Unit,
+  secondaryOptions: List<U>,
+  secondarySelected: U,
+  secondaryLabelOf: (U) -> String,
+  onSecondarySelect: (U) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val colors = expressiveChoiceColors()
+
+  LazyRow(
+    modifier = modifier,
+    horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+  ) {
+    choiceItems(
+      options = options,
+      selected = selected,
+      labelOf = labelOf,
+      onSelect = onSelect,
+      colors = colors,
+      keyPrefix = "first_",
+    )
+    item(key = "choice_group_gap") {
+      Spacer(Modifier.width(MaterialTheme.spacing.smaller))
+    }
+    choiceItems(
+      options = secondaryOptions,
+      selected = secondarySelected,
+      labelOf = secondaryLabelOf,
+      onSelect = onSecondarySelect,
+      colors = colors,
+      keyPrefix = "second_",
+    )
+  }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private fun <T> LazyListScope.choiceItems(
+  options: List<T>,
+  selected: T,
+  labelOf: (T) -> String,
+  onSelect: (T) -> Unit,
+  colors: ToggleButtonColors,
+  keyPrefix: String = "",
+) {
+  itemsIndexed(options, key = { _, option -> keyPrefix + labelOf(option) }) { index, option ->
+    ChoiceToggle(
+      label = labelOf(option),
+      isSelected = option == selected,
+      index = index,
+      count = options.size,
+      centered = false,
+      colors = colors,
+      onSelect = { onSelect(option) },
+    )
   }
 }
 
