@@ -182,26 +182,23 @@ data class TitlesScreen(
       }
     }
 
-    // Persisted type filter (All | Shows | Movies)
-    val persistedTypeFilter by streamingPreferences.titlesTypeFilter.collectAsState()
-    var activeTypeFilter by rememberSaveable {
-      mutableStateOf(initialTypeFilter ?: persistedTypeFilter)
+    // Persisted type filter (All | TV Shows | Movies)
+    val activeTypeFilter by streamingPreferences.titlesTypeFilter.collectAsState()
+
+    // Handle initialTypeFilter if provided (e.g., from constructor parameter)
+    LaunchedEffect(initialTypeFilter) {
+      if (initialTypeFilter != null) {
+        streamingPreferences.titlesTypeFilter.set(initialTypeFilter)
+      }
     }
 
     // External preselect requests (e.g. launcher shortcut requestTab(2))
     LaunchedEffect(Unit) {
       pendingFilterFlow.collect { pending ->
         if (pending != null) {
-          activeTypeFilter = pending
           streamingPreferences.titlesTypeFilter.set(pending)
           _pendingFilter.value = null
         }
-      }
-    }
-
-    LaunchedEffect(activeTypeFilter) {
-      if (streamingPreferences.titlesTypeFilter.get() != activeTypeFilter) {
-        streamingPreferences.titlesTypeFilter.set(activeTypeFilter)
       }
     }
 
@@ -429,7 +426,7 @@ data class TitlesScreen(
               onRefresh = { refreshKey++ },
               refreshEnabled = atTop && !isLoading,
               typeFilter = activeTypeFilter,
-              onTypeFilterChange = { activeTypeFilter = it },
+              onTypeFilterChange = { streamingPreferences.titlesTypeFilter.set(it) },
               watchFilter = watchFilter,
               onWatchFilterChange = { watchFilterOrdinal = it.ordinal },
               durationFilter = durationFilter,
@@ -489,7 +486,7 @@ data class TitlesScreen(
           onRefresh = { refreshKey++ },
           refreshEnabled = atTop && !isLoading,
           typeFilter = activeTypeFilter,
-          onTypeFilterChange = { activeTypeFilter = it },
+          onTypeFilterChange = { streamingPreferences.titlesTypeFilter.set(it) },
           watchFilter = watchFilter,
           onWatchFilterChange = { watchFilterOrdinal = it.ordinal },
           durationFilter = durationFilter,
