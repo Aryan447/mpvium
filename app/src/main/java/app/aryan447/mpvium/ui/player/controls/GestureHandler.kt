@@ -1688,9 +1688,9 @@ fun GestureHandler(
           if (hasStartedSeeking) {
             val target = lastClampedPosition.roundToInt()
             if (!wasPlayerAlreadyPaused) {
-              viewModel.seekToAndResume(target)
+              viewModel.seekToAndResume(target, exact = true)
             } else {
-              viewModel.seekTo(target, isScrubbing = false)
+              viewModel.seekTo(target, isScrubbing = false, exact = true)
             }
 
             // Hold the swipe preview until mpv confirms the landing (bounded
