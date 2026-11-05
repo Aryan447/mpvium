@@ -337,7 +337,7 @@ fun LibraryResultCount(
 ) {
   val noun = when (filterType) {
     TitlesTypeFilter.ALL -> if (total == 1) "title" else "titles"
-    TitlesTypeFilter.SHOWS -> if (total == 1) "show" else "shows"
+    TitlesTypeFilter.SHOWS -> if (total == 1) "TV show" else "TV shows"
     TitlesTypeFilter.MOVIES -> if (total == 1) "movie" else "movies"
   }
   Text(

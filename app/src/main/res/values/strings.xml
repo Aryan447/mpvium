@@ -694,7 +694,7 @@
   <string name="search">Search</string>
   <string name="titles_search_placeholder">Search titles…</string>
   <string name="titles_filter_all">All</string>
-  <string name="titles_filter_shows">Shows</string>
+  <string name="titles_filter_shows">TV Shows</string>
   <string name="titles_filter_movies">Movies</string>
   <string name="titles_empty_no_titles_title">No titles detected</string>
   <string name="titles_empty_no_titles_message">Add movies or TV shows to your device storage to see them here</string>
@@ -709,7 +709,7 @@
   <string name="titles_empty_search_no_movies_title">No movies found</string>
   <string name="titles_empty_search_no_movies_message">No movies match \'%1$s\'</string>
   <string name="titles_empty_filter_no_titles">No matching titles</string>
-  <string name="titles_empty_filter_no_shows">No matching shows</string>
+  <string name="titles_empty_filter_no_shows">No matching TV shows</string>
   <string name="titles_empty_filter_no_movies">No matching movies</string>
   <string name="titles_empty_filter_message">Try a different filter</string>
   <string name="titles_empty_filter_watch_state_message">Try a different watch-state filter</string>

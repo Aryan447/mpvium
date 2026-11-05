@@ -10,7 +10,7 @@ import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
  */
 enum class TitlesTypeFilter(val label: String) {
   ALL("All"),
-  SHOWS("Shows"),
+  SHOWS("TV Shows"),
   MOVIES("Movies"),
 }
 

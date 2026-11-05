@@ -641,7 +641,7 @@ private fun TitlesGridContent(
       hasFilter -> when (typeFilter) {
         TitlesTypeFilter.SHOWS -> {
           val watchLabel = if (watchFilter == TitleWatchFilter.WATCHED) "finished" else watchFilter.label.lowercase()
-          "No $watchLabel shows"
+          "No $watchLabel TV shows"
         }
         TitlesTypeFilter.MOVIES -> stringResource(R.string.titles_empty_filter_no_movies)
         TitlesTypeFilter.ALL -> stringResource(R.string.titles_empty_filter_no_titles)
