@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.streaming.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -7,11 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
@@ -24,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.ui.streaming.titles.TitlesTypeFilter
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
@@ -40,9 +45,10 @@ data class SortOption<T>(
 )
 
 /**
- * Shared filter-chip row + sort dropdown used by the Shows and Movies grids.
- * Read-only: callers apply [options]/[selected] and [sorts]/[selectedSort]
- * to their already-loaded lists.
+ * Shared filter-chip row + trailing icon actions used by the Shows and Movies
+ * grids. Read-only: callers apply [options]/[selected] and [sorts]/[selectedSort]
+ * to their already-loaded lists. [actions] render between the chips and the sort
+ * button, e.g. [MovieDurationFilterButton].
  */
 @Composable
 fun <F, S> LibraryFilterBar(
@@ -54,6 +60,7 @@ fun <F, S> LibraryFilterBar(
   selectedSort: S,
   onSortSelect: (S) -> Unit,
   modifier: Modifier = Modifier,
+  actions: @Composable () -> Unit = {},
 ) {
   Row(
     modifier = modifier.fillMaxWidth(),
@@ -67,48 +74,7 @@ fun <F, S> LibraryFilterBar(
       modifier = Modifier.weight(1f),
     )
 
-    SortMenuButton(
-      sorts = sorts,
-      selectedSort = selectedSort,
-      onSortSelect = onSortSelect,
-    )
-  }
-}
-
-/**
- * Same row as the single-group [LibraryFilterBar], with a second chip group
- * trailing the first on the same scrolling line instead of below it.
- */
-@Composable
-fun <F, D, S> LibraryFilterBar(
-  options: List<F>,
-  selected: F,
-  labelOf: (F) -> String,
-  onSelect: (F) -> Unit,
-  secondaryOptions: List<D>,
-  secondarySelected: D,
-  secondaryLabelOf: (D) -> String,
-  onSecondarySelect: (D) -> Unit,
-  sorts: List<SortOption<S>>,
-  selectedSort: S,
-  onSortSelect: (S) -> Unit,
-  modifier: Modifier = Modifier,
-) {
-  Row(
-    modifier = modifier.fillMaxWidth(),
-    verticalAlignment = Alignment.CenterVertically,
-  ) {
-    ExpressiveChoiceRow(
-      options = options,
-      selected = selected,
-      labelOf = labelOf,
-      onSelect = onSelect,
-      secondaryOptions = secondaryOptions,
-      secondarySelected = secondarySelected,
-      secondaryLabelOf = secondaryLabelOf,
-      onSecondarySelect = onSecondarySelect,
-      modifier = Modifier.weight(1f),
-    )
+    actions()
 
     SortMenuButton(
       sorts = sorts,
@@ -188,18 +154,92 @@ enum class MovieWatchFilter(val label: String) {
 }
 
 /**
- * Duration filters for the Movies grid.
+ * Duration filters for the Movies grid, shown as a tonal icon button next to
+ * the sort control instead of a second chip row.
  */
 enum class MovieDurationFilter(
-  val label: String,
+  @StringRes val labelRes: Int,
   val minDurationMs: Long = 0L,
 ) {
-  ALL("All", 0L),
-  AT_LEAST_30M("30 min+", 30 * 60 * 1000L),
-  AT_LEAST_1H("1 h+", 60 * 60 * 1000L),
-  AT_LEAST_1H30M("1.5 h+", 90 * 60 * 1000L);
+  ALL(R.string.movie_duration_filter_all, 0L),
+  AT_LEAST_30M(R.string.movie_duration_filter_30m, 30 * 60 * 1000L),
+  AT_LEAST_1H(R.string.movie_duration_filter_1h, 60 * 60 * 1000L),
+  AT_LEAST_1H30M(R.string.movie_duration_filter_1h30m, 90 * 60 * 1000L);
 
   fun matches(durationMs: Long): Boolean = durationMs >= minDurationMs
+}
+
+/**
+ * Compact duration filter: clock icon button that opens the length thresholds
+ * in a dropdown, mirroring [SortMenuButton]. Filled container while a threshold
+ * is active so the current filter is visible without opening the menu.
+ */
+@Composable
+fun MovieDurationFilterButton(
+  selected: MovieDurationFilter,
+  onSelect: (MovieDurationFilter) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val haptic = LocalHapticFeedback.current
+  var expanded by remember { mutableStateOf(false) }
+  val isFiltering = selected != MovieDurationFilter.ALL
+  val selectedLabel = stringResource(selected.labelRes)
+
+  Box {
+    FilledTonalIconButton(
+      onClick = { expanded = true },
+      modifier = modifier.padding(start = 8.dp),
+      colors = IconButtonDefaults.filledTonalIconButtonColors(
+        containerColor = glassButtonContainerColor(
+          if (isFiltering) {
+            MaterialTheme.colorScheme.primaryContainer
+          } else {
+            MaterialTheme.colorScheme.secondaryContainer
+          },
+        ),
+        contentColor = glassButtonContentColor(
+          if (isFiltering) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+          } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+          },
+        ),
+      ),
+    ) {
+      Icon(
+        imageVector = Icons.Filled.Schedule,
+        // Tint the icon with primary while filtering: the filled container above
+        // collapses to frost under Glass, where only the tint still reads.
+        tint = if (isFiltering) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+        contentDescription = stringResource(
+          R.string.movie_duration_filter_content_description,
+          selectedLabel,
+        ),
+      )
+    }
+    DropdownMenu(
+      expanded = expanded,
+      onDismissRequest = { expanded = false },
+      containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
+    ) {
+      MovieDurationFilter.entries.forEach { filter ->
+        val isSelected = filter == selected
+        DropdownMenuItem(
+          text = { Text(stringResource(filter.labelRes)) },
+          leadingIcon = if (isSelected) {
+            { Icon(Icons.Filled.Check, contentDescription = null) }
+          } else {
+            null
+          },
+          onClick = {
+            expanded = false
+            if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onSelect(filter)
+          },
+        )
+      }
+    }
+  }
 }
 
 /**

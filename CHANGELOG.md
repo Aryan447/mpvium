@@ -8,7 +8,7 @@
 - Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
 - Automatic vs manual library scanning mode in Settings → Folders.
 - Promoted Playlists to a first-class bottom-navigation tab (enabled by default) with an empty-state create action and direct access from the main navigation bar.
-- Movies: duration filter chips (30 min+, 1 h+, 1.5 h+) share the watch-state filter row instead of sitting on a second line, freeing a row of space above the grid.
+- Movies: length filtering is a clock button with a dropdown next to the sort control, replacing the second chip row above the grid; its menu offers Any length, 30 min+, 1 h+, and 1.5 h+, and the button fills while a threshold is active.
 - Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
 - Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
 - Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.
@@ -40,6 +40,7 @@
 - Title vs release year: movies with numbers in their title (`1917 (2019)`, `2012 (2009)`, `Blade Runner 2049 (2017)`) retain the number in the title and take the year from parentheses; bare years are never returned as titles.
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
+- Fixed horizontal swipe-to-seek snapping to preceding keyframe instead of landing on the exact previewed timestamp.
 
 ## V1.3.0
 
