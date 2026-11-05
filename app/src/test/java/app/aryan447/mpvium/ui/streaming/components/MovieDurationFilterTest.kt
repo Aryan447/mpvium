@@ -15,7 +15,7 @@ class MovieDurationFilterTest {
   @Test
   fun enumEntriesAndLabels_matchSpecification() {
     assertEquals(4, MovieDurationFilter.entries.size)
-    assertEquals("All", MovieDurationFilter.ALL.label)
+    assertEquals("Any length", MovieDurationFilter.ALL.label)
     assertEquals("30 min+", MovieDurationFilter.AT_LEAST_30M.label)
     assertEquals("1 h+", MovieDurationFilter.AT_LEAST_1H.label)
     assertEquals("1.5 h+", MovieDurationFilter.AT_LEAST_1H30M.label)

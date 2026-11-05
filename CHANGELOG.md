@@ -6,7 +6,7 @@
 - Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
 - Automatic vs manual library scanning mode in Settings → Folders.
 - Promoted Playlists to a first-class bottom-navigation tab (enabled by default) with an empty-state create action and direct access from the main navigation bar.
-- Movies: duration filter chips (30 min+, 1 h+, 1.5 h+) share the watch-state filter row instead of sitting on a second line, freeing a row of space above the grid.
+- Movies: duration filter chips (Any length, 30 min+, 1 h+, 1.5 h+) share the watch-state filter row instead of sitting on a second line, freeing a row of space above the grid; the reset chip reads "Any length" so it is not mistaken for the watch-state "All".
 - Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
 - Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
 - Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.

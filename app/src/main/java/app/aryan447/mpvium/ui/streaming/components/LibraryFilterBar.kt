@@ -187,13 +187,15 @@ enum class MovieWatchFilter(val label: String) {
 }
 
 /**
- * Duration filters for the Movies grid.
+ * Duration filters for the Movies grid. [ALL] is labelled "Any length" rather
+ * than "All" so it stays distinguishable from [MovieWatchFilter.ALL] now that
+ * both groups share one chip row.
  */
 enum class MovieDurationFilter(
   val label: String,
   val minDurationMs: Long = 0L,
 ) {
-  ALL("All", 0L),
+  ALL("Any length", 0L),
   AT_LEAST_30M("30 min+", 30 * 60 * 1000L),
   AT_LEAST_1H("1 h+", 60 * 60 * 1000L),
   AT_LEAST_1H30M("1.5 h+", 90 * 60 * 1000L);
