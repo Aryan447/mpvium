@@ -76,6 +76,8 @@ import app.aryan447.mpvium.ui.browser.playlist.PlaylistScreen
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
+import app.aryan447.mpvium.ui.streaming.titles.TitlesScreen
+import app.aryan447.mpvium.ui.streaming.titles.TitlesTypeFilter
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -102,8 +104,16 @@ object MainScreen : Screen {
   /**
    * Request a tab switch from outside composition (e.g. launcher shortcuts).
    * Persisted so it survives process recreation, and consumed by [Content].
+   * Historical index 2 (Movies) maps to canonical index 1 (Titles) with the
+   * Movies filter preselected.
    */
   fun requestTab(index: Int) {
+    if (index == 2) {
+      TitlesScreen.preselectFilter(TitlesTypeFilter.MOVIES)
+      persistentSelectedTab = 1
+      _tabRequest.value = 1
+      return
+    }
     val clamped = index.coerceIn(0, 5)
     persistentSelectedTab = clamped
     _tabRequest.value = clamped
@@ -242,13 +252,17 @@ object MainScreen : Screen {
     val tabRequest by _tabRequest.collectAsState()
 
     // Consume any pending external tab request (e.g. launcher shortcut).
+    // Historical index 2 opens Titles with Movies filter preselected.
     // A hidden tab falls back to the first visible tab so the bar always
     // shows a selected indicator.
     LaunchedEffect(tabRequest, navItems) {
       tabRequest?.let { requested ->
         _tabRequest.value = null
         val target =
-          if (navItems.any { it.canonicalIndex == requested }) {
+          if (requested == 2) {
+            TitlesScreen.preselectFilter(TitlesTypeFilter.MOVIES)
+            1
+          } else if (navItems.any { it.canonicalIndex == requested }) {
             requested
           } else {
             navItems.first().canonicalIndex
@@ -436,11 +450,12 @@ object MainScreen : Screen {
           ) {
             when (targetTab) {
               0 -> StreamingHomeScreen.Content()
-              1 -> SeriesGridScreen.Content()
-              2 -> MoviesGridScreen.Content()
+              1 -> TitlesScreen().Content()
+              2 -> TitlesScreen(TitlesTypeFilter.MOVIES).Content()
               3 -> FolderListScreen.Content()
               4 -> MoreLibraryScreen.Content()
               5 -> PlaylistScreen.Content()
+              else -> TitlesScreen().Content()
             }
           }
         }
@@ -532,9 +547,9 @@ internal fun MainBottomBarPreviewLayout(
   }
 }
 
-@Preview(name = "6 Tabs - 360dp Pill with Labels", widthDp = 360)
+@Preview(name = "5 Tabs - 360dp Pill with Labels", widthDp = 360)
 @Composable
-private fun MainBottomBarSixTabsPillWithLabelsPreview() {
+private fun MainBottomBarFiveTabsPillWithLabelsPreview() {
   MaterialTheme {
     MainBottomBarPreviewLayout(
       navItems = MainTab.entries,
@@ -545,9 +560,9 @@ private fun MainBottomBarSixTabsPillWithLabelsPreview() {
   }
 }
 
-@Preview(name = "6 Tabs - 360dp Pill without Labels", widthDp = 360)
+@Preview(name = "5 Tabs - 360dp Pill without Labels", widthDp = 360)
 @Composable
-private fun MainBottomBarSixTabsPillNoLabelsPreview() {
+private fun MainBottomBarFiveTabsPillNoLabelsPreview() {
   MaterialTheme {
     MainBottomBarPreviewLayout(
       navItems = MainTab.entries,
@@ -558,12 +573,12 @@ private fun MainBottomBarSixTabsPillNoLabelsPreview() {
   }
 }
 
-@Preview(name = "5 Tabs - 360dp Pill with Labels", widthDp = 360)
+@Preview(name = "4 Tabs - 360dp Pill with Labels", widthDp = 360)
 @Composable
-private fun MainBottomBarFiveTabsPillWithLabelsPreview() {
+private fun MainBottomBarFourTabsPillWithLabelsPreview() {
   MaterialTheme {
     MainBottomBarPreviewLayout(
-      navItems = MainTab.visibleTabs(setOf("HOME", "SHOWS", "MOVIES", "FOLDERS", "LIBRARY")),
+      navItems = MainTab.visibleTabs(setOf("HOME", "TITLES", "FOLDERS", "LIBRARY")),
       selectedCanonicalIndex = 0,
       showLabels = true,
       pillNavigationBar = true,
@@ -571,9 +586,9 @@ private fun MainBottomBarFiveTabsPillWithLabelsPreview() {
   }
 }
 
-@Preview(name = "6 Tabs - 360dp Standard with Labels", widthDp = 360)
+@Preview(name = "5 Tabs - 360dp Standard with Labels", widthDp = 360)
 @Composable
-private fun MainBottomBarSixTabsStandardWithLabelsPreview() {
+private fun MainBottomBarFiveTabsStandardWithLabelsPreview() {
   MaterialTheme {
     MainBottomBarPreviewLayout(
       navItems = MainTab.entries,

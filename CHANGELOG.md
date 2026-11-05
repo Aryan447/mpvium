@@ -2,6 +2,8 @@
 
 ### Added
 
+- Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, Shows, Movies), normalized sorting (Name, Recently added, Rating, Longest, Shortest), watch-state chips, duration filters, and layout toggle (grid/list).
+- Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
 - Opt-in "Lean seek cache" setting (Settings → Advanced) that deepens the demuxer cache around the playhead for faster seeking on local and network sources alike. Automatically sizes forward and backward byte budgets according to memory class and bitrate, clamps to conservative 96 MB forward / 128 MB backward ceilings, and displays seekable cache ranges behind the seekbar rail when enabled.
 - Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
 - Automatic vs manual library scanning mode in Settings → Folders.

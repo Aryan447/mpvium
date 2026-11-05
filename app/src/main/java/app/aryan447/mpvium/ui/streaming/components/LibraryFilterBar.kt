@@ -26,6 +26,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
+import app.aryan447.mpvium.ui.streaming.titles.TitlesTypeFilter
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
@@ -208,10 +209,16 @@ enum class MovieDurationFilter(
 fun LibraryResultCount(
   shown: Int,
   total: Int,
+  filterType: TitlesTypeFilter = TitlesTypeFilter.ALL,
   modifier: Modifier = Modifier,
 ) {
+  val noun = when (filterType) {
+    TitlesTypeFilter.ALL -> if (total == 1) "title" else "titles"
+    TitlesTypeFilter.SHOWS -> if (total == 1) "show" else "shows"
+    TitlesTypeFilter.MOVIES -> if (total == 1) "movie" else "movies"
+  }
   Text(
-    text = if (shown == total) "$total titles" else "$shown of $total titles",
+    text = if (shown == total) "$total $noun" else "$shown of $total $noun",
     style = MaterialTheme.typography.labelMedium,
     color = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier = modifier.padding(horizontal = 4.dp),

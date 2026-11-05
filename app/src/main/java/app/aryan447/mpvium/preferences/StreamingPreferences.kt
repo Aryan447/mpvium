@@ -3,6 +3,8 @@ package app.aryan447.mpvium.preferences
 import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
 import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
+import app.aryan447.mpvium.ui.streaming.titles.TitlesSort
+import app.aryan447.mpvium.ui.streaming.titles.TitlesTypeFilter
 
 /**
  * Preferences for the Shows and Movies library tabs.
@@ -10,6 +12,12 @@ import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
 class StreamingPreferences(
   preferenceStore: PreferenceStore,
 ) {
+  // Type filter for the unified Titles tab (All, Shows, Movies)
+  val titlesTypeFilter = preferenceStore.getEnum("streaming_titles_type_filter", TitlesTypeFilter.ALL)
+
+  // Sort order for the unified Titles tab
+  val titlesSort = preferenceStore.getEnum("streaming_titles_sort", TitlesSort.NAME)
+
   // Sort orders for the Shows grid. Recently-added uses the newest
   // episode file date; no extra metadata or DB access needed.
   val seriesSort = preferenceStore.getEnum("streaming_series_sort", SeriesSort.NAME)
