@@ -690,6 +690,7 @@
   <string name="metadata_save">Save</string>
   <!-- Titles tab -->
   <string name="tab_titles">Titles</string>
+  <string name="search">Search</string>
   <string name="titles_search_placeholder">Search titles…</string>
   <string name="titles_filter_all">All</string>
   <string name="titles_filter_shows">Shows</string>
