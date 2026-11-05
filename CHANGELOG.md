@@ -2,6 +2,7 @@
 
 ### Added
 
+- Cinema player layout option (`PlayerLayout.CINEMA`, opt-in off by default under Settings → Appearance → Player Layout): a flat, gesture-first player layout featuring borderless glyphs over subtle top and bottom scrim gradients, an edge-to-edge 3 dp seekbar pinned to the bottom of the screen, single-line title top-left, compact monospace timecode right-aligned above the seekbar, fast 2.5-second auto-hide timeout, and full RTL mirroring while preserving custom per-region button arrangements.
 - Opt-in "Lean seek cache" setting (Settings → Advanced) that deepens the demuxer cache around the playhead for faster seeking on local and network sources alike. Automatically sizes forward and backward byte budgets according to memory class and bitrate, clamps to conservative 96 MB forward / 128 MB backward ceilings, and displays seekable cache ranges behind the seekbar rail when enabled.
 - Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
 - Automatic vs manual library scanning mode in Settings → Folders.
