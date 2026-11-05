@@ -346,23 +346,14 @@ fun SeekbarWithTimers(
     }
   }
 
-  val trackContent: @Composable () -> Unit = {
+  val trackContent: @Composable (Modifier) -> Unit = { slotModifier ->
     // Seekbar with expanded touch area. The outer box is the full touch
     // height (48dp in Glass Pill, 36dp in Cinema); the visual track inside
     // is smaller (32dp centered in Glass Pill, 3dp pinned to bottom in Cinema).
     Box(
-      modifier =
-        if (isCinema) {
-          Modifier
-            .fillMaxWidth()
-            .height(36.dp)
-            .onSizeChanged { trackWidthPx = it.width }
-        } else {
-          Modifier
-            .weight(1f)
-            .height(48.dp)
-            .onSizeChanged { trackWidthPx = it.width }
-        },
+      modifier = slotModifier
+        .height(if (isCinema) 36.dp else 48.dp)
+        .onSizeChanged { trackWidthPx = it.width },
       contentAlignment = if (isCinema) Alignment.BottomCenter else Alignment.Center,
     ) {
       // Visual seekbar (3dp pinned to bottom in cinema, 32dp centered in glass pill)
@@ -532,7 +523,7 @@ fun SeekbarWithTimers(
       modifier = modifier.fillMaxWidth(),
       contentAlignment = Alignment.BottomCenter,
     ) {
-      trackContent()
+      trackContent(Modifier.fillMaxWidth())
     }
   } else {
     Row(
@@ -550,7 +541,7 @@ fun SeekbarWithTimers(
         modifier = Modifier.width(92.dp),
       )
 
-      trackContent()
+      trackContent(Modifier.weight(1f))
 
       VideoTimer(
         value = if (timersInverted.second) position - duration else duration,

@@ -66,6 +66,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -151,6 +152,10 @@ object PlayerControlsPreferencesScreen : Screen {
 
           item {
             val playerLayout by appearancePrefs.playerLayout.collectAsState()
+            val layoutLabels = mapOf(
+              PlayerLayout.GLASS_PILL to stringResource(R.string.pref_player_layout_glass_pill),
+              PlayerLayout.CINEMA to stringResource(R.string.pref_player_layout_cinema),
+            )
             PreferenceCard(
               modifier = Modifier.settingsHighlightTarget(
                 state = highlightState,
@@ -161,12 +166,7 @@ object PlayerControlsPreferencesScreen : Screen {
               ExpressiveChoiceRow(
                 options = PlayerLayout.entries,
                 selected = playerLayout,
-                labelOf = { layout ->
-                  when (layout) {
-                    PlayerLayout.GLASS_PILL -> stringResource(R.string.pref_player_layout_glass_pill)
-                    PlayerLayout.CINEMA -> stringResource(R.string.pref_player_layout_cinema)
-                  }
-                },
+                labelOf = { layoutLabels.getValue(it) },
                 onSelect = { appearancePrefs.playerLayout.set(it) },
                 equalWidth = true,
                 modifier = Modifier
