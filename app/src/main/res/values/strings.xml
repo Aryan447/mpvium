@@ -716,4 +716,5 @@
   <string name="titles_empty_action_show_all">Show all</string>
   <string name="titles_pane_select_title">Select a title</string>
   <string name="titles_pane_select_message">Pick a show or movie to see details, actions and matches here</string>
+  <string name="title_watch_filter_content_description">Watch filter: %1$s</string>
 </resources>

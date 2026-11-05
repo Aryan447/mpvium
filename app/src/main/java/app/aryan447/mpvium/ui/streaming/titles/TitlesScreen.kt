@@ -89,11 +89,13 @@ import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
 import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
+import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilterButton
 import app.aryan447.mpvium.ui.streaming.components.MovieListRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesListRow
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.SortOption
+import app.aryan447.mpvium.ui.streaming.components.TitleWatchFilterButton
 import app.aryan447.mpvium.ui.streaming.movies.MovieDetailScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesDetailScreen
 import app.aryan447.mpvium.ui.theme.GlassKind
@@ -805,40 +807,30 @@ private fun TitlesFilterControls(
   totalCount: Int,
 ) {
   Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    // 1. Segment control: All | Shows | Movies
-    ExpressiveChoiceRow(
+    // Single row: All | Shows | Movies chips, followed by Watch filter button, Duration filter button, and Sort button
+    LibraryFilterBar(
       options = TitlesTypeFilter.entries,
       selected = typeFilter,
       labelOf = { it.label },
       onSelect = onTypeFilterChange,
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 4.dp),
-    )
-
-    // 2. Watch-state chips, duration chips, and sort dropdown composed underneath
-    LibraryFilterBar(
-      options = TitleWatchFilter.entries,
-      selected = watchFilter,
-      labelOf = { filter ->
-        if (typeFilter == TitlesTypeFilter.SHOWS && filter == TitleWatchFilter.WATCHED) {
-          "Finished"
-        } else {
-          filter.label
-        }
-      },
-      onSelect = onWatchFilterChange,
-      secondaryOptions = MovieDurationFilter.entries,
-      secondarySelected = durationFilter,
-      secondaryLabelOf = { it.label },
-      onSecondarySelect = onDurationFilterChange,
       sorts = titlesSortOptions,
       selectedSort = titlesSort,
       onSortSelect = onTitlesSortChange,
       modifier = Modifier.padding(horizontal = 4.dp),
+      actions = {
+        TitleWatchFilterButton(
+          selected = watchFilter,
+          typeFilter = typeFilter,
+          onSelect = onWatchFilterChange,
+        )
+        MovieDurationFilterButton(
+          selected = durationFilter,
+          onSelect = onDurationFilterChange,
+        )
+      },
     )
 
-    // 3. Result count
+    // Result count
     LibraryResultCount(
       shown = shownCount,
       total = totalCount,

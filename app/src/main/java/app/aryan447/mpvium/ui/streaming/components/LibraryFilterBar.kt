@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
+import app.aryan447.mpvium.ui.streaming.titles.TitleWatchFilter
 import app.aryan447.mpvium.ui.streaming.titles.TitlesTypeFilter
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
@@ -226,6 +228,87 @@ fun MovieDurationFilterButton(
         val isSelected = filter == selected
         DropdownMenuItem(
           text = { Text(stringResource(filter.labelRes)) },
+          leadingIcon = if (isSelected) {
+            { Icon(Icons.Filled.Check, contentDescription = null) }
+          } else {
+            null
+          },
+          onClick = {
+            expanded = false
+            if (!isSelected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onSelect(filter)
+          },
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Compact watch-state filter: eye icon button that opens the watch states
+ * in a dropdown, mirroring [SortMenuButton] and [MovieDurationFilterButton].
+ * Filled container while a non-ALL state is selected.
+ */
+@Composable
+fun TitleWatchFilterButton(
+  selected: TitleWatchFilter,
+  typeFilter: TitlesTypeFilter,
+  onSelect: (TitleWatchFilter) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val haptic = LocalHapticFeedback.current
+  var expanded by remember { mutableStateOf(false) }
+  val isFiltering = selected != TitleWatchFilter.ALL
+  val selectedLabel = if (typeFilter == TitlesTypeFilter.SHOWS && selected == TitleWatchFilter.WATCHED) {
+    "Finished"
+  } else {
+    selected.label
+  }
+
+  Box {
+    FilledTonalIconButton(
+      onClick = { expanded = true },
+      modifier = modifier.padding(start = 8.dp),
+      colors = IconButtonDefaults.filledTonalIconButtonColors(
+        containerColor = glassButtonContainerColor(
+          if (isFiltering) {
+            MaterialTheme.colorScheme.primaryContainer
+          } else {
+            MaterialTheme.colorScheme.secondaryContainer
+          },
+        ),
+        contentColor = glassButtonContentColor(
+          if (isFiltering) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+          } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+          },
+        ),
+      ),
+    ) {
+      Icon(
+        imageVector = Icons.Filled.Visibility,
+        tint = if (isFiltering) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+        contentDescription = stringResource(
+          R.string.title_watch_filter_content_description,
+          selectedLabel,
+        ),
+      )
+    }
+    DropdownMenu(
+      expanded = expanded,
+      onDismissRequest = { expanded = false },
+      containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
+    ) {
+      TitleWatchFilter.entries.forEach { filter ->
+        val isSelected = filter == selected
+        val label = if (typeFilter == TitlesTypeFilter.SHOWS && filter == TitleWatchFilter.WATCHED) {
+          "Finished"
+        } else {
+          filter.label
+        }
+        DropdownMenuItem(
+          text = { Text(label) },
           leadingIcon = if (isSelected) {
             { Icon(Icons.Filled.Check, contentDescription = null) }
           } else {
