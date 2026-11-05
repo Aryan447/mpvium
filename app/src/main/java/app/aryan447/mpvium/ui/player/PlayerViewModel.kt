@@ -1384,7 +1384,7 @@ class PlayerViewModel(
    * stuck-paused player (needs a manual play tap) is worse than a resume
    * the newer seek immediately corrects.
    */
-  fun seekToAndResume(position: Int) {
+  fun seekToAndResume(position: Int, force: Boolean = true) {
     val sequence = seekSequence.incrementAndGet()
     val cachedDuration = duration
     viewModelScope.launch(Dispatchers.IO) {
@@ -1395,7 +1395,7 @@ class PlayerViewModel(
       // freeze after the seek lands. Skip the redundant exact seek and let
       // playback resume instantly from where mpv already is.
       val live = MPVLib.getPropertyDouble("time-pos")
-      val farSeek = live == null || abs(live - position.toDouble()) > SEEK_SETTLE_TOLERANCE_SEC.toDouble()
+      val farSeek = force || live == null || abs(live - position.toDouble()) > SEEK_SETTLE_TOLERANCE_SEC.toDouble()
 
       // A landed keyframe seek jumps the audio clock (and time-pos) straight
       // to the target while the video pipeline still decodes from the
@@ -1469,14 +1469,13 @@ class PlayerViewModel(
 
     // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
     val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
-    // During active scrubbing (dragging finger), use fast keyframe seeking for butter-smooth preview updates without decoder stalls.
-    // On release or discrete seek, use precise exact seeking if enabled.
+    // During active scrubbing (dragging finger), use fast keyframe seeking for smooth preview updates.
+    // On release or discrete seek, ALWAYS perform an exact seek so playback lands on the previewed second.
     val seekMode = if (isScrubbing) {
-      "absolute+keyframes"
-    } else if (shouldUsePreciseSeeking) {
-      "absolute+exact"
+      val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
+      if (shouldUsePreciseSeeking) "absolute+exact" else "absolute+keyframes"
     } else {
-      "absolute+keyframes"
+      "absolute+exact"
     }
     // Drop superseded requests: only the latest tap/drag position
     // is allowed to reach mpv.
