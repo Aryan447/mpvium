@@ -92,6 +92,7 @@ import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
 import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
+import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilterButton
 import app.aryan447.mpvium.ui.streaming.components.MovieListRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
@@ -495,7 +496,7 @@ private fun MoviesGridContent(
         searchQuery.isNotBlank() -> "No movies found"
         filteringByWatchState && filteringByDuration -> "No matching movies"
         filteringByWatchState -> "No ${movieFilter.label.lowercase()} movies"
-        filteringByDuration -> "No movies (${movieDurationFilter.label})"
+        filteringByDuration -> "No movies (${stringResource(movieDurationFilter.labelRes)})"
         else -> "No movies detected"
       },
       message = when {
@@ -553,15 +554,16 @@ private fun MoviesGridContent(
                 selected = movieFilter,
                 labelOf = { it.label },
                 onSelect = onMovieFilterChange,
-                secondaryOptions = MovieDurationFilter.entries,
-                secondarySelected = movieDurationFilter,
-                secondaryLabelOf = { it.label },
-                onSecondarySelect = onMovieDurationFilterChange,
                 sorts = movieSortOptions,
                 selectedSort = movieSort,
                 onSortSelect = onMovieSortChange,
                 modifier = Modifier.padding(horizontal = 4.dp),
-              )
+              ) {
+                MovieDurationFilterButton(
+                  selected = movieDurationFilter,
+                  onSelect = onMovieDurationFilterChange,
+                )
+              }
               LibraryResultCount(
                 shown = filteredMovies.size,
                 total = totalMovieCount,
@@ -596,15 +598,16 @@ private fun MoviesGridContent(
                 selected = movieFilter,
                 labelOf = { it.label },
                 onSelect = onMovieFilterChange,
-                secondaryOptions = MovieDurationFilter.entries,
-                secondarySelected = movieDurationFilter,
-                secondaryLabelOf = { it.label },
-                onSecondarySelect = onMovieDurationFilterChange,
                 sorts = movieSortOptions,
                 selectedSort = movieSort,
                 onSortSelect = onMovieSortChange,
                 modifier = Modifier.padding(horizontal = 4.dp),
-              )
+              ) {
+                MovieDurationFilterButton(
+                  selected = movieDurationFilter,
+                  onSelect = onMovieDurationFilterChange,
+                )
+              }
               LibraryResultCount(
                 shown = filteredMovies.size,
                 total = totalMovieCount,

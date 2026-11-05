@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.streaming.components
 
+import app.aryan447.mpvium.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -15,10 +16,10 @@ class MovieDurationFilterTest {
   @Test
   fun enumEntriesAndLabels_matchSpecification() {
     assertEquals(4, MovieDurationFilter.entries.size)
-    assertEquals("Any length", MovieDurationFilter.ALL.label)
-    assertEquals("30 min+", MovieDurationFilter.AT_LEAST_30M.label)
-    assertEquals("1 h+", MovieDurationFilter.AT_LEAST_1H.label)
-    assertEquals("1.5 h+", MovieDurationFilter.AT_LEAST_1H30M.label)
+    assertEquals(R.string.movie_duration_filter_all, MovieDurationFilter.ALL.labelRes)
+    assertEquals(R.string.movie_duration_filter_30m, MovieDurationFilter.AT_LEAST_30M.labelRes)
+    assertEquals(R.string.movie_duration_filter_1h, MovieDurationFilter.AT_LEAST_1H.labelRes)
+    assertEquals(R.string.movie_duration_filter_1h30m, MovieDurationFilter.AT_LEAST_1H30M.labelRes)
   }
 
   @Test
