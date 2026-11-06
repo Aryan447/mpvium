@@ -2,6 +2,7 @@
 
 ### Added
 
+- Cinema player layout option (`PlayerLayout.CINEMA`, opt-in off by default under Settings → Appearance → Player Layout): a flat, gesture-first player layout featuring borderless glyphs over subtle top and bottom scrim gradients, an edge-to-edge 3 dp seekbar pinned to the bottom of the screen, single-line title top-left, compact monospace timecode right-aligned above the seekbar, fast 2.5-second auto-hide timeout, and full RTL mirroring while preserving custom per-region button arrangements.
 - Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
 - Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
 - Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
