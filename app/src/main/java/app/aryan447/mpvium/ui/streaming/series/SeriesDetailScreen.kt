@@ -98,6 +98,9 @@ import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.streaming.components.EditMetadataSheet
 import app.aryan447.mpvium.ui.streaming.components.StreamingImage
+import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.AuraThemeManager
+import app.aryan447.mpvium.ui.theme.LocalAppTheme
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
@@ -140,6 +143,19 @@ data class SeriesDetailScreen(
     var markAsEpisode by remember { mutableStateOf<LocalEpisode?>(null) }
     // Show-level Mark as: applies to all episodes (e.g. mark whole show finished)
     var markShowAsOpen by remember { mutableStateOf(false) }
+
+    val currentTheme = LocalAppTheme.current
+    val auraArtwork = series?.posterUrl ?: series?.backdropUrl
+    DisposableEffect(auraArtwork, currentTheme) {
+      if (currentTheme == AppTheme.Aura && !auraArtwork.isNullOrBlank()) {
+        AuraThemeManager.setPreviewArtwork(auraArtwork)
+      }
+      onDispose {
+        if (currentTheme == AppTheme.Aura) {
+          AuraThemeManager.clearPreviewArtwork(auraArtwork)
+        }
+      }
+    }
 
     LaunchedEffect(seriesId, reloadKey) {
       withContext(Dispatchers.IO) {

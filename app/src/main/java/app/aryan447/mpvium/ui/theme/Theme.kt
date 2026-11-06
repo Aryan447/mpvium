@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.view.View
 import androidx.annotation.StringRes
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -24,6 +25,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,8 +48,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.drawToBitmap
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
+import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.compose.koinInject
 import kotlin.math.hypot
 
@@ -223,6 +228,74 @@ fun MpviumTheme(content: @Composable () -> Unit) {
         DarkMode.System -> darkTheme
     }
 
+    val auraPalette = if (appTheme == AppTheme.Aura) {
+        val libraryIndexRepository = koinInject<LibraryIndexRepository>()
+        val metadataRepository = koinInject<StreamingMetadataRepository>()
+        LaunchedEffect(Unit) {
+            AuraThemeManager.init(context)
+            libraryIndexRepository.library.collectLatest { detected ->
+                val firstItem = detected?.continueWatching?.firstOrNull()
+                if (firstItem != null) {
+                    val posterUrl = if (firstItem.isSeries) {
+                        firstItem.seriesId?.let { id ->
+                            metadataRepository.getCachedSeriesMetadata(id)?.posterUrl
+                        } ?: detected.series.find { it.id == firstItem.seriesId }?.let { s ->
+                            metadataRepository.applyCachedSeries(s).posterUrl
+                        }
+                    } else {
+                        detected.movies.find { it.video.id == firstItem.video.id }?.let { m ->
+                            metadataRepository.applyCachedMovie(m).posterUrl
+                        }
+                    } ?: firstItem.posterUrl ?: firstItem.backdropUrl
+                    AuraThemeManager.setContinueWatchingArtwork(posterUrl)
+                } else {
+                    AuraThemeManager.setContinueWatchingArtwork(null)
+                }
+            }
+        }
+        val rawPalette by AuraThemeManager.currentPalette.collectAsState()
+        val animatedPrimaryLight by animateColorAsState(
+            targetValue = rawPalette.primaryLight,
+            animationSpec = tween(900, easing = FastOutSlowInEasing),
+            label = "auraPrimaryLight",
+        )
+        val animatedPrimaryDark by animateColorAsState(
+            targetValue = rawPalette.primaryDark,
+            animationSpec = tween(900, easing = FastOutSlowInEasing),
+            label = "auraPrimaryDark",
+        )
+        val animatedSecondaryLight by animateColorAsState(
+            targetValue = rawPalette.secondaryLight,
+            animationSpec = tween(900, easing = FastOutSlowInEasing),
+            label = "auraSecondaryLight",
+        )
+        val animatedSecondaryDark by animateColorAsState(
+            targetValue = rawPalette.secondaryDark,
+            animationSpec = tween(900, easing = FastOutSlowInEasing),
+            label = "auraSecondaryDark",
+        )
+        val animatedTertiaryLight by animateColorAsState(
+            targetValue = rawPalette.tertiaryLight,
+            animationSpec = tween(900, easing = FastOutSlowInEasing),
+            label = "auraTertiaryLight",
+        )
+        val animatedTertiaryDark by animateColorAsState(
+            targetValue = rawPalette.tertiaryDark,
+            animationSpec = tween(900, easing = FastOutSlowInEasing),
+            label = "auraTertiaryDark",
+        )
+        AuraPalette(
+            primaryLight = animatedPrimaryLight,
+            primaryDark = animatedPrimaryDark,
+            secondaryLight = animatedSecondaryLight,
+            secondaryDark = animatedSecondaryDark,
+            tertiaryLight = animatedTertiaryLight,
+            tertiaryDark = animatedTertiaryDark,
+        )
+    } else {
+        AuraFallbackPalette
+    }
+
     val colorScheme = when {
         appTheme.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             when {
@@ -241,6 +314,31 @@ fun MpviumTheme(content: @Composable () -> Unit) {
                 }
                 useDarkTheme -> dynamicDarkColorScheme(context)
                 else -> dynamicLightColorScheme(context)
+            }
+        }
+        appTheme == AppTheme.Aura -> {
+            val lightScheme = buildLightColorScheme(
+                primaryLight = auraPalette.primaryLight,
+                primaryDark = auraPalette.primaryDark,
+                secondaryLight = auraPalette.secondaryLight,
+                tertiaryLight = auraPalette.tertiaryLight,
+                backgroundLight = appTheme.backgroundLight,
+                backgroundDark = appTheme.backgroundDark,
+            )
+            val darkScheme = buildDarkColorScheme(
+                primaryLight = auraPalette.primaryLight,
+                primaryDark = auraPalette.primaryDark,
+                secondaryLight = auraPalette.secondaryLight,
+                secondaryDark = auraPalette.secondaryDark,
+                tertiaryLight = auraPalette.tertiaryLight,
+                tertiaryDark = auraPalette.tertiaryDark,
+                backgroundLight = appTheme.backgroundLight,
+                backgroundDark = appTheme.backgroundDark,
+            )
+            when {
+                useDarkTheme && amoledMode -> buildAmoledColorScheme(darkScheme, auraPalette.primaryDark)
+                useDarkTheme -> darkScheme
+                else -> lightScheme
             }
         }
         useDarkTheme && amoledMode -> appTheme.getAmoledColorScheme()
