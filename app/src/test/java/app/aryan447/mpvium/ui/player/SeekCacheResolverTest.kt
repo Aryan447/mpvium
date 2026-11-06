@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.player
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -274,5 +275,67 @@ class SeekCacheResolverTest {
   fun parseDemuxerCacheRanges_handlesNullAndEmpty() {
     val ranges = SeekCacheResolver.parseDemuxerCacheRanges(null)
     assertTrue(ranges.isEmpty())
+  }
+
+  // ==================== Cache poll gate ====================
+  // The seekbar only republishes ranges when an edge moved more than the epsilon.
+  // These cover the gate used by PlayerViewModel.pollDemuxerCache().
+
+  @Test
+  fun hasCacheRangesChanged_identicalRanges_doesNotRepublish() {
+    val ranges = listOf(
+      SeekCacheResolver.SeekableRange(0f, 30f),
+      SeekCacheResolver.SeekableRange(60f, 90f),
+    )
+    assertFalse(SeekCacheResolver.hasCacheRangesChanged(ranges, ranges.toList()))
+  }
+
+  @Test
+  fun hasCacheRangesChanged_subEpsilonDrift_isIgnored() {
+    val current = listOf(SeekCacheResolver.SeekableRange(0f, 30f))
+    val polled = listOf(SeekCacheResolver.SeekableRange(0.05f, 30.15f))
+    assertFalse(SeekCacheResolver.hasCacheRangesChanged(current, polled))
+  }
+
+  @Test
+  fun hasCacheRangesChanged_edgeBeyondEpsilon_republishes() {
+    val current = listOf(SeekCacheResolver.SeekableRange(0f, 30f))
+    assertTrue(
+      SeekCacheResolver.hasCacheRangesChanged(
+        current,
+        listOf(SeekCacheResolver.SeekableRange(0f, 31f)),
+      ),
+    )
+    assertTrue(
+      SeekCacheResolver.hasCacheRangesChanged(
+        current,
+        listOf(SeekCacheResolver.SeekableRange(0.5f, 30f)),
+      ),
+    )
+  }
+
+  @Test
+  fun hasCacheRangesChanged_rangeCountDiffers_republishes() {
+    val current = listOf(SeekCacheResolver.SeekableRange(0f, 30f))
+    assertTrue(SeekCacheResolver.hasCacheRangesChanged(current, emptyList()))
+    assertTrue(
+      SeekCacheResolver.hasCacheRangesChanged(
+        current,
+        listOf(
+          SeekCacheResolver.SeekableRange(0f, 30f),
+          SeekCacheResolver.SeekableRange(40f, 50f),
+        ),
+      ),
+    )
+  }
+
+  @Test
+  fun hasCacheRangesChanged_bothEmpty_doesNotRepublish() {
+    assertFalse(SeekCacheResolver.hasCacheRangesChanged(emptyList(), emptyList()))
+  }
+
+  @Test
+  fun cacheRangeEpsilon_matchesDocumentedThreshold() {
+    assertEquals(0.2f, SeekCacheResolver.CACHE_RANGE_EPSILON, 0.0001f)
   }
 }

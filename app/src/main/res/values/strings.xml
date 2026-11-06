@@ -23,6 +23,8 @@
   <string name="pref_appearance_show_bottom_nav_labels_title">Show tab labels</string>
   <string name="pref_appearance_show_bottom_nav_labels_summary">Show text under bottom navigation icons</string>
   <string name="pref_appearance_bottom_nav_tabs_summary">Choose which tabs appear in the bottom bar</string>
+  <string name="pref_appearance_unified_titles_tab_title">Unified Titles tab</string>
+  <string name="pref_appearance_unified_titles_tab_summary">Combine TV Shows and Movies into a single Titles tab</string>
   <!-- Onboarding -->
   <string name="onboarding_skip">Skip</string>
   <string name="onboarding_next">Next</string>
@@ -102,6 +104,7 @@
   <!-- Theme names -->
   <string name="theme_default">Default</string>
   <string name="theme_dynamic">Dynamic</string>
+  <string name="theme_aura">Aura</string>
   <string name="theme_cinema">Cinema</string>
   <string name="theme_noir_cinema">Noir Cinema</string>
   <string name="theme_glass">Glass</string>
@@ -676,10 +679,11 @@
   <string name="mark_as_updated">Watch status updated</string>
   <string name="mark_as_failed">Failed to update watch status</string>
   <!-- Movie duration filters -->
-  <string name="movie_duration_filter_all">All</string>
+  <string name="movie_duration_filter_all">Any length</string>
   <string name="movie_duration_filter_30m">30 min+</string>
   <string name="movie_duration_filter_1h">1 h+</string>
   <string name="movie_duration_filter_1h30m">1.5 h+</string>
+  <string name="movie_duration_filter_content_description">Duration filter: %1$s</string>
   <!-- Layout mode toggle -->
   <string name="action_switch_to_grid">Switch to grid</string>
   <string name="action_switch_to_list">Switch to list</string>
@@ -692,4 +696,32 @@
   <string name="metadata_remove_poster">Remove poster</string>
   <string name="metadata_reset_automatic">Reset to automatic</string>
   <string name="metadata_save">Save</string>
+  <!-- Titles tab -->
+  <string name="tab_titles">Titles</string>
+  <string name="search">Search</string>
+  <string name="titles_search_placeholder">Search titles…</string>
+  <string name="titles_filter_all">All</string>
+  <string name="titles_filter_shows">TV Shows</string>
+  <string name="titles_filter_movies">Movies</string>
+  <string name="titles_empty_no_titles_title">No titles detected</string>
+  <string name="titles_empty_no_titles_message">Add movies or TV shows to your device storage to see them here</string>
+  <string name="titles_empty_no_shows_title">No TV shows detected</string>
+  <string name="titles_empty_no_shows_message">Add TV shows with S01E01 or season folders to see them here</string>
+  <string name="titles_empty_no_movies_title">No movies detected</string>
+  <string name="titles_empty_no_movies_message">Add movie files to your device storage to see them here</string>
+  <string name="titles_empty_search_no_titles_title">No titles found</string>
+  <string name="titles_empty_search_no_titles_message">No titles match \'%1$s\'</string>
+  <string name="titles_empty_search_no_shows_title">No TV shows found</string>
+  <string name="titles_empty_search_no_shows_message">No TV shows match \'%1$s\'</string>
+  <string name="titles_empty_search_no_movies_title">No movies found</string>
+  <string name="titles_empty_search_no_movies_message">No movies match \'%1$s\'</string>
+  <string name="titles_empty_filter_no_titles">No matching titles</string>
+  <string name="titles_empty_filter_no_shows">No matching TV shows</string>
+  <string name="titles_empty_filter_no_movies">No matching movies</string>
+  <string name="titles_empty_filter_message">Try a different filter</string>
+  <string name="titles_empty_filter_watch_state_message">Try a different watch-state filter</string>
+  <string name="titles_empty_action_show_all">Show all</string>
+  <string name="titles_pane_select_title">Select a title</string>
+  <string name="titles_pane_select_message">Pick a show or movie to see details, actions and matches here</string>
+  <string name="title_watch_filter_content_description">Watch filter: %1$s</string>
 </resources>

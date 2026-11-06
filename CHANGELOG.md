@@ -3,11 +3,15 @@
 ### Added
 
 - Cinema player layout option (`PlayerLayout.CINEMA`, opt-in off by default under Settings → Appearance → Player Layout): a flat, gesture-first player layout featuring borderless glyphs over subtle top and bottom scrim gradients, an edge-to-edge 3 dp seekbar pinned to the bottom of the screen, single-line title top-left, compact monospace timecode right-aligned above the seekbar, fast 2.5-second auto-hide timeout, and full RTL mirroring while preserving custom per-region button arrangements.
+- Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
+- Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
+- Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
+- Aura theme: a built-in content-driven theme positioned third in the theme picker (Default, Dynamic, Aura, Cinema, …) whose accents and ambient glow dynamically adapt to the poster of recently played content in Continue Watching, previewing titles while browsing series and movie detail screens, and gracefully falling back to a neutral built-in identity when contrast or chroma checks require it.
 - Opt-in "Lean seek cache" setting (Settings → Advanced) that deepens the demuxer cache around the playhead for faster seeking on local and network sources alike. Automatically sizes forward and backward byte budgets according to memory class and bitrate, clamps to conservative 96 MB forward / 128 MB backward ceilings, and displays seekable cache ranges behind the seekbar rail when enabled.
 - Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
 - Automatic vs manual library scanning mode in Settings → Folders.
 - Promoted Playlists to a first-class bottom-navigation tab (enabled by default) with an empty-state create action and direct access from the main navigation bar.
-- Movies: duration filter chips (30 min+, 1 h+, 1.5 h+) beside the watch-state filter to quickly filter movies by length.
+- Movies: length filtering is a clock button with a dropdown next to the sort control, replacing the second chip row above the grid; its menu offers Any length, 30 min+, 1 h+, and 1.5 h+, and the button fills while a threshold is active.
 - Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
 - Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
 - Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.
@@ -22,6 +26,7 @@
 
 ### Fixed
 
+- Player: fixed a launch crash (`NullPointerException` inside `Flow.combine`) when opening the player while the lean seek cache is enabled, caused by the visibility observer reading player state before it was initialized.
 - Adding a second subtitle in the same language from online search now saves a separate file and appears as its own external track, instead of overwriting the first download and being silently ignored.
 - Online subtitle rows show a per-result progress spinner and ignore repeat taps while that result is downloading.
 - Playback state persistence: writes are now application-scoped so activity destruction or force-stop cannot drop the final write; saves on pause, stop, track changes, task removal, and memory trim; and guards against overwriting good positions with 0.
@@ -38,6 +43,8 @@
 - Title vs release year: movies with numbers in their title (`1917 (2019)`, `2012 (2009)`, `Blade Runner 2049 (2017)`) retain the number in the title and take the year from parentheses; bare years are never returned as titles.
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
+- Fixed horizontal swipe-to-seek keyframe snapping and eliminated post-seek landing delay.
+- Fixed post-seek playback freeze on heavy HEVC files when using hardware decoding.
 
 ## V1.3.0
 

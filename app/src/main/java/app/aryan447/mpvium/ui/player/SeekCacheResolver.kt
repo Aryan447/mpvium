@@ -3,6 +3,7 @@ package app.aryan447.mpvium.ui.player
 import android.content.Context
 import app.aryan447.mpvium.R
 import `is`.xyz.mpv.MPVNode
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -310,6 +311,33 @@ object SeekCacheResolver {
       mins > 0 -> "$mins min"
       else -> "$secs s"
     }
+  }
+
+  /**
+   * Epsilon for demuxer cache range comparisons. Cache edges drift by a few
+   * milliseconds on every poll; publishing those updates would recompose the
+   * seekbar at the poll rate. 200 ms is below perception at seekbar scale.
+   */
+  const val CACHE_RANGE_EPSILON = 0.2f
+
+  /**
+   * True when [newRanges] differ from [current] by more than [epsilon] seconds on
+   * any edge, so the UI only recomposes on meaningful cache growth.
+   */
+  fun hasCacheRangesChanged(
+    current: List<SeekableRange>,
+    newRanges: List<SeekableRange>,
+    epsilon: Float = CACHE_RANGE_EPSILON,
+  ): Boolean {
+    if (current.size != newRanges.size) return true
+    for (i in current.indices) {
+      val c = current[i]
+      val n = newRanges[i]
+      if (abs(c.start - n.start) > epsilon || abs(c.end - n.end) > epsilon) {
+        return true
+      }
+    }
+    return false
   }
 
   /**

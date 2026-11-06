@@ -16,6 +16,7 @@ class AppearancePreferences(
   val playerLayout = preferenceStore.getEnum("player_layout", PlayerLayout.GLASS_PILL)
   val pillNavigationBar = preferenceStore.getBoolean("pill_navigation_bar", true)
   val showBottomNavLabels = preferenceStore.getBoolean("show_bottom_nav_labels", true)
+  val unifiedTitlesTab = preferenceStore.getBoolean("unified_titles_tab", true)
   val bottomNavTabs =
     preferenceStore.getStringSet(
       "bottom_nav_tabs",

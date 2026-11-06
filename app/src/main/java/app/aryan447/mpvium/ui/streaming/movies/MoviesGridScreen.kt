@@ -83,7 +83,6 @@ import app.aryan447.mpvium.preferences.MovieSort
 import app.aryan447.mpvium.preferences.StreamingPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
-import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.components.MediaLayoutToggle
@@ -93,6 +92,7 @@ import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
 import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
+import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilterButton
 import app.aryan447.mpvium.ui.streaming.components.MovieListRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
@@ -496,7 +496,7 @@ private fun MoviesGridContent(
         searchQuery.isNotBlank() -> "No movies found"
         filteringByWatchState && filteringByDuration -> "No matching movies"
         filteringByWatchState -> "No ${movieFilter.label.lowercase()} movies"
-        filteringByDuration -> "No movies (${movieDurationFilter.label})"
+        filteringByDuration -> "No movies (${stringResource(movieDurationFilter.labelRes)})"
         else -> "No movies detected"
       },
       message = when {
@@ -558,16 +558,12 @@ private fun MoviesGridContent(
                 selectedSort = movieSort,
                 onSortSelect = onMovieSortChange,
                 modifier = Modifier.padding(horizontal = 4.dp),
-              )
-              ExpressiveChoiceRow(
-                options = MovieDurationFilter.entries,
-                selected = movieDurationFilter,
-                labelOf = { it.label },
-                onSelect = onMovieDurationFilterChange,
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 4.dp),
-              )
+              ) {
+                MovieDurationFilterButton(
+                  selected = movieDurationFilter,
+                  onSelect = onMovieDurationFilterChange,
+                )
+              }
               LibraryResultCount(
                 shown = filteredMovies.size,
                 total = totalMovieCount,
@@ -606,16 +602,12 @@ private fun MoviesGridContent(
                 selectedSort = movieSort,
                 onSortSelect = onMovieSortChange,
                 modifier = Modifier.padding(horizontal = 4.dp),
-              )
-              ExpressiveChoiceRow(
-                options = MovieDurationFilter.entries,
-                selected = movieDurationFilter,
-                labelOf = { it.label },
-                onSelect = onMovieDurationFilterChange,
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 4.dp),
-              )
+              ) {
+                MovieDurationFilterButton(
+                  selected = movieDurationFilter,
+                  onSelect = onMovieDurationFilterChange,
+                )
+              }
               LibraryResultCount(
                 shown = filteredMovies.size,
                 total = totalMovieCount,
