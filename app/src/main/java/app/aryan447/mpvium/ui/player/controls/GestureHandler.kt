@@ -1692,21 +1692,8 @@ fun GestureHandler(
             } else {
               viewModel.seekTo(target, isScrubbing = false, exact = true)
             }
-
-            // Hold the swipe preview until mpv confirms the landing (bounded
-            // wait) instead of a fixed delay: clearing too early would expose
-            // the stale pre-seek position underneath and snap the seekbar
-            // backward, the same race the seekbar settle guard prevents.
-            coroutineScope.launch {
-              val deadline = System.currentTimeMillis() + 2000L
-              while (System.currentTimeMillis() < deadline) {
-                val live = MPVLib.getPropertyDouble("time-pos")?.toFloat()
-                if (live != null && abs(live - target) <= 1.5f) break
-                delay(50)
-              }
-              viewModel.playerUpdate.update { PlayerUpdates.None }
-              viewModel.hideSeekBar()
-            }
+            viewModel.playerUpdate.update { PlayerUpdates.None }
+            viewModel.hideSeekBar()
           }
         }
       },

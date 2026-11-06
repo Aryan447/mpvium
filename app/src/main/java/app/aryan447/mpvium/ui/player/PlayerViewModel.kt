@@ -426,6 +426,8 @@ class PlayerViewModel(
           // Update hr-seek settings dynamically
           MPVLib.setPropertyString("hr-seek", if (shouldUsePreciseSeeking) "yes" else "no")
           MPVLib.setPropertyString("hr-seek-framedrop", "yes")
+          MPVLib.setPropertyString("hr-seek-demuxer-offset", "0")
+          MPVLib.setPropertyString("framedrop", "vo")
         }
       }
     }
@@ -1421,8 +1423,7 @@ class PlayerViewModel(
     // 3. Seekbar tap -> fast keyframe by default (or exact if precise seeking is enabled in settings)
     val seekMode = when {
       isScrubbing -> "absolute+keyframes"
-      forceExact -> "absolute+exact"
-      shouldUsePreciseSeeking -> "absolute+exact"
+      forceExact || shouldUsePreciseSeeking -> "absolute"
       else -> "absolute+keyframes"
     }
 

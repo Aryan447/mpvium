@@ -39,6 +39,7 @@
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
 - Fixed horizontal swipe-to-seek keyframe snapping and eliminated post-seek landing delay.
+- Fixed post-seek playback freeze on heavy HEVC files when using hardware decoding.
 
 ## V1.3.0
 
