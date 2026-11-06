@@ -62,7 +62,15 @@ object SearchablePreferences {
                 key = "appearance.bottom_nav_tabs",
                 titleRes = R.string.pref_appearance_category_bottom_nav,
                 summaryRes = R.string.pref_appearance_bottom_nav_tabs_summary,
-                keywords = listOf("bottom", "navigation", "tabs", "home", "shows", "movies", "folders", "library", "hide", "remove", "customize"),
+                keywords = listOf("bottom", "navigation", "tabs", "home", "titles", "shows", "movies", "folders", "library", "hide", "remove", "customize"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
+            add(SearchablePreference(
+                key = "appearance.unified_titles_tab",
+                titleRes = R.string.pref_appearance_unified_titles_tab_title,
+                summaryRes = R.string.pref_appearance_unified_titles_tab_summary,
+                keywords = listOf("titles", "shows", "movies", "unified", "tabs", "bottom", "navigation"),
                 category = "Appearance",
                 screen = AppearancePreferencesScreen,
             ))
