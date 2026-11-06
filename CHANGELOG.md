@@ -5,6 +5,7 @@
 - Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
 - Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
 - Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
+- Aura theme: a built-in content-driven theme positioned third in the theme picker (Default, Dynamic, Aura, Cinema, …) whose accents and ambient glow dynamically adapt to the poster of recently played content in Continue Watching, previewing titles while browsing series and movie detail screens, and gracefully falling back to a neutral built-in identity when contrast or chroma checks require it.
 - Opt-in "Lean seek cache" setting (Settings → Advanced) that deepens the demuxer cache around the playhead for faster seeking on local and network sources alike. Automatically sizes forward and backward byte budgets according to memory class and bitrate, clamps to conservative 96 MB forward / 128 MB backward ceilings, and displays seekable cache ranges behind the seekbar rail when enabled.
 - Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
 - Automatic vs manual library scanning mode in Settings → Folders.
@@ -41,7 +42,8 @@
 - Title vs release year: movies with numbers in their title (`1917 (2019)`, `2012 (2009)`, `Blade Runner 2049 (2017)`) retain the number in the title and take the year from parentheses; bare years are never returned as titles.
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
-- Fixed horizontal swipe-to-seek snapping to preceding keyframe instead of landing on the exact previewed timestamp.
+- Fixed horizontal swipe-to-seek keyframe snapping and eliminated post-seek landing delay.
+- Fixed post-seek playback freeze on heavy HEVC files when using hardware decoding.
 
 ## V1.3.0
 

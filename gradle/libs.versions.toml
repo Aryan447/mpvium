@@ -19,9 +19,11 @@ haze = "1.7.3"
 material = "1.14.0"
 preferenceKtx = "1.2.1"
 constraintlayout = "2.2.2"
+palette = "1.0.0"
 junit = "4.13.2"
 
 [libraries]
+androidx-palette = { module = "androidx.palette:palette-ktx", version.ref = "palette" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 commons-net = { module = "commons-net:commons-net", version.ref = "commonsNet" }

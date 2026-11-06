@@ -104,6 +104,7 @@
   <!-- Theme names -->
   <string name="theme_default">Default</string>
   <string name="theme_dynamic">Dynamic</string>
+  <string name="theme_aura">Aura</string>
   <string name="theme_cinema">Cinema</string>
   <string name="theme_noir_cinema">Noir Cinema</string>
   <string name="theme_glass">Glass</string>
