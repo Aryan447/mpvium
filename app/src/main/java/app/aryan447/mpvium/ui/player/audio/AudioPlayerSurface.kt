@@ -80,7 +80,7 @@ import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.RepeatMode
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassRimBrush
-import is.xyz.mpv.MPVLib
+import `is`.xyz.mpv.MPVLib
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
