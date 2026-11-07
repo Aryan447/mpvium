@@ -125,15 +125,22 @@ data class SeriesDetailScreen(
     val paneBack = LocalDetailPaneBack.current
     val libraryIndexRepository = koinInject<LibraryIndexRepository>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
+    val customSeriesRepository = koinInject<app.aryan447.mpvium.database.repository.CustomSeriesRepository>()
     val artworkStore = koinInject<StreamingArtworkStore>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val coroutineScope = rememberCoroutineScope()
+
+    val isCustomSeries = remember(seriesId) { seriesId.startsWith("custom:") }
+    val customSeriesId = remember(seriesId, isCustomSeries) {
+      if (isCustomSeries) seriesId.removePrefix("custom:").toIntOrNull() else null
+    }
 
     var series by remember { mutableStateOf<LocalSeries?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedSeason by remember { mutableIntStateOf(1) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var pendingDeletion by remember { mutableStateOf<Pair<String, List<Video>>?>(null) }
+    var showDeleteCustomSeriesDialog by remember { mutableStateOf(false) }
     var showMatchPicker by remember { mutableStateOf(false) }
     var showEditMetadataSheet by remember { mutableStateOf(false) }
     var matchOptions by remember { mutableStateOf<List<WyzieTmdbResult>>(emptyList()) }
@@ -167,7 +174,11 @@ data class SeriesDetailScreen(
           isLoading = false
 
           // Enrich in background; manual reload (reloadKey > 0) forces a re-fetch
-          val enriched = metadataRepository.enrichSeries(found, forceRefresh = reloadKey > 0)
+          val enriched = if (isCustomSeries) {
+            metadataRepository.applyCachedSeries(found)
+          } else {
+            metadataRepository.enrichSeries(found, forceRefresh = reloadKey > 0)
+          }
           series = enriched
         } else {
           isLoading = false
@@ -185,7 +196,11 @@ data class SeriesDetailScreen(
       coroutineScope.launch(Dispatchers.IO) {
         val detected = libraryIndexRepository.getLibrary()
         val found = detected.series.find { it.id == seriesId } ?: return@launch
-        val enriched = metadataRepository.enrichSeries(found, forceRefresh = false)
+        val enriched = if (isCustomSeries) {
+          metadataRepository.applyCachedSeries(found)
+        } else {
+          metadataRepository.enrichSeries(found, forceRefresh = false)
+        }
         withContext(Dispatchers.Main) {
           series = enriched
           selectedSeason =
@@ -341,19 +356,27 @@ data class SeriesDetailScreen(
                   .padding(top = 40.dp, end = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
               ) {
-                IconButton(
-                  onClick = {
-                    showMatchPicker = true
-                  },
-                  modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f)),
-                ) {
-                  Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
+                if (!isCustomSeries) {
+                  IconButton(
+                    onClick = {
+                      showMatchPicker = true
+                    },
+                    modifier = Modifier
+                      .size(40.dp)
+                      .clip(CircleShape)
+                      .background(Color.Black.copy(alpha = 0.5f)),
+                  ) {
+                    Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
+                  }
                 }
                 IconButton(
-                  onClick = { showEditMetadataSheet = true },
+                  onClick = {
+                    if (isCustomSeries && customSeriesId != null) {
+                      backstack.add(CustomSeriesBuilderScreen(seriesId = customSeriesId))
+                    } else {
+                      showEditMetadataSheet = true
+                    }
+                  },
                   modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
@@ -361,7 +384,7 @@ data class SeriesDetailScreen(
                 ) {
                   Icon(
                     Icons.Filled.Edit,
-                    contentDescription = stringResource(R.string.metadata_edit_title),
+                    contentDescription = stringResource(if (isCustomSeries) R.string.edit_series else R.string.metadata_edit_title),
                     tint = Color.White,
                   )
                 }
@@ -376,14 +399,22 @@ data class SeriesDetailScreen(
                 }
                 IconButton(
                   onClick = {
-                    pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
+                    if (isCustomSeries) {
+                      showDeleteCustomSeriesDialog = true
+                    } else {
+                      pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
+                    }
                   },
                   modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.5f)),
                 ) {
-                  Icon(Icons.Filled.Delete, contentDescription = "Delete TV show", tint = Color.White)
+                  Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = if (isCustomSeries) stringResource(R.string.delete_series_action) else "Delete TV show",
+                    tint = Color.White,
+                  )
                 }
               }
             }
@@ -641,6 +672,61 @@ data class SeriesDetailScreen(
         itemType = if (videos.size == 1) "episode" else "show",
         itemCount = videos.size,
         itemNames = if (videos.size == 1) listOf(name) else emptyList(),
+      )
+    }
+
+    if (showDeleteCustomSeriesDialog && customSeriesId != null) {
+      val seriesTitle = series?.title.orEmpty()
+      AlertDialog(
+        onDismissRequest = { showDeleteCustomSeriesDialog = false },
+        containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
+        title = {
+          Text(
+            text = stringResource(R.string.delete_custom_series_title),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+          )
+        },
+        text = {
+          Text(
+            text = stringResource(R.string.delete_custom_series_message, seriesTitle),
+            style = MaterialTheme.typography.bodyMedium,
+          )
+        },
+        confirmButton = {
+          Button(
+            onClick = {
+              showDeleteCustomSeriesDialog = false
+              coroutineScope.launch {
+                withContext(Dispatchers.IO) {
+                  customSeriesRepository.deleteSeries(customSeriesId)
+                  MediaLibraryEvents.notifyChanged()
+                }
+                withContext(Dispatchers.Main) {
+                  if (paneBack != null) {
+                    paneBack()
+                  } else if (backstack.size > 1) {
+                    backstack.removeLastOrNull()
+                  } else {
+                    (context as? android.app.Activity)?.finish()
+                  }
+                }
+              }
+            },
+            colors = ButtonDefaults.buttonColors(
+              containerColor = MaterialTheme.colorScheme.error,
+              contentColor = MaterialTheme.colorScheme.onError,
+            ),
+          ) {
+            Text(stringResource(R.string.delete_series_action))
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = { showDeleteCustomSeriesDialog = false }) {
+            Text(stringResource(R.string.generic_cancel))
+          }
+        },
+        shape = MaterialTheme.shapes.extraLarge,
       )
     }
 

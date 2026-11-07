@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tv
@@ -306,6 +307,12 @@ object SeriesGridScreen : Screen {
               IconButton(onClick = { isSearching = true }) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
+              IconButton(onClick = { backstack.add(CustomSeriesBuilderScreen()) }) {
+                Icon(
+                  Icons.Filled.Add,
+                  contentDescription = stringResource(R.string.create_series),
+                )
+              }
               MediaLayoutToggle(
                 mode = layoutShows,
                 onToggle = {
@@ -448,7 +455,7 @@ private fun SeriesGridContent(
         searchQuery.isNotBlank() -> "No TV shows match '$searchQuery'"
         filteringByWatchState -> "Try a different watch-state filter"
         libraryFiltered -> stringResource(R.string.library_sources_banner_message)
-        else -> "Add TV shows with S01E01 or season folders to see them here"
+        else -> stringResource(R.string.custom_series_empty_shows_help)
       },
       modifier = Modifier
         .fillMaxSize()
@@ -457,13 +464,13 @@ private fun SeriesGridContent(
         searchQuery.isNotBlank() -> "Clear search"
         filteringByWatchState -> "Show all"
         libraryFiltered -> stringResource(R.string.library_sources_empty_action)
-        else -> null
+        else -> stringResource(R.string.create_series)
       },
       onAction = when {
         searchQuery.isNotBlank() -> onClearSearch
         filteringByWatchState -> ({ onSeriesFilterChange(SeriesWatchFilter.ALL) })
         libraryFiltered -> onManageLibrarySources
-        else -> null
+        else -> ({ backstack.add(CustomSeriesBuilderScreen()) })
       },
     )
   } else {

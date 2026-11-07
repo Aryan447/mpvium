@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -64,6 +65,8 @@ fun BrowserBottomBar(
   showRename: Boolean = true,
   showDelete: Boolean = true,
   showAddToPlaylist: Boolean = true,
+  onAddToSeriesClick: (() -> Unit)? = null,
+  showAddToSeries: Boolean = true,
   hazeState: HazeState? = null,
   hazeStyle: HazeStyle? = null,
 ) {
@@ -182,6 +185,28 @@ fun BrowserBottomBar(
             contentDescription = "Add to Playlist",
             modifier = Modifier.size(24.dp)
           )
+        }
+
+        if (onAddToSeriesClick != null) {
+          FilledTonalIconButton(
+            onClick = onAddToSeriesClick,
+            enabled = showAddToSeries,
+            modifier = Modifier.size(50.dp).glassSheen(CircleShape, isGlass),
+            colors = IconButtonDefaults.filledTonalIconButtonColors(
+              containerColor = glassButtonContainerColor(
+                MaterialTheme.colorScheme.secondaryContainer,
+              ),
+              contentColor = glassButtonContentColor(
+                MaterialTheme.colorScheme.onSecondaryContainer,
+              ),
+            )
+          ) {
+            Icon(
+              Icons.Filled.Tv,
+              contentDescription = "Add to series",
+              modifier = Modifier.size(24.dp)
+            )
+          }
         }
 
         FilledTonalIconButton(
