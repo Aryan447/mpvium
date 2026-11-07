@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +36,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -89,6 +92,7 @@ object AudioScreen : Screen {
     val tracks by vm.filteredTracks.collectAsState()
     val artists by vm.filteredArtists.collectAsState()
     val libraryData by vm.libraryData.collectAsState()
+    val isRefreshing = remember { mutableStateOf(false) }
 
     BackHandler(enabled = isSearching) {
       vm.setSearching(false)
@@ -177,7 +181,7 @@ object AudioScreen : Screen {
       },
     ) { padding ->
       PullRefreshBox(
-        refreshing = isLoading,
+        isRefreshing = isRefreshing,
         onRefresh = { vm.refresh() },
         modifier = Modifier
           .fillMaxSize()
@@ -190,15 +194,19 @@ object AudioScreen : Screen {
               .fillMaxWidth()
               .padding(horizontal = 16.dp, vertical = 8.dp),
           ) {
+            val albumsLabel = stringResource(R.string.audio_filter_albums)
+            val tracksLabel = stringResource(R.string.audio_filter_tracks)
+            val artistsLabel = stringResource(R.string.audio_filter_artists)
+
             ExpressiveChoiceRow(
               options = AudioTabFilter.entries,
               selected = filter,
               onSelect = { vm.setFilter(it) },
               labelOf = {
                 when (it) {
-                  AudioTabFilter.ALBUMS -> stringResource(R.string.audio_filter_albums)
-                  AudioTabFilter.TRACKS -> stringResource(R.string.audio_filter_tracks)
-                  AudioTabFilter.ARTISTS -> stringResource(R.string.audio_filter_artists)
+                  AudioTabFilter.ALBUMS -> albumsLabel
+                  AudioTabFilter.TRACKS -> tracksLabel
+                  AudioTabFilter.ARTISTS -> artistsLabel
                 }
               },
               modifier = Modifier.fillMaxWidth(),
@@ -209,6 +217,7 @@ object AudioScreen : Screen {
             LoadingState(modifier = Modifier.fillMaxSize())
           } else if (libraryData.tracks.isEmpty()) {
             EmptyState(
+              icon = Icons.Filled.Audiotrack,
               title = stringResource(R.string.audio_empty_no_audio_title),
               message = stringResource(R.string.audio_empty_no_audio_message),
               modifier = Modifier
@@ -222,6 +231,7 @@ object AudioScreen : Screen {
               AudioTabFilter.ALBUMS -> {
                 if (albums.isEmpty()) {
                   EmptyState(
+                    icon = Icons.Filled.Search,
                     title = stringResource(R.string.audio_empty_search_title),
                     message = stringResource(R.string.audio_empty_search_message, searchQuery),
                     modifier = Modifier.fillMaxSize(),
@@ -263,6 +273,7 @@ object AudioScreen : Screen {
               AudioTabFilter.TRACKS -> {
                 if (tracks.isEmpty()) {
                   EmptyState(
+                    icon = Icons.Filled.Search,
                     title = stringResource(R.string.audio_empty_search_title),
                     message = stringResource(R.string.audio_empty_search_message, searchQuery),
                     modifier = Modifier.fillMaxSize(),
@@ -287,6 +298,7 @@ object AudioScreen : Screen {
               AudioTabFilter.ARTISTS -> {
                 if (artists.isEmpty()) {
                   EmptyState(
+                    icon = Icons.Filled.Search,
                     title = stringResource(R.string.audio_empty_search_title),
                     message = stringResource(R.string.audio_empty_search_message, searchQuery),
                     modifier = Modifier.fillMaxSize(),

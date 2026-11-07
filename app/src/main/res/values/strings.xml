@@ -767,4 +767,9 @@
   <string name="audio_unknown_album">Unknown Album</string>
   <string name="audio_unknown_track">Unknown Track</string>
   <string name="pref_appearance_audio_tab">Audio tab</string>
+  <string name="player_previous">Previous</string>
+  <string name="player_next">Next</string>
+  <string name="player_play">Play</string>
+  <string name="player_pause">Pause</string>
+  <string name="player_repeat">Repeat</string>
 </resources>
