@@ -1661,9 +1661,16 @@ fun GestureHandler(
                       "-${formatSeekTime(-seekDelta)}"
                     }
 
-                    // Use PlayerUpdates system like zoom updates
+                    val isPreciseSeeking = playerPreferences.usePreciseSeeking.get() || 
+                                           abs(seekDelta) <= 15 || 
+                                           maxDuration < 120
+
+                    // Only pin the seekbar thumb if we are actually going to land exact.
+                    // Otherwise, let the center HUD show "+00:17" without pulling the thumb back upon release.
+                    val seekbarPreviewPosition = if (isPreciseSeeking) previewSecond.toFloat() else null
+
                     viewModel.playerUpdate.update {
-                      PlayerUpdates.HorizontalSeek(currentTimeStr, deltaStr, previewSecond.toFloat())
+                      PlayerUpdates.HorizontalSeek(currentTimeStr, deltaStr, seekbarPreviewPosition)
                     }
 
                     change.consume()

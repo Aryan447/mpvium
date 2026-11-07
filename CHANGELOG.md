@@ -22,6 +22,8 @@
 - Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
 - Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
 - External subtitle tracks added from online search now show a friendly label (language · quality · source · group) in the subtitle list.
+- Improved seeking performance: added adaptive precision (exact for short skips, keyframes for large jumps) to avoid decoder freezes on heavy media.
+- Fixed seekbar thumb snapping backward on gesture release when keyframe seeking is active.
 
 ### Fixed
 
