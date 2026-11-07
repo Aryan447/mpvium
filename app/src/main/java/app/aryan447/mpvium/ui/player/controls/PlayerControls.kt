@@ -882,6 +882,13 @@ fun PlayerControls(
           }
         }
 
+        val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+        val cinemaGestureSafeBottom = if (showSystemNavigationBar) {
+          navBarPadding.calculateBottomPadding() + 4.dp
+        } else {
+          maxOf(navBarPadding.calculateBottomPadding(), if (isPortrait) 16.dp else 10.dp)
+        }
+
         AnimatedVisibility(
           visible = controlsShown && !areControlsLocked,
           enter =
@@ -902,7 +909,6 @@ fun PlayerControls(
             Modifier
               .then(
                 if (showSystemNavigationBar) {
-                  val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
                   Modifier.padding(
                     start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
@@ -913,13 +919,7 @@ fun PlayerControls(
               )
               .constrainAs(seekbar) {
                 if (isCinema) {
-                  val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                  val gestureSafeBottom = if (showSystemNavigationBar) {
-                    navBarBottom + 4.dp
-                  } else {
-                    maxOf(navBarBottom, if (isPortrait) 16.dp else 10.dp)
-                  }
-                  bottom.linkTo(parent.bottom, gestureSafeBottom)
+                  bottom.linkTo(parent.bottom, cinemaGestureSafeBottom)
                   start.linkTo(parent.start)
                   end.linkTo(parent.end)
                   width = Dimension.fillToConstraints
