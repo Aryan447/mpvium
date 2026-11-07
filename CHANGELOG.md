@@ -2,6 +2,7 @@
 
 ### Added
 
+- Cinema player layout option (`PlayerLayout.CINEMA`, opt-in off by default under Settings → Appearance → Player Layout): a flat, gesture-first player layout featuring borderless glyphs over subtle top and bottom scrim gradients, an edge-to-edge 3 dp seekbar pinned to the bottom of the screen, single-line title top-left, compact monospace timecode right-aligned above the seekbar, fast 2.5-second auto-hide timeout, and full RTL mirroring while preserving custom per-region button arrangements.
 - Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
 - Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
 - Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
@@ -17,6 +18,8 @@
 - Periodic playback checkpoint: saves progress while playing (default every 30 s, configurable under Settings → Player to 15 s, 30 s, 1 min, or 5 min) when playback moves by at least 5 s, surviving process kills, force stops, PiP, and background playback.
 
 ### Changed
+
+- Cinema player layout enhancements: smoother multi-stop easing scrim gradients eliminating color banding across AMOLED and standard screens, tactile animated seekbar expansion from 3 dp to 5.4 dp with pill thumb when scrubbing, gesture navigation safety clearance and system gesture exclusion preventing accidental app switching, legible title typography with drop shadows, styled compact timecode with chapter title integration and duration countdown toggle, borderless action glyphs with active dot indicators, and improved vertical stacking in portrait mode.
 
 - Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
 - Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
