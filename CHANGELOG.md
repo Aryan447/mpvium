@@ -22,6 +22,8 @@
 - Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
 - Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
 - External subtitle tracks added from online search now show a friendly label (language · quality · source · group) in the subtitle list.
+- Improved seeking performance: added adaptive precision (exact for short skips, keyframes for large jumps) to avoid decoder freezes on heavy media.
+- Fixed seekbar thumb snapping backward on gesture release when keyframe seeking is active.
 
 ### Fixed
 
@@ -42,8 +44,8 @@
 - Title vs release year: movies with numbers in their title (`1917 (2019)`, `2012 (2009)`, `Blade Runner 2049 (2017)`) retain the number in the title and take the year from parentheses; bare years are never returned as titles.
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
-- Fixed horizontal swipe-to-seek keyframe snapping and eliminated post-seek landing delay.
-- Fixed post-seek playback freeze on heavy HEVC files when using hardware decoding.
+- Fixed timestamp desync between the center overlay and seekbar when swiping past 15 seconds.
+- Ensured swipe gestures land on the exact target timestamp without snapping back to earlier keyframes.
 
 ## V1.3.0
 

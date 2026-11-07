@@ -1412,18 +1412,18 @@ class PlayerViewModel(
 
     if (clampedPosition !in 0..maxDuration) return false
 
-    // Cancel pending relative seek before absolute seek
     seekCoalesceJob?.cancel()
     pendingSeekOffset = 0
 
     val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
 
-    // 1. Scrubbing (dragging finger) -> keyframes (smooth preview)
-    // 2. Gesture swipe release (forceExact) -> exact (lands on previewed second)
-    // 3. Seekbar tap -> fast keyframe by default (or exact if precise seeking is enabled in settings)
+    // 1. Scrubbing (holding finger down): keyframes for smooth continuous scrubbing
+    // 2. Gesture swipe release (forceExact): ALWAYS exact so 5:37 lands on 5:37
+    // 3. Seekbar tap: keyframe by default (or exact if precise seeking is enabled in settings)
     val seekMode = when {
       isScrubbing -> "absolute+keyframes"
-      forceExact || shouldUsePreciseSeeking -> "absolute"
+      forceExact -> "absolute+exact"
+      shouldUsePreciseSeeking -> "absolute+exact"
       else -> "absolute+keyframes"
     }
 

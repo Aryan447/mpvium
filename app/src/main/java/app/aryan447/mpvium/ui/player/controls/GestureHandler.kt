@@ -1661,7 +1661,6 @@ fun GestureHandler(
                       "-${formatSeekTime(-seekDelta)}"
                     }
 
-                    // Use PlayerUpdates system like zoom updates
                     viewModel.playerUpdate.update {
                       PlayerUpdates.HorizontalSeek(currentTimeStr, deltaStr, previewSecond.toFloat())
                     }

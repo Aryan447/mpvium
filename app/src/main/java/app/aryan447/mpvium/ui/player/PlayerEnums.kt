@@ -197,7 +197,7 @@ sealed class PlayerUpdates {
   data class HorizontalSeek(
     val currentTime: String,
     val seekDelta: String,
-    val position: Float,
+    val position: Float?,
   ) : PlayerUpdates()
 
   data class ShowText(
