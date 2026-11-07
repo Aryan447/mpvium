@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.domain.streaming
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import app.aryan447.mpvium.database.MpviumDatabase
 import app.aryan447.mpvium.database.entities.PlaybackStateEntity
@@ -185,6 +186,23 @@ class SeriesDetector(
     }
     val recentTimestampByFileName = recentPlayedList.associate { it.fileName to it.timestamp }
 
+    val customSeriesList = try {
+      database.customSeriesDao().getAllSeries()
+    } catch (e: Exception) {
+      Log.w(TAG, "Error fetching custom series", e)
+      emptyList()
+    }
+
+    val customSeriesItems = try {
+      database.customSeriesDao().getAllItems()
+    } catch (e: Exception) {
+      Log.w(TAG, "Error fetching custom series items", e)
+      emptyList()
+    }
+
+    val claimedPaths = customSeriesItems.mapTo(HashSet()) { it.filePath }
+    val scanItems = if (claimedPaths.isEmpty()) items else items.filter { (video, _) -> video.path !in claimedPaths }
+
     val rawSeriesMap = mutableMapOf<String, MutableList<Pair<LocalEpisode, Video>>>()
     val seriesTitleById = mutableMapOf<String, String>()
     val seriesYearById = mutableMapOf<String, String?>()
@@ -198,7 +216,7 @@ class SeriesDetector(
     // episode numbers in Season 1.
     val explicitSeasonByFolder = mutableMapOf<String, Int>()
     val explicitEpisodeRegex = Regex("""[Ss](\d{1,2})[\s._-]*[Ee]|\b(\d{1,2})[xX]\d{1,4}\b""")
-    for ((video, _) in items) {
+    for ((video, _) in scanItems) {
       val parentPath = try { File(video.path).parent ?: "" } catch (_: Exception) { "" }
       if (parentPath.isBlank()) continue
       val match = explicitEpisodeRegex.find(video.displayName)
@@ -210,7 +228,7 @@ class SeriesDetector(
       }
     }
 
-    for ((video, parsed) in items) {
+    for ((video, parsed) in scanItems) {
       val playbackState = playbackStates[video.displayName] ?: playbackStates[video.title]
         val positionMs = (playbackState?.lastPosition ?: 0) * 1000L
         val durationMs = video.duration
@@ -451,11 +469,134 @@ class SeriesDetector(
         )
       }.sortedByDescending { it.totalEpisodes }
 
+      // Build custom series overlays (deterministic id: "custom:<id>")
+      val videoByPath = items.associate { it.first.path to it.first }
+      val videoByName = items
+        .groupBy { it.first.displayName }
+        .filterValues { it.size == 1 }
+        .mapValues { it.value.first().first }
+
+      val customSeriesBuiltList = customSeriesList.mapNotNull { customSeries ->
+        val seriesItems = customSeriesItems
+          .filter { it.seriesId == customSeries.id }
+          .sortedBy { it.position }
+        if (seriesItems.isEmpty()) return@mapNotNull null
+
+        val customEpisodes = seriesItems.mapIndexed { idx, item ->
+          val video = videoByPath[item.filePath]
+            ?: videoByName[item.fileName]
+            ?: Video(
+              id = (customSeries.id * 100_000L + idx),
+              title = item.fileName,
+              displayName = item.fileName,
+              path = item.filePath,
+              uri = runCatching { Uri.fromFile(File(item.filePath)) }.getOrDefault(Uri.EMPTY),
+              duration = 0L,
+              size = 0L,
+              dateAdded = customSeries.createdAt,
+              dateModified = customSeries.createdAt,
+            )
+
+          val playbackState = playbackStates[video.displayName] ?: playbackStates[video.title]
+          val positionMs = (playbackState?.lastPosition ?: 0) * 1000L
+          val durationMs = video.duration
+          val progress = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+          val isWatched = (playbackState?.hasBeenWatched == true) || (progress >= watchedThreshold)
+
+          LocalEpisode(
+            video = video,
+            seasonNumber = item.season,
+            episodeNumber = item.episode,
+            episodeTitle = null,
+            stillUrl = null,
+            overview = null,
+            rating = null,
+            playbackPositionMs = positionMs,
+            isWatched = isWatched,
+            progressPercentage = progress,
+          )
+        }
+
+        val seasonsMap = customEpisodes
+          .groupBy { it.seasonNumber }
+          .toSortedMap()
+
+        val allEpisodes = seasonsMap.values.flatten()
+        val totalEpisodes = allEpisodes.size
+        val totalDuration = allEpisodes.sumOf { it.video.duration }
+        val watchedCount = allEpisodes.count { it.isWatched }
+
+        val lastWatched = allEpisodes
+          .filter { it.playbackPositionMs > 0 }
+          .maxByOrNull { episode ->
+            recentTimestampByFileName[episode.video.displayName] ?: episode.video.dateModified
+          }
+
+        val nextToWatch = if (lastWatched != null) {
+          if (!lastWatched.isWatched) {
+            lastWatched
+          } else {
+            val currentIndex = allEpisodes.indexOf(lastWatched)
+            if (currentIndex in 0 until allEpisodes.size - 1) {
+              allEpisodes[currentIndex + 1]
+            } else {
+              lastWatched
+            }
+          }
+        } else {
+          allEpisodes.firstOrNull()
+        }
+
+        val deterministicId = "custom:${customSeries.id}"
+
+        // In-progress continue watching
+        if (lastWatched != null && lastWatched.playbackPositionMs > 10_000L && !lastWatched.isWatched && lastWatched.progressPercentage < watchedThreshold) {
+          val remainingMins = (lastWatched.video.duration - lastWatched.playbackPositionMs) / (1000 * 60)
+          val episodeTag = lastWatched.formattedEpisodeTag
+          val subtitleText = if (remainingMins > 0) "$episodeTag • ${remainingMins}m remaining" else episodeTag
+
+          continueWatchingList.add(
+            ContinueWatchingItem(
+              video = lastWatched.video,
+              title = customSeries.title,
+              subtitle = subtitleText,
+              playbackPositionMs = lastWatched.playbackPositionMs,
+              totalDurationMs = lastWatched.video.duration,
+              progressPercentage = lastWatched.progressPercentage,
+              lastPlayedTimestamp = recentTimestampByFileName[lastWatched.video.displayName]
+                ?: lastWatched.video.dateModified * 1000,
+              isSeries = true,
+              seriesId = deterministicId,
+            )
+          )
+        }
+
+        LocalSeries(
+          id = deterministicId,
+          title = customSeries.title,
+          year = customSeries.year,
+          posterUrl = customSeries.posterPath,
+          backdropUrl = null,
+          rating = null,
+          overview = null,
+          genres = emptyList(),
+          tmdbId = customSeries.tmdbId,
+          totalEpisodes = totalEpisodes,
+          totalDurationMs = totalDuration,
+          watchedEpisodesCount = watchedCount,
+          lastWatchedEpisode = lastWatched,
+          nextEpisodeToWatch = nextToWatch,
+          seasons = seasonsMap,
+        )
+      }
+
+      val allSeries = customSeriesBuiltList + detectedSeriesList
+
       // Keep a series in Continue Watching while unwatched episodes remain.
       // Without this, deleting (or finishing) the in-progress episode drops
       // the whole series even though the next episode is still waiting.
       val videosAlreadyListed = continueWatchingList.map { it.video.path }.toSet()
-      for (series in detectedSeriesList) {
+      for (series in allSeries) {
         val lastWatched = series.lastWatchedEpisode ?: continue
         val next = series.nextEpisodeToWatch ?: continue
         if (next.isWatched) continue
@@ -486,7 +627,7 @@ class SeriesDetector(
       val sortedContinueWatching = visibleContinueWatching.sortedByDescending { it.lastPlayedTimestamp }
 
       DetectedMediaLibrary(
-        series = detectedSeriesList,
+        series = allSeries,
         movies = detectedMovies.sortedBy { it.title.lowercase(Locale.getDefault()) },
         continueWatching = sortedContinueWatching,
         folders = folders,

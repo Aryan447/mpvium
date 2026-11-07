@@ -158,6 +158,10 @@
   <string name="pref_layout_preview">Preview</string>
   <string name="pref_layout_reset_title">Reset layout?</string>
   <string name="pref_layout_reset_summary">All customized player control layouts will be reset to default positions</string>
+  <string name="pref_player_layout_style_title">Layout Style</string>
+  <string name="pref_player_layout_style_summary">Choose between Glass Pill or flat Cinema layout</string>
+  <string name="pref_player_layout_glass_pill">Glass Pill</string>
+  <string name="pref_player_layout_cinema">Cinema</string>
   <string name="pref_player">Player</string>
   <string name="pref_player_summary">Orientation, gestures and controls</string>
   <string name="pref_player_orientation">Orientation</string>
@@ -720,4 +724,25 @@
   <string name="titles_pane_select_title">Select a title</string>
   <string name="titles_pane_select_message">Pick a show or movie to see details, actions and matches here</string>
   <string name="title_watch_filter_content_description">Watch filter: %1$s</string>
+  <!-- Custom series -->
+  <string name="add_to_series">Add to series…</string>
+  <string name="create_series">Create series</string>
+  <string name="edit_series">Edit series</string>
+  <string name="new_series">New series</string>
+  <string name="delete_custom_series_title">Delete custom series?</string>
+  <string name="delete_custom_series_message">This will delete the custom series \"%1$s\" grouping. Your video files will NOT be deleted.</string>
+  <string name="delete_series_action">Delete series</string>
+  <string name="custom_series_builder_title">Episodes</string>
+  <string name="custom_series_episodes_count">%1$d episodes</string>
+  <string name="custom_series_add_episodes">Add episodes</string>
+  <string name="custom_series_drag_to_reorder">Drag to reorder</string>
+  <string name="custom_series_empty_shows_help">Add TV shows with S01E01 or season folders to see them here, or build your own custom show out of any videos.</string>
+  <string name="custom_series_pick_poster">Add cover</string>
+  <string name="custom_series_season_episode_dialog_title">Edit season &amp; episode</string>
+  <string name="custom_series_season_label">Season</string>
+  <string name="custom_series_episode_label">Episode</string>
+  <string name="custom_series_saved">Series saved</string>
+  <string name="custom_series_choose_series">Add to series</string>
+  <string name="custom_series_create_new">Create new series</string>
+  <string name="custom_series_added_to">Added to \"%1$s\"</string>
 </resources>

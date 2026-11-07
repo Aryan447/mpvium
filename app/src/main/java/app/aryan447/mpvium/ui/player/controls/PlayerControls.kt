@@ -76,6 +76,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -93,6 +96,7 @@ import kotlin.math.roundToInt
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.preferences.preference.deleteAndGet
@@ -108,6 +112,7 @@ import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.BrightnessSlider
 import app.aryan447.mpvium.ui.player.controls.components.CompactSpeedIndicator
+import app.aryan447.mpvium.ui.player.controls.components.CompactTimecode
 import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
 import app.aryan447.mpvium.ui.player.controls.components.HoldControlsPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.IntroSkipChip
@@ -165,9 +170,14 @@ fun PlayerControls(
 ) {
   val spacing = MaterialTheme.spacing
   val appearancePreferences = koinInject<AppearancePreferences>()
-  val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
+  val playerLayout by appearancePreferences.playerLayout.collectAsState()
+  val isCinema = playerLayout == PlayerLayout.CINEMA
+  val rawHideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
+  val hideBackground = rawHideBackground || isCinema
+  val amoledMode by appearancePreferences.amoledMode.collectAsState()
   val playerFullColors by appearancePreferences.playerFullColors.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
+  val invertDuration by playerPreferences.invertDuration.collectAsState()
   val audioPreferences = koinInject<AudioPreferences>()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
@@ -267,10 +277,15 @@ fun PlayerControls(
     resetControlsTimestamp,
     areControlsLocked,
     isUnlockSliderDragging,
+    playerLayout,
   ) {
     if (controlsShown && paused == false && !isSeeking && !isUnlockSliderDragging) {
-      // Use 2 second delay when controls are locked, otherwise use user preference
-      val delayTime = if (areControlsLocked) 2000L else playerTimeToDisappear.toLong()
+      // Use 2.5 second delay in Cinema mode, 2 second delay when controls are locked, otherwise user preference
+      val delayTime = when {
+        areControlsLocked -> 2000L
+        isCinema -> 2500L
+        else -> playerTimeToDisappear.toLong()
+      }
       delay(delayTime)
       viewModel.hideControls()
     }
@@ -295,8 +310,13 @@ fun PlayerControls(
     LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
     LocalContentColor provides Color.White,
   ) {
+    val layoutDirection = if (isCinema) {
+      LocalLayoutDirection.current
+    } else {
+      LayoutDirection.Ltr
+    }
     CompositionLocalProvider(
-      LocalLayoutDirection provides LayoutDirection.Ltr,
+      LocalLayoutDirection provides layoutDirection,
     ) {
       val configuration = LocalConfiguration.current
       val isPortrait by remember(configuration) {
@@ -319,15 +339,52 @@ fun PlayerControls(
         modifier =
           modifier
             .fillMaxSize()
-            .background(
-              Brush.verticalGradient(
-                Pair(0f, Color.Black),
-                Pair(.4f, Color.Transparent),
-                Pair(.6f, Color.Transparent),
-                Pair(1f, Color.Black),
-              ),
-              // No vignette in the Glass theme: chrome floats clean over video.
-              alpha = if (LocalGlass.current || !showVignette) 0f else transparentOverlay,
+            .then(
+              if (isCinema) {
+                Modifier.drawBehind {
+                  val alpha = transparentOverlay
+                  if (alpha > 0f) {
+                    val topAlpha = if (amoledMode) 0.70f else 0.60f
+                    val bottomAlpha = if (amoledMode) 0.75f else 0.65f
+                    val topScrimHeight = 120.dp.toPx()
+                    val bottomScrimHeight = 140.dp.toPx()
+
+                    drawRect(
+                      brush = Brush.verticalGradient(
+                        0.0f to Color.Black.copy(alpha = topAlpha * alpha),
+                        0.6f to Color.Black.copy(alpha = 0.25f * alpha),
+                        1.0f to Color.Transparent,
+                        startY = 0f,
+                        endY = topScrimHeight,
+                      ),
+                      size = Size(size.width, topScrimHeight),
+                    )
+
+                    drawRect(
+                      brush = Brush.verticalGradient(
+                        0.0f to Color.Transparent,
+                        0.4f to Color.Black.copy(alpha = 0.25f * alpha),
+                        1.0f to Color.Black.copy(alpha = bottomAlpha * alpha),
+                        startY = size.height - bottomScrimHeight,
+                        endY = size.height,
+                      ),
+                      topLeft = Offset(0f, size.height - bottomScrimHeight),
+                      size = Size(size.width, bottomScrimHeight),
+                    )
+                  }
+                }
+              } else {
+                Modifier.background(
+                  Brush.verticalGradient(
+                    Pair(0f, Color.Black),
+                    Pair(.4f, Color.Transparent),
+                    Pair(.6f, Color.Transparent),
+                    Pair(1f, Color.Black),
+                  ),
+                  // No vignette in the Glass theme: chrome floats clean over video.
+                  alpha = if (LocalGlass.current || !showVignette) 0f else transparentOverlay,
+                )
+              }
             ),
       ) {
         val (topLeftControls, topRightControls) = createRefs()
@@ -749,7 +806,7 @@ fun PlayerControls(
             Modifier.constrainAs(playerPauseButton) {
               end.linkTo(parent.absoluteRight)
               start.linkTo(parent.absoluteLeft)
-              if (isPortrait) {
+              if (isPortrait && !isCinema) {
                 bottom.linkTo(bottomRightControls.top, spacing.large)
               } else {
                 top.linkTo(parent.top)
@@ -847,16 +904,22 @@ fun PlayerControls(
                 }
               )
               .constrainAs(seekbar) {
-                if (isPortrait) {
-                  bottom.linkTo(playerPauseButton.top, spacing.small)
+                if (isCinema) {
+                  bottom.linkTo(parent.bottom)
+                  start.linkTo(parent.start)
+                  end.linkTo(parent.end)
+                  width = Dimension.fillToConstraints
                 } else {
-                  bottom.linkTo(parent.bottom, spacing.small + tabletBottomOffset)
+                  if (isPortrait) {
+                    bottom.linkTo(playerPauseButton.top, spacing.small)
+                  } else {
+                    bottom.linkTo(parent.bottom, spacing.small + tabletBottomOffset)
+                  }
+                  start.linkTo(parent.start, spacing.large)
+                  end.linkTo(parent.end, spacing.large)
                 }
-                start.linkTo(parent.start, spacing.large)
-                end.linkTo(parent.end, spacing.large)
               },
         ) {
-          val invertDuration by playerPreferences.invertDuration.collectAsState()
           val seekbarStyle by appearancePreferences.seekbarStyle.collectAsState()
           var wasPlayerAlreadyPaused by remember { mutableStateOf(false) }
 
@@ -971,8 +1034,8 @@ fun PlayerControls(
         ) {
           if (isPortrait) {
             TopPlayerControlsPortrait(
-              mediaTitle = mediaTitle,
-              mediaSubtitle = mediaSubtitle,
+              mediaTitle = if (isCinema) mediaTitleSingleLine else mediaTitle,
+              mediaSubtitle = if (isCinema) null else mediaSubtitle,
               mediaSubtitleIsPrimary = mediaSubtitleIsPrimary,
               hideBackground = hideBackground,
               onBackPress = onBackPress,
@@ -981,8 +1044,8 @@ fun PlayerControls(
             )
           } else {
             TopLeftPlayerControlsLandscape(
-              mediaTitle = mediaTitle,
-              mediaSubtitle = mediaSubtitle,
+              mediaTitle = if (isCinema) mediaTitleSingleLine else mediaTitle,
+              mediaSubtitle = if (isCinema) null else mediaSubtitle,
               mediaSubtitleIsPrimary = mediaSubtitleIsPrimary,
               hideBackground = hideBackground,
               onBackPress = onBackPress,
@@ -1181,52 +1244,125 @@ fun PlayerControls(
               )
               .constrainAs(bottomRightControls) {
                 if (isPortrait) {
-                  bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
+                  bottom.linkTo(parent.bottom, (if (isCinema) spacing.large else spacing.extraLarge) + tabletBottomOffset)
                   start.linkTo(parent.start, spacing.large)
                   end.linkTo(parent.end, spacing.large)
                   width = Dimension.fillToConstraints
                 } else {
-                  bottom.linkTo(seekbar.top, spacing.small)
+                  if (isCinema) {
+                    bottom.linkTo(parent.bottom, spacing.large + tabletBottomOffset)
+                  } else {
+                    bottom.linkTo(seekbar.top, spacing.small)
+                  }
                   end.linkTo(parent.end, spacing.large)
                 }
               },
         ) {
           if (isPortrait) {
-            BottomPlayerControlsPortrait(
-              buttons = portraitBottomButtons,
-              chapters = chapters,
-              currentChapter = currentChapter,
-              isSpeedNonOne = isSpeedNonOne,
-              currentZoom = currentZoom,
-              aspect = aspect,
-              mediaTitle = mediaTitleSingleLine,
-              hideBackground = hideBackground,
-              decoder = decoder,
-              playbackSpeed = playbackSpeed ?: 1f,
-              onBackPress = onBackPress,
-              onOpenSheet = onOpenSheet,
-              onOpenPanel = onOpenPanel,
-              viewModel = viewModel,
-              activity = activity,
-            )
+            if (isCinema) {
+              Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.End,
+              ) {
+                CompactTimecode(
+                  position = seekPreviewPosition ?: precisePosition,
+                  duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
+                  isInverted = invertDuration,
+                  onClick = {
+                    resetControlsTimestamp = System.currentTimeMillis()
+                    playerPreferences.invertDuration.set(!invertDuration)
+                  },
+                  modifier = Modifier.padding(bottom = MaterialTheme.spacing.extraSmall),
+                )
+                BottomPlayerControlsPortrait(
+                  buttons = portraitBottomButtons,
+                  chapters = chapters,
+                  currentChapter = currentChapter,
+                  isSpeedNonOne = isSpeedNonOne,
+                  currentZoom = currentZoom,
+                  aspect = aspect,
+                  mediaTitle = mediaTitleSingleLine,
+                  hideBackground = hideBackground,
+                  decoder = decoder,
+                  playbackSpeed = playbackSpeed ?: 1f,
+                  onBackPress = onBackPress,
+                  onOpenSheet = onOpenSheet,
+                  onOpenPanel = onOpenPanel,
+                  viewModel = viewModel,
+                  activity = activity,
+                )
+              }
+            } else {
+              BottomPlayerControlsPortrait(
+                buttons = portraitBottomButtons,
+                chapters = chapters,
+                currentChapter = currentChapter,
+                isSpeedNonOne = isSpeedNonOne,
+                currentZoom = currentZoom,
+                aspect = aspect,
+                mediaTitle = mediaTitleSingleLine,
+                hideBackground = hideBackground,
+                decoder = decoder,
+                playbackSpeed = playbackSpeed ?: 1f,
+                onBackPress = onBackPress,
+                onOpenSheet = onOpenSheet,
+                onOpenPanel = onOpenPanel,
+                viewModel = viewModel,
+                activity = activity,
+              )
+            }
           } else {
-            BottomRightPlayerControlsLandscape(
-              buttons = bottomRightButtons,
-              chapters = chapters,
-              currentChapter = currentChapter,
-              isSpeedNonOne = isSpeedNonOne,
-              currentZoom = currentZoom,
-              aspect = aspect,
-              mediaTitle = mediaTitleSingleLine,
-              hideBackground = hideBackground,
-              decoder = decoder,
-              playbackSpeed = playbackSpeed ?: 1f,
-              onBackPress = onBackPress,
-              onOpenSheet = onOpenSheet,
-              onOpenPanel = onOpenPanel,
-              viewModel = viewModel,
-              activity = activity,
-            )
+            if (isCinema) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+              ) {
+                BottomRightPlayerControlsLandscape(
+                  buttons = bottomRightButtons,
+                  chapters = chapters,
+                  currentChapter = currentChapter,
+                  isSpeedNonOne = isSpeedNonOne,
+                  currentZoom = currentZoom,
+                  aspect = aspect,
+                  mediaTitle = mediaTitleSingleLine,
+                  hideBackground = hideBackground,
+                  decoder = decoder,
+                  playbackSpeed = playbackSpeed ?: 1f,
+                  onBackPress = onBackPress,
+                  onOpenSheet = onOpenSheet,
+                  onOpenPanel = onOpenPanel,
+                  viewModel = viewModel,
+                  activity = activity,
+                )
+                CompactTimecode(
+                  position = seekPreviewPosition ?: precisePosition,
+                  duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
+                  isInverted = invertDuration,
+                  onClick = {
+                    resetControlsTimestamp = System.currentTimeMillis()
+                    playerPreferences.invertDuration.set(!invertDuration)
+                  },
+                )
+              }
+            } else {
+              BottomRightPlayerControlsLandscape(
+                buttons = bottomRightButtons,
+                chapters = chapters,
+                currentChapter = currentChapter,
+                isSpeedNonOne = isSpeedNonOne,
+                currentZoom = currentZoom,
+                aspect = aspect,
+                mediaTitle = mediaTitleSingleLine,
+                hideBackground = hideBackground,
+                decoder = decoder,
+                playbackSpeed = playbackSpeed ?: 1f,
+                onBackPress = onBackPress,
+                onOpenSheet = onOpenSheet,
+                onOpenPanel = onOpenPanel,
+                viewModel = viewModel,
+                activity = activity,
+              )
+            }
           }
         }
 
@@ -1260,7 +1396,11 @@ fun PlayerControls(
                 }
               )
               .constrainAs(bottomLeftControls) {
-                bottom.linkTo(seekbar.top, spacing.small)
+                if (isCinema) {
+                  bottom.linkTo(parent.bottom, spacing.large + tabletBottomOffset)
+                } else {
+                  bottom.linkTo(seekbar.top, spacing.small)
+                }
                 start.linkTo(parent.start, spacing.large)
                 width = Dimension.fillToConstraints
                 end.linkTo(bottomRightControls.start, spacing.small)

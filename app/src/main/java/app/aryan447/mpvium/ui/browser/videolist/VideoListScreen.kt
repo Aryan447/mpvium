@@ -95,6 +95,8 @@ import app.aryan447.mpvium.ui.browser.cards.VideoCard
 import app.aryan447.mpvium.ui.browser.components.BrowserBottomBar
 import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
 import app.aryan447.mpvium.ui.browser.dialogs.AddToPlaylistDialog
+import app.aryan447.mpvium.ui.browser.dialogs.AddToSeriesDialog
+import app.aryan447.mpvium.ui.streaming.series.CustomSeriesBuilderScreen
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.browser.dialogs.FileOperationProgressDialog
 import app.aryan447.mpvium.ui.browser.dialogs.FolderPickerDialog
@@ -192,6 +194,7 @@ data class VideoListScreen(
     val deleteDialogOpen = rememberSaveable { mutableStateOf(false) }
     val renameDialogOpen = rememberSaveable { mutableStateOf(false) }
     val addToPlaylistDialogOpen = rememberSaveable { mutableStateOf(false) }
+    val addToSeriesDialogOpen = rememberSaveable { mutableStateOf(false) }
     val markAsDialogOpen = rememberSaveable { mutableStateOf(false) }
 
     // Copy/Move state
@@ -319,6 +322,7 @@ data class VideoListScreen(
           onAddToPlaylistClick = if (!BuildConfig.ENABLE_UPDATE_FEATURE) {
             { addToPlaylistDialogOpen.value = true }
           } else null,
+          onAddToSeriesClick = { addToSeriesDialogOpen.value = true },
           onMarkAsClick = { markAsDialogOpen.value = true },
         )
       },
@@ -438,6 +442,7 @@ data class VideoListScreen(
             onRenameClick = { renameDialogOpen.value = true },
             onDeleteClick = { deleteDialogOpen.value = true },
             onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
+            onAddToSeriesClick = { addToSeriesDialogOpen.value = true },
             showRename = selectionManager.isSingleSelection,
             hazeState = bottomBarHaze,
             hazeStyle = bottomBarHazeStyle,
@@ -576,6 +581,22 @@ data class VideoListScreen(
         isOpen = addToPlaylistDialogOpen.value,
         videos = selectionManager.getSelectedItems(),
         onDismiss = { addToPlaylistDialogOpen.value = false },
+        onSuccess = {
+          selectionManager.clear()
+          viewModel.refresh()
+        },
+      )
+
+      // Add to Series Dialog
+      AddToSeriesDialog(
+        isOpen = addToSeriesDialogOpen.value,
+        videos = selectionManager.getSelectedItems(),
+        onDismiss = { addToSeriesDialogOpen.value = false },
+        onCreateNewSeries = {
+          val selected = selectionManager.getSelectedItems()
+          selectionManager.clear()
+          backstack.add(CustomSeriesBuilderScreen(initialVideos = selected))
+        },
         onSuccess = {
           selectionManager.clear()
           viewModel.refresh()
