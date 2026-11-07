@@ -349,7 +349,7 @@ fun PlayerControls(
                     val topAlpha = if (amoledMode) 0.78f else 0.65f
                     val bottomAlpha = if (amoledMode) 0.82f else 0.70f
                     val topScrimHeight = (if (isPortrait) 150.dp else 130.dp).toPx()
-                    val bottomScrimHeight = (if (isPortrait) 200.dp else 145.dp).toPx()
+                    val bottomScrimHeight = (if (isPortrait) 220.dp else 160.dp).toPx()
 
                     drawRect(
                       brush = Brush.verticalGradient(
@@ -913,7 +913,13 @@ fun PlayerControls(
               )
               .constrainAs(seekbar) {
                 if (isCinema) {
-                  bottom.linkTo(parent.bottom)
+                  val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                  val gestureSafeBottom = if (showSystemNavigationBar) {
+                    navBarBottom + 4.dp
+                  } else {
+                    maxOf(navBarBottom, if (isPortrait) 16.dp else 10.dp)
+                  }
+                  bottom.linkTo(parent.bottom, gestureSafeBottom)
                   start.linkTo(parent.start)
                   end.linkTo(parent.end)
                   width = Dimension.fillToConstraints
@@ -1252,16 +1258,16 @@ fun PlayerControls(
               )
               .constrainAs(bottomRightControls) {
                 if (isPortrait) {
-                  bottom.linkTo(parent.bottom, (if (isCinema) spacing.medium else spacing.extraLarge) + tabletBottomOffset)
+                  if (isCinema) {
+                    bottom.linkTo(seekbar.top, spacing.smaller + tabletBottomOffset)
+                  } else {
+                    bottom.linkTo(parent.bottom, spacing.extraLarge + tabletBottomOffset)
+                  }
                   start.linkTo(parent.start, spacing.large)
                   end.linkTo(parent.end, spacing.large)
                   width = Dimension.fillToConstraints
                 } else {
-                  if (isCinema) {
-                    bottom.linkTo(parent.bottom, spacing.medium + tabletBottomOffset)
-                  } else {
-                    bottom.linkTo(seekbar.top, spacing.small)
-                  }
+                  bottom.linkTo(seekbar.top, (if (isCinema) spacing.smaller else spacing.small) + tabletBottomOffset)
                   end.linkTo(parent.end, spacing.large)
                 }
               },
@@ -1442,11 +1448,7 @@ fun PlayerControls(
                 }
               )
               .constrainAs(bottomLeftControls) {
-                if (isCinema) {
-                  bottom.linkTo(parent.bottom, spacing.medium + tabletBottomOffset)
-                } else {
-                  bottom.linkTo(seekbar.top, spacing.small)
-                }
+                bottom.linkTo(seekbar.top, (if (isCinema) spacing.smaller else spacing.small) + tabletBottomOffset)
                 start.linkTo(parent.start, spacing.large)
                 width = Dimension.fillToConstraints
                 end.linkTo(bottomRightControls.start, spacing.small)
