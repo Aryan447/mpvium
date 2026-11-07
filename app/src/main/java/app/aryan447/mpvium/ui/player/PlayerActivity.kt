@@ -428,6 +428,15 @@ class PlayerActivity :
     }
     mediaIdentifier = getMediaIdentifier(intent, fileName)
 
+    val isAudioMode = intent.getBooleanExtra("is_audio_mode", false) ||
+      FileTypeUtils.isAudioFileName(fileName) ||
+      (intent.data?.let { FileTypeUtils.isAudioFileName(it.lastPathSegment ?: "") } == true)
+    val mediaArtist = intent.getStringExtra("media_artist") ?: ""
+    val albumTitle = intent.getStringExtra("album_title") ?: ""
+    val albumArtUriString = intent.getStringExtra("album_art_uri")
+    val albumArtUri = albumArtUriString?.let { runCatching { Uri.parse(it) }.getOrNull() }
+    viewModel.setAudioMode(isAudioMode, fileName, mediaArtist, albumTitle, albumArtUri)
+
     // Set HTTP headers (including referer) BEFORE playing the file
     setHttpHeadersFromExtras(intent.extras)
 
@@ -600,6 +609,7 @@ class PlayerActivity :
 
   override fun onDestroy() {
     Log.d(TAG, "PlayerActivity onDestroy")
+    MediaPlaybackService.playbackActionListener = null
 
     runCatching {
       // OPTIMIZATION: Prevent any further UI updates or callbacks
@@ -710,7 +720,8 @@ class PlayerActivity :
   override fun onPause() {
     runCatching {
       val isInPip = isInPictureInPictureMode
-      val shouldPause = (!audioPreferences.automaticBackgroundPlayback.get() && !isManualBackgroundPlayback) ||
+      val isAudio = viewModel.isAudioMode.value
+      val shouldPause = (!isAudio && !audioPreferences.automaticBackgroundPlayback.get() && !isManualBackgroundPlayback) ||
                         (isUserFinishing && !isManualBackgroundPlayback)
 
       // OPTIMIZATION: Stop playback immediately if finishing to reduce cleanup overhead
@@ -3005,9 +3016,26 @@ class PlayerActivity :
     // Ensure notification channel exists
     MediaPlaybackService.createNotificationChannel(this)
 
+    MediaPlaybackService.playbackActionListener = object : MediaPlaybackService.PlaybackActionListener {
+      override fun onSkipToNext() { runOnUiThread { playNext() } }
+      override fun onSkipToPrevious() { runOnUiThread { playPrevious() } }
+    }
+
     // Get media info before starting service
-    val artist = runCatching { MPVLib.getPropertyString("metadata/artist") }.getOrNull() ?: ""
-    val thumbnail = runCatching { MPVLib.grabThumbnail(1080) }.getOrNull()
+    val artist = viewModel.audioArtist.value.ifBlank {
+      runCatching { MPVLib.getPropertyString("metadata/artist") }.getOrNull() ?: ""
+    }
+    val albumArtUri = viewModel.audioArtUri.value
+    val albumArtBitmap = if (albumArtUri != null) {
+      runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+          contentResolver.loadThumbnail(albumArtUri, android.util.Size(512, 512), null)
+        } else {
+          contentResolver.openInputStream(albumArtUri)?.use { android.graphics.BitmapFactory.decodeStream(it) }
+        }
+      }.getOrNull()
+    } else null
+    val thumbnail = albumArtBitmap ?: runCatching { MPVLib.grabThumbnail(1080) }.getOrNull()
 
     // Pass media info via intent extras
     val intent = Intent(this, MediaPlaybackService::class.java).apply {
@@ -3022,6 +3050,9 @@ class PlayerActivity :
       startForegroundService(intent)
       bindService(intent, serviceConnection, BIND_AUTO_CREATE)
       Log.d(TAG, "Service start and bind initiated")
+    } catch (e: SecurityException) {
+      Log.w(TAG, "POST_NOTIFICATIONS permission not granted, continuing without foreground notification", e)
+      runCatching { bindService(intent, serviceConnection, BIND_AUTO_CREATE) }
     } catch (e: Exception) {
       Log.e(TAG, "Error starting/binding service", e)
     }
@@ -3280,6 +3311,21 @@ class PlayerActivity :
     fileName = getFileNameFromUri(uri)
     // Generate new media identifier for playback state
     mediaIdentifier = getMediaIdentifierFromUri(uri, fileName)
+
+    if (viewModel.isAudioMode.value) {
+      viewModel.setAudioMode(
+        enabled = true,
+        title = fileName,
+        artist = viewModel.audioArtist.value,
+        album = viewModel.audioAlbum.value,
+        artUri = viewModel.audioArtUri.value,
+      )
+      mediaPlaybackService?.setMediaInfo(
+        title = fileName,
+        artist = viewModel.audioArtist.value,
+        thumbnail = MediaPlaybackService.thumbnail,
+      )
+    }
 
     // Set HTTP headers (including referer) for network streams
     setHttpHeadersForUri(uri)

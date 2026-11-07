@@ -189,6 +189,36 @@ class PlayerViewModel(
   var currentFilePath: String? = null
   private var lastAutoSelectedMediaTitle: String? = null
 
+  // Audio-only mode properties
+  private val _isAudioMode = MutableStateFlow(false)
+  val isAudioMode: StateFlow<Boolean> = _isAudioMode.asStateFlow()
+
+  private val _audioTitle = MutableStateFlow("")
+  val audioTitle: StateFlow<String> = _audioTitle.asStateFlow()
+
+  private val _audioArtist = MutableStateFlow("")
+  val audioArtist: StateFlow<String> = _audioArtist.asStateFlow()
+
+  private val _audioAlbum = MutableStateFlow("")
+  val audioAlbum: StateFlow<String> = _audioAlbum.asStateFlow()
+
+  private val _audioArtUri = MutableStateFlow<Uri?>(null)
+  val audioArtUri: StateFlow<Uri?> = _audioArtUri.asStateFlow()
+
+  fun setAudioMode(
+    enabled: Boolean,
+    title: String? = null,
+    artist: String? = null,
+    album: String? = null,
+    artUri: Uri? = null,
+  ) {
+    _isAudioMode.value = enabled
+    title?.let { _audioTitle.value = it }
+    artist?.let { _audioArtist.value = it }
+    album?.let { _audioAlbum.value = it }
+    _audioArtUri.value = artUri
+  }
+
   // Audio state
   val currentVolume = MutableStateFlow(host.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
   private val volumeBoostCap by MPVLib.propInt["volume-max"].collectAsState(viewModelScope)

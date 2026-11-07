@@ -189,6 +189,16 @@ fun PlayerControls(
   val forwardCacheDuration by viewModel.forwardCacheDuration.collectAsState()
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
+  val isAudioMode by viewModel.isAudioMode.collectAsState()
+  if (isAudioMode) {
+    app.aryan447.mpvium.ui.player.audio.AudioPlayerSurface(
+      viewModel = viewModel,
+      onBackPress = onBackPress,
+      modifier = modifier,
+    )
+    return
+  }
+
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
   val seekBarShown by viewModel.seekBarShown.collectAsState()
   val pausedForCache by MPVLib.propBoolean["paused-for-cache"].collectAsState()
