@@ -363,6 +363,7 @@ object SeriesGridScreen : Screen {
               libraryFiltered = libraryFiltered,
               onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onSeriesClick = { selectedSeriesId = it.id },
+              onCreateSeries = { backstack.add(CustomSeriesBuilderScreen()) },
             )
           }
           VerticalDivider(modifier = Modifier.fillMaxHeight())
@@ -402,6 +403,7 @@ object SeriesGridScreen : Screen {
           libraryFiltered = libraryFiltered,
           onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onSeriesClick = { backstack.add(SeriesDetailScreen(it.id)) },
+          onCreateSeries = { backstack.add(CustomSeriesBuilderScreen()) },
         )
       }
     }
@@ -432,6 +434,7 @@ private fun SeriesGridContent(
   libraryFiltered: Boolean,
   onManageLibrarySources: () -> Unit,
   onSeriesClick: (LocalSeries) -> Unit,
+  onCreateSeries: () -> Unit,
 ) {
   if (isLoading) {
     Box(
@@ -470,7 +473,7 @@ private fun SeriesGridContent(
         searchQuery.isNotBlank() -> onClearSearch
         filteringByWatchState -> ({ onSeriesFilterChange(SeriesWatchFilter.ALL) })
         libraryFiltered -> onManageLibrarySources
-        else -> ({ backstack.add(CustomSeriesBuilderScreen()) })
+        else -> onCreateSeries
       },
     )
   } else {
