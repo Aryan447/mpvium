@@ -2,7 +2,12 @@ package app.aryan447.mpvium.ui.player.controls.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -352,7 +357,7 @@ fun SeekbarWithTimers(
     // is smaller (32dp centered in Glass Pill, 3dp pinned to bottom in Cinema).
     Box(
       modifier = slotModifier
-        .height(if (isCinema) 36.dp else 48.dp)
+        .height(if (isCinema) 40.dp else 48.dp)
         .onSizeChanged { trackWidthPx = it.width },
       contentAlignment = if (isCinema) Alignment.BottomCenter else Alignment.Center,
     ) {
@@ -1015,31 +1020,105 @@ fun CompactTimecode(
   isInverted: Boolean,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  currentChapterName: String? = null,
+  onChapterClick: (() -> Unit)? = null,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val interactionSource = remember { MutableInteractionSource() }
   val currentText = Utils.prettyTime(position.toInt(), false)
   val totalText = Utils.prettyTime(duration.toInt(), isInverted)
   val colors = LocalPlayerColors.current
-  Text(
-    modifier = modifier
-      .clickable(
-        interactionSource = interactionSource,
-        indication = ripple(),
-        onClick = {
-          clickEvent()
-          onClick()
-        },
+
+  Row(
+    modifier = modifier,
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+  ) {
+    if (!currentChapterName.isNullOrBlank() && onChapterClick != null) {
+      Text(
+        text = currentChapterName,
+        style = MaterialTheme.typography.labelMedium.copy(
+          fontWeight = FontWeight.Medium,
+          shadow = Shadow(
+            color = Color.Black.copy(alpha = 0.85f),
+            blurRadius = 6f,
+            offset = Offset(0f, 1f),
+          ),
+        ),
+        color = colors.timerContent.copy(alpha = 0.70f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(),
+            onClick = {
+              clickEvent()
+              onChapterClick()
+            },
+          )
+          .padding(vertical = MaterialTheme.spacing.extraSmall),
       )
-      .padding(horizontal = MaterialTheme.spacing.smaller, vertical = MaterialTheme.spacing.extraSmall),
-    text = "$currentText / $totalText",
-    color = colors.timerContent,
-    style = MaterialTheme.typography.labelMedium.copy(
-      fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-      fontWeight = FontWeight.Medium,
-    ),
-    textAlign = TextAlign.End,
-  )
+      Text(
+        text = "•",
+        style = MaterialTheme.typography.labelSmall,
+        color = colors.timerContent.copy(alpha = 0.40f),
+      )
+    }
+
+    val timecodeString = remember(currentText, totalText, isInverted, colors.timerContent) {
+      buildAnnotatedString {
+        withStyle(
+          SpanStyle(
+            color = colors.timerContent,
+            fontWeight = FontWeight.SemiBold,
+          ),
+        ) {
+          append(currentText)
+        }
+        withStyle(
+          SpanStyle(
+            color = colors.timerContent.copy(alpha = 0.50f),
+            fontWeight = FontWeight.Normal,
+          ),
+        ) {
+          append(" / ")
+        }
+        withStyle(
+          SpanStyle(
+            color = colors.timerContent.copy(alpha = 0.80f),
+            fontWeight = FontWeight.Medium,
+          ),
+        ) {
+          append(totalText)
+        }
+      }
+    }
+
+    Text(
+      modifier = Modifier
+        .clip(RoundedCornerShape(6.dp))
+        .clickable(
+          interactionSource = interactionSource,
+          indication = ripple(),
+          onClick = {
+            clickEvent()
+            onClick()
+          },
+        )
+        .padding(horizontal = MaterialTheme.spacing.smaller, vertical = MaterialTheme.spacing.extraSmall),
+      text = timecodeString,
+      style = MaterialTheme.typography.labelMedium.copy(
+        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+        shadow = Shadow(
+          color = Color.Black.copy(alpha = 0.85f),
+          blurRadius = 6f,
+          offset = Offset(0f, 1f),
+        ),
+      ),
+      textAlign = TextAlign.End,
+    )
+  }
 }
 
 @Composable
@@ -1129,17 +1208,27 @@ fun StandardSeekbar(
 
     // Thicken the track while scrubbing so the finger's target stays visible.
     val scrubThickness by animateFloatAsState(
-        targetValue = if (isScrubbing) 1.75f else 1f,
+        targetValue = if (isScrubbing) (if (isCinema) 1.8f else 1.75f) else 1f,
         animationSpec = tween(durationMillis = 150, easing = LinearEasing),
         label = "scrubThickness",
     )
 
     val isThick = !isCinema && seekbarStyle == SeekbarStyle.Thick
     val baseTrackHeight = if (isCinema) 3.dp else if (isThick) 16.dp else 4.dp
-    val trackHeightDp = (if (isThick) baseTrackHeight * heightFraction else baseTrackHeight) * (if (isCinema) 1f else scrubThickness)
-    val thumbWidth = if (isCinema) (if (isScrubbing) 4.dp else 0.dp) else if (isThick) 6.dp else 14.dp
-    val thumbHeight = if (isCinema) (if (isScrubbing) 8.dp else 0.dp) else if (isThick) 16.dp * scrubThickness else 14.dp
-    val thumbShape = if (isCinema) RoundedCornerShape(1.5.dp) else if (isThick) RoundedCornerShape(3.dp) else CircleShape
+    val trackHeightDp = (if (isThick) baseTrackHeight * heightFraction else baseTrackHeight) * (if (isCinema) (if (isScrubbing) 1.8f else 1f) else scrubThickness)
+    val targetThumbWidth = if (isCinema) (if (isScrubbing) 6.dp else 0.dp) else if (isThick) 6.dp else 14.dp
+    val targetThumbHeight = if (isCinema) (if (isScrubbing) 12.dp else 0.dp) else if (isThick) 16.dp * scrubThickness else 14.dp
+    val thumbWidth by animateDpAsState(
+        targetValue = targetThumbWidth,
+        animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+        label = "thumbWidth",
+    )
+    val thumbHeight by animateDpAsState(
+        targetValue = targetThumbHeight,
+        animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+        label = "thumbHeight",
+    )
+    val thumbShape = if (isCinema) RoundedCornerShape(3.dp) else if (isThick) RoundedCornerShape(3.dp) else CircleShape
 
     // Non-interactive visual only: the parent touch overlay is the single
     // gesture handler for every style. Leaving this Slider enabled would add
@@ -1404,12 +1493,14 @@ fun StandardSeekbar(
             }
         },
             thumb = {
-                Box(
-                    modifier = Modifier
-                        .width(thumbWidth)
-                        .height(thumbHeight)
-                        .background(primaryColor, thumbShape)
-                )
+                if (thumbWidth > 0.dp && thumbHeight > 0.dp) {
+                    Box(
+                        modifier = Modifier
+                            .width(thumbWidth)
+                            .height(thumbHeight)
+                            .background(primaryColor, thumbShape)
+                    )
+                }
             }
         )
     }

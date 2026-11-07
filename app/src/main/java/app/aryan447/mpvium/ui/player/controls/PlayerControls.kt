@@ -87,6 +87,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -344,16 +346,19 @@ fun PlayerControls(
                 Modifier.drawBehind {
                   val alpha = transparentOverlay
                   if (alpha > 0f) {
-                    val topAlpha = if (amoledMode) 0.70f else 0.60f
-                    val bottomAlpha = if (amoledMode) 0.75f else 0.65f
-                    val topScrimHeight = 120.dp.toPx()
-                    val bottomScrimHeight = 140.dp.toPx()
+                    val topAlpha = if (amoledMode) 0.78f else 0.65f
+                    val bottomAlpha = if (amoledMode) 0.82f else 0.70f
+                    val topScrimHeight = (if (isPortrait) 150.dp else 130.dp).toPx()
+                    val bottomScrimHeight = (if (isPortrait) 200.dp else 145.dp).toPx()
 
                     drawRect(
                       brush = Brush.verticalGradient(
-                        0.0f to Color.Black.copy(alpha = topAlpha * alpha),
-                        0.6f to Color.Black.copy(alpha = 0.25f * alpha),
-                        1.0f to Color.Transparent,
+                        0.00f to Color.Black.copy(alpha = topAlpha * alpha),
+                        0.20f to Color.Black.copy(alpha = topAlpha * 0.85f * alpha),
+                        0.40f to Color.Black.copy(alpha = topAlpha * 0.60f * alpha),
+                        0.65f to Color.Black.copy(alpha = topAlpha * 0.30f * alpha),
+                        0.85f to Color.Black.copy(alpha = topAlpha * 0.10f * alpha),
+                        1.00f to Color.Transparent,
                         startY = 0f,
                         endY = topScrimHeight,
                       ),
@@ -362,9 +367,12 @@ fun PlayerControls(
 
                     drawRect(
                       brush = Brush.verticalGradient(
-                        0.0f to Color.Transparent,
-                        0.4f to Color.Black.copy(alpha = 0.25f * alpha),
-                        1.0f to Color.Black.copy(alpha = bottomAlpha * alpha),
+                        0.00f to Color.Transparent,
+                        0.15f to Color.Black.copy(alpha = bottomAlpha * 0.10f * alpha),
+                        0.35f to Color.Black.copy(alpha = bottomAlpha * 0.30f * alpha),
+                        0.60f to Color.Black.copy(alpha = bottomAlpha * 0.60f * alpha),
+                        0.80f to Color.Black.copy(alpha = bottomAlpha * 0.85f * alpha),
+                        1.00f to Color.Black.copy(alpha = bottomAlpha * alpha),
                         startY = size.height - bottomScrimHeight,
                         endY = size.height,
                       ),
@@ -1244,13 +1252,13 @@ fun PlayerControls(
               )
               .constrainAs(bottomRightControls) {
                 if (isPortrait) {
-                  bottom.linkTo(parent.bottom, (if (isCinema) spacing.large else spacing.extraLarge) + tabletBottomOffset)
+                  bottom.linkTo(parent.bottom, (if (isCinema) spacing.medium else spacing.extraLarge) + tabletBottomOffset)
                   start.linkTo(parent.start, spacing.large)
                   end.linkTo(parent.end, spacing.large)
                   width = Dimension.fillToConstraints
                 } else {
                   if (isCinema) {
-                    bottom.linkTo(parent.bottom, spacing.large + tabletBottomOffset)
+                    bottom.linkTo(parent.bottom, spacing.medium + tabletBottomOffset)
                   } else {
                     bottom.linkTo(seekbar.top, spacing.small)
                   }
@@ -1262,18 +1270,7 @@ fun PlayerControls(
             if (isCinema) {
               Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.End,
               ) {
-                CompactTimecode(
-                  position = seekPreviewPosition ?: precisePosition,
-                  duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
-                  isInverted = invertDuration,
-                  onClick = {
-                    resetControlsTimestamp = System.currentTimeMillis()
-                    playerPreferences.invertDuration.set(!invertDuration)
-                  },
-                  modifier = Modifier.padding(bottom = MaterialTheme.spacing.extraSmall),
-                )
                 BottomPlayerControlsPortrait(
                   buttons = portraitBottomButtons,
                   chapters = chapters,
@@ -1291,6 +1288,50 @@ fun PlayerControls(
                   viewModel = viewModel,
                   activity = activity,
                 )
+                Row(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = MaterialTheme.spacing.smaller),
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                  val activeChapterName = currentChapter?.let { chapters.getOrNull(it)?.name }?.takeIf { it.isNotBlank() }
+                  if (activeChapterName != null) {
+                    Text(
+                      text = activeChapterName,
+                      style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        shadow = Shadow(
+                          color = Color.Black.copy(alpha = 0.85f),
+                          blurRadius = 6f,
+                          offset = Offset(0f, 1f),
+                        ),
+                      ),
+                      color = LocalPlayerColors.current.timerContent.copy(alpha = 0.70f),
+                      maxLines = 1,
+                      overflow = TextOverflow.Ellipsis,
+                      modifier = Modifier
+                        .weight(1f, fill = false)
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable {
+                          resetControlsTimestamp = System.currentTimeMillis()
+                          onOpenSheet(Sheets.Chapters)
+                        }
+                        .padding(vertical = MaterialTheme.spacing.extraSmall),
+                    )
+                  } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                  }
+                  CompactTimecode(
+                    position = seekPreviewPosition ?: precisePosition,
+                    duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
+                    isInverted = invertDuration,
+                    onClick = {
+                      resetControlsTimestamp = System.currentTimeMillis()
+                      playerPreferences.invertDuration.set(!invertDuration)
+                    },
+                  )
+                }
               }
             } else {
               BottomPlayerControlsPortrait(
@@ -1315,7 +1356,7 @@ fun PlayerControls(
             if (isCinema) {
               Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
               ) {
                 BottomRightPlayerControlsLandscape(
                   buttons = bottomRightButtons,
@@ -1338,6 +1379,11 @@ fun PlayerControls(
                   position = seekPreviewPosition ?: precisePosition,
                   duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
                   isInverted = invertDuration,
+                  currentChapterName = currentChapter?.let { chapters.getOrNull(it)?.name }?.takeIf { it.isNotBlank() },
+                  onChapterClick = {
+                    resetControlsTimestamp = System.currentTimeMillis()
+                    onOpenSheet(Sheets.Chapters)
+                  },
                   onClick = {
                     resetControlsTimestamp = System.currentTimeMillis()
                     playerPreferences.invertDuration.set(!invertDuration)
@@ -1397,7 +1443,7 @@ fun PlayerControls(
               )
               .constrainAs(bottomLeftControls) {
                 if (isCinema) {
-                  bottom.linkTo(parent.bottom, spacing.large + tabletBottomOffset)
+                  bottom.linkTo(parent.bottom, spacing.medium + tabletBottomOffset)
                 } else {
                   bottom.linkTo(seekbar.top, spacing.small)
                 }

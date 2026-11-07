@@ -17,4 +17,15 @@ class PlayerLayoutTest {
   fun defaultLayoutIsGlassPill() {
     assertEquals(PlayerLayout.GLASS_PILL, PlayerLayout.valueOf("GLASS_PILL"))
   }
+
+  @Test
+  fun cinemaLayoutIsAvailable() {
+    assertEquals(PlayerLayout.CINEMA, PlayerLayout.valueOf("CINEMA"))
+  }
+
+  @Test
+  fun playerLayoutEntriesOrderIsPreserved() {
+    assertEquals(PlayerLayout.GLASS_PILL, PlayerLayout.entries[0])
+    assertEquals(PlayerLayout.CINEMA, PlayerLayout.entries[1])
+  }
 }
