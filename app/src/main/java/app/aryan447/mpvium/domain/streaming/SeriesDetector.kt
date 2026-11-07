@@ -471,7 +471,10 @@ class SeriesDetector(
 
       // Build custom series overlays (deterministic id: "custom:<id>")
       val videoByPath = items.associate { it.first.path to it.first }
-      val videoByName = items.associate { it.first.displayName to it.first }
+      val videoByName = items
+        .groupBy { it.first.displayName }
+        .filterValues { it.size == 1 }
+        .mapValues { it.value.first().first }
 
       val customSeriesBuiltList = customSeriesList.mapNotNull { customSeries ->
         val seriesItems = customSeriesItems
@@ -516,9 +519,6 @@ class SeriesDetector(
 
         val seasonsMap = customEpisodes
           .groupBy { it.seasonNumber }
-          .mapValues { (_, eps) ->
-            eps.sortedWith(compareBy({ it.seasonNumber }, { it.episodeNumber }, { it.video.displayName }))
-          }
           .toSortedMap()
 
         val allEpisodes = seasonsMap.values.flatten()
