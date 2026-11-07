@@ -99,9 +99,10 @@ import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.StreamingArtworkStore
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.repository.MediaFileRepository
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
-import cafe.adriel.voyager.core.screen.Screen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -775,6 +776,7 @@ private fun VideoPickerSheet(
   onVideosSelected: (List<Video>) -> Unit,
 ) {
   val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+  val context = LocalContext.current
   val libraryIndexRepository = koinInject<LibraryIndexRepository>()
 
   var allVideos by remember { mutableStateOf<List<Video>>(emptyList()) }
@@ -785,8 +787,10 @@ private fun VideoPickerSheet(
   LaunchedEffect(Unit) {
     withContext(Dispatchers.IO) {
       val library = libraryIndexRepository.getLibrary()
-      val list = library.folders.flatMap { it.videos }
-      val unique = list.distinctBy { it.path }.sortedBy { it.displayName.lowercase() }
+      val bucketIds = library.folders.map { it.bucketId }.toSet()
+      val listFromBuckets = MediaFileRepository.getVideosForBuckets(context, bucketIds)
+      val listFromLibrary = library.series.flatMap { it.seasons.values.flatten().map { ep -> ep.video } } + library.movies.map { it.video }
+      val unique = (listFromBuckets + listFromLibrary).distinctBy { it.path }.sortedBy { it.displayName.lowercase() }
       allVideos = unique
       isLoading = false
     }

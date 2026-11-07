@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.domain.streaming
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import app.aryan447.mpvium.database.MpviumDatabase
 import app.aryan447.mpvium.database.entities.PlaybackStateEntity
@@ -484,12 +485,13 @@ class SeriesDetector(
             ?: Video(
               id = (customSeries.id * 100_000L + idx),
               title = item.fileName,
+              displayName = item.fileName,
               path = item.filePath,
+              uri = runCatching { Uri.fromFile(File(item.filePath)) }.getOrDefault(Uri.EMPTY),
               duration = 0L,
               size = 0L,
               dateAdded = customSeries.createdAt,
               dateModified = customSeries.createdAt,
-              displayName = item.fileName,
             )
 
           val playbackState = playbackStates[video.displayName] ?: playbackStates[video.title]
