@@ -39,6 +39,7 @@ class BrowserPreferences(
   val layoutShows = preferenceStore.getEnum("layout_shows", MediaLayoutMode.GRID)
   val layoutMovies = preferenceStore.getEnum("layout_movies", MediaLayoutMode.GRID)
   val layoutFolders = preferenceStore.getEnum("layout_folders", MediaLayoutMode.LIST)
+  val layoutAudio = preferenceStore.getEnum("layout_audio", MediaLayoutMode.GRID)
   val mediaLayoutMode = layoutFolders
 
   // Visibility preferences for folder card chips

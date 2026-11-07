@@ -2,6 +2,7 @@ package app.aryan447.mpvium.ui.browser
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
  *   - 3: FOLDERS
  *   - 4: LIBRARY
  *   - 5: PLAYLISTS
+ *   - 6: AUDIO (auto-hidden when no audio exists on device)
  *
  * By default, unified TITLES is enabled (5 visible tabs). Users can switch
  * to separate SHOWS and MOVIES under Settings > Appearance > Bottom navigation.
@@ -38,6 +40,7 @@ enum class MainTab(
   FOLDERS("FOLDERS", 3, Icons.Filled.Folder, "Folders"),
   LIBRARY("LIBRARY", 4, Icons.Filled.VideoLibrary, "Library"),
   PLAYLISTS("PLAYLISTS", 5, Icons.AutoMirrored.Filled.PlaylistPlay, "Playlists"),
+  AUDIO("AUDIO", 6, Icons.Filled.Audiotrack, "Audio"),
   ;
 
   companion object {
@@ -48,7 +51,7 @@ enum class MainTab(
      */
     const val RESERVED_MOVIES_CANONICAL_INDEX = 2
 
-    val defaultKeys: Set<String> = setOf(HOME.key, TITLES.key, FOLDERS.key, LIBRARY.key, PLAYLISTS.key)
+    val defaultKeys: Set<String> = setOf(HOME.key, TITLES.key, FOLDERS.key, LIBRARY.key, PLAYLISTS.key, AUDIO.key)
 
     fun fromKey(key: String): MainTab? = entries.firstOrNull { it.key == key }
 
@@ -59,17 +62,20 @@ enum class MainTab(
       3 -> FOLDERS
       4 -> LIBRARY
       5 -> PLAYLISTS
+      6 -> AUDIO
       else -> null
     }
 
     /** Visible tabs in canonical order, filtered by enabled keys. Never empty. */
-    fun visibleTabs(enabledKeys: Set<String>): List<MainTab> {
+    fun visibleTabs(enabledKeys: Set<String>, hasAudio: Boolean = true): List<MainTab> {
       val effectiveKeys = if (TITLES.key in enabledKeys) {
         enabledKeys - SHOWS.key - MOVIES.key
       } else {
         enabledKeys
       }
-      val filtered = entries.filter { it.key in effectiveKeys }
+      val filtered = entries.filter { tab ->
+        tab.key in effectiveKeys && (tab != AUDIO || hasAudio)
+      }
       return filtered.ifEmpty { listOf(HOME, TITLES, FOLDERS, LIBRARY, PLAYLISTS) }
     }
   }

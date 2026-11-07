@@ -54,9 +54,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.audio.AudioRepository
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.audio.AudioScreen
 import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
 import app.aryan447.mpvium.ui.streaming.home.StreamingHomeScreen
 import app.aryan447.mpvium.ui.theme.DarkMode
@@ -203,8 +205,13 @@ object MainScreen : Screen {
     }
     val glassHaze = rememberGlassHazeState()
     val glassStyle = glassHazeStyle(isDark = isDark, kind = GlassKind.Bar)
-    val navItems = remember(enabledBottomTabs) {
-      MainTab.visibleTabs(enabledBottomTabs)
+    val audioRepository = koinInject<AudioRepository>()
+    val hasAudio by audioRepository.hasAudio.collectAsState()
+    LaunchedEffect(Unit) {
+      audioRepository.checkHasAudio()
+    }
+    val navItems = remember(enabledBottomTabs, hasAudio) {
+      MainTab.visibleTabs(enabledBottomTabs, hasAudio)
     }
 
     fun selectTab(index: Int) {
@@ -450,6 +457,7 @@ object MainScreen : Screen {
               3 -> FolderListScreen.Content()
               4 -> MoreLibraryScreen.Content()
               5 -> PlaylistScreen.Content()
+              6 -> AudioScreen.Content()
               else -> TitlesScreen().Content()
             }
           }
