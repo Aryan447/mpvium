@@ -74,12 +74,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
-import app.aryan447.mpvium.preferences.RepeatMode
 import app.aryan447.mpvium.ui.audio.components.AlbumArtImage
 import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.PlayerViewModel
+import app.aryan447.mpvium.ui.player.RepeatMode
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassRimBrush
+import is.xyz.mpv.MPVLib
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,10 +100,10 @@ fun AudioPlayerSurface(
   val album by viewModel.audioAlbum.collectAsState()
   val artworkUri by viewModel.audioArtUri.collectAsState()
 
-  val paused by viewModel.paused.collectAsState()
+  val paused by MPVLib.propBoolean["pause"].collectAsState()
   val isPlaying = paused == false
-  val pos by viewModel.pos.collectAsState()
-  val duration by viewModel.duration.collectAsState()
+  val pos by MPVLib.propInt["time-pos"].collectAsState()
+  val duration by MPVLib.propInt["duration"].collectAsState()
   val shuffleEnabled by viewModel.shuffleEnabled.collectAsState()
   val repeatMode by viewModel.repeatMode.collectAsState()
 
@@ -347,7 +348,7 @@ fun AudioPlayerSurface(
           FilledIconButton(
             onClick = {
               haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-              viewModel.togglePause()
+              viewModel.pauseUnpause()
             },
             shape = CircleShape,
             modifier = Modifier.size(68.dp),
@@ -449,7 +450,7 @@ fun AudioPlayerSurface(
             ) {
               itemsIndexed(playlist) { index, uri ->
                 val isSelected = index == currentIndex
-                val itemTitle = playerActivity.getPlaylistItemTitle(uri)
+                val itemTitle = playerActivity?.getPlaylistItemTitle(uri) ?: (uri.lastPathSegment ?: "")
 
                 Row(
                   modifier = Modifier
@@ -464,7 +465,7 @@ fun AudioPlayerSurface(
                     )
                     .clickable {
                       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                      playerActivity.loadPlaylistItem(index)
+                      viewModel.playPlaylistItem(index)
                       showQueueSheet = false
                     }
                     .padding(horizontal = 12.dp, vertical = 10.dp),
