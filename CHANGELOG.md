@@ -2,6 +2,10 @@
 
 ### Added
 
+- Custom series: create and edit your own TV shows from any videos with custom title, release year, poster cover, and drag-and-drop episode reordering with explicit season and episode numbering.
+- Custom series entry points: selection mode in Folders and Files tabs now features "Add to series…" next to "Add to playlist", and the Shows tab header includes a direct "Create series" action with helpful empty-state guidance.
+- Series detail screen integration: custom series render identically to auto-detected shows with deterministic identifiers (`custom:<id>`), with dedicated Edit and safe Delete actions that remove only the series grouping without touching underlying video files.
+- Library exclusion overlay: videos claimed by a custom series are automatically excluded from automatic scanner grouping to eliminate duplicate entries in TV shows and movies.
 - Cinema player layout option (`PlayerLayout.CINEMA`, opt-in off by default under Settings → Appearance → Player Layout): a flat, gesture-first player layout featuring borderless glyphs over subtle top and bottom scrim gradients, an edge-to-edge 3 dp seekbar pinned to the bottom of the screen, single-line title top-left, compact monospace timecode right-aligned above the seekbar, fast 2.5-second auto-hide timeout, and full RTL mirroring while preserving custom per-region button arrangements.
 - Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
 - Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.

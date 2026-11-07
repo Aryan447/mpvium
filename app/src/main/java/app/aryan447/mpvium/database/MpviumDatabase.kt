@@ -4,12 +4,15 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import app.aryan447.mpvium.database.converters.NetworkProtocolConverter
+import app.aryan447.mpvium.database.dao.CustomSeriesDao
 import app.aryan447.mpvium.database.dao.LibraryIndexDao
 import app.aryan447.mpvium.database.dao.NetworkConnectionDao
 import app.aryan447.mpvium.database.dao.PlaybackStateDao
 import app.aryan447.mpvium.database.dao.PlaylistDao
 import app.aryan447.mpvium.database.dao.RecentlyPlayedDao
 import app.aryan447.mpvium.database.dao.VideoMetadataDao
+import app.aryan447.mpvium.database.entities.CustomSeriesEntity
+import app.aryan447.mpvium.database.entities.CustomSeriesItemEntity
 import app.aryan447.mpvium.database.entities.LibraryIndexEntity
 import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.database.entities.PlaylistEntity
@@ -27,8 +30,10 @@ import app.aryan447.mpvium.domain.network.NetworkConnection
     PlaylistEntity::class,
     PlaylistItemEntity::class,
     LibraryIndexEntity::class,
+    CustomSeriesEntity::class,
+    CustomSeriesItemEntity::class,
   ],
-  version = 9,
+  version = 10,
   exportSchema = true,
 )
 @TypeConverters(NetworkProtocolConverter::class)
@@ -44,4 +49,6 @@ abstract class MpviumDatabase : RoomDatabase() {
   abstract fun playlistDao(): PlaylistDao
 
   abstract fun libraryIndexDao(): LibraryIndexDao
+
+  abstract fun customSeriesDao(): CustomSeriesDao
 }
