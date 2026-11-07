@@ -132,6 +132,14 @@ object SearchablePreferences {
 
             // Layout preferences
             add(SearchablePreference(
+                key = "player.controls.player_layout",
+                titleRes = R.string.pref_player_layout_style_title,
+                summaryRes = R.string.pref_player_layout_style_summary,
+                keywords = listOf("layout", "cinema", "glass", "pill", "style", "flat", "controls"),
+                category = "Appearance",
+                screen = PlayerControlsPreferencesScreen,
+            ))
+            add(SearchablePreference(
                 key = "player.controls.layout",
                 titleRes = R.string.pref_layout_title,
                 summaryRes = R.string.pref_layout_summary,

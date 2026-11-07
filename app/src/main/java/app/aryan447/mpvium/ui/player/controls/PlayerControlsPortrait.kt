@@ -24,8 +24,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.PlayerButton
@@ -62,6 +66,7 @@ fun TopPlayerControlsPortrait(
         ControlsButton(
           icon = Icons.AutoMirrored.Default.ArrowBack,
           onClick = onBackPress,
+          hideBackground = hideBackground,
         )
 
         val titleInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -88,31 +93,37 @@ fun TopPlayerControlsPortrait(
           ) {
             Row(
               verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+              horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
               modifier =
                 Modifier.padding(
-                  horizontal = MaterialTheme.spacing.medium,
+                  horizontal = if (hideBackground) MaterialTheme.spacing.extraSmall else MaterialTheme.spacing.medium,
                   vertical = MaterialTheme.spacing.small,
                 ),
             ) {
               viewModel.getPlaylistInfo()?.let { playlistInfo ->
-                Text(
-                  text = playlistInfo,
-                  textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                  style = MaterialTheme.typography.bodyMedium,
-                  maxLines = 1,
-                  overflow = TextOverflow.Visible,
-                  fontFamily = FontFamily.Monospace,
-                  color = if (hideBackground) colors.onVideoContent else colors.accent,
-                )
-                Text(
-                  text = Typography.bullet.toString(),
-                  textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                  style = MaterialTheme.typography.bodyMedium,
-                  maxLines = 1,
-                  color = if (hideBackground) colors.onVideoContent else colors.controlContent,
-                  overflow = TextOverflow.Clip,
-                )
+                Surface(
+                  shape = RoundedCornerShape(6.dp),
+                  color = if (hideBackground) MaterialTheme.colorScheme.primary.copy(alpha = 0.20f) else Color.Transparent,
+                  modifier = Modifier.padding(end = MaterialTheme.spacing.extraSmall),
+                ) {
+                  Text(
+                    text = playlistInfo,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                      fontWeight = FontWeight.SemiBold,
+                      shadow = if (hideBackground) Shadow(
+                        color = Color.Black.copy(alpha = 0.75f),
+                        offset = Offset(0f, 1f),
+                        blurRadius = 4f,
+                      ) else null,
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Visible,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (hideBackground) colors.activeOnVideoContent else colors.accent,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                  )
+                }
               }
               Column(
                 modifier = Modifier.weight(1f, fill = false),
@@ -127,12 +138,28 @@ fun TopPlayerControlsPortrait(
                     overflow = TextOverflow.Ellipsis,
                     style =
                       if (firstLineIsPrimary) {
-                        MaterialTheme.typography.bodyMedium
+                        if (hideBackground) {
+                          MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            shadow = Shadow(
+                              color = Color.Black.copy(alpha = 0.85f),
+                              offset = Offset(0f, 2f),
+                              blurRadius = 6f,
+                            ),
+                          )
+                        } else {
+                          MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
+                        }
                       } else {
-                        MaterialTheme.typography.bodySmall
+                        MaterialTheme.typography.bodySmall.copy(
+                          shadow = if (hideBackground) Shadow(
+                            color = Color.Black.copy(alpha = 0.85f),
+                            offset = Offset(0f, 1f),
+                            blurRadius = 4f,
+                          ) else null,
+                        )
                       },
-                    fontFamily = FontFamily.Monospace,
-                    color = textColor.copy(alpha = if (firstLineIsPrimary) 1f else 0.7f),
+                    color = textColor.copy(alpha = if (firstLineIsPrimary) 1f else 0.75f),
                   )
                   Text(
                     text = mediaSubtitle,
@@ -140,20 +167,46 @@ fun TopPlayerControlsPortrait(
                     overflow = TextOverflow.Ellipsis,
                     style =
                       if (mediaSubtitleIsPrimary) {
-                        MaterialTheme.typography.bodyMedium
+                        if (hideBackground) {
+                          MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            shadow = Shadow(
+                              color = Color.Black.copy(alpha = 0.85f),
+                              offset = Offset(0f, 2f),
+                              blurRadius = 6f,
+                            ),
+                          )
+                        } else {
+                          MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
+                        }
                       } else {
-                        MaterialTheme.typography.bodySmall
+                        MaterialTheme.typography.bodySmall.copy(
+                          shadow = if (hideBackground) Shadow(
+                            color = Color.Black.copy(alpha = 0.85f),
+                            offset = Offset(0f, 1f),
+                            blurRadius = 4f,
+                          ) else null,
+                        )
                       },
-                    fontFamily = FontFamily.Monospace,
-                    color = textColor.copy(alpha = if (mediaSubtitleIsPrimary) 1f else 0.7f),
+                    color = textColor.copy(alpha = if (mediaSubtitleIsPrimary) 1f else 0.75f),
                   )
                 } else {
                   Text(
                     text = mediaTitle ?: "",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = FontFamily.Monospace,
+                    style = if (hideBackground) {
+                      MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        shadow = Shadow(
+                          color = Color.Black.copy(alpha = 0.85f),
+                          offset = Offset(0f, 2f),
+                          blurRadius = 6f,
+                        ),
+                      )
+                    } else {
+                      MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
+                    },
                     color = if (hideBackground) colors.onVideoContent else colors.controlContent,
                   )
                 }
@@ -187,7 +240,7 @@ fun BottomPlayerControlsPortrait(
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(bottom = MaterialTheme.spacing.large)
+      .padding(bottom = if (hideBackground) MaterialTheme.spacing.smaller else MaterialTheme.spacing.large)
       .horizontalScroll(rememberScrollState()),
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically,

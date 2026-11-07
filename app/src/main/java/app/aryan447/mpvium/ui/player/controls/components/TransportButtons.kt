@@ -42,8 +42,8 @@ import app.aryan447.mpvium.ui.theme.spacing
 
 private val transportShadow =
   Brush.radialGradient(
-    0.0f to Color.Black.copy(alpha = 0.3f),
-    0.7f to Color.Transparent,
+    0.0f to Color.Black.copy(alpha = 0.45f),
+    0.65f to Color.Black.copy(alpha = 0.15f),
     1.0f to Color.Transparent,
   )
 
@@ -164,6 +164,19 @@ fun PlayerPillButton(
           onLongClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onLongClick()
+          },
+        )
+        .then(
+          if (hideBackground) {
+            Modifier.background(
+              brush = Brush.radialGradient(
+                0.0f to Color.Black.copy(alpha = 0.30f),
+                0.85f to Color.Transparent,
+              ),
+              shape = RoundedCornerShape(50),
+            )
+          } else {
+            Modifier
           },
         ),
     content = {
