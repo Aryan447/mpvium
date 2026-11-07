@@ -1412,18 +1412,24 @@ class PlayerViewModel(
 
     if (clampedPosition !in 0..maxDuration) return false
 
-    // Cancel pending relative seek before absolute seek
     seekCoalesceJob?.cancel()
     pendingSeekOffset = 0
 
-    val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
+    val currentPos = pos ?: 0
+    val seekDelta = abs(clampedPosition - currentPos)
 
-    // 1. Scrubbing (dragging finger) -> keyframes (smooth preview)
-    // 2. Gesture swipe release (forceExact) -> exact (lands on previewed second)
-    // 3. Seekbar tap -> fast keyframe by default (or exact if precise seeking is enabled in settings)
+    // Conditions where exact landing is fast enough even on Helio G99:
+    // 1. User enabled precise seeking in Settings
+    // 2. Short video (< 2 min)
+    // 3. Small seek jump (<= 15 seconds) where frame catch-up is minimal
+    val isLightweightSeek = seekDelta <= 15 || maxDuration < 120
+    val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || isLightweightSeek
+
     val seekMode = when {
       isScrubbing -> "absolute+keyframes"
-      forceExact || shouldUsePreciseSeeking -> "absolute"
+      forceExact && shouldUsePreciseSeeking -> "absolute+exact"
+      forceExact -> "absolute+keyframes"
+      shouldUsePreciseSeeking -> "absolute+exact"
       else -> "absolute+keyframes"
     }
 
