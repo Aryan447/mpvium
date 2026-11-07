@@ -168,6 +168,10 @@ class BrowserPreferencesLayoutTest {
     assertEquals(MediaLayoutMode.LIST, preferences.layoutFolders.defaultValue())
     assertEquals(MediaLayoutMode.LIST, preferences.layoutFolders.get())
 
+    assertEquals("layout_audio", preferences.layoutAudio.key())
+    assertEquals(MediaLayoutMode.GRID, preferences.layoutAudio.defaultValue())
+    assertEquals(MediaLayoutMode.GRID, preferences.layoutAudio.get())
+
     // mediaLayoutMode backward-compat reference
     assertEquals(MediaLayoutMode.LIST, preferences.mediaLayoutMode.get())
   }
@@ -190,11 +194,14 @@ class BrowserPreferencesLayoutTest {
     // Toggle Movies to LIST and Folders to GRID
     preferences.layoutMovies.set(MediaLayoutMode.LIST)
     preferences.layoutFolders.set(MediaLayoutMode.GRID)
+    preferences.layoutAudio.set(MediaLayoutMode.LIST)
 
     assertEquals(MediaLayoutMode.LIST, preferences.layoutMovies.get())
     assertEquals("LIST", store.store["layout_movies"])
     assertEquals(MediaLayoutMode.GRID, preferences.layoutFolders.get())
     assertEquals("GRID", store.store["layout_folders"])
+    assertEquals(MediaLayoutMode.LIST, preferences.layoutAudio.get())
+    assertEquals("LIST", store.store["layout_audio"])
     assertEquals(MediaLayoutMode.GRID, preferences.mediaLayoutMode.get())
   }
 }
