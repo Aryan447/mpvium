@@ -830,7 +830,7 @@ fun PlayerControls(
             resetControlsTimestamp = { resetControlsTimestamp = System.currentTimeMillis() },
             paused = paused == true,
             position = effectiveSeekPosition,
-            duration = duration,
+            duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
             isSwipeSeeking = isSwipeSeeking,
             chapters = chapters.toImmutableList(),
             currentChapter = currentChapter,
