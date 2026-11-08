@@ -595,13 +595,13 @@ fun PlayerControls(
 
         val holdForMultipleSpeed by playerPreferences.holdForMultipleSpeed.collectAsState()
         val playerUpdate by viewModel.playerUpdate.collectAsState()
-        // While a horizontal swipe-seek is active, drive the seekbar and its
-        // timers from the gesture preview instead of the lagging live mpv
-        // position, so the pill and the seekbar can't show different seconds.
+        val livePos by viewModel.precisePosition.collectAsState()
+
         val isSwipeSeeking = playerUpdate is PlayerUpdates.HorizontalSeek
-        val effectiveSeekPosition = when (val update = playerUpdate) {
-          is PlayerUpdates.HorizontalSeek -> update.position ?: precisePosition
-          else -> precisePosition
+        val seekbarPosition = if (playerUpdate is PlayerUpdates.HorizontalSeek) {
+          (playerUpdate as PlayerUpdates.HorizontalSeek).position ?: livePos
+        } else {
+          livePos
         }
         val aspectRatio by viewModel.videoAspect.collectAsState()
         val currentAspectRatio by viewModel.currentAspectRatio.collectAsState()
@@ -982,7 +982,7 @@ fun PlayerControls(
           var wasPlayerAlreadyPaused by remember { mutableStateOf(false) }
 
           SeekbarWithTimers(
-            position = effectiveSeekPosition,
+            position = seekbarPosition,
             isExternalSeeking = isSwipeSeeking,
             duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
             onValueChange = {

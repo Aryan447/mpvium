@@ -432,7 +432,7 @@ fun SeekbarWithTimers(
               duration = duration,
               chapters = chapters,
               isPaused = paused,
-              isScrubbing = isUserInteracting || isExternalSeeking,
+              isScrubbing = isUserInteracting,
               seekbarStyle = SeekbarStyle.Standard,
               cinema = isModern,
               // Touch handled by parent overlay (single gesture handler).
@@ -452,7 +452,7 @@ fun SeekbarWithTimers(
               duration = duration,
               chapters = chapters,
               isPaused = paused,
-              isScrubbing = isUserInteracting || isExternalSeeking,
+              isScrubbing = isUserInteracting,
               useWavySeekbar = true,
               seekbarStyle = SeekbarStyle.Wavy,
               onSeek = { }, // Touch handled by parent
@@ -471,7 +471,7 @@ fun SeekbarWithTimers(
               duration = duration,
               chapters = chapters,
               isPaused = paused,
-              isScrubbing = isUserInteracting || isExternalSeeking,
+              isScrubbing = isUserInteracting,
               seekbarStyle = SeekbarStyle.Thick,
               cinema = isModern,
               // Touch handled by parent overlay (single gesture handler).
@@ -579,7 +579,7 @@ fun SeekbarWithTimers(
   }
 
     VideoTimer(
-      value = if (timersInverted.second) position - duration else duration,
+      value = if (timersInverted.second) visualPosition - duration else duration,
       isInverted = timersInverted.second,
       onClick = {
         clickEvent()
