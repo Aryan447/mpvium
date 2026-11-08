@@ -9,7 +9,7 @@ class PlayerLayoutTest {
   fun playerLayoutContainsRequiredValues() {
     val names = PlayerLayout.entries.map { it.name }
     assertTrue(names.contains("CLASSIC"))
-    assertTrue(names.contains("CINEMA"))
+    assertTrue(names.contains("ZEN"))
     assertEquals(2, PlayerLayout.entries.size)
   }
 
@@ -19,13 +19,23 @@ class PlayerLayoutTest {
   }
 
   @Test
-  fun cinemaLayoutIsAvailable() {
-    assertEquals(PlayerLayout.CINEMA, PlayerLayout.valueOf("CINEMA"))
+  fun zenLayoutIsAvailable() {
+    assertEquals(PlayerLayout.ZEN, PlayerLayout.valueOf("ZEN"))
   }
 
   @Test
   fun playerLayoutEntriesOrderIsPreserved() {
     assertEquals(PlayerLayout.CLASSIC, PlayerLayout.entries[0])
-    assertEquals(PlayerLayout.CINEMA, PlayerLayout.entries[1])
+    assertEquals(PlayerLayout.ZEN, PlayerLayout.entries[1])
+  }
+
+  @Test
+  fun fromStringHandlesLegacyAndNewValues() {
+    assertEquals(PlayerLayout.ZEN, PlayerLayout.fromString("ZEN"))
+    assertEquals(PlayerLayout.ZEN, PlayerLayout.fromString("MINIMAL"))
+    assertEquals(PlayerLayout.ZEN, PlayerLayout.fromString("CINEMA"))
+    assertEquals(PlayerLayout.CLASSIC, PlayerLayout.fromString("CLASSIC"))
+    assertEquals(PlayerLayout.CLASSIC, PlayerLayout.fromString("GLASS_PILL"))
+    assertEquals(PlayerLayout.CLASSIC, PlayerLayout.fromString("UNKNOWN"))
   }
 }

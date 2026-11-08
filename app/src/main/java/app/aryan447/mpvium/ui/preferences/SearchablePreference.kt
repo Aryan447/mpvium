@@ -135,7 +135,7 @@ object SearchablePreferences {
                 key = "player.controls.player_layout",
                 titleRes = R.string.pref_player_layout_style_title,
                 summaryRes = R.string.pref_player_layout_style_summary,
-                keywords = listOf("layout", "classic", "cinema", "glass", "pill", "style", "flat", "minimal", "controls"),
+                keywords = listOf("layout", "classic", "zen", "minimal", "cinema", "glass", "pill", "style", "flat", "controls"),
                 category = "Appearance",
                 screen = PlayerControlsPreferencesScreen,
             ))

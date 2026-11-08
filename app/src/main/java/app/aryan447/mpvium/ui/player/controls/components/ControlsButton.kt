@@ -32,14 +32,14 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.preference.collectAsState
-import app.aryan447.mpvium.ui.player.controls.CinemaChrome
+import app.aryan447.mpvium.ui.player.controls.ZenChrome
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
 import org.koin.compose.koinInject
 
-private val cinemaGlyphShadow =
+private val zenGlyphShadow =
   Brush.radialGradient(
     0.0f to Color.Black.copy(alpha = 0.35f),
     0.7f to Color.Black.copy(alpha = 0.08f),
@@ -65,16 +65,16 @@ fun ControlsButton(
   val rawHideBackground by appearancePreferences?.hidePlayerButtonsBackground?.collectAsState()
     ?: remember { androidx.compose.runtime.mutableStateOf(false) }
   val playerLayout = LocalPlayerLayout.current
-  val isCinema = playerLayout == PlayerLayout.CINEMA
-  val effectiveHideBackground = hideBackground ?: (rawHideBackground || isCinema)
+  val isZen = playerLayout == PlayerLayout.ZEN
+  val effectiveHideBackground = hideBackground ?: (rawHideBackground || isZen)
   val colors = LocalPlayerColors.current
 
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val contentColor =
     color
       ?: when {
-        isCinema && active -> colors.accent
-        isCinema -> CinemaChrome.glyph
+        isZen && active -> colors.accent
+        isZen -> ZenChrome.glyph
         active && effectiveHideBackground -> colors.activeOnVideoContent
         active -> colors.activeContent
         effectiveHideBackground -> colors.onVideoIconContent
@@ -94,8 +94,8 @@ fun ControlsButton(
           indication = ripple(bounded = false, radius = 24.dp),
         )
         .then(
-          if (effectiveHideBackground || isCinema) {
-            Modifier.background(brush = cinemaGlyphShadow, shape = CircleShape)
+          if (effectiveHideBackground || isZen) {
+            Modifier.background(brush = zenGlyphShadow, shape = CircleShape)
           } else {
             Modifier
           },
@@ -103,8 +103,8 @@ fun ControlsButton(
     shape = CircleShape,
     color =
       when {
-        // Cinema controls are bare glyphs; only the active dot marks state.
-        isCinema -> Color.Transparent
+        // Zen controls are bare glyphs; only the active dot marks state.
+        isZen -> Color.Transparent
         effectiveHideBackground -> Color.Transparent
         active -> colors.activeFill
         else -> colors.controlFill
@@ -114,7 +114,7 @@ fun ControlsButton(
     shadowElevation = 0.dp,
     border =
       when {
-        isCinema -> null
+        isZen -> null
         effectiveHideBackground -> null
         else -> BorderStroke(1.dp, colors.controlBorder)
       },
@@ -127,16 +127,16 @@ fun ControlsButton(
         modifier =
           Modifier
             .padding(MaterialTheme.spacing.small)
-            .size(if (isCinema) 22.dp else 20.dp),
+            .size(if (isZen) 22.dp else 20.dp),
       )
       if (active && effectiveHideBackground) {
         Box(
           modifier = Modifier
             .align(Alignment.BottomCenter)
             .padding(bottom = 3.dp)
-            .size(if (isCinema) 5.dp else 4.dp)
+            .size(if (isZen) 5.dp else 4.dp)
             .background(
-              if (isCinema) MaterialTheme.colorScheme.primary else contentColor,
+              if (isZen) MaterialTheme.colorScheme.primary else contentColor,
               CircleShape,
             )
         )
@@ -151,14 +151,14 @@ fun ControlsGroup(
   content: @Composable RowScope.() -> Unit,
 ) {
   val spacing = MaterialTheme.spacing
-  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
+  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
 
   Row(
     modifier = modifier,
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement =
       androidx.compose.foundation.layout.Arrangement
-        .spacedBy(if (isCinema) spacing.smaller else spacing.extraSmall),
+        .spacedBy(if (isZen) spacing.smaller else spacing.extraSmall),
     content = content,
   )
 }

@@ -60,7 +60,7 @@ fun TopPlayerControlsPortrait(
   val playlistModeEnabled = viewModel.hasPlaylistSupport()
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val colors = LocalPlayerColors.current
-  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
+  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
 
   Column {
     Row(
@@ -130,7 +130,7 @@ fun TopPlayerControlsPortrait(
                   )
                 }
               }
-              if (isCinema) {
+              if (isZen) {
                 // Cinema's editorial marker: a short accent rule instead of a chip.
                 Box(
                   modifier =
@@ -212,7 +212,7 @@ fun TopPlayerControlsPortrait(
                     overflow = TextOverflow.Ellipsis,
                     style =
                       when {
-                        isCinema ->
+                        isZen ->
                           MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.SemiBold,
                             shadow = Shadow(

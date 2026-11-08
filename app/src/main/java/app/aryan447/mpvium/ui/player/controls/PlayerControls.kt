@@ -170,9 +170,9 @@ fun PlayerControls(
   val spacing = MaterialTheme.spacing
   val appearancePreferences = koinInject<AppearancePreferences>()
   val playerLayout by appearancePreferences.playerLayout.collectAsState()
-  val isCinema = playerLayout == PlayerLayout.CINEMA
+  val isZen = playerLayout == PlayerLayout.ZEN
   val rawHideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
-  val hideBackground = rawHideBackground || isCinema
+  val hideBackground = rawHideBackground || isZen
   val amoledMode by appearancePreferences.amoledMode.collectAsState()
   val playerFullColors by appearancePreferences.playerFullColors.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
@@ -279,10 +279,10 @@ fun PlayerControls(
     playerLayout,
   ) {
     if (controlsShown && paused == false && !isSeeking && !isUnlockSliderDragging) {
-      // Use 2.5 second delay in Cinema mode, 2 second delay when controls are locked, otherwise user preference
+      // Use 2.5 second delay in Zen mode, 2 second delay when controls are locked, otherwise user preference
       val delayTime = when {
         areControlsLocked -> 2000L
-        isCinema -> 2500L
+        isZen -> 2500L
         else -> playerTimeToDisappear.toLong()
       }
       delay(delayTime)
@@ -304,13 +304,13 @@ fun PlayerControls(
   DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime, interactionSource)
 
   CompositionLocalProvider(
-    LocalPlayerColors provides playerColorsFor(playerFullColors, cinema = isCinema),
+    LocalPlayerColors provides playerColorsFor(playerFullColors, zen = isZen),
     LocalPlayerLayout provides playerLayout,
     LocalRippleConfiguration provides playerRippleConfiguration,
     LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
     LocalContentColor provides Color.White,
   ) {
-    val layoutDirection = if (isCinema) {
+    val layoutDirection = if (isZen) {
       LocalLayoutDirection.current
     } else {
       LayoutDirection.Ltr
@@ -340,7 +340,7 @@ fun PlayerControls(
           modifier
             .fillMaxSize()
             .then(
-              if (isCinema) {
+              if (isZen) {
                 Modifier.drawBehind {
                   val alpha = transparentOverlay
                   if (alpha > 0f) {
@@ -815,8 +815,8 @@ fun PlayerControls(
           )
         }
 
-        if (isCinema) {
-          CinemaPlayerControls(
+        if (isZen) {
+          ZenPlayerControls(
             viewModel = viewModel,
             onBackPress = onBackPress,
             onOpenSheet = onOpenSheet,
@@ -854,7 +854,7 @@ fun PlayerControls(
         val showLoadingCircle by playerPreferences.showLoadingCircle.collectAsState()
 
         AnimatedVisibility(
-          visible = (pausedForCache == true && showLoadingCircle) || (controlsShown && !areControlsLocked && !isCinema),
+          visible = (pausedForCache == true && showLoadingCircle) || (controlsShown && !areControlsLocked && !isZen),
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier =
@@ -879,7 +879,7 @@ fun PlayerControls(
             else -> {
               if (playlistMode && viewModel.hasPlaylistSupport()) {
                 androidx.compose.foundation.layout.Row(
-                  horizontalArrangement = Arrangement.spacedBy(if (isCinema) 32.dp else 24.dp),
+                  horizontalArrangement = Arrangement.spacedBy(if (isZen) 32.dp else 24.dp),
                   verticalAlignment = Alignment.CenterVertically,
                 ) {
                   PlayerTransportButton(
@@ -891,7 +891,7 @@ fun PlayerControls(
                       if (viewModel.hasPrevious()) viewModel.playPrevious()
                     },
                     hideBackground = hideBackground,
-                    size = if (isCinema) 60.dp else 56.dp,
+                    size = if (isZen) 60.dp else 56.dp,
                   )
 
                   PlayerPlayPauseButton(
@@ -901,7 +901,7 @@ fun PlayerControls(
                       viewModel.pauseUnpause()
                     },
                     hideBackground = hideBackground,
-                    size = if (isCinema) 84.dp else 72.dp,
+                    size = if (isZen) 84.dp else 72.dp,
                   )
 
                   PlayerTransportButton(
@@ -913,7 +913,7 @@ fun PlayerControls(
                       if (viewModel.hasNext()) viewModel.playNext()
                     },
                     hideBackground = hideBackground,
-                    size = if (isCinema) 60.dp else 56.dp,
+                    size = if (isZen) 60.dp else 56.dp,
                   )
                 }
               } else {
@@ -924,7 +924,7 @@ fun PlayerControls(
                     viewModel.pauseUnpause()
                   },
                   hideBackground = hideBackground,
-                  size = if (isCinema) 84.dp else 72.dp,
+                  size = if (isZen) 84.dp else 72.dp,
                 )
               }
             }
@@ -934,7 +934,7 @@ fun PlayerControls(
         val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isCinema,
+          visible = controlsShown && !areControlsLocked && !isZen,
           enter =
             if (!reduceMotion) {
               slideInVertically(playerControlsEnterAnimationSpec()) { it } +
@@ -1041,7 +1041,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isCinema,
+          visible = controlsShown && !areControlsLocked && !isZen,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +
@@ -1112,7 +1112,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !isCinema,
+          visible = controlsShown && !areControlsLocked && !isPortrait && !isZen,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1270,7 +1270,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !areSlidersShown && !isCinema,
+          visible = controlsShown && !areControlsLocked && !areSlidersShown && !isZen,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1350,7 +1350,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown && !isCinema,
+          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown && !isZen,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +

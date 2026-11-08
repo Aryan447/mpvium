@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.PlayerLayout
-import app.aryan447.mpvium.ui.player.controls.CinemaChrome
+import app.aryan447.mpvium.ui.player.controls.ZenChrome
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
@@ -66,10 +66,10 @@ fun PlayerTransportButton(
 ) {
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
-  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
+  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
   val contentColor =
     when {
-      isCinema -> CinemaChrome.glyph
+      isZen -> ZenChrome.glyph
       hideBackground -> colors.onVideoIconContent
       else -> colors.controlIconContent
     }
@@ -88,7 +88,7 @@ fun PlayerTransportButton(
           },
         )
         .then(
-          if (hideBackground || isCinema) {
+          if (hideBackground || isZen) {
             Modifier.background(brush = transportShadow, shape = CircleShape)
           } else {
             Modifier
@@ -97,7 +97,7 @@ fun PlayerTransportButton(
     shape = CircleShape,
     color =
       when {
-        isCinema -> Color.Transparent
+        isZen -> Color.Transparent
         !hideBackground -> colors.controlFill
         else -> Color.Transparent
       },
@@ -106,7 +106,7 @@ fun PlayerTransportButton(
     shadowElevation = 0.dp,
     border =
       when {
-        isCinema -> null
+        isZen -> null
         !hideBackground -> BorderStroke(1.dp, colors.controlBorder)
         else -> null
       },
@@ -145,18 +145,18 @@ fun PlayerPillButton(
 ) {
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
-  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
+  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
   Surface(
     shape = RoundedCornerShape(50),
     color =
       when {
-        isCinema -> Color.Transparent
+        isZen -> Color.Transparent
         hideBackground -> Color.Transparent
         else -> colors.controlFill
       },
     contentColor =
       when {
-        isCinema -> CinemaChrome.glyph
+        isZen -> ZenChrome.glyph
         hideBackground -> colors.onVideoContent
         else -> colors.controlContent
       },
@@ -164,7 +164,7 @@ fun PlayerPillButton(
     shadowElevation = 0.dp,
     border =
       when {
-        isCinema -> null
+        isZen -> null
         hideBackground -> null
         else -> BorderStroke(1.dp, colors.controlBorder)
       },
@@ -184,7 +184,7 @@ fun PlayerPillButton(
           },
         )
         .then(
-          if (hideBackground || isCinema) {
+          if (hideBackground || isZen) {
             Modifier.background(
               brush = Brush.radialGradient(
                 0.0f to Color.Black.copy(alpha = 0.30f),
@@ -219,7 +219,7 @@ fun PlayerPlayPauseButton(
   val interaction = remember { MutableInteractionSource() }
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
-  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
+  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
 
   Surface(
     modifier =
@@ -235,7 +235,7 @@ fun PlayerPlayPauseButton(
           },
         )
         .then(
-          if (hideBackground && !isCinema) {
+          if (hideBackground && !isZen) {
             Modifier.background(brush = transportShadow, shape = CircleShape)
           } else {
             Modifier
@@ -244,13 +244,13 @@ fun PlayerPlayPauseButton(
     shape = CircleShape,
     color =
       when {
-        isCinema -> CinemaChrome.heroFill
+        isZen -> ZenChrome.heroFill
         !hideBackground -> colors.playPauseFill
         else -> Color.Transparent
       },
     contentColor =
       when {
-        isCinema -> CinemaChrome.heroContent
+        isZen -> ZenChrome.heroContent
         hideBackground -> colors.onVideoIconContent
         else -> colors.playPauseContent
       },
@@ -258,7 +258,7 @@ fun PlayerPlayPauseButton(
     shadowElevation = 0.dp,
     border =
       when {
-        isCinema -> BorderStroke(1.dp, Color.Black.copy(alpha = 0.10f))
+        isZen -> BorderStroke(1.dp, Color.Black.copy(alpha = 0.10f))
         !hideBackground -> BorderStroke(1.dp, colors.controlBorder)
         else -> null
       },

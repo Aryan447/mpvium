@@ -73,28 +73,27 @@ val LocalPlayerColors = staticCompositionLocalOf { DefaultPlayerColors }
 @Composable
 fun playerColorsFor(
   fullColors: Boolean,
-  cinema: Boolean = false,
+  zen: Boolean = false,
+  cinema: Boolean = zen,
 ): PlayerColors {
   val scheme = MaterialTheme.colorScheme
-  if (cinema) {
-    // Cinema removes the glass almost entirely: no filled controls, no
-    // borders, bare white glyphs over the scrim. The theme accent is reserved
-    // for the played rail, the active dot and the title rule.
+  if (zen || cinema) {
+    // Zen removes the heavy glass borders: bare clean glyphs and sleek floating pills over the scrim.
     return PlayerColors(
       controlFill = Color.Transparent,
       controlBorder = Color.Transparent,
-      controlContent = CinemaChrome.glyph,
-      controlIconContent = CinemaChrome.glyph,
-      onVideoContent = CinemaChrome.glyph,
-      onVideoIconContent = CinemaChrome.glyph,
+      controlContent = ZenChrome.glyph,
+      controlIconContent = ZenChrome.glyph,
+      onVideoContent = ZenChrome.glyph,
+      onVideoIconContent = ZenChrome.glyph,
       accent = scheme.primary,
       accentContent = scheme.onPrimary,
-      activeFill = CinemaChrome.activeFill,
-      activeContent = CinemaChrome.glyph,
-      activeOnVideoContent = CinemaChrome.glyph,
-      playPauseFill = CinemaChrome.heroFill,
-      playPauseContent = CinemaChrome.heroContent,
-      timerContent = CinemaChrome.glyphMuted,
+      activeFill = ZenChrome.activeFill,
+      activeContent = ZenChrome.glyph,
+      activeOnVideoContent = ZenChrome.glyph,
+      playPauseFill = ZenChrome.heroFill,
+      playPauseContent = ZenChrome.heroContent,
+      timerContent = ZenChrome.glyphMuted,
       chipFill = scheme.surfaceContainer.copy(alpha = 0.95f),
       chipContent = scheme.onSurface,
       chipIconContent = scheme.primary,

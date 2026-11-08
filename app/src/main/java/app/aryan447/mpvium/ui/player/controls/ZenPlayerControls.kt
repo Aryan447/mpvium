@@ -84,7 +84,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlin.math.roundToInt
 
 /**
- * Cinema player layout modeled after the Apple TV / Infuse floating glass pill interface.
+ * Zen player layout modeled after the Apple TV / Infuse floating glass pill interface.
  *
  * Characteristics:
  * - Top-left: Circular floating glass close button (✕).
@@ -97,7 +97,7 @@ import kotlin.math.roundToInt
  * - Elevated safely above navigation / gesture insets so scrubbing never triggers Android system gestures.
  */
 @Composable
-fun CinemaPlayerControls(
+fun ZenPlayerControls(
   viewModel: PlayerViewModel,
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
@@ -248,7 +248,7 @@ fun CinemaPlayerControls(
           verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
           // Center Timeline Pill
-          CinemaTimelinePill(
+          ZenTimelinePill(
             modifier = Modifier.fillMaxWidth(),
             position = position,
             duration = duration,
@@ -276,7 +276,7 @@ fun CinemaPlayerControls(
             verticalAlignment = Alignment.CenterVertically,
           ) {
             // Transport Pill
-            CinemaTransportPill(
+            ZenTransportPill(
               paused = paused,
               onPlayPause = {
                 resetControlsTimestamp()
@@ -295,7 +295,7 @@ fun CinemaPlayerControls(
             )
 
             // Actions Pill
-            CinemaActionsPill(
+            ZenActionsPill(
               hasPlaylist = viewModel.hasPlaylistSupport(),
               onOpenSubtitles = {
                 resetControlsTimestamp()
@@ -326,7 +326,7 @@ fun CinemaPlayerControls(
           verticalAlignment = Alignment.CenterVertically,
         ) {
           // Left: Transport Pill
-          CinemaTransportPill(
+          ZenTransportPill(
             paused = paused,
             onPlayPause = {
               resetControlsTimestamp()
@@ -345,7 +345,7 @@ fun CinemaPlayerControls(
           )
 
           // Center: Timeline Pill (Fills available space)
-          CinemaTimelinePill(
+          ZenTimelinePill(
             modifier = Modifier.weight(1f),
             position = position,
             duration = duration,
@@ -368,7 +368,7 @@ fun CinemaPlayerControls(
           )
 
           // Right: Actions Pill
-          CinemaActionsPill(
+          ZenActionsPill(
             hasPlaylist = viewModel.hasPlaylistSupport(),
             onOpenSubtitles = {
               resetControlsTimestamp()
@@ -400,7 +400,7 @@ fun CinemaPlayerControls(
  * [ Rewind 10s | Play / Pause | Forward 10s ]
  */
 @Composable
-fun CinemaTransportPill(
+fun ZenTransportPill(
   paused: Boolean,
   onPlayPause: () -> Unit,
   onRewind: () -> Unit,
@@ -488,7 +488,7 @@ fun CinemaTransportPill(
  * Progress track on top, current position left, remaining duration right.
  */
 @Composable
-fun CinemaTimelinePill(
+fun ZenTimelinePill(
   position: Float,
   duration: Float,
   isSeeking: Boolean,
@@ -517,7 +517,7 @@ fun CinemaTimelinePill(
       verticalArrangement = Arrangement.Center,
     ) {
       // Seekbar track
-      CinemaSeekbarTrack(
+      ZenSeekbarTrack(
         position = position,
         duration = duration,
         chapters = chapters,
@@ -567,10 +567,10 @@ fun CinemaTimelinePill(
 }
 
 /**
- * Interactive progress track inside the Cinema timeline pill.
+ * Interactive progress track inside the Zen timeline pill.
  */
 @Composable
-fun CinemaSeekbarTrack(
+fun ZenSeekbarTrack(
   position: Float,
   duration: Float,
   chapters: ImmutableList<Segment>,
@@ -713,7 +713,7 @@ fun CinemaSeekbarTrack(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CinemaActionsPill(
+fun ZenActionsPill(
   hasPlaylist: Boolean,
   onOpenSubtitles: () -> Unit,
   onOpenAudio: () -> Unit,

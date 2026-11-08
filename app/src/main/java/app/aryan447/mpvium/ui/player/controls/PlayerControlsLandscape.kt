@@ -60,7 +60,7 @@ fun TopLeftPlayerControlsLandscape(
   val playlistModeEnabled = viewModel.hasPlaylistSupport()
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val colors = LocalPlayerColors.current
-  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
+  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
 
   Row(
     modifier = Modifier.width(IntrinsicSize.Max),
@@ -212,7 +212,7 @@ fun TopLeftPlayerControlsLandscape(
                 overflow = TextOverflow.Ellipsis,
                 style =
                   when {
-                    isCinema ->
+                    isZen ->
                       MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.SemiBold,
                         shadow = Shadow(
@@ -263,7 +263,7 @@ fun TopRightPlayerControlsLandscape(
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(
-      if (LocalPlayerLayout.current == PlayerLayout.CINEMA) {
+      if (LocalPlayerLayout.current == PlayerLayout.ZEN) {
         MaterialTheme.spacing.smaller
       } else {
         MaterialTheme.spacing.extraSmall
@@ -315,7 +315,7 @@ fun BottomRightPlayerControlsLandscape(
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(
-      if (LocalPlayerLayout.current == PlayerLayout.CINEMA) {
+      if (LocalPlayerLayout.current == PlayerLayout.ZEN) {
         MaterialTheme.spacing.smaller
       } else {
         MaterialTheme.spacing.extraSmall
@@ -367,7 +367,7 @@ fun BottomLeftPlayerControlsLandscape(
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(
-      if (LocalPlayerLayout.current == PlayerLayout.CINEMA) {
+      if (LocalPlayerLayout.current == PlayerLayout.ZEN) {
         MaterialTheme.spacing.smaller
       } else {
         MaterialTheme.spacing.extraSmall
