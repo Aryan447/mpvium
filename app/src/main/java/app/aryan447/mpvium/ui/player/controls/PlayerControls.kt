@@ -545,6 +545,11 @@ fun PlayerControls(
           if (playerUpdate is PlayerUpdates.MultipleSpeed ||
             playerUpdate is PlayerUpdates.DynamicSpeedControl ||
             playerUpdate is PlayerUpdates.HoldControls ||
+            // The swipe-seek gesture owns this update: it refreshes on every
+            // pointer move and clears it on release/cancel. Auto-clearing it
+            // after 2 s would hide the HUD and drop the seekbar back to the
+            // lagging live position mid-gesture (thumb jump + timer desync).
+            playerUpdate is PlayerUpdates.HorizontalSeek ||
             playerUpdate is PlayerUpdates.None
           ) {
             return@LaunchedEffect

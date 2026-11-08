@@ -27,7 +27,7 @@
 
 ### Fixed
 
-- Fixed seekbar handle and timer jitter/vibration during horizontal swipe-to-seek gestures by suppressing background playback updates while gestures are active.
+- Fixed seekbar handle and timer jitter/vibration during horizontal swipe-to-seek gestures by suppressing background playback updates while gestures are active, and by holding the handle on the previewed timestamp until the exact seek lands instead of snapping back to the stale live position.
 - Player: fixed a launch crash (`NullPointerException` inside `Flow.combine`) when opening the player while the lean seek cache is enabled, caused by the visibility observer reading player state before it was initialized.
 - Adding a second subtitle in the same language from online search now saves a separate file and appears as its own external track, instead of overwriting the first download and being silently ignored.
 - Online subtitle rows show a per-result progress spinner and ignore repeat taps while that result is downloading.
@@ -47,6 +47,7 @@
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
 - Fixed timestamp desync between the center overlay and seekbar when swiping past 15 seconds.
 - Ensured swipe gestures land on the exact target timestamp without snapping back to earlier keyframes.
+- Exact seeks now let hardware decoders drop intermediate frames while catching up (`hr-seek-framedrop`, `hr-seek-demuxer-offset`, `framedrop=vo`), so long jumps land without stalling on slower VPUs.
 
 ## V1.3.0
 

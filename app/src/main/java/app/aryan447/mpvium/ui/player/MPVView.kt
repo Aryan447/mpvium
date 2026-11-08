@@ -169,7 +169,14 @@ class MPVView(
 
     val preciseSeek = playerPreferences.usePreciseSeeking.get()
     MPVLib.setOptionString("hr-seek", if (preciseSeek) "yes" else "no")
+    // Exact (hr-)seeks must never stall on intermediate frames: let the vo
+    // drop late frames while catching up and keep the demuxer offset at zero
+    // so the target timestamp is decoded, not approximated around. These are
+    // also re-asserted once duration is known (see PlayerViewModel), but
+    // setting them at init covers streams whose duration never arrives.
     MPVLib.setOptionString("hr-seek-framedrop", "yes")
+    MPVLib.setOptionString("hr-seek-demuxer-offset", "0")
+    MPVLib.setOptionString("framedrop", "vo")
 
     // Anime4K shader initialization (MUST be in initOptions, not after file load!)
     applyAnime4KShaders()

@@ -283,6 +283,31 @@ fun SeekbarWithTimers(
     scrubTier = 0
   }
 
+  // Hand-off from an external (gesture swipe) preview to the settle guard.
+  // The gesture clears PlayerUpdates.HorizontalSeek as soon as the exact
+  // seek is dispatched, not when it lands, so the live poll is still at the
+  // pre-seek position for a few frames. Park the thumb on the last previewed
+  // timestamp until mpv confirms, instead of visibly snapping backward.
+  var externalSeekTarget by remember { mutableFloatStateOf(Float.NaN) }
+  LaunchedEffect(isExternalSeeking, position) {
+    if (isExternalSeeking) {
+      // An external gesture owns the thumb: drop any in-flight local settle
+      // hold (tap/scrub) so it can't pin the handle to an older position and
+      // desync it from the center HUD badge.
+      if (settling || isUserInteracting) {
+        settling = false
+        isUserInteracting = false
+        settleTarget = Float.NaN
+      }
+      externalSeekTarget = position
+    } else if (!externalSeekTarget.isNaN()) {
+      val target = externalSeekTarget
+      externalSeekTarget = Float.NaN
+      userPosition = target
+      enterSettling(target)
+    }
+  }
+
   LaunchedEffect(position, dragActive, settling, isExternalSeeking) {
     if (dragActive || isExternalSeeking) return@LaunchedEffect // finger down: preview owns the thumb
     if (settling) {
@@ -344,17 +369,24 @@ fun SeekbarWithTimers(
     }
   }
 
+  // Single source of truth for the thumb, the track fill and the left timer.
+  // A gesture preview (local drag or external swipe-seek) must win over the
+  // follower's animated value; otherwise the ~24 FPS live polls fight the
+  // preview and the handle/timer visibly dance. Computed once here so the
+  // timer and every seekbar style can never disagree by a frame.
+  val visualPosition = when {
+    isUserInteracting -> userPosition
+    isExternalSeeking -> position
+    else -> animatedPosition.value
+  }
+
   Row(
     modifier = modifier.height(48.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
   ) {
     VideoTimer(
-      value = when {
-        isUserInteracting -> userPosition
-        isExternalSeeking -> position
-        else -> animatedPosition.value
-      },
+      value = visualPosition,
       timersInverted.first,
       onClick = {
         clickEvent()
@@ -387,11 +419,6 @@ fun SeekbarWithTimers(
           .height(32.dp),
         contentAlignment = Alignment.Center,
       ) {
-        val visualPosition = when {
-          isUserInteracting -> userPosition
-          isExternalSeeking -> position
-          else -> animatedPosition.value
-        }
         when (seekbarStyle) {
           SeekbarStyle.Standard -> {
             StandardSeekbar(
