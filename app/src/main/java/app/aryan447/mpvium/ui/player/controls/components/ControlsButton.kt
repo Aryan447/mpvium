@@ -32,14 +32,14 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.preference.collectAsState
-import app.aryan447.mpvium.ui.player.controls.ZenChrome
+import app.aryan447.mpvium.ui.player.controls.ModernChrome
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
 import org.koin.compose.koinInject
 
-private val zenGlyphShadow =
+private val modernGlyphShadow =
   Brush.radialGradient(
     0.0f to Color.Black.copy(alpha = 0.35f),
     0.7f to Color.Black.copy(alpha = 0.08f),
@@ -65,16 +65,16 @@ fun ControlsButton(
   val rawHideBackground by appearancePreferences?.hidePlayerButtonsBackground?.collectAsState()
     ?: remember { androidx.compose.runtime.mutableStateOf(false) }
   val playerLayout = LocalPlayerLayout.current
-  val isZen = playerLayout == PlayerLayout.ZEN
-  val effectiveHideBackground = hideBackground ?: (rawHideBackground || isZen)
+  val isModern = playerLayout == PlayerLayout.MODERN
+  val effectiveHideBackground = hideBackground ?: (rawHideBackground || isModern)
   val colors = LocalPlayerColors.current
 
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val contentColor =
     color
       ?: when {
-        isZen && active -> colors.accent
-        isZen -> ZenChrome.glyph
+        isModern && active -> colors.accent
+        isModern -> ModernChrome.glyph
         active && effectiveHideBackground -> colors.activeOnVideoContent
         active -> colors.activeContent
         effectiveHideBackground -> colors.onVideoIconContent
@@ -94,8 +94,8 @@ fun ControlsButton(
           indication = ripple(bounded = false, radius = 24.dp),
         )
         .then(
-          if (effectiveHideBackground || isZen) {
-            Modifier.background(brush = zenGlyphShadow, shape = CircleShape)
+          if (effectiveHideBackground || isModern) {
+            Modifier.background(brush = modernGlyphShadow, shape = CircleShape)
           } else {
             Modifier
           },
@@ -103,8 +103,8 @@ fun ControlsButton(
     shape = CircleShape,
     color =
       when {
-        // Zen controls are bare glyphs; only the active dot marks state.
-        isZen -> Color.Transparent
+        // Modern controls are bare glyphs; only the active dot marks state.
+        isModern -> Color.Transparent
         effectiveHideBackground -> Color.Transparent
         active -> colors.activeFill
         else -> colors.controlFill
@@ -114,7 +114,7 @@ fun ControlsButton(
     shadowElevation = 0.dp,
     border =
       when {
-        isZen -> null
+        isModern -> null
         effectiveHideBackground -> null
         else -> BorderStroke(1.dp, colors.controlBorder)
       },
@@ -127,16 +127,16 @@ fun ControlsButton(
         modifier =
           Modifier
             .padding(MaterialTheme.spacing.small)
-            .size(if (isZen) 22.dp else 20.dp),
+            .size(if (isModern) 22.dp else 20.dp),
       )
       if (active && effectiveHideBackground) {
         Box(
           modifier = Modifier
             .align(Alignment.BottomCenter)
             .padding(bottom = 3.dp)
-            .size(if (isZen) 5.dp else 4.dp)
+            .size(if (isModern) 5.dp else 4.dp)
             .background(
-              if (isZen) MaterialTheme.colorScheme.primary else contentColor,
+              if (isModern) MaterialTheme.colorScheme.primary else contentColor,
               CircleShape,
             )
         )
@@ -151,14 +151,14 @@ fun ControlsGroup(
   content: @Composable RowScope.() -> Unit,
 ) {
   val spacing = MaterialTheme.spacing
-  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
 
   Row(
     modifier = modifier,
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement =
       androidx.compose.foundation.layout.Arrangement
-        .spacedBy(if (isZen) spacing.smaller else spacing.extraSmall),
+        .spacedBy(if (isModern) spacing.smaller else spacing.extraSmall),
     content = content,
   )
 }

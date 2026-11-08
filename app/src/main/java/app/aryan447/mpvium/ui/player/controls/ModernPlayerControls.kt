@@ -92,7 +92,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlin.math.roundToInt
 
 /**
- * Zen player layout modeled after the Apple TV+ native interface.
+ * Modern player layout modeled after the Apple TV+ native interface.
  *
  * Characteristics:
  * - Top-left: Floating dark glass pill with Close (✕) and PiP buttons.
@@ -109,7 +109,7 @@ import kotlin.math.roundToInt
  *   scrubbing never triggers Android system gestures.
  */
 @Composable
-fun ZenPlayerControls(
+fun ModernPlayerControls(
   viewModel: PlayerViewModel,
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
@@ -254,7 +254,7 @@ fun ZenPlayerControls(
         }
 
         // Top-right Glass Volume Pill [ ===o 🔊 ]
-        ZenVolumePill(
+        ModernVolumePill(
           viewModel = viewModel,
           resetControlsTimestamp = resetControlsTimestamp,
           surfaceColor = surfaceColor,
@@ -272,7 +272,7 @@ fun ZenPlayerControls(
       exit = fadeOut(playerControlsExitAnimationSpec()),
       modifier = Modifier.align(Alignment.Center),
     ) {
-      ZenCenterTransportControls(
+      ModernCenterTransportControls(
         paused = paused,
         onPlayPause = {
           resetControlsTimestamp()
@@ -388,7 +388,7 @@ fun ZenPlayerControls(
           Spacer(modifier = Modifier.width(16.dp))
 
           // Bottom-Right Actions Pill: [ Subtitles | Audio | Speed/More ]
-          ZenBottomActionsPill(
+          ModernBottomActionsPill(
             onOpenSubtitles = {
               resetControlsTimestamp()
               onOpenSheet(Sheets.SubtitleTracks)
@@ -407,7 +407,7 @@ fun ZenPlayerControls(
         }
 
         // Seekbar track and timers
-        ZenSeekbarSection(
+        ModernSeekbarSection(
           position = position,
           duration = duration,
           chapters = chapters,
@@ -433,7 +433,7 @@ fun ZenPlayerControls(
  * Top-right floating glass volume pill with horizontal level slider and speaker icon.
  */
 @Composable
-fun ZenVolumePill(
+fun ModernVolumePill(
   viewModel: PlayerViewModel,
   resetControlsTimestamp: () -> Unit,
   surfaceColor: Color,
@@ -561,7 +561,7 @@ fun ZenVolumePill(
  * [ Rewind 10s | Hero Play/Pause | Forward 10s ]
  */
 @Composable
-fun ZenCenterTransportControls(
+fun ModernCenterTransportControls(
   paused: Boolean,
   onPlayPause: () -> Unit,
   onRewind: () -> Unit,
@@ -654,7 +654,7 @@ fun ZenCenterTransportControls(
  * [ Subtitles | Audio waveform | Speed/More ]
  */
 @Composable
-fun ZenBottomActionsPill(
+fun ModernBottomActionsPill(
   onOpenSubtitles: () -> Unit,
   onOpenAudio: () -> Unit,
   onOpenMore: () -> Unit,
@@ -725,7 +725,7 @@ fun ZenBottomActionsPill(
  * Full-width seekbar track with timers row underneath.
  */
 @Composable
-fun ZenSeekbarSection(
+fun ModernSeekbarSection(
   position: Float,
   duration: Float,
   chapters: ImmutableList<Segment>,
@@ -743,7 +743,7 @@ fun ZenSeekbarSection(
     verticalArrangement = Arrangement.spacedBy(6.dp),
   ) {
     // Progress bar
-    ZenSeekbarTrack(
+    ModernSeekbarTrack(
       position = position,
       duration = duration,
       chapters = chapters,
@@ -792,10 +792,10 @@ fun ZenSeekbarSection(
 }
 
 /**
- * Interactive progress track inside the Zen player layout.
+ * Interactive progress track inside the Modern player layout.
  */
 @Composable
-fun ZenSeekbarTrack(
+fun ModernSeekbarTrack(
   position: Float,
   duration: Float,
   chapters: ImmutableList<Segment>,
@@ -931,3 +931,54 @@ fun ZenSeekbarTrack(
     }
   }
 }
+
+// Backward compatibility forwarders
+@Composable
+fun ZenPlayerControls(
+  viewModel: PlayerViewModel,
+  onBackPress: () -> Unit,
+  onOpenSheet: (Sheets) -> Unit,
+  controlsShown: Boolean,
+  areControlsLocked: Boolean,
+  resetControlsTimestamp: () -> Unit,
+  isInPip: Boolean,
+  onEnterPip: () -> Unit,
+  modifier: Modifier = Modifier,
+  onSeekingChanged: (Boolean) -> Unit = {},
+) = ModernPlayerControls(
+  viewModel = viewModel,
+  onBackPress = onBackPress,
+  onOpenSheet = onOpenSheet,
+  controlsShown = controlsShown,
+  areControlsLocked = areControlsLocked,
+  resetControlsTimestamp = resetControlsTimestamp,
+  isInPip = isInPip,
+  onEnterPip = onEnterPip,
+  modifier = modifier,
+  onSeekingChanged = onSeekingChanged,
+)
+
+@Composable
+fun CinemaPlayerControls(
+  viewModel: PlayerViewModel,
+  onBackPress: () -> Unit,
+  onOpenSheet: (Sheets) -> Unit,
+  controlsShown: Boolean,
+  areControlsLocked: Boolean,
+  resetControlsTimestamp: () -> Unit,
+  isInPip: Boolean,
+  onEnterPip: () -> Unit,
+  modifier: Modifier = Modifier,
+  onSeekingChanged: (Boolean) -> Unit = {},
+) = ModernPlayerControls(
+  viewModel = viewModel,
+  onBackPress = onBackPress,
+  onOpenSheet = onOpenSheet,
+  controlsShown = controlsShown,
+  areControlsLocked = areControlsLocked,
+  resetControlsTimestamp = resetControlsTimestamp,
+  isInPip = isInPip,
+  onEnterPip = onEnterPip,
+  modifier = modifier,
+  onSeekingChanged = onSeekingChanged,
+)

@@ -3,9 +3,9 @@ package app.aryan447.mpvium.ui.player.controls
 import androidx.compose.ui.graphics.Color
 
 /**
- * Zen chrome color tokens.
+ * Modern chrome color tokens.
  */
-internal object ZenChrome {
+internal object ModernChrome {
   /** Primary glyph colour over video. */
   val glyph = Color.White
 
@@ -20,4 +20,5 @@ internal object ZenChrome {
   val activeFill = Color.White.copy(alpha = 0.14f)
 }
 
-internal typealias CinemaChrome = ZenChrome
+internal typealias ZenChrome = ModernChrome
+internal typealias CinemaChrome = ModernChrome

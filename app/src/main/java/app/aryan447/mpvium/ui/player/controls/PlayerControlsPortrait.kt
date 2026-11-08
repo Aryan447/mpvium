@@ -60,7 +60,7 @@ fun TopPlayerControlsPortrait(
   val playlistModeEnabled = viewModel.hasPlaylistSupport()
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val colors = LocalPlayerColors.current
-  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
 
   Column {
     Row(
@@ -130,8 +130,8 @@ fun TopPlayerControlsPortrait(
                   )
                 }
               }
-              if (isZen) {
-                // Cinema's editorial marker: a short accent rule instead of a chip.
+              if (isModern) {
+                // Modern editorial marker: a short accent rule instead of a chip.
                 Box(
                   modifier =
                     Modifier
@@ -212,7 +212,7 @@ fun TopPlayerControlsPortrait(
                     overflow = TextOverflow.Ellipsis,
                     style =
                       when {
-                        isZen ->
+                        isModern ->
                           MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.SemiBold,
                             shadow = Shadow(

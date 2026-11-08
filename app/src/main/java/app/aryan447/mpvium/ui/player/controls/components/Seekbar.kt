@@ -224,7 +224,7 @@ fun SeekbarWithTimers(
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
-  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
   val appearancePreferences = if (LocalInspectionMode.current) null else koinInject<AppearancePreferences>()
   val prefChaptersInSeekbar by appearancePreferences?.chaptersInSeekbar?.collectAsState() ?: remember { mutableStateOf(false) }
   val showChapters = chaptersInSeekbar ?: prefChaptersInSeekbar
@@ -434,7 +434,7 @@ fun SeekbarWithTimers(
               isPaused = paused,
               isScrubbing = isUserInteracting || isExternalSeeking,
               seekbarStyle = SeekbarStyle.Standard,
-              cinema = isZen,
+              cinema = isModern,
               // Touch handled by parent overlay (single gesture handler).
               onSeek = { },
               onSeekFinished = { },
@@ -473,7 +473,7 @@ fun SeekbarWithTimers(
               isPaused = paused,
               isScrubbing = isUserInteracting || isExternalSeeking,
               seekbarStyle = SeekbarStyle.Thick,
-              cinema = isZen,
+              cinema = isModern,
               // Touch handled by parent overlay (single gesture handler).
               onSeek = { },
               onSeekFinished = { },
@@ -1026,9 +1026,9 @@ fun VideoTimer(
   onClick: () -> Unit = {},
 ) {
   val interactionSource = remember { MutableInteractionSource() }
-  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
   val timerStyle =
-    if (isZen) {
+    if (isModern) {
       MaterialTheme.typography.labelLarge.copy(
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Medium,

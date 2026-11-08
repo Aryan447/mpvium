@@ -60,7 +60,7 @@ fun TopLeftPlayerControlsLandscape(
   val playlistModeEnabled = viewModel.hasPlaylistSupport()
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val colors = LocalPlayerColors.current
-  val isZen = LocalPlayerLayout.current == PlayerLayout.ZEN
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
 
   Row(
     modifier = Modifier.width(IntrinsicSize.Max),
@@ -131,8 +131,8 @@ fun TopLeftPlayerControlsLandscape(
               )
             }
           }
-          if (isCinema) {
-            // Cinema's editorial marker: a short accent rule instead of a chip.
+          if (isModern) {
+            // Modern editorial marker: a short accent rule instead of a chip.
             Box(
               modifier =
                 Modifier
@@ -212,7 +212,7 @@ fun TopLeftPlayerControlsLandscape(
                 overflow = TextOverflow.Ellipsis,
                 style =
                   when {
-                    isZen ->
+                    isModern ->
                       MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.SemiBold,
                         shadow = Shadow(
@@ -263,7 +263,7 @@ fun TopRightPlayerControlsLandscape(
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(
-      if (LocalPlayerLayout.current == PlayerLayout.ZEN) {
+      if (LocalPlayerLayout.current == PlayerLayout.MODERN) {
         MaterialTheme.spacing.smaller
       } else {
         MaterialTheme.spacing.extraSmall
@@ -315,7 +315,7 @@ fun BottomRightPlayerControlsLandscape(
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(
-      if (LocalPlayerLayout.current == PlayerLayout.ZEN) {
+      if (LocalPlayerLayout.current == PlayerLayout.MODERN) {
         MaterialTheme.spacing.smaller
       } else {
         MaterialTheme.spacing.extraSmall
@@ -367,7 +367,7 @@ fun BottomLeftPlayerControlsLandscape(
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(
-      if (LocalPlayerLayout.current == PlayerLayout.ZEN) {
+      if (LocalPlayerLayout.current == PlayerLayout.MODERN) {
         MaterialTheme.spacing.smaller
       } else {
         MaterialTheme.spacing.extraSmall

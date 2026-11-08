@@ -2,7 +2,7 @@
 
 ### Added
 
-- Zen player layout option (Settings → Appearance → Player Layout): modeled after Apple TV's native player interface. Features a top-left floating glass pill with close (✕) and PiP buttons, a top-right horizontal volume slider pill with speaker mute/unmute icon, center floating circular glass transport controls (10s skip and hero play/pause), bottom-left two-line show title (episode name on top, series name with chevron below for TV shows, or single clean movie title for movies), bottom-right actions pill (subtitles, audio waveform, speed/more), and full-width seekbar track with elapsed/remaining timers and system gesture navigation clearance.
+- Modern player layout option (Settings → Appearance → Player Layout): modeled after Apple TV's native player interface. Features a top-left floating glass pill with close (✕) and PiP buttons, a top-right horizontal volume slider pill with speaker mute/unmute icon, center floating circular glass transport controls (10s skip and hero play/pause), bottom-left two-line show title (episode name on top, series name with chevron below for TV shows, or single clean movie title for movies), bottom-right actions pill (subtitles, audio waveform, speed/more), and full-width seekbar track with elapsed/remaining timers and system gesture navigation clearance.
 - Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
 - Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
 - Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
@@ -19,7 +19,7 @@
 
 ### Changed
 
-- Player layout styles: renamed the original glass-pill layout to **Classic** and introduced **Zen** (an Infuse / Apple TV style floating glass pill design with unobstructed video, bottom transport, timeline, and actions pills, and system gesture exclusion). Legacy Cinema and Minimal settings seamlessly migrate to Zen.
+- Player layout styles: renamed the original glass-pill layout to **Classic** and introduced **Modern** (an Apple TV style floating glass interface with unobstructed video, horizontal volume pill, center transport, show header, actions pill, and system gesture exclusion). Legacy Zen, Cinema, and Minimal settings seamlessly migrate to Modern.
 - Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
 - Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
 - Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.

@@ -154,7 +154,7 @@ object PlayerControlsPreferencesScreen : Screen {
             val playerLayout by appearancePrefs.playerLayout.collectAsState()
             val layoutLabels = mapOf(
               PlayerLayout.CLASSIC to stringResource(R.string.pref_player_layout_classic),
-              PlayerLayout.ZEN to stringResource(R.string.pref_player_layout_zen),
+              PlayerLayout.MODERN to stringResource(R.string.pref_player_layout_modern),
             )
             PreferenceCard(
               modifier = Modifier.settingsHighlightTarget(
