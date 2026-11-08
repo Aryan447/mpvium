@@ -37,13 +37,16 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.preferences.PlayerLayout
+import app.aryan447.mpvium.ui.player.controls.CinemaChrome
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
 
 private val transportShadow =
   Brush.radialGradient(
-    0.0f to Color.Black.copy(alpha = 0.3f),
-    0.7f to Color.Transparent,
+    0.0f to Color.Black.copy(alpha = 0.45f),
+    0.65f to Color.Black.copy(alpha = 0.15f),
     1.0f to Color.Transparent,
   )
 
@@ -63,7 +66,13 @@ fun PlayerTransportButton(
 ) {
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
-  val contentColor = if (hideBackground) colors.onVideoIconContent else colors.controlIconContent
+  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
+  val contentColor =
+    when {
+      isCinema -> CinemaChrome.glyph
+      hideBackground -> colors.onVideoIconContent
+      else -> colors.controlIconContent
+    }
   Surface(
     modifier =
       modifier
@@ -71,13 +80,15 @@ fun PlayerTransportButton(
         .clip(CircleShape)
         .clickable(
           enabled = enabled,
+          interactionSource = remember { MutableInteractionSource() },
+          indication = ripple(bounded = false, radius = size / 2),
           onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onClick()
           },
         )
         .then(
-          if (hideBackground) {
+          if (hideBackground || isCinema) {
             Modifier.background(brush = transportShadow, shape = CircleShape)
           } else {
             Modifier
@@ -85,19 +96,19 @@ fun PlayerTransportButton(
         ),
     shape = CircleShape,
     color =
-      if (!hideBackground) {
-        colors.controlFill
-      } else {
-        Color.Transparent
+      when {
+        isCinema -> Color.Transparent
+        !hideBackground -> colors.controlFill
+        else -> Color.Transparent
       },
     contentColor = contentColor,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
-      if (!hideBackground) {
-        BorderStroke(1.dp, colors.controlBorder)
-      } else {
-        null
+      when {
+        isCinema -> null
+        !hideBackground -> BorderStroke(1.dp, colors.controlBorder)
+        else -> null
       },
   ) {
     Icon(
@@ -134,22 +145,28 @@ fun PlayerPillButton(
 ) {
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
+  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
   Surface(
     shape = RoundedCornerShape(50),
     color =
-      if (hideBackground) {
-        Color.Transparent
-      } else {
-        colors.controlFill
+      when {
+        isCinema -> Color.Transparent
+        hideBackground -> Color.Transparent
+        else -> colors.controlFill
       },
-    contentColor = if (hideBackground) colors.onVideoContent else colors.controlContent,
+    contentColor =
+      when {
+        isCinema -> CinemaChrome.glyph
+        hideBackground -> colors.onVideoContent
+        else -> colors.controlContent
+      },
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
-      if (hideBackground) {
-        null
-      } else {
-        BorderStroke(1.dp, colors.controlBorder)
+      when {
+        isCinema -> null
+        hideBackground -> null
+        else -> BorderStroke(1.dp, colors.controlBorder)
       },
     modifier =
       modifier
@@ -164,6 +181,19 @@ fun PlayerPillButton(
           onLongClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onLongClick()
+          },
+        )
+        .then(
+          if (hideBackground || isCinema) {
+            Modifier.background(
+              brush = Brush.radialGradient(
+                0.0f to Color.Black.copy(alpha = 0.30f),
+                0.85f to Color.Transparent,
+              ),
+              shape = RoundedCornerShape(50),
+            )
+          } else {
+            Modifier
           },
         ),
     content = {
@@ -189,6 +219,7 @@ fun PlayerPlayPauseButton(
   val interaction = remember { MutableInteractionSource() }
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
+  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
 
   Surface(
     modifier =
@@ -204,7 +235,7 @@ fun PlayerPlayPauseButton(
           },
         )
         .then(
-          if (hideBackground) {
+          if (hideBackground && !isCinema) {
             Modifier.background(brush = transportShadow, shape = CircleShape)
           } else {
             Modifier
@@ -212,19 +243,24 @@ fun PlayerPlayPauseButton(
         ),
     shape = CircleShape,
     color =
-      if (!hideBackground) {
-        colors.playPauseFill
-      } else {
-        Color.Transparent
+      when {
+        isCinema -> CinemaChrome.heroFill
+        !hideBackground -> colors.playPauseFill
+        else -> Color.Transparent
       },
-    contentColor = if (hideBackground) colors.onVideoIconContent else colors.playPauseContent,
+    contentColor =
+      when {
+        isCinema -> CinemaChrome.heroContent
+        hideBackground -> colors.onVideoIconContent
+        else -> colors.playPauseContent
+      },
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
-      if (!hideBackground) {
-        BorderStroke(1.dp, colors.controlBorder)
-      } else {
-        null
+      when {
+        isCinema -> BorderStroke(1.dp, Color.Black.copy(alpha = 0.10f))
+        !hideBackground -> BorderStroke(1.dp, colors.controlBorder)
+        else -> null
       },
   ) {
     Image(

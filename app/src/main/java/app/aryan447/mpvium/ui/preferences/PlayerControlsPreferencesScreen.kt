@@ -58,12 +58,15 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.PlayerLayout
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SeekbarStyle
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -114,14 +117,15 @@ object PlayerControlsPreferencesScreen : Screen {
       screen = PlayerControlsPreferencesScreen,
       listState = listState,
       keyToIndex = mapOf(
-        "player.controls.layout" to 1,
-        "player.controls.top_right" to 1,
-        "player.controls.bottom_right" to 1,
-        "player.controls.bottom_left" to 1,
-        "player.controls.portrait_bottom" to 3,
-        "player.controls.colors" to 11,
-        "player.controls.hide_buttons_background" to 11,
-        "player.controls.hide_control_time" to 11,
+        "player.controls.player_layout" to 1,
+        "player.controls.layout" to 3,
+        "player.controls.top_right" to 3,
+        "player.controls.bottom_right" to 3,
+        "player.controls.bottom_left" to 3,
+        "player.controls.portrait_bottom" to 5,
+        "player.controls.colors" to 13,
+        "player.controls.hide_buttons_background" to 13,
+        "player.controls.hide_control_time" to 13,
       ),
     )
 
@@ -138,6 +142,40 @@ object PlayerControlsPreferencesScreen : Screen {
               .fillMaxSize()
               .padding(padding),
         ) {
+          // Player Layout Style Section
+          item {
+            PreferenceSectionHeader(
+              title = stringResource(id = R.string.pref_player_layout_style_title),
+              count = PlayerLayout.entries.size,
+            )
+          }
+
+          item {
+            val playerLayout by appearancePrefs.playerLayout.collectAsState()
+            val layoutLabels = mapOf(
+              PlayerLayout.CLASSIC to stringResource(R.string.pref_player_layout_classic),
+              PlayerLayout.CINEMA to stringResource(R.string.pref_player_layout_cinema),
+            )
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "player.controls.player_layout",
+                isCard = true,
+              ),
+            ) {
+              ExpressiveChoiceRow(
+                options = PlayerLayout.entries,
+                selected = playerLayout,
+                labelOf = { layoutLabels.getValue(it) },
+                onSelect = { appearancePrefs.playerLayout.set(it) },
+                equalWidth = true,
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(MaterialTheme.spacing.medium),
+              )
+            }
+          }
+
           // Landscape Controls Section
           item {
             PreferenceSectionHeader(title = "Landscape Controls", count = 3)
