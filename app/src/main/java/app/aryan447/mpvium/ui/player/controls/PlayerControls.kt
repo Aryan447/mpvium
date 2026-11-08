@@ -815,8 +815,46 @@ fun PlayerControls(
           )
         }
 
+        if (isCinema) {
+          CinemaPlayerControls(
+            viewModel = viewModel,
+            onBackPress = onBackPress,
+            onOpenSheet = onOpenSheet,
+            onOpenPanel = onOpenPanel,
+            activity = activity,
+            controlsShown = controlsShown,
+            areControlsLocked = areControlsLocked,
+            isSeeking = isSeeking,
+            onSeekingChanged = { isSeeking = it },
+            resetControlsTimestamp = { resetControlsTimestamp = System.currentTimeMillis() },
+            paused = paused == true,
+            position = effectiveSeekPosition,
+            duration = duration,
+            isSwipeSeeking = isSwipeSeeking,
+            chapters = chapters.toImmutableList(),
+            currentChapter = currentChapter,
+            cacheRanges = cacheRanges.toImmutableList(),
+            forwardCacheDuration = forwardCacheDuration,
+            isLeanSeekCacheEnabled = leanSeekCache,
+            invertDuration = invertDuration,
+            onToggleInvertDuration = {
+              resetControlsTimestamp = System.currentTimeMillis()
+              playerPreferences.invertDuration.set(!invertDuration)
+            },
+            topRightButtons = topRightButtons,
+            bottomRightButtons = bottomRightButtons,
+            amoledMode = amoledMode,
+            showSystemStatusBar = showSystemStatusBar,
+            showSystemNavigationBar = showSystemNavigationBar,
+            tabletBottomOffset = tabletBottomOffset,
+            modifier = Modifier.fillMaxSize(),
+          )
+        }
+
+        val showLoadingCircle by playerPreferences.showLoadingCircle.collectAsState()
+
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked,
+          visible = (pausedForCache == true && showLoadingCircle) || (controlsShown && !areControlsLocked && !isCinema),
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier =
@@ -831,8 +869,6 @@ fun PlayerControls(
               }
             },
         ) {
-          val showLoadingCircle by playerPreferences.showLoadingCircle.collectAsState()
-
           when {
             pausedForCache == true && showLoadingCircle -> {
               LoadingIndicator(
@@ -898,7 +934,7 @@ fun PlayerControls(
         val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked,
+          visible = controlsShown && !areControlsLocked && !isCinema,
           enter =
             if (!reduceMotion) {
               slideInVertically(playerControlsEnterAnimationSpec()) { it } +
@@ -1005,7 +1041,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked,
+          visible = controlsShown && !areControlsLocked && !isCinema,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +
@@ -1076,7 +1112,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait,
+          visible = controlsShown && !areControlsLocked && !isPortrait && !isCinema,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1234,7 +1270,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !areSlidersShown,
+          visible = controlsShown && !areControlsLocked && !areSlidersShown && !isCinema,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1314,7 +1350,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown,
+          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown && !isCinema,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +

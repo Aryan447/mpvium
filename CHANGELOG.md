@@ -2,7 +2,7 @@
 
 ### Added
 
-- Cinema player layout option (Settings → Appearance → Player Layout): a borderless, editorial take on player chrome that looks nothing like the Classic glass pills. Controls are bare white glyphs over deeper top and bottom scrims, the hero play/pause is a solid white disc, toggled controls get an accent dot, the title is single-line with a short accent rule, and the seekbar uses an accent timeline playhead. The seekbar keeps the Classic inset position and timers, so it stays clear of the system gesture area. Full RTL mirroring and custom per-region button arrangements are preserved.
+- Cinema player layout option (Settings → Appearance → Player Layout): rebuilt as an Apple TV and Infuse-style floating dark glass pill interface. Features circular floating top-left close (✕) and top-right PiP buttons, an entirely clean and unobstructed center screen, and three bottom floating glass pills (transport with 10s skip and play/pause, an integrated timeline pill with seekbar track and monospaced elapsed/remaining timers, and an actions pill for tracks and playlist/chapters). Controls sit with safe clearance above the system gesture navigation area to prevent accidental app switching during seeking.
 - Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
 - Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
 - Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
@@ -19,7 +19,7 @@
 
 ### Changed
 
-- Player layout styles: renamed the glass-pill layout to **Classic** and rebuilt **Cinema** from scratch. Cinema now uses borderless glyph controls, a solid hero play disc, an accent timeline playhead and a single-line editorial title while keeping the Classic inset seekbar position, so the track sits clear of the system gesture area instead of being pinned to the screen edge.
+- Player layout styles: renamed the original glass-pill layout to **Classic** and rebuilt **Cinema** into an Infuse / Apple TV style floating glass pill design with unobstructed video, bottom transport, timeline, and actions pills, and system gesture exclusion.
 - Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
 - Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
 - Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
