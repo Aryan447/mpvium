@@ -2,7 +2,6 @@ package app.aryan447.mpvium.ui.player.controls.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -53,8 +52,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -64,6 +65,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -75,12 +77,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.preferences.SeekbarStyle
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -219,6 +224,7 @@ fun SeekbarWithTimers(
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
   val appearancePreferences = if (LocalInspectionMode.current) null else koinInject<AppearancePreferences>()
   val prefChaptersInSeekbar by appearancePreferences?.chaptersInSeekbar?.collectAsState() ?: remember { mutableStateOf(false) }
   val showChapters = chaptersInSeekbar ?: prefChaptersInSeekbar
@@ -428,6 +434,7 @@ fun SeekbarWithTimers(
               isPaused = paused,
               isScrubbing = isUserInteracting || isExternalSeeking,
               seekbarStyle = SeekbarStyle.Standard,
+              cinema = isModern,
               // Touch handled by parent overlay (single gesture handler).
               onSeek = { },
               onSeekFinished = { },
@@ -466,6 +473,7 @@ fun SeekbarWithTimers(
               isPaused = paused,
               isScrubbing = isUserInteracting || isExternalSeeking,
               seekbarStyle = SeekbarStyle.Thick,
+              cinema = isModern,
               // Touch handled by parent overlay (single gesture handler).
               onSeek = { },
               onSeekFinished = { },
@@ -1018,6 +1026,22 @@ fun VideoTimer(
   onClick: () -> Unit = {},
 ) {
   val interactionSource = remember { MutableInteractionSource() }
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
+  val timerStyle =
+    if (isModern) {
+      MaterialTheme.typography.labelLarge.copy(
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.8.sp,
+        shadow = Shadow(
+          color = Color.Black.copy(alpha = 0.85f),
+          offset = Offset(0f, 1f),
+          blurRadius = 4f,
+        ),
+      )
+    } else {
+      LocalTextStyle.current
+    }
   Text(
     modifier =
       modifier
@@ -1029,8 +1053,43 @@ fun VideoTimer(
         )
         .wrapContentHeight(Alignment.CenterVertically),
     text = Utils.prettyTime(value.toInt(), isInverted),
+    style = timerStyle,
     color = LocalPlayerColors.current.timerContent,
     textAlign = TextAlign.Center,
+  )
+}
+
+@Composable
+fun CompactTimecode(
+  position: Float,
+  duration: Float,
+  isInverted: Boolean,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val clickEvent = LocalPlayerButtonsClickEvent.current
+  val interactionSource = remember { MutableInteractionSource() }
+  val currentText = Utils.prettyTime(position.toInt(), false)
+  val totalText = Utils.prettyTime(duration.toInt(), isInverted)
+  val colors = LocalPlayerColors.current
+  Text(
+    modifier = modifier
+      .clickable(
+        interactionSource = interactionSource,
+        indication = ripple(),
+        onClick = {
+          clickEvent()
+          onClick()
+        },
+      )
+      .padding(horizontal = MaterialTheme.spacing.smaller, vertical = MaterialTheme.spacing.extraSmall),
+    text = "$currentText / $totalText",
+    color = colors.timerContent,
+    style = MaterialTheme.typography.labelMedium.copy(
+      fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+      fontWeight = FontWeight.Medium,
+    ),
+    textAlign = TextAlign.End,
   )
 }
 
@@ -1043,6 +1102,7 @@ fun StandardSeekbar(
     isScrubbing: Boolean = false,
     useWavySeekbar: Boolean = false,
     seekbarStyle: SeekbarStyle = SeekbarStyle.Standard,
+    cinema: Boolean = false,
     onSeek: (Float) -> Unit,
     onSeekFinished: () -> Unit,
     loopStart: Float? = null,
@@ -1126,11 +1186,33 @@ fun StandardSeekbar(
     )
 
     val isThick = seekbarStyle == SeekbarStyle.Thick
-    val baseTrackHeight = if (isThick) 16.dp else 4.dp
+    // Cinema keeps the Classic row and timers, but the rail reads like an
+    // edit timeline: hairline track and a thin vertical playhead rather than
+    // a round knob. Thick stays exactly as the user configured it.
+    val isCinemaRail = cinema && !isThick
+    val baseTrackHeight = if (isThick) 16.dp else if (isCinemaRail) 3.dp else 4.dp
     val trackHeightDp = (if (isThick) baseTrackHeight * heightFraction else baseTrackHeight) * scrubThickness
-    val thumbWidth = if (isThick) 6.dp else 14.dp
-    val thumbHeight = if (isThick) 16.dp * scrubThickness else 14.dp
-    val thumbShape = if (isThick) RoundedCornerShape(3.dp) else CircleShape
+    val thumbWidth =
+        when {
+            isCinemaRail -> if (isScrubbing) 4.dp else 2.dp
+            isThick -> 6.dp
+            else -> 14.dp
+        }
+    val thumbHeight =
+        when {
+            isCinemaRail -> if (isScrubbing) 18.dp else 12.dp
+            isThick -> 16.dp * scrubThickness
+            else -> 14.dp
+        }
+    val thumbShape =
+        when {
+            isCinemaRail -> RoundedCornerShape(1.dp)
+            isThick -> RoundedCornerShape(3.dp)
+            else -> CircleShape
+        }
+    val thumbColor = if (isCinemaRail) Color.White else primaryColor
+    val unplayedTrackColor =
+        if (isCinemaRail) Color.White.copy(alpha = 0.20f) else primaryColor.copy(alpha = 0.3f)
 
     // Non-interactive visual only: the parent touch overlay is the single
     // gesture handler for every style. Leaving this Slider enabled would add
@@ -1152,8 +1234,6 @@ fun StandardSeekbar(
         enabled = false,
         interactionSource = interactionSource,
         track = { sliderState ->
-            val disabledAlpha = 0.3f
-
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1255,7 +1335,7 @@ fun StandardSeekbar(
 
                 // 1. Unplayed Background
                 val unplayedStart = if (isThick) thumbGapEnd else playedPx
-                drawRangeWithGaps(unplayedStart, size.width, chapterGaps, primaryColor.copy(alpha = disabledAlpha))
+                drawRangeWithGaps(unplayedStart, size.width, chapterGaps, unplayedTrackColor)
 
                 // Cache band (gated by leanSeekCache pref only)
                 if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
@@ -1399,7 +1479,7 @@ fun StandardSeekbar(
                     modifier = Modifier
                         .width(thumbWidth)
                         .height(thumbHeight)
-                        .background(primaryColor, thumbShape)
+                        .background(thumbColor, thumbShape)
                 )
             }
         )
