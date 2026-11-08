@@ -20,5 +20,4 @@ internal object ModernChrome {
   val activeFill = Color.White.copy(alpha = 0.14f)
 }
 
-internal typealias ZenChrome = ModernChrome
 internal typealias CinemaChrome = ModernChrome

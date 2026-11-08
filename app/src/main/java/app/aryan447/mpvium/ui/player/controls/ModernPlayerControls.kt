@@ -934,31 +934,6 @@ fun ModernSeekbarTrack(
 
 // Backward compatibility forwarders
 @Composable
-fun ZenPlayerControls(
-  viewModel: PlayerViewModel,
-  onBackPress: () -> Unit,
-  onOpenSheet: (Sheets) -> Unit,
-  controlsShown: Boolean,
-  areControlsLocked: Boolean,
-  resetControlsTimestamp: () -> Unit,
-  isInPip: Boolean,
-  onEnterPip: () -> Unit,
-  modifier: Modifier = Modifier,
-  onSeekingChanged: (Boolean) -> Unit = {},
-) = ModernPlayerControls(
-  viewModel = viewModel,
-  onBackPress = onBackPress,
-  onOpenSheet = onOpenSheet,
-  controlsShown = controlsShown,
-  areControlsLocked = areControlsLocked,
-  resetControlsTimestamp = resetControlsTimestamp,
-  isInPip = isInPip,
-  onEnterPip = onEnterPip,
-  modifier = modifier,
-  onSeekingChanged = onSeekingChanged,
-)
-
-@Composable
 fun CinemaPlayerControls(
   viewModel: PlayerViewModel,
   onBackPress: () -> Unit,

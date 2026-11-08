@@ -74,11 +74,10 @@ val LocalPlayerColors = staticCompositionLocalOf { DefaultPlayerColors }
 fun playerColorsFor(
   fullColors: Boolean,
   modern: Boolean = false,
-  zen: Boolean = modern,
   cinema: Boolean = modern,
 ): PlayerColors {
   val scheme = MaterialTheme.colorScheme
-  if (modern || zen || cinema) {
+  if (modern || cinema) {
     // Modern removes the heavy glass borders: bare clean glyphs and sleek floating pills over the scrim.
     return PlayerColors(
       controlFill = Color.Transparent,

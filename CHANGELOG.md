@@ -19,7 +19,7 @@
 
 ### Changed
 
-- Player layout styles: renamed the original glass-pill layout to **Classic** and introduced **Modern** (an Apple TV style floating glass interface with unobstructed video, horizontal volume pill, center transport, show header, actions pill, and system gesture exclusion). Legacy Zen, Cinema, and Minimal settings seamlessly migrate to Modern.
+- Player layout styles: renamed the original glass-pill layout to **Classic** and introduced **Modern** (an Apple TV style floating glass interface with unobstructed video, horizontal volume pill, center transport, show header, actions pill, and system gesture exclusion). Legacy Cinema and Minimal settings seamlessly migrate to Modern.
 - Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
 - Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
 - Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.

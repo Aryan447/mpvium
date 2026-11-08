@@ -32,7 +32,6 @@ class PlayerLayoutTest {
   @Test
   fun fromStringHandlesLegacyAndNewValues() {
     assertEquals(PlayerLayout.MODERN, PlayerLayout.fromString("MODERN"))
-    assertEquals(PlayerLayout.MODERN, PlayerLayout.fromString("ZEN"))
     assertEquals(PlayerLayout.MODERN, PlayerLayout.fromString("MINIMAL"))
     assertEquals(PlayerLayout.MODERN, PlayerLayout.fromString("CINEMA"))
     assertEquals(PlayerLayout.CLASSIC, PlayerLayout.fromString("CLASSIC"))

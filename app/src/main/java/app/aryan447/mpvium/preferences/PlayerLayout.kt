@@ -12,7 +12,7 @@ enum class PlayerLayout {
 
   companion object {
     fun fromString(name: String): PlayerLayout = when (name.trim().uppercase()) {
-      "MODERN", "ZEN", "MINIMAL", "CINEMA" -> MODERN
+      "MODERN", "MINIMAL", "CINEMA" -> MODERN
       "CLASSIC", "GLASS_PILL" -> CLASSIC
       else -> CLASSIC
     }
