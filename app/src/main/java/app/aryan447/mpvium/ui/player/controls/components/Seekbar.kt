@@ -215,6 +215,7 @@ fun SeekbarWithTimers(
   cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange> = persistentListOf(),
   forwardCacheDuration: Float = 0f,
   isLeanSeekCacheEnabled: Boolean = false,
+  isExternalSeeking: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
@@ -282,8 +283,8 @@ fun SeekbarWithTimers(
     scrubTier = 0
   }
 
-  LaunchedEffect(position, dragActive, settling) {
-    if (dragActive) return@LaunchedEffect // finger down: preview owns the thumb
+  LaunchedEffect(position, dragActive, settling, isExternalSeeking) {
+    if (dragActive || isExternalSeeking) return@LaunchedEffect // finger down: preview owns the thumb
     if (settling) {
       val target = settleTarget
       if (target.isNaN()) {
@@ -349,7 +350,11 @@ fun SeekbarWithTimers(
     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
   ) {
     VideoTimer(
-      value = if (isUserInteracting) userPosition else position,
+      value = when {
+        isUserInteracting -> userPosition
+        isExternalSeeking -> position
+        else -> animatedPosition.value
+      },
       timersInverted.first,
       onClick = {
         clickEvent()
@@ -382,65 +387,70 @@ fun SeekbarWithTimers(
           .height(32.dp),
         contentAlignment = Alignment.Center,
       ) {
-      when (seekbarStyle) {
-        SeekbarStyle.Standard -> {
-          StandardSeekbar(
-            position = if (isUserInteracting) userPosition else animatedPosition.value,
-            duration = duration,
-            chapters = chapters,
-            isPaused = paused,
-            isScrubbing = isUserInteracting,
-            seekbarStyle = SeekbarStyle.Standard,
-            // Touch handled by parent overlay (single gesture handler).
-            onSeek = { },
-            onSeekFinished = { },
-            loopStart = loopStart,
-            loopEnd = loopEnd,
-            chaptersInSeekbar = showChapters,
-            cacheRanges = cacheRanges,
-            forwardCacheDuration = forwardCacheDuration,
-            isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
-          )
+        val visualPosition = when {
+          isUserInteracting -> userPosition
+          isExternalSeeking -> position
+          else -> animatedPosition.value
         }
-        SeekbarStyle.Wavy -> {
-          SquigglySeekbar(
-            position = if (isUserInteracting) userPosition else animatedPosition.value,
-            duration = duration,
-            chapters = chapters,
-            isPaused = paused,
-            isScrubbing = isUserInteracting,
-            useWavySeekbar = true,
-            seekbarStyle = SeekbarStyle.Wavy,
-            onSeek = { }, // Touch handled by parent
-            onSeekFinished = { }, // Touch handled by parent
-            loopStart = loopStart,
-            loopEnd = loopEnd,
-            chaptersInSeekbar = showChapters,
-            cacheRanges = cacheRanges,
-            forwardCacheDuration = forwardCacheDuration,
-            isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
-          )
+        when (seekbarStyle) {
+          SeekbarStyle.Standard -> {
+            StandardSeekbar(
+              position = visualPosition,
+              duration = duration,
+              chapters = chapters,
+              isPaused = paused,
+              isScrubbing = isUserInteracting || isExternalSeeking,
+              seekbarStyle = SeekbarStyle.Standard,
+              // Touch handled by parent overlay (single gesture handler).
+              onSeek = { },
+              onSeekFinished = { },
+              loopStart = loopStart,
+              loopEnd = loopEnd,
+              chaptersInSeekbar = showChapters,
+              cacheRanges = cacheRanges,
+              forwardCacheDuration = forwardCacheDuration,
+              isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
+            )
+          }
+          SeekbarStyle.Wavy -> {
+            SquigglySeekbar(
+              position = visualPosition,
+              duration = duration,
+              chapters = chapters,
+              isPaused = paused,
+              isScrubbing = isUserInteracting || isExternalSeeking,
+              useWavySeekbar = true,
+              seekbarStyle = SeekbarStyle.Wavy,
+              onSeek = { }, // Touch handled by parent
+              onSeekFinished = { }, // Touch handled by parent
+              loopStart = loopStart,
+              loopEnd = loopEnd,
+              chaptersInSeekbar = showChapters,
+              cacheRanges = cacheRanges,
+              forwardCacheDuration = forwardCacheDuration,
+              isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
+            )
+          }
+          SeekbarStyle.Thick -> {
+            StandardSeekbar(
+              position = visualPosition,
+              duration = duration,
+              chapters = chapters,
+              isPaused = paused,
+              isScrubbing = isUserInteracting || isExternalSeeking,
+              seekbarStyle = SeekbarStyle.Thick,
+              // Touch handled by parent overlay (single gesture handler).
+              onSeek = { },
+              onSeekFinished = { },
+              loopStart = loopStart,
+              loopEnd = loopEnd,
+              chaptersInSeekbar = showChapters,
+              cacheRanges = cacheRanges,
+              forwardCacheDuration = forwardCacheDuration,
+              isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
+            )
+          }
         }
-        SeekbarStyle.Thick -> {
-          StandardSeekbar(
-            position = if (isUserInteracting) userPosition else animatedPosition.value,
-            duration = duration,
-            chapters = chapters,
-            isPaused = paused,
-            isScrubbing = isUserInteracting,
-            seekbarStyle = SeekbarStyle.Thick,
-            // Touch handled by parent overlay (single gesture handler).
-            onSeek = { },
-            onSeekFinished = { },
-            loopStart = loopStart,
-            loopEnd = loopEnd,
-            chaptersInSeekbar = showChapters,
-            cacheRanges = cacheRanges,
-            forwardCacheDuration = forwardCacheDuration,
-            isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
-          )
-        }
-      }
       }
 
       // Transparent touch overlay, drawn last so it is hit-tested first and

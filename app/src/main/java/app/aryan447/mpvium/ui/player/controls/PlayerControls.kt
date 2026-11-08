@@ -528,20 +528,24 @@ fun PlayerControls(
         }
 
         val holdForMultipleSpeed by playerPreferences.holdForMultipleSpeed.collectAsState()
-        val currentPlayerUpdate by viewModel.playerUpdate.collectAsState()
+        val playerUpdate by viewModel.playerUpdate.collectAsState()
         // While a horizontal swipe-seek is active, drive the seekbar and its
         // timers from the gesture preview instead of the lagging live mpv
         // position, so the pill and the seekbar can't show different seconds.
-        val seekPreviewPosition = (currentPlayerUpdate as? PlayerUpdates.HorizontalSeek)?.position
+        val isSwipeSeeking = playerUpdate is PlayerUpdates.HorizontalSeek
+        val effectiveSeekPosition = when (val update = playerUpdate) {
+          is PlayerUpdates.HorizontalSeek -> update.position ?: precisePosition
+          else -> precisePosition
+        }
         val aspectRatio by viewModel.videoAspect.collectAsState()
         val currentAspectRatio by viewModel.currentAspectRatio.collectAsState()
         val videoZoom by viewModel.videoZoom.collectAsState()
 
-        LaunchedEffect(currentPlayerUpdate, aspectRatio, videoZoom) {
-          if (currentPlayerUpdate is PlayerUpdates.MultipleSpeed ||
-            currentPlayerUpdate is PlayerUpdates.DynamicSpeedControl ||
-            currentPlayerUpdate is PlayerUpdates.HoldControls ||
-            currentPlayerUpdate is PlayerUpdates.None
+        LaunchedEffect(playerUpdate, aspectRatio, videoZoom) {
+          if (playerUpdate is PlayerUpdates.MultipleSpeed ||
+            playerUpdate is PlayerUpdates.DynamicSpeedControl ||
+            playerUpdate is PlayerUpdates.HoldControls ||
+            playerUpdate is PlayerUpdates.None
           ) {
             return@LaunchedEffect
           }
@@ -550,7 +554,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          currentPlayerUpdate !is PlayerUpdates.None,
+          playerUpdate !is PlayerUpdates.None,
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier =
@@ -567,7 +571,7 @@ fun PlayerControls(
                 top.linkTo(parent.top, if (isPortrait) 104.dp else 64.dp)
               },
         ) {
-          when (val update = currentPlayerUpdate) {
+          when (val update = playerUpdate) {
             is PlayerUpdates.MultipleSpeed -> MultipleSpeedPlayerUpdate(currentSpeed = holdForMultipleSpeed)
             is PlayerUpdates.HoldControls -> {
               HoldControlsPlayerUpdate(selected = update.selected)
@@ -861,7 +865,8 @@ fun PlayerControls(
           var wasPlayerAlreadyPaused by remember { mutableStateOf(false) }
 
           SeekbarWithTimers(
-            position = seekPreviewPosition ?: precisePosition,
+            position = effectiveSeekPosition,
+            isExternalSeeking = isSwipeSeeking,
             duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
             onValueChange = {
               if (!isSeeking) {

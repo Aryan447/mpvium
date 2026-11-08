@@ -27,6 +27,7 @@
 
 ### Fixed
 
+- Fixed seekbar handle and timer jitter/vibration during horizontal swipe-to-seek gestures by suppressing background playback updates while gestures are active.
 - Player: fixed a launch crash (`NullPointerException` inside `Flow.combine`) when opening the player while the lean seek cache is enabled, caused by the visibility observer reading player state before it was initialized.
 - Adding a second subtitle in the same language from online search now saves a separate file and appears as its own external track, instead of overwriting the first download and being silently ignored.
 - Online subtitle rows show a per-result progress spinner and ignore repeat taps while that result is downloading.
