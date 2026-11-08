@@ -829,7 +829,7 @@ fun PlayerControls(
             onSeekingChanged = { isSeeking = it },
             resetControlsTimestamp = { resetControlsTimestamp = System.currentTimeMillis() },
             paused = paused == true,
-            position = effectiveSeekPosition,
+            position = seekbarPosition,
             duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
             isSwipeSeeking = isSwipeSeeking,
             chapters = chapters.toImmutableList(),
