@@ -220,6 +220,7 @@ fun SeekbarWithTimers(
   cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange> = persistentListOf(),
   forwardCacheDuration: Float = 0f,
   isLeanSeekCacheEnabled: Boolean = false,
+  isExternalSeeking: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
@@ -288,8 +289,33 @@ fun SeekbarWithTimers(
     scrubTier = 0
   }
 
-  LaunchedEffect(position, dragActive, settling) {
-    if (dragActive) return@LaunchedEffect // finger down: preview owns the thumb
+  // Hand-off from an external (gesture swipe) preview to the settle guard.
+  // The gesture clears PlayerUpdates.HorizontalSeek as soon as the exact
+  // seek is dispatched, not when it lands, so the live poll is still at the
+  // pre-seek position for a few frames. Park the thumb on the last previewed
+  // timestamp until mpv confirms, instead of visibly snapping backward.
+  var externalSeekTarget by remember { mutableFloatStateOf(Float.NaN) }
+  LaunchedEffect(isExternalSeeking, position) {
+    if (isExternalSeeking) {
+      // An external gesture owns the thumb: drop any in-flight local settle
+      // hold (tap/scrub) so it can't pin the handle to an older position and
+      // desync it from the center HUD badge.
+      if (settling || isUserInteracting) {
+        settling = false
+        isUserInteracting = false
+        settleTarget = Float.NaN
+      }
+      externalSeekTarget = position
+    } else if (!externalSeekTarget.isNaN()) {
+      val target = externalSeekTarget
+      externalSeekTarget = Float.NaN
+      userPosition = target
+      enterSettling(target)
+    }
+  }
+
+  LaunchedEffect(position, dragActive, settling, isExternalSeeking) {
+    if (dragActive || isExternalSeeking) return@LaunchedEffect // finger down: preview owns the thumb
     if (settling) {
       val target = settleTarget
       if (target.isNaN()) {
@@ -349,16 +375,50 @@ fun SeekbarWithTimers(
     }
   }
 
-  val trackContent: @Composable (Modifier) -> Unit = { slotModifier ->
-    // Seekbar with expanded touch area. The outer box is the full touch
-    // height (48 dp); the visual track inside is 32 dp tall and centered,
-    // which keeps the rail clear of the system gesture area.
+  // Single source of truth for the thumb, the track fill and the left timer.
+  // A gesture preview (local drag or external swipe-seek) must win over the
+  // follower's animated value; otherwise the ~24 FPS live polls fight the
+  // preview and the handle/timer visibly dance. Computed once here so the
+  // timer and every seekbar style can never disagree by a frame.
+  val visualPosition = when {
+    isUserInteracting -> userPosition
+    isExternalSeeking -> position
+    else -> animatedPosition.value
+  }
+
+  Row(
+    modifier = modifier.height(48.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+  ) {
+    VideoTimer(
+      value = visualPosition,
+      timersInverted.first,
+      onClick = {
+        clickEvent()
+        positionTimerOnClick()
+      },
+      modifier = Modifier.width(92.dp),
+    )
+
+    // Seekbar with expanded touch area. The outer box is the full 48dp touch
+    // height; the visual track inside is smaller and centered. The overlay
+    // below uses matchParentSize so it exactly covers this box — a fixed
+    // larger height would overflow and steal taps meant for neighbouring
+    // controls (timers, video surface).
     Box(
-      modifier = slotModifier
-        .height(48.dp)
-        .onSizeChanged { trackWidthPx = it.width },
+      modifier =
+        Modifier
+          .weight(1f)
+          .height(48.dp)
+          .onSizeChanged { trackWidthPx = it.width },
       contentAlignment = Alignment.Center,
     ) {
+      // Visual seekbar (smaller, centered) — declared first so the touch
+      // overlay below stays on top and remains the single gesture handler.
+      // This keeps touch coordinates mapped against one set of track bounds
+      // (no thumb-inset mismatch vs the inner Slider) and prevents the
+      // release value from being clobbered by a second handler.
       Box(
         modifier = Modifier
           .fillMaxWidth()
@@ -368,13 +428,14 @@ fun SeekbarWithTimers(
         when (seekbarStyle) {
           SeekbarStyle.Standard -> {
             StandardSeekbar(
-              position = if (isUserInteracting) userPosition else animatedPosition.value,
+              position = visualPosition,
               duration = duration,
               chapters = chapters,
               isPaused = paused,
-              isScrubbing = isUserInteracting,
+              isScrubbing = isUserInteracting || isExternalSeeking,
               seekbarStyle = SeekbarStyle.Standard,
               cinema = isCinema,
+              // Touch handled by parent overlay (single gesture handler).
               onSeek = { },
               onSeekFinished = { },
               loopStart = loopStart,
@@ -387,15 +448,15 @@ fun SeekbarWithTimers(
           }
           SeekbarStyle.Wavy -> {
             SquigglySeekbar(
-              position = if (isUserInteracting) userPosition else animatedPosition.value,
+              position = visualPosition,
               duration = duration,
               chapters = chapters,
               isPaused = paused,
-              isScrubbing = isUserInteracting,
+              isScrubbing = isUserInteracting || isExternalSeeking,
               useWavySeekbar = true,
               seekbarStyle = SeekbarStyle.Wavy,
-              onSeek = { },
-              onSeekFinished = { },
+              onSeek = { }, // Touch handled by parent
+              onSeekFinished = { }, // Touch handled by parent
               loopStart = loopStart,
               loopEnd = loopEnd,
               chaptersInSeekbar = showChapters,
@@ -406,12 +467,14 @@ fun SeekbarWithTimers(
           }
           SeekbarStyle.Thick -> {
             StandardSeekbar(
-              position = if (isUserInteracting) userPosition else animatedPosition.value,
+              position = visualPosition,
               duration = duration,
               chapters = chapters,
               isPaused = paused,
-              isScrubbing = isUserInteracting,
+              isScrubbing = isUserInteracting || isExternalSeeking,
               seekbarStyle = SeekbarStyle.Thick,
+              cinema = isCinema,
+              // Touch handled by parent overlay (single gesture handler).
               onSeek = { },
               onSeekFinished = { },
               loopStart = loopStart,
@@ -436,6 +499,10 @@ fun SeekbarWithTimers(
                 val currentDuration = latestDuration
                 if (currentDuration <= 0f) return@detectTapGestures
                 val target = xToSeekPosition(offset.x, size.width, currentDuration)
+                // Single exact seek per tap: park the thumb on the target
+                // immediately and let the settle guard hold it there until
+                // mpv's time-pos confirms. No preview scrub seek first — that
+                // issued two mpv seeks per tap plus a pause/unpause cycle.
                 enterSettling(target)
                 userPosition = target
                 scope.launch { animatedPosition.snapTo(target) }
@@ -453,6 +520,9 @@ fun SeekbarWithTimers(
                 settling = false
                 settleTarget = Float.NaN
                 settleBase = latestPosition
+                // Anchor to the grab point immediately: the first onDrag
+                // callback only fires after touch slop, otherwise the
+                // preview would jump from the stale position on wide tracks.
                 dragAnchor = xToSeekPosition(offset.x, size.width, currentDuration)
                 scaledDragDxPx = 0f
                 verticalDragPx = 0f
@@ -462,6 +532,11 @@ fun SeekbarWithTimers(
                 latestOnValueChange(userPosition)
               },
               onDragEnd = {
+                // Release uses the last settled drag value — never re-sample
+                // here, so lift-off micro-jitter can't clobber the target.
+                // enterSettling re-bases on the live position at release and
+                // starts the blind hold, so queued scrub intermediates landing
+                // now can't snap the thumb back before the final seek lands.
                 enterSettling(userPosition)
                 latestOnValueChangeFinished(userPosition)
               },
@@ -471,6 +546,9 @@ fun SeekbarWithTimers(
               },
             ) { change, dragAmount ->
               change.consume()
+              // Upward displacement selects the rate tier; dragging back down
+              // lowers it again. Horizontal deltas are scaled by the active
+              // rate and accumulated from the grab anchor.
               verticalDragPx += dragAmount.y
               val newTier =
                 ((-verticalDragPx) / scrubTierStepPx).toInt()
@@ -498,25 +576,7 @@ fun SeekbarWithTimers(
           if (duration > 0f) (userPosition / duration).coerceIn(0f, 1f) else 0f,
         trackWidthPx = trackWidthPx,
       )
-    }
   }
-
-  Row(
-    modifier = modifier.height(48.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-  ) {
-    VideoTimer(
-      value = if (isUserInteracting) userPosition else position,
-      timersInverted.first,
-      onClick = {
-        clickEvent()
-        positionTimerOnClick()
-      },
-      modifier = Modifier.width(92.dp),
-    )
-
-    trackContent(Modifier.weight(1f))
 
     VideoTimer(
       value = if (timersInverted.second) position - duration else duration,
