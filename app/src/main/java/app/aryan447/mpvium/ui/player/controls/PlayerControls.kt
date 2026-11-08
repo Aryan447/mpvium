@@ -410,7 +410,8 @@ fun PlayerControls(
         val brightness by viewModel.currentBrightness.collectAsState()
         val volume by viewModel.currentVolume.collectAsState()
         val mpvVolume by MPVLib.propInt["volume"].collectAsState()
-        val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
+        val swapVolumeAndBrightnessPref by playerPreferences.swapVolumeAndBrightness.collectAsState()
+        val swapVolumeAndBrightness = swapVolumeAndBrightnessPref || isModern
         val reduceMotion by playerPreferences.reduceMotion.collectAsState()
         val volumeSliderStyle by appearancePreferences.volumeSliderStyle.collectAsState()
         val brightnessSliderStyle by appearancePreferences.brightnessSliderStyle.collectAsState()

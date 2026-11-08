@@ -167,7 +167,12 @@ object PlayerControlsPreferencesScreen : Screen {
                 options = PlayerLayout.entries,
                 selected = playerLayout,
                 labelOf = { layoutLabels.getValue(it) },
-                onSelect = { appearancePrefs.playerLayout.set(it) },
+                onSelect = { selectedLayout ->
+                  appearancePrefs.playerLayout.set(selectedLayout)
+                  if (selectedLayout == PlayerLayout.MODERN) {
+                    playerPrefs.swapVolumeAndBrightness.set(true)
+                  }
+                },
                 equalWidth = true,
                 modifier = Modifier
                   .fillMaxWidth()
