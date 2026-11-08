@@ -10,9 +10,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -30,24 +28,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemGestures
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeMute
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.outlined.Forward10
+import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Replay10
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -64,11 +69,13 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,23 +85,28 @@ import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.SeekCacheResolver
 import app.aryan447.mpvium.ui.player.Sheets
+import app.aryan447.mpvium.utils.media.MediaInfoParser
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList
 import kotlin.math.roundToInt
 
 /**
- * Zen player layout modeled after the Apple TV / Infuse floating glass pill interface.
+ * Zen player layout modeled after the Apple TV+ native interface.
  *
  * Characteristics:
- * - Top-left: Circular floating glass close button (✕).
- * - Top-right: Circular floating glass PiP button.
- * - Center screen: Completely clean and unobstructed video view (no giant play/pause disc).
- * - Bottom: Three floating dark glass pills:
- *     1. Transport pill: [ Replay 10s | Play/Pause | Forward 10s ]
- *     2. Timeline pill: Wide capsule with progress track on top, position left, remaining duration right.
- *     3. Actions pill: [ Tracks (Audio/Subtitles) | Chapters/Playlist list ]
- * - Elevated safely above navigation / gesture insets so scrubbing never triggers Android system gestures.
+ * - Top-left: Floating dark glass pill with Close (✕) and PiP buttons.
+ * - Top-right: Floating dark glass volume capsule with horizontal level slider and speaker icon.
+ * - Center screen: Floating circular glass transport controls:
+ *     [ Replay 10s (↺10) | Hero Play/Pause | Forward 10s (↻10) ]
+ * - Bottom area:
+ *     - Bottom-left: Show header. When TV show: Episode name on top line, Series title with chevron (›) on bottom line.
+ *                    When Movie: Only the movie title on a single clean line.
+ *     - Bottom-right: Floating dark glass actions pill [ Subtitles | Audio waveform | Speed/More ].
+ *     - Seekbar: Full-width progress track with chapter dividers and buffer band.
+ *     - Timers: Elapsed time on left, remaining duration on right directly underneath the track.
+ * - Safely elevated above navigation / gesture insets with .systemGestureExclusion() so horizontal
+ *   scrubbing never triggers Android system gestures.
  */
 @Composable
 fun ZenPlayerControls(
@@ -119,12 +131,14 @@ fun ZenPlayerControls(
   isLeanSeekCacheEnabled: Boolean,
   invertDuration: Boolean,
   onToggleInvertDuration: () -> Unit,
-  topRightButtons: List<PlayerButton>,
-  bottomRightButtons: List<PlayerButton>,
-  amoledMode: Boolean,
-  showSystemStatusBar: Boolean,
-  showSystemNavigationBar: Boolean,
-  tabletBottomOffset: Dp,
+  mediaTitle: String = "",
+  tmdbEpisodeTitle: String? = null,
+  topRightButtons: List<PlayerButton> = emptyList(),
+  bottomRightButtons: List<PlayerButton> = emptyList(),
+  amoledMode: Boolean = false,
+  showSystemStatusBar: Boolean = false,
+  showSystemNavigationBar: Boolean = false,
+  tabletBottomOffset: Dp = 0.dp,
   modifier: Modifier = Modifier,
 ) {
   val configuration = LocalConfiguration.current
@@ -150,14 +164,33 @@ fun ZenPlayerControls(
   val startSafeInset = maxOf(navBarLeft, if (isPortrait) 16.dp else 24.dp)
   val endSafeInset = maxOf(navBarRight, if (isPortrait) 16.dp else 24.dp)
 
-  val surfaceColor = if (amoledMode) Color(0xE608090C) else Color(0xCC16181D)
-  val borderStroke = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+  val surfaceColor = if (amoledMode) Color(0xCC0A0B0E) else Color(0x9916181D)
+  val borderStroke = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f))
+
+  // Parse title to identify TV show vs Movie
+  val parsedInfo = remember(mediaTitle) {
+    if (mediaTitle.isNotBlank() && !mediaTitle.contains("://")) {
+      MediaInfoParser.parse(mediaTitle)
+    } else {
+      null
+    }
+  }
+
+  val isTvShow = parsedInfo?.type == "tv"
+  val episodeTitle = if (isTvShow) {
+    parsedInfo?.episodeTitle?.takeIf { it.isNotBlank() }
+      ?: tmdbEpisodeTitle?.takeIf { it.isNotBlank() }
+      ?: (if (parsedInfo?.season != null && parsedInfo.episode != null) "S${parsedInfo.season}:E${parsedInfo.episode}" else null)
+  } else {
+    null
+  }
+  val seriesOrMovieTitle = parsedInfo?.title?.takeIf { it.isNotBlank() } ?: mediaTitle
 
   Box(
     modifier = modifier.fillMaxSize(),
   ) {
     // -------------------------------------------------------------
-    // TOP CONTROLS: Close (✕) on Left, PiP on Right
+    // TOP BAR: Top-Left Pill [ ✕ | PiP ] & Top-Right Volume Pill
     // -------------------------------------------------------------
     AnimatedVisibility(
       visible = controlsShown && !areControlsLocked,
@@ -172,62 +205,94 @@ fun ZenPlayerControls(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
       ) {
-        // Top-left Close Button (✕)
+        // Top-left Glass Pill: [ Close (✕) | PiP ]
         Surface(
-          modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .clickable(
-              interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-              indication = ripple(bounded = true, radius = 22.dp),
-            ) {
-              resetControlsTimestamp()
-              onBackPress()
-            },
-          shape = CircleShape,
+          modifier = Modifier.height(42.dp),
+          shape = RoundedCornerShape(21.dp),
           color = surfaceColor,
           border = borderStroke,
         ) {
-          Box(contentAlignment = Alignment.Center) {
+          Row(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+          ) {
+            // Close Button (✕)
             Icon(
               imageVector = Icons.Default.Close,
               contentDescription = "Close",
               tint = Color.White,
-              modifier = Modifier.size(22.dp),
+              modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .clickable(
+                  interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                  indication = ripple(bounded = true, radius = 18.dp),
+                ) {
+                  resetControlsTimestamp()
+                  onBackPress()
+                },
             )
-          }
-        }
 
-        // Top-right PiP Button
-        Surface(
-          modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .clickable(
-              interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-              indication = ripple(bounded = true, radius = 22.dp),
-            ) {
-              resetControlsTimestamp()
-              activity.enterPipModeHidingOverlay()
-            },
-          shape = CircleShape,
-          color = surfaceColor,
-          border = borderStroke,
-        ) {
-          Box(contentAlignment = Alignment.Center) {
+            // PiP Button
             Icon(
               imageVector = Icons.Default.PictureInPictureAlt,
               contentDescription = "Picture in Picture",
               tint = Color.White,
-              modifier = Modifier.size(22.dp),
+              modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .clickable(
+                  interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                  indication = ripple(bounded = true, radius = 18.dp),
+                ) {
+                  resetControlsTimestamp()
+                  activity.enterPipModeHidingOverlay()
+                },
             )
           }
         }
+
+        // Top-right Glass Volume Pill [ ===o 🔊 ]
+        ZenVolumePill(
+          viewModel = viewModel,
+          resetControlsTimestamp = resetControlsTimestamp,
+          surfaceColor = surfaceColor,
+          borderStroke = borderStroke,
+        )
       }
     }
 
     // -------------------------------------------------------------
-    // BOTTOM CONTROLS: Floating Glass Pills
+    // CENTER TRANSPORT CONTROLS: [ ↺10 ]  [ ▶ / ⏸ ]  [ ↻10 ]
+    // -------------------------------------------------------------
+    AnimatedVisibility(
+      visible = controlsShown && !areControlsLocked,
+      enter = fadeIn(playerControlsEnterAnimationSpec()),
+      exit = fadeOut(playerControlsExitAnimationSpec()),
+      modifier = Modifier.align(Alignment.Center),
+    ) {
+      ZenCenterTransportControls(
+        paused = paused,
+        onPlayPause = {
+          resetControlsTimestamp()
+          viewModel.pauseUnpause()
+        },
+        onRewind = {
+          resetControlsTimestamp()
+          viewModel.seekBy(-10)
+        },
+        onForward = {
+          resetControlsTimestamp()
+          viewModel.seekBy(10)
+        },
+        surfaceColor = surfaceColor,
+        borderStroke = borderStroke,
+      )
+    }
+
+    // -------------------------------------------------------------
+    // BOTTOM SECTION: Title + Actions + Full-Width Seekbar & Timers
     // -------------------------------------------------------------
     AnimatedVisibility(
       visible = controlsShown && !areControlsLocked,
@@ -241,135 +306,89 @@ fun ZenPlayerControls(
           bottom = gestureSafeBottom + tabletBottomOffset,
         ),
     ) {
-      if (isPortrait) {
-        // Portrait Layout: Timeline pill on top, Transport & Actions pills underneath
-        Column(
-          modifier = Modifier.fillMaxWidth(),
-          verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-          // Center Timeline Pill
-          ZenTimelinePill(
-            modifier = Modifier.fillMaxWidth(),
-            position = position,
-            duration = duration,
-            isSeeking = isSeeking,
-            onSeekingChanged = onSeekingChanged,
-            onSeekTo = { target, isScrubbing ->
-              resetControlsTimestamp()
-              if (isScrubbing) {
-                viewModel.seekTo(target.roundToInt(), isScrubbing = true)
-              } else {
-                viewModel.seekToAndResume(target.roundToInt())
-              }
-            },
-            chapters = chapters,
-            cacheRanges = cacheRanges,
-            invertDuration = invertDuration,
-            onToggleInvertDuration = onToggleInvertDuration,
-            surfaceColor = surfaceColor,
-            borderStroke = borderStroke,
-          )
-
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            // Transport Pill
-            ZenTransportPill(
-              paused = paused,
-              onPlayPause = {
-                resetControlsTimestamp()
-                viewModel.pauseUnpause()
-              },
-              onRewind = {
-                resetControlsTimestamp()
-                viewModel.seekBy(-10)
-              },
-              onForward = {
-                resetControlsTimestamp()
-                viewModel.seekBy(10)
-              },
-              surfaceColor = surfaceColor,
-              borderStroke = borderStroke,
-            )
-
-            // Actions Pill
-            ZenActionsPill(
-              hasPlaylist = viewModel.hasPlaylistSupport(),
-              onOpenSubtitles = {
-                resetControlsTimestamp()
-                onOpenSheet(Sheets.SubtitleTracks)
-              },
-              onOpenAudio = {
-                resetControlsTimestamp()
-                onOpenSheet(Sheets.AudioTracks)
-              },
-              onOpenChapters = {
-                resetControlsTimestamp()
-                onOpenSheet(Sheets.Chapters)
-              },
-              onOpenPlaylist = {
-                resetControlsTimestamp()
-                onOpenSheet(Sheets.Playlist)
-              },
-              surfaceColor = surfaceColor,
-              borderStroke = borderStroke,
-            )
-          }
-        }
-      } else {
-        // Landscape Layout: 3 Pills side-by-side [ Transport ] [ Timeline ] [ Actions ]
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+      ) {
+        // Row above seekbar: Title on left, Actions pill on right
         Row(
           modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(16.dp),
-          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.Bottom,
         ) {
-          // Left: Transport Pill
-          ZenTransportPill(
-            paused = paused,
-            onPlayPause = {
-              resetControlsTimestamp()
-              viewModel.pauseUnpause()
-            },
-            onRewind = {
-              resetControlsTimestamp()
-              viewModel.seekBy(-10)
-            },
-            onForward = {
-              resetControlsTimestamp()
-              viewModel.seekBy(10)
-            },
-            surfaceColor = surfaceColor,
-            borderStroke = borderStroke,
-          )
-
-          // Center: Timeline Pill (Fills available space)
-          ZenTimelinePill(
-            modifier = Modifier.weight(1f),
-            position = position,
-            duration = duration,
-            isSeeking = isSeeking,
-            onSeekingChanged = onSeekingChanged,
-            onSeekTo = { target, isScrubbing ->
-              resetControlsTimestamp()
-              if (isScrubbing) {
-                viewModel.seekTo(target.roundToInt(), isScrubbing = true)
-              } else {
-                viewModel.seekToAndResume(target.roundToInt())
+          // Title Block (Episode name on top, Series name below with chevron; or Movie name only)
+          if (isTvShow && episodeTitle != null) {
+            Column(
+              verticalArrangement = Arrangement.spacedBy(2.dp),
+              modifier = Modifier.weight(1f, fill = false),
+            ) {
+              Text(
+                text = episodeTitle,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                  color = Color.White.copy(alpha = 0.80f),
+                  fontWeight = FontWeight.Normal,
+                  fontSize = 14.sp,
+                  shadow = Shadow(color = Color.Black.copy(alpha = 0.6f), blurRadius = 4f),
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+              )
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                  .clip(RoundedCornerShape(4.dp))
+                  .clickable {
+                    resetControlsTimestamp()
+                    if (viewModel.hasPlaylistSupport()) {
+                      onOpenSheet(Sheets.Playlist)
+                    } else {
+                      onOpenSheet(Sheets.Chapters)
+                    }
+                  },
+              ) {
+                Text(
+                  text = seriesOrMovieTitle,
+                  style = MaterialTheme.typography.titleLarge.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 19.sp,
+                    shadow = Shadow(color = Color.Black.copy(alpha = 0.6f), blurRadius = 6f),
+                  ),
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                )
+                Icon(
+                  imageVector = Icons.Filled.ChevronRight,
+                  contentDescription = "Episodes / Chapters",
+                  tint = Color.White.copy(alpha = 0.80f),
+                  modifier = Modifier.size(22.dp),
+                )
               }
-            },
-            chapters = chapters,
-            cacheRanges = cacheRanges,
-            invertDuration = invertDuration,
-            onToggleInvertDuration = onToggleInvertDuration,
-            surfaceColor = surfaceColor,
-            borderStroke = borderStroke,
-          )
+            }
+          } else {
+            // Movie: Single line with movie name only
+            Column(
+              modifier = Modifier.weight(1f, fill = false),
+            ) {
+              Text(
+                text = seriesOrMovieTitle,
+                style = MaterialTheme.typography.titleLarge.copy(
+                  color = Color.White,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 20.sp,
+                  shadow = Shadow(color = Color.Black.copy(alpha = 0.6f), blurRadius = 6f),
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+              )
+            }
+          }
 
-          // Right: Actions Pill
-          ZenActionsPill(
-            hasPlaylist = viewModel.hasPlaylistSupport(),
+          Spacer(modifier = Modifier.width(16.dp))
+
+          // Bottom-Right Actions Pill: [ Subtitles | Audio | Speed/More ]
+          ZenBottomActionsPill(
             onOpenSubtitles = {
               resetControlsTimestamp()
               onOpenSheet(Sheets.SubtitleTracks)
@@ -378,29 +397,171 @@ fun ZenPlayerControls(
               resetControlsTimestamp()
               onOpenSheet(Sheets.AudioTracks)
             },
-            onOpenChapters = {
+            onOpenMore = {
               resetControlsTimestamp()
-              onOpenSheet(Sheets.Chapters)
-            },
-            onOpenPlaylist = {
-              resetControlsTimestamp()
-              onOpenSheet(Sheets.Playlist)
+              onOpenSheet(Sheets.More)
             },
             surfaceColor = surfaceColor,
             borderStroke = borderStroke,
           )
         }
+
+        // Seekbar track and timers
+        ZenSeekbarSection(
+          position = position,
+          duration = duration,
+          chapters = chapters,
+          cacheRanges = cacheRanges,
+          onSeekTo = { target, isScrubbing ->
+            resetControlsTimestamp()
+            if (isScrubbing) {
+              viewModel.seekTo(target.roundToInt(), isScrubbing = true)
+            } else {
+              viewModel.seekToAndResume(target.roundToInt())
+            }
+          },
+          onSeekingChanged = onSeekingChanged,
+          invertDuration = invertDuration,
+          onToggleInvertDuration = onToggleInvertDuration,
+        )
       }
     }
   }
 }
 
 /**
- * Bottom-left floating glass transport pill:
- * [ Rewind 10s | Play / Pause | Forward 10s ]
+ * Top-right floating glass volume pill with horizontal level slider and speaker icon.
  */
 @Composable
-fun ZenTransportPill(
+fun ZenVolumePill(
+  viewModel: PlayerViewModel,
+  resetControlsTimestamp: () -> Unit,
+  surfaceColor: Color,
+  borderStroke: BorderStroke,
+  modifier: Modifier = Modifier,
+) {
+  val currentVolume by viewModel.currentVolume.collectAsState()
+  val maxVolume = viewModel.maxVolume.coerceAtLeast(1)
+  var previousVolume by remember { mutableIntStateOf(currentVolume.takeIf { it > 0 } ?: (maxVolume / 2)) }
+
+  var trackWidthPx by remember { mutableIntStateOf(0) }
+  val volumeFraction = (currentVolume.toFloat() / maxVolume.toFloat()).coerceIn(0f, 1f)
+
+  Surface(
+    modifier = modifier.height(42.dp),
+    shape = RoundedCornerShape(21.dp),
+    color = surfaceColor,
+    border = borderStroke,
+  ) {
+    Row(
+      modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+      // Horizontal volume slider track
+      Box(
+        modifier = Modifier
+          .width(100.dp)
+          .height(24.dp)
+          .onSizeChanged { trackWidthPx = it.width }
+          .pointerInput(maxVolume) {
+            detectTapGestures { offset ->
+              resetControlsTimestamp()
+              if (trackWidthPx > 0) {
+                val fraction = (offset.x / trackWidthPx).coerceIn(0f, 1f)
+                val newVol = (fraction * maxVolume).roundToInt()
+                viewModel.changeVolumeTo(newVol)
+                if (newVol > 0) previousVolume = newVol
+              }
+            }
+          }
+          .pointerInput(maxVolume) {
+            detectDragGestures(
+              onDragStart = { offset ->
+                resetControlsTimestamp()
+                if (trackWidthPx > 0) {
+                  val fraction = (offset.x / trackWidthPx).coerceIn(0f, 1f)
+                  val newVol = (fraction * maxVolume).roundToInt()
+                  viewModel.changeVolumeTo(newVol)
+                  if (newVol > 0) previousVolume = newVol
+                }
+              },
+              onDrag = { change, _ ->
+                change.consume()
+                resetControlsTimestamp()
+                if (trackWidthPx > 0) {
+                  val fraction = (change.position.x / trackWidthPx).coerceIn(0f, 1f)
+                  val newVol = (fraction * maxVolume).roundToInt()
+                  viewModel.changeVolumeTo(newVol)
+                  if (newVol > 0) previousVolume = newVol
+                }
+              }
+            )
+          },
+        contentAlignment = Alignment.CenterStart,
+      ) {
+        Canvas(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(5.dp),
+        ) {
+          val w = size.width
+          val h = size.height
+          val radius = CornerRadius(h / 2f, h / 2f)
+
+          // Unfilled / remaining track
+          drawRoundRect(
+            color = Color.White.copy(alpha = 0.28f),
+            size = size,
+            cornerRadius = radius,
+          )
+
+          // Filled active volume
+          val filledWidth = volumeFraction * w
+          if (filledWidth > 0.5f) {
+            drawRoundRect(
+              color = Color.White,
+              size = Size(filledWidth, h),
+              cornerRadius = radius,
+            )
+          }
+        }
+      }
+
+      // Speaker icon (tap to mute/unmute)
+      val speakerIcon = when {
+        currentVolume == 0 -> Icons.AutoMirrored.Filled.VolumeMute
+        currentVolume < maxVolume / 2 -> Icons.AutoMirrored.Filled.VolumeDown
+        else -> Icons.AutoMirrored.Filled.VolumeUp
+      }
+
+      Icon(
+        imageVector = speakerIcon,
+        contentDescription = "Mute / Unmute",
+        tint = Color.White,
+        modifier = Modifier
+          .size(20.dp)
+          .clip(CircleShape)
+          .clickable {
+            resetControlsTimestamp()
+            if (currentVolume > 0) {
+              previousVolume = currentVolume
+              viewModel.changeVolumeTo(0)
+            } else {
+              viewModel.changeVolumeTo(previousVolume.takeIf { it > 0 } ?: (maxVolume / 2))
+            }
+          },
+      )
+    }
+  }
+}
+
+/**
+ * Center floating circular glass transport controls:
+ * [ Rewind 10s | Hero Play/Pause | Forward 10s ]
+ */
+@Composable
+fun ZenCenterTransportControls(
   paused: Boolean,
   onPlayPause: () -> Unit,
   onRewind: () -> Unit,
@@ -409,74 +570,79 @@ fun ZenTransportPill(
   borderStroke: BorderStroke,
   modifier: Modifier = Modifier,
 ) {
-  Surface(
-    modifier = modifier.height(54.dp),
-    shape = RoundedCornerShape(27.dp),
-    color = surfaceColor,
-    border = borderStroke,
+  Row(
+    modifier = modifier,
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(22.dp),
   ) {
-    Row(
-      modifier = Modifier.padding(horizontal = 12.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
+    // Replay 10s
+    Surface(
+      modifier = Modifier
+        .size(52.dp)
+        .clip(CircleShape)
+        .clickable(
+          interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+          indication = ripple(bounded = true, radius = 26.dp),
+          onClick = onRewind,
+        ),
+      shape = CircleShape,
+      color = surfaceColor,
+      border = borderStroke,
     ) {
-      // Replay 10s
-      Box(
-        modifier = Modifier
-          .size(38.dp)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 19.dp),
-            onClick = onRewind,
-          ),
-        contentAlignment = Alignment.Center,
-      ) {
+      Box(contentAlignment = Alignment.Center) {
         Icon(
           imageVector = Icons.Outlined.Replay10,
           contentDescription = "Rewind 10 seconds",
           tint = Color.White,
-          modifier = Modifier.size(24.dp),
+          modifier = Modifier.size(25.dp),
         )
       }
+    }
 
-      // Solid Play/Pause Glyph
-      Box(
-        modifier = Modifier
-          .size(42.dp)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 21.dp),
-            onClick = onPlayPause,
-          ),
-        contentAlignment = Alignment.Center,
-      ) {
+    // Play / Pause (Hero button)
+    Surface(
+      modifier = Modifier
+        .size(68.dp)
+        .clip(CircleShape)
+        .clickable(
+          interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+          indication = ripple(bounded = true, radius = 34.dp),
+          onClick = onPlayPause,
+        ),
+      shape = CircleShape,
+      color = surfaceColor,
+      border = borderStroke,
+    ) {
+      Box(contentAlignment = Alignment.Center) {
         Icon(
           imageVector = if (paused) Icons.Default.PlayArrow else Icons.Default.Pause,
           contentDescription = if (paused) "Play" else "Pause",
           tint = Color.White,
-          modifier = Modifier.size(28.dp),
+          modifier = Modifier.size(36.dp),
         )
       }
+    }
 
-      // Forward 10s
-      Box(
-        modifier = Modifier
-          .size(38.dp)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 19.dp),
-            onClick = onForward,
-          ),
-        contentAlignment = Alignment.Center,
-      ) {
+    // Forward 10s
+    Surface(
+      modifier = Modifier
+        .size(52.dp)
+        .clip(CircleShape)
+        .clickable(
+          interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+          indication = ripple(bounded = true, radius = 26.dp),
+          onClick = onForward,
+        ),
+      shape = CircleShape,
+      color = surfaceColor,
+      border = borderStroke,
+    ) {
+      Box(contentAlignment = Alignment.Center) {
         Icon(
           imageVector = Icons.Outlined.Forward10,
           contentDescription = "Forward 10 seconds",
           tint = Color.White,
-          modifier = Modifier.size(24.dp),
+          modifier = Modifier.size(25.dp),
         )
       }
     }
@@ -484,90 +650,149 @@ fun ZenTransportPill(
 }
 
 /**
- * Bottom-center floating glass timeline pill:
- * Progress track on top, current position left, remaining duration right.
+ * Bottom-right floating glass actions pill:
+ * [ Subtitles | Audio waveform | Speed/More ]
  */
 @Composable
-fun ZenTimelinePill(
-  position: Float,
-  duration: Float,
-  isSeeking: Boolean,
-  onSeekingChanged: (Boolean) -> Unit,
-  onSeekTo: (Float, Boolean) -> Unit,
-  chapters: ImmutableList<Segment>,
-  cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange>,
-  invertDuration: Boolean,
-  onToggleInvertDuration: () -> Unit,
+fun ZenBottomActionsPill(
+  onOpenSubtitles: () -> Unit,
+  onOpenAudio: () -> Unit,
+  onOpenMore: () -> Unit,
   surfaceColor: Color,
   borderStroke: BorderStroke,
   modifier: Modifier = Modifier,
 ) {
   Surface(
-    modifier = modifier
-      .height(54.dp)
-      .systemGestureExclusion(),
-    shape = RoundedCornerShape(27.dp),
+    modifier = modifier.height(42.dp),
+    shape = RoundedCornerShape(21.dp),
     color = surfaceColor,
     border = borderStroke,
   ) {
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 18.dp, vertical = 7.dp),
-      verticalArrangement = Arrangement.Center,
+    Row(
+      modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      // Seekbar track
-      ZenSeekbarTrack(
-        position = position,
-        duration = duration,
-        chapters = chapters,
-        cacheRanges = cacheRanges,
-        onSeekTo = onSeekTo,
-        onSeekingChanged = onSeekingChanged,
+      // Subtitles
+      Icon(
+        imageVector = Icons.Default.Subtitles,
+        contentDescription = "Subtitles",
+        tint = Color.White,
+        modifier = Modifier
+          .size(20.dp)
+          .clip(CircleShape)
+          .clickable(
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+            indication = ripple(bounded = true, radius = 18.dp),
+            onClick = onOpenSubtitles,
+          ),
       )
 
-      Spacer(modifier = Modifier.height(4.dp))
-
-      // Timers Row
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        // Current position timer
-        Text(
-          text = Utils.prettyTime(position.toInt(), false),
-          style = MaterialTheme.typography.labelSmall.copy(
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Medium,
-            fontSize = 11.5.sp,
-            color = Color.White.copy(alpha = 0.90f),
+      // Audio tracks (waveform / audio icon)
+      Icon(
+        imageVector = Icons.Outlined.GraphicEq,
+        contentDescription = "Audio Tracks",
+        tint = Color.White,
+        modifier = Modifier
+          .size(20.dp)
+          .clip(CircleShape)
+          .clickable(
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+            indication = ripple(bounded = true, radius = 18.dp),
+            onClick = onOpenAudio,
           ),
-        )
+      )
 
-        // Remaining or total duration timer (tap to invert)
-        val rightTimerValue = if (invertDuration) position - duration else duration
-        val durationFormatted = Utils.prettyTime(rightTimerValue.toInt(), invertDuration)
-
-        Text(
-          text = durationFormatted,
-          style = MaterialTheme.typography.labelSmall.copy(
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Medium,
-            fontSize = 11.5.sp,
-            color = Color.White.copy(alpha = 0.90f),
+      // Playback speed / More options
+      Icon(
+        imageVector = Icons.Outlined.Speed,
+        contentDescription = "Speed and Settings",
+        tint = Color.White,
+        modifier = Modifier
+          .size(20.dp)
+          .clip(CircleShape)
+          .clickable(
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+            indication = ripple(bounded = true, radius = 18.dp),
+            onClick = onOpenMore,
           ),
-          modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .clickable(onClick = onToggleInvertDuration),
-        )
-      }
+      )
     }
   }
 }
 
 /**
- * Interactive progress track inside the Zen timeline pill.
+ * Full-width seekbar track with timers row underneath.
+ */
+@Composable
+fun ZenSeekbarSection(
+  position: Float,
+  duration: Float,
+  chapters: ImmutableList<Segment>,
+  cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange>,
+  onSeekTo: (Float, Boolean) -> Unit,
+  onSeekingChanged: (Boolean) -> Unit,
+  invertDuration: Boolean,
+  onToggleInvertDuration: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  Column(
+    modifier = modifier
+      .fillMaxWidth()
+      .systemGestureExclusion(),
+    verticalArrangement = Arrangement.spacedBy(6.dp),
+  ) {
+    // Progress bar
+    ZenSeekbarTrack(
+      position = position,
+      duration = duration,
+      chapters = chapters,
+      cacheRanges = cacheRanges,
+      onSeekTo = onSeekTo,
+      onSeekingChanged = onSeekingChanged,
+    )
+
+    // Timers row
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      // Current position timer
+      Text(
+        text = Utils.prettyTime(position.toInt(), false),
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontFamily = FontFamily.Monospace,
+          fontWeight = FontWeight.Medium,
+          fontSize = 12.sp,
+          color = Color.White.copy(alpha = 0.85f),
+          shadow = Shadow(color = Color.Black.copy(alpha = 0.5f), blurRadius = 4f),
+        ),
+      )
+
+      // Remaining / total duration timer
+      val rightTimerValue = if (invertDuration) position - duration else duration
+      val durationFormatted = Utils.prettyTime(rightTimerValue.toInt(), invertDuration)
+
+      Text(
+        text = durationFormatted,
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontFamily = FontFamily.Monospace,
+          fontWeight = FontWeight.Medium,
+          fontSize = 12.sp,
+          color = Color.White.copy(alpha = 0.85f),
+          shadow = Shadow(color = Color.Black.copy(alpha = 0.5f), blurRadius = 4f),
+        ),
+        modifier = Modifier
+          .clip(RoundedCornerShape(4.dp))
+          .clickable(onClick = onToggleInvertDuration),
+      )
+    }
+  }
+}
+
+/**
+ * Interactive progress track inside the Zen player layout.
  */
 @Composable
 fun ZenSeekbarTrack(
@@ -592,7 +817,7 @@ fun ZenSeekbarTrack(
   val playedFraction = if (duration > 0f) (displayPosition / duration).coerceIn(0f, 1f) else 0f
 
   val animatedTrackHeight by animateDpAsState(
-    targetValue = if (isDragging) 6.dp else 4.dp,
+    targetValue = if (isDragging) 7.dp else 5.dp,
     animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
     label = "trackHeight",
   )
@@ -600,7 +825,7 @@ fun ZenSeekbarTrack(
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .height(18.dp)
+      .height(20.dp)
       .onSizeChanged { trackWidthPx = it.width }
       .pointerInput(Unit) {
         detectTapGestures(
@@ -661,7 +886,7 @@ fun ZenSeekbarTrack(
       val bgPath = Path().apply {
         addRoundRect(RoundRect(0f, 0f, w, h, cornerRadius))
       }
-      drawPath(bgPath, Color.White.copy(alpha = 0.22f))
+      drawPath(bgPath, Color.White.copy(alpha = 0.28f))
 
       // 2. Cache ranges (buffer band)
       if (duration > 0f) {
@@ -674,7 +899,7 @@ fun ZenSeekbarTrack(
             val cachePath = Path().apply {
               addRoundRect(RoundRect(startX, 0f, endX, h, cornerRadius))
             }
-            drawPath(cachePath, Color.White.copy(alpha = 0.38f))
+            drawPath(cachePath, Color.White.copy(alpha = 0.45f))
           }
         }
       }
@@ -702,78 +927,6 @@ fun ZenSeekbarTrack(
             )
           }
         }
-      }
-    }
-  }
-}
-
-/**
- * Bottom-right floating glass actions pill:
- * [ Tracks (Audio / Subtitles) | Playlist / Chapters list ]
- */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun ZenActionsPill(
-  hasPlaylist: Boolean,
-  onOpenSubtitles: () -> Unit,
-  onOpenAudio: () -> Unit,
-  onOpenChapters: () -> Unit,
-  onOpenPlaylist: () -> Unit,
-  surfaceColor: Color,
-  borderStroke: BorderStroke,
-  modifier: Modifier = Modifier,
-) {
-  Surface(
-    modifier = modifier.height(54.dp),
-    shape = RoundedCornerShape(27.dp),
-    color = surfaceColor,
-    border = borderStroke,
-  ) {
-    Row(
-      modifier = Modifier.padding(horizontal = 14.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-      // Subtitles & Audio Tracks (tap for subtitles, long-press for audio)
-      Box(
-        modifier = Modifier
-          .size(38.dp)
-          .clip(CircleShape)
-          .combinedClickable(
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 19.dp),
-            onClick = onOpenSubtitles,
-            onLongClick = onOpenAudio,
-          ),
-        contentAlignment = Alignment.Center,
-      ) {
-        Icon(
-          imageVector = Icons.Default.Tune,
-          contentDescription = "Tracks",
-          tint = Color.White,
-          modifier = Modifier.size(22.dp),
-        )
-      }
-
-      // Chapters & Playlist (tap for playlist if present else chapters, long-press for alternate)
-      Box(
-        modifier = Modifier
-          .size(38.dp)
-          .clip(CircleShape)
-          .combinedClickable(
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 19.dp),
-            onClick = { if (hasPlaylist) onOpenPlaylist() else onOpenChapters() },
-            onLongClick = { if (hasPlaylist) onOpenChapters() else onOpenPlaylist() },
-          ),
-        contentAlignment = Alignment.Center,
-      ) {
-        Icon(
-          imageVector = Icons.AutoMirrored.Filled.List,
-          contentDescription = "Chapters",
-          tint = Color.White,
-          modifier = Modifier.size(24.dp),
-        )
       }
     }
   }

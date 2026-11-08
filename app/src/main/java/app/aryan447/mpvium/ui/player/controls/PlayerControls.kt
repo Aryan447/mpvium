@@ -841,6 +841,8 @@ fun PlayerControls(
               resetControlsTimestamp = System.currentTimeMillis()
               playerPreferences.invertDuration.set(!invertDuration)
             },
+            mediaTitle = lookupRaw,
+            tmdbEpisodeTitle = tmdbEpisodeTitle,
             topRightButtons = topRightButtons,
             bottomRightButtons = bottomRightButtons,
             amoledMode = amoledMode,
