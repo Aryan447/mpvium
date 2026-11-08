@@ -71,8 +71,34 @@ private val DefaultPlayerColors =
 val LocalPlayerColors = staticCompositionLocalOf { DefaultPlayerColors }
 
 @Composable
-fun playerColorsFor(fullColors: Boolean): PlayerColors {
+fun playerColorsFor(
+  fullColors: Boolean,
+  cinema: Boolean = false,
+): PlayerColors {
   val scheme = MaterialTheme.colorScheme
+  if (cinema) {
+    // Cinema swaps the theme-tinted glass for neutral charcoal discs. The
+    // theme accent survives only on progress indicators and active dots.
+    return PlayerColors(
+      controlFill = CinemaChrome.fill,
+      controlBorder = CinemaChrome.border,
+      controlContent = CinemaChrome.glyph,
+      controlIconContent = CinemaChrome.glyph,
+      onVideoContent = CinemaChrome.glyph,
+      onVideoIconContent = CinemaChrome.glyph,
+      accent = scheme.primary,
+      accentContent = scheme.onPrimary,
+      activeFill = CinemaChrome.fillActive,
+      activeContent = CinemaChrome.glyph,
+      activeOnVideoContent = CinemaChrome.glyph,
+      playPauseFill = CinemaChrome.playFill,
+      playPauseContent = CinemaChrome.glyph,
+      timerContent = CinemaChrome.glyph,
+      chipFill = scheme.surfaceContainer.copy(alpha = 0.95f),
+      chipContent = scheme.onSurface,
+      chipIconContent = scheme.primary,
+    )
+  }
   // Player chrome sits on top of video, not on an app surface. A light
   // scheme's `primary` is dark because it targets light surfaces, so over
   // video the bright inverse primary is the readable accent; dark schemes

@@ -2,8 +2,10 @@ package app.aryan447.mpvium.ui.player.controls.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
@@ -21,16 +23,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.player.controls.CinemaChrome
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
 import org.koin.compose.koinInject
+
+private val cinemaGlyphShadow =
+  Brush.radialGradient(
+    0.0f to Color.Black.copy(alpha = 0.35f),
+    0.7f to Color.Black.copy(alpha = 0.08f),
+    1.0f to Color.Transparent,
+  )
 
 @Suppress("ModifierClickableOrder")
 @OptIn(ExperimentalFoundationApi::class)
@@ -43,19 +57,26 @@ fun ControlsButton(
   title: String? = null,
   color: Color? = null,
   active: Boolean = false,
+  hideBackground: Boolean? = null,
 ) {
   val interactionSource = remember { MutableInteractionSource() }
-  val appearancePreferences = koinInject<AppearancePreferences>()
-  val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
+  val isInspection = LocalInspectionMode.current
+  val appearancePreferences = if (isInspection) null else koinInject<AppearancePreferences>()
+  val rawHideBackground by appearancePreferences?.hidePlayerButtonsBackground?.collectAsState()
+    ?: remember { androidx.compose.runtime.mutableStateOf(false) }
+  val playerLayout = LocalPlayerLayout.current
+  val isCinema = playerLayout == PlayerLayout.CINEMA
+  val effectiveHideBackground = hideBackground ?: (rawHideBackground || isCinema)
   val colors = LocalPlayerColors.current
 
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val contentColor =
     color
       ?: when {
-        active && hideBackground -> colors.activeOnVideoContent
+        isCinema -> CinemaChrome.glyph
+        active && effectiveHideBackground -> colors.activeOnVideoContent
         active -> colors.activeContent
-        hideBackground -> colors.onVideoIconContent
+        effectiveHideBackground -> colors.onVideoIconContent
         else -> colors.controlIconContent
       }
   Surface(
@@ -70,28 +91,52 @@ fun ControlsButton(
           onLongClick = onLongClick,
           interactionSource = interactionSource,
           indication = ripple(),
+        )
+        .then(
+          if (effectiveHideBackground && !isCinema) {
+            Modifier.background(brush = cinemaGlyphShadow, shape = CircleShape)
+          } else {
+            Modifier
+          },
         ),
     shape = CircleShape,
     color =
       when {
-        hideBackground -> Color.Transparent
+        isCinema -> if (active) CinemaChrome.fillActive else CinemaChrome.fill
+        effectiveHideBackground -> Color.Transparent
         active -> colors.activeFill
         else -> colors.controlFill
       },
     contentColor = contentColor,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
-    border = if (hideBackground) null else BorderStroke(1.dp, colors.controlBorder),
+    border =
+      when {
+        isCinema -> BorderStroke(1.dp, if (active) CinemaChrome.borderActive else CinemaChrome.border)
+        effectiveHideBackground -> null
+        else -> BorderStroke(1.dp, colors.controlBorder)
+      },
   ) {
-    Icon(
-      imageVector = icon,
-      contentDescription = title,
-      tint = contentColor,
-      modifier =
-        Modifier
-          .padding(MaterialTheme.spacing.small)
-          .size(20.dp),
-    )
+    Box(contentAlignment = Alignment.Center) {
+      Icon(
+        imageVector = icon,
+        contentDescription = title,
+        tint = contentColor,
+        modifier =
+          Modifier
+            .padding(MaterialTheme.spacing.small)
+            .size(20.dp),
+      )
+      if (active && effectiveHideBackground) {
+        Box(
+          modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(bottom = 3.dp)
+            .size(4.dp)
+            .background(contentColor, CircleShape)
+        )
+      }
+    }
   }
 }
 
@@ -101,13 +146,14 @@ fun ControlsGroup(
   content: @Composable RowScope.() -> Unit,
 ) {
   val spacing = MaterialTheme.spacing
+  val isCinema = LocalPlayerLayout.current == PlayerLayout.CINEMA
 
   Row(
     modifier = modifier,
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement =
       androidx.compose.foundation.layout.Arrangement
-        .spacedBy(spacing.extraSmall),
+        .spacedBy(if (isCinema) spacing.smaller else spacing.extraSmall),
     content = content,
   )
 }

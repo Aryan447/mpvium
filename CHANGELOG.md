@@ -2,6 +2,7 @@
 
 ### Added
 
+- Cinema player layout option (Settings → Appearance → Player Layout): a video-first alternative to the Classic glass-pill chrome. Controls float in translucent charcoal discs with hairline edges, the play/pause target is larger, and the top/bottom scrims keep titles and icons legible over any frame. Full RTL mirroring and custom per-region button arrangements are preserved.
 - Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
 - Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
 - Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
@@ -18,6 +19,7 @@
 
 ### Changed
 
+- Player layout styles: renamed the glass-pill layout to **Classic** and rebuilt **Cinema** from scratch. Cinema now uses neutral charcoal disc controls, a larger transport cluster, and the same inset seekbar-with-timers position as Classic, so the track sits clear of the system gesture area instead of being pinned to the screen edge.
 - Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
 - Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
 - Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
