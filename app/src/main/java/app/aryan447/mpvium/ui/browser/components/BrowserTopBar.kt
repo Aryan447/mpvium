@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.ViewComfy
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -102,6 +103,7 @@ fun BrowserTopBar(
   onTitleLongPress: (() -> Unit)? = null,
   useRemoveIcon: Boolean = false,
   onAddToPlaylistClick: (() -> Unit)? = null,
+  onAddToSeriesClick: (() -> Unit)? = null,
   onMarkAsClick: (() -> Unit)? = null,
   scrolled: Boolean = true,
   mediaLayoutMode: app.aryan447.mpvium.preferences.MediaLayoutMode? = null,
@@ -125,6 +127,7 @@ fun BrowserTopBar(
       modifier = modifier,
       useRemoveIcon = useRemoveIcon,
       onAddToPlaylist = onAddToPlaylistClick,
+      onAddToSeries = onAddToSeriesClick,
       onMarkAs = onMarkAsClick,
     )
   } else {
@@ -356,6 +359,7 @@ private fun SelectionTopBar(
   modifier: Modifier = Modifier,
   useRemoveIcon: Boolean = false,
   onAddToPlaylist: (() -> Unit)? = null,
+  onAddToSeries: (() -> Unit)? = null,
   onMarkAs: (() -> Unit)? = null,
 ) {
   var showDropdown by remember { mutableStateOf(false) }
@@ -463,6 +467,20 @@ private fun SelectionTopBar(
             Icons.AutoMirrored.Filled.PlaylistAdd,
             contentDescription = "Add to Playlist",
             modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.secondary,
+          )
+        }
+      }
+
+      if (onAddToSeries != null) {
+        IconButton(
+          onClick = onAddToSeries,
+          modifier = Modifier.padding(horizontal = 2.dp),
+        ) {
+          Icon(
+            Icons.Filled.Tv,
+            contentDescription = stringResource(R.string.add_to_series),
+            modifier = Modifier.size(24.dp),
             tint = MaterialTheme.colorScheme.secondary,
           )
         }

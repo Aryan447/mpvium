@@ -1070,7 +1070,8 @@ fun CompactTimecode(
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val interactionSource = remember { MutableInteractionSource() }
   val currentText = Utils.prettyTime(position.toInt(), false)
-  val totalText = Utils.prettyTime(duration.toInt(), isInverted)
+  val totalValue = if (isInverted) position - duration else duration
+  val totalText = Utils.prettyTime(totalValue.toInt(), isInverted)
   val colors = LocalPlayerColors.current
   Text(
     modifier = modifier

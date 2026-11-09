@@ -108,6 +108,8 @@ import app.aryan447.mpvium.ui.browser.cards.VideoCard
 import app.aryan447.mpvium.ui.browser.components.BrowserBottomBar
 import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
 import app.aryan447.mpvium.ui.browser.dialogs.AddToPlaylistDialog
+import app.aryan447.mpvium.ui.browser.dialogs.AddToSeriesDialog
+import app.aryan447.mpvium.ui.streaming.series.CustomSeriesBuilderScreen
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.browser.dialogs.FileOperationProgressDialog
 import app.aryan447.mpvium.ui.browser.dialogs.FolderPickerDialog
@@ -212,6 +214,7 @@ fun FileSystemBrowserScreen(path: String? = null) {
   val deleteDialogOpen = rememberSaveable { mutableStateOf(false) }
   val renameDialogOpen = rememberSaveable { mutableStateOf(false) }
   val addToPlaylistDialogOpen = rememberSaveable { mutableStateOf(false) }
+  val addToSeriesDialogOpen = rememberSaveable { mutableStateOf(false) }
   val markAsDialogOpen = rememberSaveable { mutableStateOf(false) }
 
   // FAB visibility for scroll-based hiding
@@ -721,6 +724,9 @@ fun FileSystemBrowserScreen(path: String? = null) {
             onAddToPlaylistClick = if (!BuildConfig.ENABLE_UPDATE_FEATURE && videoSelectionManager.isInSelectionMode && !folderSelectionManager.isInSelectionMode) {
               { addToPlaylistDialogOpen.value = true }
             } else null,
+            onAddToSeriesClick = if (videoSelectionManager.isInSelectionMode && !folderSelectionManager.isInSelectionMode) {
+              { addToSeriesDialogOpen.value = true }
+            } else null,
             onMarkAsClick = if (videoSelectionManager.isInSelectionMode && !folderSelectionManager.isInSelectionMode) {
               { markAsDialogOpen.value = true }
             } else null,
@@ -966,6 +972,8 @@ fun FileSystemBrowserScreen(path: String? = null) {
         onRenameClick = { renameDialogOpen.value = true },
         onDeleteClick = { deleteDialogOpen.value = true },
         onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
+        onAddToSeriesClick = { addToSeriesDialogOpen.value = true },
+        showAddToSeries = videoSelectionManager.isInSelectionMode && !folderSelectionManager.isInSelectionMode,
         showRename = videoSelectionManager.isSingleSelection,
         hazeState = bottomBarHaze,
         hazeStyle = bottomBarHazeStyle,
@@ -1080,6 +1088,22 @@ fun FileSystemBrowserScreen(path: String? = null) {
       isOpen = addToPlaylistDialogOpen.value,
       videos = videoSelectionManager.getSelectedItems(),
       onDismiss = { addToPlaylistDialogOpen.value = false },
+      onSuccess = {
+        videoSelectionManager.clear()
+        viewModel.refresh()
+      },
+    )
+
+    // Add to Series Dialog
+    AddToSeriesDialog(
+      isOpen = addToSeriesDialogOpen.value,
+      videos = videoSelectionManager.getSelectedItems(),
+      onDismiss = { addToSeriesDialogOpen.value = false },
+      onCreateNewSeries = {
+        val selected = videoSelectionManager.getSelectedItems()
+        videoSelectionManager.clear()
+        backstack.add(CustomSeriesBuilderScreen(initialVideos = selected))
+      },
       onSuccess = {
         videoSelectionManager.clear()
         viewModel.refresh()
