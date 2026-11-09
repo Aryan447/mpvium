@@ -37,6 +37,11 @@
 
 ### Fixed
 
+- Modern player seekbar: eliminated seekbar haptics, prevented paused playback from automatically resuming upon releasing the seekbar, and added vertical swipe-up scrubbing speed tiers (1x, 2x, 4x, 8x) with floating rate popup matching the Classic player.
+- Player gesture overlays: hid Modern player UI controls during volume and brightness vertical swipe gestures to prevent on-screen collision with titles and action buttons.
+- Volume controls: eliminated duplicate vertical volume slider during physical volume key presses while Modern controls are shown, and added live volume percentage readout to the top-right volume capsule when pressing physical volume buttons.
+- Modern player intro skip: moved Skip Intro and Skip Recap chips below the top-right volume/brightness capsule in landscape to eliminate visual collision.
+- Navigation: fixed Audio tab not appearing on the home bottom navigation bar when enabled in settings.
 - Prevented seekbar track expansion and wavy line flattening during on-screen horizontal swipe gestures by decoupling direct seekbar touch scrubbing from external gesture seeking.
 - Fixed seekbar handle and timer micro-jitter during horizontal swipe-to-seek gestures by strictly locking `visualPosition` and `seekbarPosition` during `PlayerUpdates.HorizontalSeek`.
 - Player: fixed a launch crash (`NullPointerException` inside `Flow.combine`) when opening the player while the lean seek cache is enabled, caused by the visibility observer reading player state before it was initialized.

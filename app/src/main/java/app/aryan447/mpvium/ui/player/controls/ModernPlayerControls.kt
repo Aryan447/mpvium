@@ -8,10 +8,13 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -59,6 +62,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -81,12 +85,14 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.preferences.AppearancePreferences
@@ -103,6 +109,7 @@ import app.aryan447.mpvium.utils.media.MediaInfoParser
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
@@ -446,6 +453,7 @@ fun ModernPlayerControls(
         }
 
         // Seekbar track and timers
+        var wasPlayerAlreadyPaused by remember { mutableStateOf(false) }
         ModernSeekbarSection(
           position = position,
           duration = duration,
@@ -454,17 +462,21 @@ fun ModernPlayerControls(
           onSeekTo = { target, isScrubbing ->
             resetControlsTimestamp()
             if (isScrubbing) {
+              if (!isSeeking) {
+                wasPlayerAlreadyPaused = paused
+              }
               viewModel.seekTo(target.roundToInt(), isScrubbing = true)
             } else {
-              viewModel.seekToAndResume(target.roundToInt())
+              if (wasPlayerAlreadyPaused || paused) {
+                viewModel.seekTo(target.roundToInt(), isScrubbing = false)
+              } else {
+                viewModel.seekToAndResume(target.roundToInt())
+              }
             }
           },
           onSeekingChanged = onSeekingChanged,
           invertDuration = invertDuration,
-          onToggleInvertDuration = {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onToggleInvertDuration()
-          },
+          onToggleInvertDuration = onToggleInvertDuration,
         )
       }
     }
@@ -507,6 +519,29 @@ fun ModernTopRightControls(
   var activeTarget by remember { mutableStateOf(ModernTopRightTarget.VOLUME) }
   var isScrubbingVolume by remember { mutableStateOf(false) }
   var isScrubbingBrightness by remember { mutableStateOf(false) }
+
+  var showVolumeNumberTemporarily by remember { mutableStateOf(false) }
+  var lastObservedVolume by remember { mutableIntStateOf(currentVolume) }
+  LaunchedEffect(currentVolume) {
+    if (lastObservedVolume != currentVolume) {
+      lastObservedVolume = currentVolume
+      activeTarget = ModernTopRightTarget.VOLUME
+      showVolumeNumberTemporarily = true
+      delay(1500)
+      showVolumeNumberTemporarily = false
+    }
+  }
+
+  var showBrightnessNumberTemporarily by remember { mutableStateOf(false) }
+  var lastObservedBrightness by remember { mutableFloatStateOf(currentBrightness) }
+  LaunchedEffect(currentBrightness) {
+    if (kotlin.math.abs(lastObservedBrightness - currentBrightness) > 0.005f) {
+      lastObservedBrightness = currentBrightness
+      showBrightnessNumberTemporarily = true
+      delay(1500)
+      showBrightnessNumberTemporarily = false
+    }
+  }
 
   var volTrackWidthPx by remember { mutableIntStateOf(0) }
   var briTrackWidthPx by remember { mutableIntStateOf(0) }
@@ -671,12 +706,12 @@ fun ModernTopRightControls(
               }
             }
 
-            // Trailing slot: if scrubbing, display number; otherwise speaker icon
+            // Trailing slot: if scrubbing or volume changed, display number; otherwise speaker icon
             Box(
               modifier = Modifier.widthIn(min = 28.dp),
               contentAlignment = Alignment.Center,
             ) {
-              if (isScrubbingVolume) {
+              if (isScrubbingVolume || showVolumeNumberTemporarily) {
                 Text(
                   text = "${(volumeFraction * 100).roundToInt()}%",
                   style = MaterialTheme.typography.labelSmall.copy(
@@ -836,12 +871,12 @@ fun ModernTopRightControls(
               }
             }
 
-            // Trailing slot: if scrubbing, display number; otherwise brightness icon
+            // Trailing slot: if scrubbing or brightness changed, display number; otherwise brightness icon
             Box(
               modifier = Modifier.widthIn(min = 28.dp),
               contentAlignment = Alignment.Center,
             ) {
-              if (isScrubbingBrightness) {
+              if (isScrubbingBrightness || showBrightnessNumberTemporarily) {
                 Text(
                   text = "${(brightnessFraction * 100).roundToInt()}%",
                   style = MaterialTheme.typography.labelSmall.copy(
@@ -1236,7 +1271,6 @@ fun ModernSeekbarSection(
         modifier = Modifier
           .clip(RoundedCornerShape(4.dp))
           .clickable {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onToggleInvertDuration()
           },
       )
@@ -1247,7 +1281,7 @@ fun ModernSeekbarSection(
 /**
  * Interactive progress track inside the Modern player layout.
  * Adapts to theme colors (MaterialTheme.colorScheme.primary) and respects
- * chaptersInSeekbar preference.
+ * chaptersInSeekbar preference. Supports vertical swipe up for 1x, 2x, 4x, 8x scrubbing speed.
  */
 @Composable
 fun ModernSeekbarTrack(
@@ -1259,7 +1293,6 @@ fun ModernSeekbarTrack(
   onSeekingChanged: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val haptic = LocalHapticFeedback.current
   val appearancePreferences = koinInject<AppearancePreferences>()
   val chaptersInSeekbar by appearancePreferences.chaptersInSeekbar.collectAsState()
   val seekbarStyle by appearancePreferences.seekbarStyle.collectAsState()
@@ -1267,6 +1300,14 @@ fun ModernSeekbarTrack(
   var isDragging by remember { mutableStateOf(false) }
   var dragPosition by remember { mutableFloatStateOf(position) }
   var trackWidthPx by remember { mutableIntStateOf(0) }
+
+  val density = LocalDensity.current
+  val scrubTierStepPx = with(density) { 48.dp.toPx() }
+  var scrubTier by remember { mutableIntStateOf(0) }
+  var dragAnchor by remember { mutableFloatStateOf(0f) }
+  var scaledDragDxPx by remember { mutableFloatStateOf(0f) }
+  var verticalDragPx by remember { mutableFloatStateOf(0f) }
+  val scrubRate = 1 shl scrubTier.coerceIn(0, 3)
 
   val latestDuration by rememberUpdatedState(duration)
   val latestPosition by rememberUpdatedState(position)
@@ -1297,42 +1338,50 @@ fun ModernSeekbarTrack(
           onTap = { offset ->
             val currDuration = latestDuration
             if (currDuration <= 0f || trackWidthPx <= 0) return@detectTapGestures
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             val fraction = (offset.x / trackWidthPx.toFloat()).coerceIn(0f, 1f)
             val target = fraction * currDuration
             latestOnSeekTo(target, false)
           }
         )
       }
-      .pointerInput(Unit) {
+      .pointerInput(scrubTierStepPx) {
         detectDragGestures(
           onDragStart = { offset ->
             val currDuration = latestDuration
             if (currDuration <= 0f || trackWidthPx <= 0) return@detectDragGestures
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             isDragging = true
             latestOnSeekingChanged(true)
-            val fraction = (offset.x / trackWidthPx.toFloat()).coerceIn(0f, 1f)
-            dragPosition = fraction * currDuration
+            dragAnchor = (offset.x / trackWidthPx.toFloat()).coerceIn(0f, 1f) * currDuration
+            scaledDragDxPx = 0f
+            verticalDragPx = 0f
+            scrubTier = 0
+            dragPosition = dragAnchor
             latestOnSeekTo(dragPosition, true)
           },
           onDragEnd = {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             isDragging = false
             latestOnSeekingChanged(false)
+            scrubTier = 0
             latestOnSeekTo(dragPosition, false)
           },
           onDragCancel = {
             isDragging = false
             latestOnSeekingChanged(false)
+            scrubTier = 0
             dragPosition = latestPosition
           },
-          onDrag = { change, _ ->
+          onDrag = { change, dragAmount ->
             change.consume()
             val currDuration = latestDuration
             if (currDuration <= 0f || trackWidthPx <= 0) return@detectDragGestures
-            val fraction = (change.position.x / trackWidthPx.toFloat()).coerceIn(0f, 1f)
-            dragPosition = fraction * currDuration
+            verticalDragPx += dragAmount.y
+            val newTier = ((-verticalDragPx) / scrubTierStepPx).toInt().coerceIn(0, 3)
+            if (newTier != scrubTier) scrubTier = newTier
+            scaledDragDxPx += dragAmount.x * (1 shl scrubTier)
+            val anchorFraction = dragAnchor.toDouble() / currDuration.toDouble()
+            val deltaFraction = scaledDragDxPx.toDouble() / trackWidthPx.toDouble()
+            dragPosition = ((anchorFraction + deltaFraction) * currDuration.toDouble())
+              .toFloat().coerceIn(0f, currDuration)
             latestOnSeekTo(dragPosition, true)
           }
         )
@@ -1408,6 +1457,35 @@ fun ModernSeekbarTrack(
           color = themePrimary,
           radius = (h / 2f),
           center = Offset(playedWidth.coerceIn(0f, w), h / 2f),
+        )
+      }
+    }
+
+    // Floating 1x/2x/4x/8x scrub rate popup
+    AnimatedVisibility(
+      visible = isDragging && scrubTier > 0,
+      enter = fadeIn() + scaleIn(),
+      exit = fadeOut() + scaleOut(),
+      modifier = Modifier
+        .align(Alignment.TopCenter)
+        .offset {
+          val travelPx = (trackWidthPx - 50.dp.roundToPx()).coerceAtLeast(0)
+          IntOffset(x = ((playedFraction - 0.5f) * travelPx).roundToInt(), y = (-30).dp.roundToPx())
+        },
+    ) {
+      Box(
+        modifier = Modifier
+          .background(
+            MaterialTheme.colorScheme.inverseSurface,
+            RoundedCornerShape(8.dp),
+          )
+          .padding(horizontal = 8.dp, vertical = 4.dp),
+      ) {
+        Text(
+          text = "${scrubRate}×",
+          color = MaterialTheme.colorScheme.inverseOnSurface,
+          fontWeight = FontWeight.Bold,
+          fontSize = 12.sp,
         )
       }
     }

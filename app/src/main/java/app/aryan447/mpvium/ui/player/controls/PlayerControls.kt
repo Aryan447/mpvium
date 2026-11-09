@@ -836,7 +836,7 @@ fun PlayerControls(
             onOpenSheet = onOpenSheet,
             onOpenPanel = onOpenPanel,
             activity = activity,
-            controlsShown = controlsShown,
+            controlsShown = controlsShown && !areSlidersShown,
             areControlsLocked = areControlsLocked,
             isSeeking = isSeeking,
             onSeekingChanged = { isSeeking = it },
@@ -1210,6 +1210,8 @@ fun PlayerControls(
                 // so the chips never sit on the title pill or buttons.
                 if (isPortrait) {
                   top.linkTo(parent.top, 96.dp)
+                } else if (isModern) {
+                  top.linkTo(parent.top, if (showSystemStatusBar) 76.dp else 68.dp)
                 } else {
                   top.linkTo(topRightControls.bottom, 12.dp)
                 }

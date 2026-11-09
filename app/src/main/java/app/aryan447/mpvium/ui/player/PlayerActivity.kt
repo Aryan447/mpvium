@@ -42,8 +42,10 @@ import app.aryan447.mpvium.databinding.PlayerLayoutBinding
 import app.aryan447.mpvium.domain.playbackstate.PlaybackCheckpointDecider
 import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
 import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.preferences.SubtitleScope
@@ -155,6 +157,11 @@ class PlayerActivity :
    * Preferences for browser settings.
    */
   private val browserPreferences: BrowserPreferences by inject()
+
+  /**
+   * Preferences for appearance settings.
+   */
+  private val appearancePreferences: AppearancePreferences by inject()
 
   /**
    * Manager for file operations.
@@ -2813,13 +2820,19 @@ class PlayerActivity :
 
       KeyEvent.KEYCODE_VOLUME_UP -> {
         viewModel.changeVolumeBy(volumeStep())
-        viewModel.displayVolumeSlider()
+        val isModern = appearancePreferences.playerLayout.get() == PlayerLayout.MODERN
+        if (!isModern || !viewModel.controlsShown.value) {
+          viewModel.displayVolumeSlider()
+        }
         return true
       }
 
       KeyEvent.KEYCODE_VOLUME_DOWN -> {
         viewModel.changeVolumeBy(-volumeStep())
-        viewModel.displayVolumeSlider()
+        val isModern = appearancePreferences.playerLayout.get() == PlayerLayout.MODERN
+        if (!isModern || !viewModel.controlsShown.value) {
+          viewModel.displayVolumeSlider()
+        }
         return true
       }
 
