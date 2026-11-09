@@ -86,7 +86,7 @@ compose-navigation3 = ["androidx-navigation3-runtime", "androidx-navigation3-ui"
 
 [plugins]
 # Latest KSP available; no 2.4 line published yet (google/ksp#2965 tracks Kotlin 2.4 support).
-ksp = { id = "com.google.devtools.ksp", version = "2.3.12" }
+ksp = { id = "com.google.devtools.ksp", version = "2.3.13" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 room = { id = "androidx.room", version.ref = "room" }
