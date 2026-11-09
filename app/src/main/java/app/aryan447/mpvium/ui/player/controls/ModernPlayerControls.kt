@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.player.controls
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
@@ -91,6 +92,7 @@ import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.PlayerButton
 import app.aryan447.mpvium.preferences.SeekbarStyle
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.PlayerViewModel
@@ -565,15 +567,12 @@ fun ModernTopRightControls(
       color = surfaceColor,
       border = borderStroke,
     ) {
-      Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-      ) {
-        AnimatedVisibility(
-          visible = !isVolumeExpanded,
-          enter = fadeIn(tween(160, delayMillis = 100)),
-          exit = fadeOut(tween(100)),
-        ) {
+      Crossfade(
+        targetState = isVolumeExpanded,
+        animationSpec = tween(180),
+        label = "ModernVolumeContent",
+      ) { expanded ->
+        if (!expanded) {
           Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -585,13 +584,7 @@ fun ModernTopRightControls(
               modifier = Modifier.size(20.dp),
             )
           }
-        }
-
-        AnimatedVisibility(
-          visible = isVolumeExpanded,
-          enter = fadeIn(tween(180, delayMillis = 100)),
-          exit = fadeOut(tween(100)),
-        ) {
+        } else {
           Row(
             modifier = Modifier
               .fillMaxSize()
@@ -745,15 +738,12 @@ fun ModernTopRightControls(
       color = surfaceColor,
       border = borderStroke,
     ) {
-      Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-      ) {
-        AnimatedVisibility(
-          visible = !isBrightnessExpanded,
-          enter = fadeIn(tween(160, delayMillis = 100)),
-          exit = fadeOut(tween(100)),
-        ) {
+      Crossfade(
+        targetState = isBrightnessExpanded,
+        animationSpec = tween(180),
+        label = "ModernBrightnessContent",
+      ) { expanded ->
+        if (!expanded) {
           Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -765,13 +755,7 @@ fun ModernTopRightControls(
               modifier = Modifier.size(20.dp),
             )
           }
-        }
-
-        AnimatedVisibility(
-          visible = isBrightnessExpanded,
-          enter = fadeIn(tween(180, delayMillis = 100)),
-          exit = fadeOut(tween(100)),
-        ) {
+        } else {
           Row(
             modifier = Modifier
               .fillMaxSize()

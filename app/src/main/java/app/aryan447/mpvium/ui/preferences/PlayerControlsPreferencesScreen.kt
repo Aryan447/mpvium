@@ -91,6 +91,8 @@ object PlayerControlsPreferencesScreen : Screen {
     val appearancePrefs = koinInject<AppearancePreferences>()
     val playerPrefs = koinInject<PlayerPreferences>()
 
+    val playerLayout by appearancePrefs.playerLayout.collectAsState()
+
     // Get the current state for all four regions
     val topRState by appearancePrefs.topRightControls.collectAsState()
     val bottomRState by appearancePrefs.bottomRightControls.collectAsState()
@@ -157,7 +159,6 @@ object PlayerControlsPreferencesScreen : Screen {
           }
 
           item {
-            val playerLayout by appearancePrefs.playerLayout.collectAsState()
             val layoutLabels = mapOf(
               PlayerLayout.CLASSIC to stringResource(R.string.pref_player_layout_classic),
               PlayerLayout.MODERN to stringResource(R.string.pref_player_layout_modern),
