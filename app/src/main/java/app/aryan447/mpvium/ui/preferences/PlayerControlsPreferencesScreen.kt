@@ -79,6 +79,7 @@ enum class ControlRegion {
   BOTTOM_RIGHT,
   BOTTOM_LEFT,
   PORTRAIT_BOTTOM,
+  MODERN_ACTIONS,
 }
 
 @Serializable
@@ -110,6 +111,11 @@ object PlayerControlsPreferencesScreen : Screen {
 
     val portraitBottomButtons = remember(portraitBottomState) {
       appearancePrefs.parseButtons(portraitBottomState, mutableSetOf())
+    }
+
+    val modernActionState by appearancePrefs.modernActionControls.collectAsState()
+    val modernActionButtons = remember(modernActionState) {
+      appearancePrefs.parseButtons(modernActionState, mutableSetOf())
     }
 
     val listState = rememberLazyListState()
@@ -169,9 +175,6 @@ object PlayerControlsPreferencesScreen : Screen {
                 labelOf = { layoutLabels.getValue(it) },
                 onSelect = { selectedLayout ->
                   appearancePrefs.playerLayout.set(selectedLayout)
-                  if (selectedLayout == PlayerLayout.MODERN) {
-                    playerPrefs.swapVolumeAndBrightness.set(true)
-                  }
                 },
                 equalWidth = true,
                 modifier = Modifier
@@ -182,8 +185,12 @@ object PlayerControlsPreferencesScreen : Screen {
           }
 
           // Landscape Controls Section
+          val isModernLayout = playerLayout == PlayerLayout.MODERN
           item {
-            PreferenceSectionHeader(title = "Landscape Controls", count = 3)
+            PreferenceSectionHeader(
+              title = if (isModernLayout) "Landscape Controls (Modern)" else "Landscape Controls",
+              count = if (isModernLayout) 1 else 3,
+            )
           }
 
           item {
@@ -194,36 +201,47 @@ object PlayerControlsPreferencesScreen : Screen {
                 isCard = true,
               ),
             ) {
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_top_right_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.TOP_RIGHT))
-                },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.top_right"),
-              )
-              PreferenceIconSummary(buttons = topRightButtons)
+              if (isModernLayout) {
+                PreferenceCategoryWithEditButton(
+                  title = "Action Shortcuts (Bottom Right)",
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.MODERN_ACTIONS))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_right"),
+                )
+                PreferenceIconSummary(buttons = modernActionButtons)
+              } else {
+                PreferenceCategoryWithEditButton(
+                  title = stringResource(id = R.string.pref_layout_top_right_controls),
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.TOP_RIGHT))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.top_right"),
+                )
+                PreferenceIconSummary(buttons = topRightButtons)
 
-              PreferenceDivider()
+                PreferenceDivider()
 
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_bottom_right_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_RIGHT))
-                },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_right"),
-              )
-              PreferenceIconSummary(buttons = bottomRightButtons)
+                PreferenceCategoryWithEditButton(
+                  title = stringResource(id = R.string.pref_layout_bottom_right_controls),
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_RIGHT))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_right"),
+                )
+                PreferenceIconSummary(buttons = bottomRightButtons)
 
-              PreferenceDivider()
+                PreferenceDivider()
 
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_bottom_left_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_LEFT))
-                },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_left"),
-              )
-              PreferenceIconSummary(buttons = bottomLeftButtons)
+                PreferenceCategoryWithEditButton(
+                  title = stringResource(id = R.string.pref_layout_bottom_left_controls),
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_LEFT))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_left"),
+                )
+                PreferenceIconSummary(buttons = bottomLeftButtons)
+              }
             }
           }
 

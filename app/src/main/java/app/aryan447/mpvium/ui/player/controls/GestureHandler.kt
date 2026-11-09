@@ -61,10 +61,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `is`.xyz.mpv.MPVLib
-import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
-import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.preferences.SubtitleScope
@@ -317,11 +315,7 @@ fun GestureHandler(
   val showDynamicSpeedOverlay by playerPreferences.showDynamicSpeedOverlay.collectAsState()
   val brightnessGesture by playerPreferences.brightnessGesture.collectAsState()
   val volumeGesture by playerPreferences.volumeGesture.collectAsState()
-  val appearancePreferences = koinInject<AppearancePreferences>()
-  val playerLayout by appearancePreferences.playerLayout.collectAsState()
-  val isModern = playerLayout == PlayerLayout.MODERN
-  val swapVolumeAndBrightnessPref by playerPreferences.swapVolumeAndBrightness.collectAsState()
-  val swapVolumeAndBrightness = swapVolumeAndBrightnessPref || isModern
+  val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
   val pinchToZoomGesture by playerPreferences.pinchToZoomGesture.collectAsState()
   val pinchToResizeSubtitles by playerPreferences.pinchToResizeSubtitles.collectAsState()
   val panAndZoomEnabled by playerPreferences.panAndZoomEnabled.collectAsState()
