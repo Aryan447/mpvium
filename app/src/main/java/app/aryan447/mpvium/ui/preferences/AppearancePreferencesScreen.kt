@@ -94,6 +94,7 @@ object AppearancePreferencesScreen : Screen {
                     MainTab.FOLDERS,
                     MainTab.LIBRARY,
                     MainTab.PLAYLISTS,
+                    MainTab.AUDIO,
                 )
             } else {
                 listOf(
@@ -103,6 +104,7 @@ object AppearancePreferencesScreen : Screen {
                     MainTab.FOLDERS,
                     MainTab.LIBRARY,
                     MainTab.PLAYLISTS,
+                    MainTab.AUDIO,
                 )
             }
         }

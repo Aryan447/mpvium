@@ -746,4 +746,30 @@
   <string name="custom_series_choose_series">Add to series</string>
   <string name="custom_series_create_new">Create new series</string>
   <string name="custom_series_added_to">Added to \"%1$s\"</string>
+
+  <!-- Audio library -->
+  <string name="tab_audio">Audio</string>
+  <string name="audio_search_placeholder">Search audio…</string>
+  <string name="audio_filter_albums">Albums</string>
+  <string name="audio_filter_tracks">All tracks</string>
+  <string name="audio_filter_artists">Artists</string>
+  <string name="audio_empty_no_audio_title">No audio files found</string>
+  <string name="audio_empty_no_audio_message">Add songs, albums, or audio tracks to your device storage to see them here</string>
+  <string name="audio_empty_search_title">No audio matches found</string>
+  <string name="audio_empty_search_message">No audio matches \'%1$s\'</string>
+  <string name="audio_play_all">Play all</string>
+  <string name="audio_shuffle">Shuffle</string>
+  <string name="audio_queue">Queue</string>
+  <string name="audio_now_playing">Now playing</string>
+  <string name="audio_track_count">%1$d tracks</string>
+  <string name="audio_album_count">%1$d albums</string>
+  <string name="audio_unknown_artist">Unknown Artist</string>
+  <string name="audio_unknown_album">Unknown Album</string>
+  <string name="audio_unknown_track">Unknown Track</string>
+  <string name="pref_appearance_audio_tab">Audio tab</string>
+  <string name="player_previous">Previous</string>
+  <string name="player_next">Next</string>
+  <string name="player_play">Play</string>
+  <string name="player_pause">Pause</string>
+  <string name="player_repeat">Repeat</string>
 </resources>
