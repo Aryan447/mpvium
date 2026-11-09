@@ -2,6 +2,7 @@
 
 ### Added
 
+- Modern player seekbar styles: added support for Standard, Wavy, and Thick seekbar styles in Modern player layout, with Standard configured as the default and configurable via Settings → Appearance → Controls.
 - Modern player layout option (Settings → Appearance → Player Layout): modeled after Apple TV's native player interface. Features a top-left floating glass pill with close (✕) and PiP buttons; expandable top-right Volume & Brightness controls with live scrub percentage readout and round toggle button; center floating circular glass transport controls (10s skip and hero play/pause); bottom-left two-line show title (episode name on top, series name with chevron below for TV shows, or single clean movie title for movies); customizable bottom-right actions pill (Subtitles, Audio Track, Explain, and Menu); theme-colored seekbar with elapsed/remaining timers, chapter dividers gated by settings, and system gesture navigation clearance; and tactile haptic feedback across all controls.
 - Custom series: create and edit your own TV shows from any videos with custom title, release year, poster cover, and drag-and-drop episode reordering with explicit season and episode numbering.
 - Custom series entry points: selection mode in Folders and Files tabs now features "Add to series…" next to "Add to playlist", and the Shows tab header includes a direct "Create series" action with helpful empty-state guidance.

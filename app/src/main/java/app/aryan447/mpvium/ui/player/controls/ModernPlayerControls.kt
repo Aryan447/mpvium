@@ -3,7 +3,9 @@ package app.aryan447.mpvium.ui.player.controls
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -71,6 +73,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,6 +84,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -110,6 +116,7 @@ import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
@@ -459,6 +466,7 @@ fun ModernPlayerControls(
           duration = duration,
           chapters = chapters,
           cacheRanges = cacheRanges,
+          isPaused = paused,
           onSeekTo = { target, isScrubbing ->
             resetControlsTimestamp()
             if (isScrubbing) {
@@ -1213,6 +1221,7 @@ fun ModernSeekbarSection(
   duration: Float,
   chapters: ImmutableList<Segment>,
   cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange>,
+  isPaused: Boolean = false,
   onSeekTo: (Float, Boolean) -> Unit,
   onSeekingChanged: (Boolean) -> Unit,
   invertDuration: Boolean,
@@ -1225,7 +1234,7 @@ fun ModernSeekbarSection(
     modifier = modifier
       .fillMaxWidth()
       .systemGestureExclusion(),
-    verticalArrangement = Arrangement.spacedBy(6.dp),
+    verticalArrangement = Arrangement.spacedBy(4.dp),
   ) {
     // Progress bar
     ModernSeekbarTrack(
@@ -1233,6 +1242,7 @@ fun ModernSeekbarSection(
       duration = duration,
       chapters = chapters,
       cacheRanges = cacheRanges,
+      isPaused = isPaused,
       onSeekTo = onSeekTo,
       onSeekingChanged = onSeekingChanged,
     )
@@ -1280,6 +1290,7 @@ fun ModernSeekbarSection(
 
 /**
  * Interactive progress track inside the Modern player layout.
+ * Supports Standard, Wavy, and Thick styles, defaulting to Standard.
  * Adapts to theme colors (MaterialTheme.colorScheme.primary) and respects
  * chaptersInSeekbar preference. Supports vertical swipe up for 1x, 2x, 4x, 8x scrubbing speed.
  */
@@ -1289,13 +1300,14 @@ fun ModernSeekbarTrack(
   duration: Float,
   chapters: ImmutableList<Segment>,
   cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange>,
+  isPaused: Boolean = false,
   onSeekTo: (Float, Boolean) -> Unit,
   onSeekingChanged: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val appearancePreferences = koinInject<AppearancePreferences>()
   val chaptersInSeekbar by appearancePreferences.chaptersInSeekbar.collectAsState()
-  val seekbarStyle by appearancePreferences.seekbarStyle.collectAsState()
+  val seekbarStyle by appearancePreferences.modernSeekbarStyle.collectAsState()
 
   var isDragging by remember { mutableStateOf(false) }
   var dragPosition by remember { mutableFloatStateOf(position) }
@@ -1317,8 +1329,16 @@ fun ModernSeekbarTrack(
   val displayPosition = if (isDragging) dragPosition else position
   val playedFraction = if (duration > 0f) (displayPosition / duration).coerceIn(0f, 1f) else 0f
 
-  val baseHeight = if (seekbarStyle == SeekbarStyle.Thick) 7.dp else 5.dp
-  val expandedHeight = if (seekbarStyle == SeekbarStyle.Thick) 10.dp else 7.dp
+  val baseHeight = when (seekbarStyle) {
+    SeekbarStyle.Thick -> 10.dp
+    SeekbarStyle.Standard -> 5.dp
+    SeekbarStyle.Wavy -> 4.5.dp
+  }
+  val expandedHeight = when (seekbarStyle) {
+    SeekbarStyle.Thick -> 14.dp
+    SeekbarStyle.Standard -> 8.dp
+    SeekbarStyle.Wavy -> 7.dp
+  }
 
   val animatedTrackHeight by animateDpAsState(
     targetValue = if (isDragging) expandedHeight else baseHeight,
@@ -1326,12 +1346,60 @@ fun ModernSeekbarTrack(
     label = "trackHeight",
   )
 
+  // Wave parameters and animation for Wavy style
+  var phaseOffset by remember { mutableFloatStateOf(0f) }
+  var heightFraction by remember { mutableFloatStateOf(if (isPaused) 0f else 1f) }
+
+  val waveLength = 80f
+  val lineAmplitude = 6f
+  val phaseSpeed = 10f // px per second
+  val transitionPeriods = 1.5f
+
+  LaunchedEffect(isPaused, isDragging, seekbarStyle) {
+    if (seekbarStyle != SeekbarStyle.Wavy) {
+      heightFraction = 0f
+      return@LaunchedEffect
+    }
+
+    val shouldFlatten = isPaused || isDragging
+    val targetHeight = if (shouldFlatten) 0f else 1f
+    val animDuration = if (shouldFlatten) 550 else 800
+    val startDelay = if (shouldFlatten) 0L else 60L
+
+    delay(startDelay)
+
+    val animator = Animatable(heightFraction)
+    animator.animateTo(
+      targetValue = targetHeight,
+      animationSpec = tween(
+        durationMillis = animDuration,
+        easing = LinearEasing,
+      ),
+    ) {
+      heightFraction = value
+    }
+  }
+
+  LaunchedEffect(isPaused, seekbarStyle) {
+    if (isPaused || seekbarStyle != SeekbarStyle.Wavy) return@LaunchedEffect
+
+    var lastFrameTime = withFrameMillis { it }
+    while (isActive) {
+      withFrameMillis { frameTimeMillis ->
+        val deltaTime = (frameTimeMillis - lastFrameTime) / 1000f
+        phaseOffset += deltaTime * phaseSpeed
+        phaseOffset %= waveLength
+        lastFrameTime = frameTimeMillis
+      }
+    }
+  }
+
   val themePrimary = MaterialTheme.colorScheme.primary
 
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .height(24.dp)
+      .height(30.dp)
       .onSizeChanged { trackWidthPx = it.width }
       .pointerInput(Unit) {
         detectTapGestures(
@@ -1391,73 +1459,225 @@ fun ModernSeekbarTrack(
     Canvas(
       modifier = Modifier
         .fillMaxWidth()
-        .height(animatedTrackHeight),
+        .height(30.dp),
     ) {
       val w = size.width
       val h = size.height
-      val cornerRadius = CornerRadius(h / 2f, h / 2f)
-
       if (w <= 0f || h <= 0f) return@Canvas
 
-      // 1. Unplayed track background
-      val bgPath = Path().apply {
-        addRoundRect(RoundRect(0f, 0f, w, h, cornerRadius))
-      }
-      drawPath(bgPath, Color.White.copy(alpha = 0.24f))
-
-      // 2. Cache ranges (buffer band)
-      if (duration > 0f) {
-        for (range in cacheRanges) {
-          val startFraction = (range.start / duration).coerceIn(0f, 1f)
-          val endFraction = (range.end / duration).coerceIn(0f, 1f)
-          val startX = startFraction * w
-          val endX = endFraction * w
-          if (endX > startX) {
-            val cachePath = Path().apply {
-              addRoundRect(RoundRect(startX, 0f, endX, h, cornerRadius))
-            }
-            drawPath(cachePath, themePrimary.copy(alpha = 0.40f))
-          }
-        }
-      }
-
-      // 3. Played progress track (themed with MaterialTheme.colorScheme.primary)
+      val centerY = h / 2f
       val playedWidth = playedFraction * w
-      if (playedWidth > 0.5f) {
-        val playedPath = Path().apply {
-          addRoundRect(RoundRect(0f, 0f, playedWidth, h, cornerRadius))
-        }
-        drawPath(playedPath, themePrimary)
-      }
+      val unplayedColor = Color.White.copy(alpha = 0.24f)
+      val cacheColor = themePrimary.copy(alpha = 0.40f)
 
-      // 4. Chapter ticks (gaps) - strictly gated by chaptersInSeekbar preference
-      if (chaptersInSeekbar && duration > 0f && chapters.isNotEmpty()) {
+      if (seekbarStyle == SeekbarStyle.Wavy) {
+        val strokeWidth = animatedTrackHeight.toPx()
+
+        fun computeAmplitude(x: Float, sign: Float): Float {
+          val length = transitionPeriods * waveLength
+          val coeff = ((playedWidth + length / 2f - x) / length).coerceIn(0f, 1f)
+          return sign * heightFraction * lineAmplitude * coeff
+        }
+
+        val path = Path()
+        val waveStart = -phaseOffset - waveLength / 2f
+        val waveEnd = w
+
+        path.moveTo(waveStart, centerY)
+        var currentX = waveStart
+        var waveSign = 1f
+        var currentAmp = computeAmplitude(currentX, waveSign)
+        val dist = waveLength / 2f
+
+        while (currentX < waveEnd) {
+          waveSign = -waveSign
+          val nextX = currentX + dist
+          val midX = currentX + dist / 2f
+          val nextAmp = computeAmplitude(nextX, waveSign)
+
+          path.cubicTo(
+            midX,
+            centerY + currentAmp,
+            midX,
+            centerY + nextAmp,
+            nextX,
+            centerY + nextAmp,
+          )
+
+          currentAmp = nextAmp
+          currentX = nextX
+        }
+
         val gapWidth = 2.dp.toPx()
-        for (chapter in chapters) {
-          val chFraction = (chapter.start / duration).coerceIn(0f, 1f)
-          if (chFraction > 0.01f && chFraction < 0.99f) {
-            val chX = chFraction * w
-            drawRect(
-              color = Color.Black.copy(alpha = 0.65f),
-              topLeft = Offset(chX - gapWidth / 2f, 0f),
-              size = Size(gapWidth, h),
-            )
+        val chapterGaps = if (chaptersInSeekbar && duration > 0f && chapters.isNotEmpty()) {
+          chapters.mapNotNull { ch ->
+            val chFraction = (ch.start / duration).coerceIn(0f, 1f)
+            if (chFraction > 0.01f && chFraction < 0.99f) {
+              val chX = chFraction * w
+              (chX - gapWidth / 2f) to (chX + gapWidth / 2f)
+            } else null
+          }
+        } else emptyList()
+
+        fun drawWavySegment(startX: Float, endX: Float, color: Color) {
+          if (endX <= startX) return
+          val relevantGaps = chapterGaps
+            .filter { (gStart, gEnd) -> gEnd > startX && gStart < endX }
+            .sortedBy { it.first }
+
+          val clipTop = lineAmplitude + strokeWidth + 4f
+          var curPos = startX
+          for ((gStart, gEnd) in relevantGaps) {
+            val segEnd = gStart.coerceAtMost(endX)
+            if (segEnd > curPos) {
+              clipRect(
+                left = curPos,
+                top = centerY - clipTop,
+                right = segEnd,
+                bottom = centerY + clipTop,
+              ) {
+                drawPath(
+                  path = path,
+                  color = color,
+                  style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                )
+              }
+            }
+            curPos = gEnd.coerceAtLeast(curPos)
+          }
+          if (curPos < endX) {
+            clipRect(
+              left = curPos,
+              top = centerY - clipTop,
+              right = endX,
+              bottom = centerY + clipTop,
+            ) {
+              drawPath(
+                path = path,
+                color = color,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+              )
+            }
           }
         }
-      }
 
-      // 5. Thumb indicator when dragging
-      if (isDragging && playedWidth > 0.5f) {
-        drawCircle(
-          color = Color.White,
-          radius = (h / 2f) + 2.5.dp.toPx(),
-          center = Offset(playedWidth.coerceIn(0f, w), h / 2f),
-        )
+        // 1. Unplayed track rail
+        drawWavySegment(playedWidth, w, unplayedColor)
+
+        // 2. Cache ranges (buffer band)
+        if (duration > 0f) {
+          for (range in cacheRanges) {
+            val startX = (range.start / duration).coerceIn(0f, 1f) * w
+            val endX = (range.end / duration).coerceIn(0f, 1f) * w
+            if (endX > startX) {
+              drawWavySegment(startX, endX, cacheColor)
+            }
+          }
+        }
+
+        // 3. Played progress
+        if (playedWidth > 0.5f) {
+          drawWavySegment(0f, playedWidth, themePrimary)
+        }
+
+        // 4. Round start cap
+        val startAmp = kotlin.math.cos(kotlin.math.abs(waveStart) / waveLength * (2f * kotlin.math.PI.toFloat()))
         drawCircle(
           color = themePrimary,
-          radius = (h / 2f),
-          center = Offset(playedWidth.coerceIn(0f, w), h / 2f),
+          radius = strokeWidth / 2f,
+          center = Offset(0f, centerY + startAmp * lineAmplitude * heightFraction),
         )
+
+        // 5. Thumb indicator
+        if (isDragging && playedWidth > 0.5f) {
+          drawCircle(
+            color = Color.White,
+            radius = (strokeWidth / 2f) + 3.dp.toPx(),
+            center = Offset(playedWidth.coerceIn(0f, w), centerY),
+          )
+          drawCircle(
+            color = themePrimary,
+            radius = strokeWidth / 2f + 1.dp.toPx(),
+            center = Offset(playedWidth.coerceIn(0f, w), centerY),
+          )
+        } else if (playedWidth > 0.5f) {
+          val barHalfHeight = (lineAmplitude * heightFraction + strokeWidth) / 2f + 2.dp.toPx()
+          val barWidth = 3.dp.toPx()
+          drawLine(
+            color = Color.White,
+            start = Offset(playedWidth, centerY - barHalfHeight),
+            end = Offset(playedWidth, centerY + barHalfHeight),
+            strokeWidth = barWidth,
+            cap = StrokeCap.Round,
+          )
+        }
+      } else {
+        // Standard & Thick styles
+        val trackHeight = animatedTrackHeight.toPx()
+        val trackTop = centerY - trackHeight / 2f
+        val cornerRadius = CornerRadius(trackHeight / 2f, trackHeight / 2f)
+
+        // 1. Unplayed track background
+        val bgPath = Path().apply {
+          addRoundRect(RoundRect(0f, trackTop, w, trackTop + trackHeight, cornerRadius))
+        }
+        drawPath(bgPath, unplayedColor)
+
+        // 2. Cache ranges (buffer band)
+        if (duration > 0f) {
+          for (range in cacheRanges) {
+            val startFraction = (range.start / duration).coerceIn(0f, 1f)
+            val endFraction = (range.end / duration).coerceIn(0f, 1f)
+            val startX = startFraction * w
+            val endX = endFraction * w
+            if (endX > startX) {
+              val cachePath = Path().apply {
+                addRoundRect(RoundRect(startX, trackTop, endX, trackTop + trackHeight, cornerRadius))
+              }
+              drawPath(cachePath, cacheColor)
+            }
+          }
+        }
+
+        // 3. Played progress track
+        if (playedWidth > 0.5f) {
+          val playedPath = Path().apply {
+            addRoundRect(RoundRect(0f, trackTop, playedWidth, trackTop + trackHeight, cornerRadius))
+          }
+          drawPath(playedPath, themePrimary)
+        }
+
+        // 4. Chapter ticks (gaps)
+        if (chaptersInSeekbar && duration > 0f && chapters.isNotEmpty()) {
+          val gapWidth = 2.dp.toPx()
+          for (chapter in chapters) {
+            val chFraction = (chapter.start / duration).coerceIn(0f, 1f)
+            if (chFraction > 0.01f && chFraction < 0.99f) {
+              val chX = chFraction * w
+              drawRect(
+                color = Color.Black.copy(alpha = 0.65f),
+                topLeft = Offset(chX - gapWidth / 2f, trackTop),
+                size = Size(gapWidth, trackHeight),
+              )
+            }
+          }
+        }
+
+        // 5. Thumb indicator
+        if (isDragging && playedWidth > 0.5f) {
+          val outerRadius = (trackHeight / 2f) + (if (seekbarStyle == SeekbarStyle.Thick) 3.5.dp.toPx() else 3.dp.toPx())
+          val innerRadius = (trackHeight / 2f) + (if (seekbarStyle == SeekbarStyle.Thick) 1.dp.toPx() else 0.5.dp.toPx())
+          drawCircle(
+            color = Color.White,
+            radius = outerRadius,
+            center = Offset(playedWidth.coerceIn(0f, w), centerY),
+          )
+          drawCircle(
+            color = themePrimary,
+            radius = innerRadius,
+            center = Offset(playedWidth.coerceIn(0f, w), centerY),
+          )
+        }
       }
     }
 
