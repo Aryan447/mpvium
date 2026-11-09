@@ -1354,7 +1354,7 @@ fun ModernSeekbarSection(
     modifier = modifier
       .fillMaxWidth()
       .systemGestureExclusion(),
-    verticalArrangement = Arrangement.spacedBy(4.dp),
+    verticalArrangement = Arrangement.spacedBy(6.dp),
   ) {
     // Progress bar
     ModernSeekbarTrack(
@@ -1449,16 +1449,11 @@ fun ModernSeekbarTrack(
   val displayPosition = if (isDragging) dragPosition else position
   val playedFraction = if (duration > 0f) (displayPosition / duration).coerceIn(0f, 1f) else 0f
 
-  val baseHeight = when (seekbarStyle) {
-    SeekbarStyle.Thick -> 10.dp
-    SeekbarStyle.Standard -> 5.dp
-    SeekbarStyle.Wavy -> 4.5.dp
-  }
-  val expandedHeight = when (seekbarStyle) {
-    SeekbarStyle.Thick -> 14.dp
-    SeekbarStyle.Standard -> 8.dp
-    SeekbarStyle.Wavy -> 7.dp
-  }
+  val isWavy = seekbarStyle == SeekbarStyle.Wavy
+  val isThick = seekbarStyle == SeekbarStyle.Thick
+
+  val baseHeight = if (isThick) 7.dp else 5.dp
+  val expandedHeight = if (isThick) 10.dp else 7.dp
 
   val animatedTrackHeight by animateDpAsState(
     targetValue = if (isDragging) expandedHeight else baseHeight,
@@ -1519,7 +1514,7 @@ fun ModernSeekbarTrack(
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .height(30.dp)
+      .height(if (isWavy) 30.dp else 24.dp)
       .onSizeChanged { trackWidthPx = it.width }
       .pointerInput(Unit) {
         detectTapGestures(
@@ -1579,7 +1574,7 @@ fun ModernSeekbarTrack(
     Canvas(
       modifier = Modifier
         .fillMaxWidth()
-        .height(30.dp),
+        .height(if (isWavy) 30.dp else animatedTrackHeight),
     ) {
       val w = size.width
       val h = size.height
@@ -1732,14 +1727,12 @@ fun ModernSeekbarTrack(
           )
         }
       } else {
-        // Standard & Thick styles
-        val trackHeight = animatedTrackHeight.toPx()
-        val trackTop = centerY - trackHeight / 2f
-        val cornerRadius = CornerRadius(trackHeight / 2f, trackHeight / 2f)
+        // Standard & Thick styles (exact previous modern player seekbar implementation)
+        val cornerRadius = CornerRadius(h / 2f, h / 2f)
 
         // 1. Unplayed track background
         val bgPath = Path().apply {
-          addRoundRect(RoundRect(0f, trackTop, w, trackTop + trackHeight, cornerRadius))
+          addRoundRect(RoundRect(0f, 0f, w, h, cornerRadius))
         }
         drawPath(bgPath, unplayedColor)
 
@@ -1752,22 +1745,23 @@ fun ModernSeekbarTrack(
             val endX = endFraction * w
             if (endX > startX) {
               val cachePath = Path().apply {
-                addRoundRect(RoundRect(startX, trackTop, endX, trackTop + trackHeight, cornerRadius))
+                addRoundRect(RoundRect(startX, 0f, endX, h, cornerRadius))
               }
               drawPath(cachePath, cacheColor)
             }
           }
         }
 
-        // 3. Played progress track
+        // 3. Played progress track (themed with MaterialTheme.colorScheme.primary)
+        val playedWidth = playedFraction * w
         if (playedWidth > 0.5f) {
           val playedPath = Path().apply {
-            addRoundRect(RoundRect(0f, trackTop, playedWidth, trackTop + trackHeight, cornerRadius))
+            addRoundRect(RoundRect(0f, 0f, playedWidth, h, cornerRadius))
           }
           drawPath(playedPath, themePrimary)
         }
 
-        // 4. Chapter ticks (gaps)
+        // 4. Chapter ticks (gaps) - strictly gated by chaptersInSeekbar preference
         if (chaptersInSeekbar && duration > 0f && chapters.isNotEmpty()) {
           val gapWidth = 2.dp.toPx()
           for (chapter in chapters) {
@@ -1776,26 +1770,24 @@ fun ModernSeekbarTrack(
               val chX = chFraction * w
               drawRect(
                 color = Color.Black.copy(alpha = 0.65f),
-                topLeft = Offset(chX - gapWidth / 2f, trackTop),
-                size = Size(gapWidth, trackHeight),
+                topLeft = Offset(chX - gapWidth / 2f, 0f),
+                size = Size(gapWidth, h),
               )
             }
           }
         }
 
-        // 5. Thumb indicator
+        // 5. Thumb indicator when dragging
         if (isDragging && playedWidth > 0.5f) {
-          val outerRadius = (trackHeight / 2f) + (if (seekbarStyle == SeekbarStyle.Thick) 3.5.dp.toPx() else 3.dp.toPx())
-          val innerRadius = (trackHeight / 2f) + (if (seekbarStyle == SeekbarStyle.Thick) 1.dp.toPx() else 0.5.dp.toPx())
           drawCircle(
             color = Color.White,
-            radius = outerRadius,
-            center = Offset(playedWidth.coerceIn(0f, w), centerY),
+            radius = (h / 2f) + 2.5.dp.toPx(),
+            center = Offset(playedWidth.coerceIn(0f, w), h / 2f),
           )
           drawCircle(
             color = themePrimary,
-            radius = innerRadius,
-            center = Offset(playedWidth.coerceIn(0f, w), centerY),
+            radius = (h / 2f),
+            center = Offset(playedWidth.coerceIn(0f, w), h / 2f),
           )
         }
       }
