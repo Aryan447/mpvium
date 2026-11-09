@@ -410,8 +410,7 @@ fun PlayerControls(
         val brightness by viewModel.currentBrightness.collectAsState()
         val volume by viewModel.currentVolume.collectAsState()
         val mpvVolume by MPVLib.propInt["volume"].collectAsState()
-        val swapVolumeAndBrightnessPref by playerPreferences.swapVolumeAndBrightness.collectAsState()
-        val swapVolumeAndBrightness = swapVolumeAndBrightnessPref || isModern
+        val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
         val reduceMotion by playerPreferences.reduceMotion.collectAsState()
         val volumeSliderStyle by appearancePreferences.volumeSliderStyle.collectAsState()
         val brightnessSliderStyle by appearancePreferences.brightnessSliderStyle.collectAsState()
@@ -817,6 +816,10 @@ fun PlayerControls(
         }
 
         if (isModern) {
+          val modernActionControlsState by appearancePreferences.modernActionControls.collectAsState()
+          val modernActionButtons = remember(modernActionControlsState) {
+            appearancePreferences.parseButtons(modernActionControlsState, mutableSetOf())
+          }
           ModernPlayerControls(
             viewModel = viewModel,
             onBackPress = onBackPress,
@@ -846,6 +849,7 @@ fun PlayerControls(
             tmdbEpisodeTitle = tmdbEpisodeTitle,
             topRightButtons = topRightButtons,
             bottomRightButtons = bottomRightButtons,
+            actionButtons = modernActionButtons,
             amoledMode = amoledMode,
             showSystemStatusBar = showSystemStatusBar,
             showSystemNavigationBar = showSystemNavigationBar,

@@ -1,6 +1,8 @@
 package app.aryan447.mpvium.ui.player.controls
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -13,6 +15,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +32,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.systemGestureExclusion
@@ -36,6 +40,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeDown
 import androidx.compose.material.icons.automirrored.filled.VolumeMute
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
@@ -44,8 +49,10 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.outlined.Forward10
 import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Replay10
 import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -70,25 +77,33 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.SeekbarStyle
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.SeekCacheResolver
 import app.aryan447.mpvium.ui.player.Sheets
+import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList
+import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
 /**
@@ -135,12 +150,14 @@ fun ModernPlayerControls(
   tmdbEpisodeTitle: String? = null,
   topRightButtons: List<PlayerButton> = emptyList(),
   bottomRightButtons: List<PlayerButton> = emptyList(),
+  actionButtons: List<PlayerButton> = emptyList(),
   amoledMode: Boolean = false,
   showSystemStatusBar: Boolean = false,
   showSystemNavigationBar: Boolean = false,
   tabletBottomOffset: Dp = 0.dp,
   modifier: Modifier = Modifier,
 ) {
+  val haptic = LocalHapticFeedback.current
   val configuration = LocalConfiguration.current
   val isPortrait = configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
 
@@ -226,9 +243,10 @@ fun ModernPlayerControls(
                 .size(20.dp)
                 .clip(CircleShape)
                 .clickable(
-                  interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                  interactionSource = remember { MutableInteractionSource() },
                   indication = ripple(bounded = true, radius = 18.dp),
                 ) {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                   resetControlsTimestamp()
                   onBackPress()
                 },
@@ -243,9 +261,10 @@ fun ModernPlayerControls(
                 .size(20.dp)
                 .clip(CircleShape)
                 .clickable(
-                  interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                  interactionSource = remember { MutableInteractionSource() },
                   indication = ripple(bounded = true, radius = 18.dp),
                 ) {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                   resetControlsTimestamp()
                   activity.enterPipModeHidingOverlay()
                 },
@@ -253,8 +272,8 @@ fun ModernPlayerControls(
           }
         }
 
-        // Top-right Glass Volume Pill [ ===o 🔊 ]
-        ModernVolumePill(
+        // Top-right Expandable Volume & Brightness Controls
+        ModernTopRightControls(
           viewModel = viewModel,
           resetControlsTimestamp = resetControlsTimestamp,
           surfaceColor = surfaceColor,
@@ -275,14 +294,17 @@ fun ModernPlayerControls(
       ModernCenterTransportControls(
         paused = paused,
         onPlayPause = {
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           resetControlsTimestamp()
           viewModel.pauseUnpause()
         },
         onRewind = {
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           resetControlsTimestamp()
           viewModel.seekBy(-10)
         },
         onForward = {
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           resetControlsTimestamp()
           viewModel.seekBy(10)
         },
@@ -339,6 +361,7 @@ fun ModernPlayerControls(
                 modifier = Modifier
                   .clip(RoundedCornerShape(4.dp))
                   .clickable {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     resetControlsTimestamp()
                     if (viewModel.hasPlaylistSupport()) {
                       onOpenSheet(Sheets.Playlist)
@@ -387,22 +410,38 @@ fun ModernPlayerControls(
 
           Spacer(modifier = Modifier.width(16.dp))
 
-          // Bottom-Right Actions Pill: [ Subtitles | Audio | Speed/More ]
+          // Bottom-Right Actions Pill: [ Subtitles | Audio | Explain | Menu ]
           ModernBottomActionsPill(
+            buttons = if (actionButtons.isNotEmpty()) actionButtons else bottomRightButtons,
             onOpenSubtitles = {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
               resetControlsTimestamp()
               onOpenSheet(Sheets.SubtitleTracks)
             },
             onOpenAudio = {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
               resetControlsTimestamp()
               onOpenSheet(Sheets.AudioTracks)
             },
+            onOpenExplain = {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+              resetControlsTimestamp()
+              onOpenSheet(Sheets.Explain)
+            },
             onOpenMore = {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
               resetControlsTimestamp()
               onOpenSheet(Sheets.More)
             },
+            onOpenSheet = onOpenSheet,
+            onOpenPanel = onOpenPanel,
+            viewModel = viewModel,
+            activity = activity,
+            chapters = chapters,
+            currentChapter = currentChapter,
             surfaceColor = surfaceColor,
             borderStroke = borderStroke,
+            resetControlsTimestamp = resetControlsTimestamp,
           )
         }
 
@@ -422,15 +461,415 @@ fun ModernPlayerControls(
           },
           onSeekingChanged = onSeekingChanged,
           invertDuration = invertDuration,
-          onToggleInvertDuration = onToggleInvertDuration,
+          onToggleInvertDuration = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onToggleInvertDuration()
+          },
         )
       }
     }
   }
 }
 
+enum class ModernTopRightTarget {
+  VOLUME,
+  BRIGHTNESS,
+}
+
 /**
- * Top-right floating glass volume pill with horizontal level slider and speaker icon.
+ * Top-right expandable controls with Volume (left) and Brightness (right):
+ * - When Volume is expanded:
+ *     volume expanded (brightness minimized round icon)
+ * - When Brightness is expanded:
+ *     (volume minimized round icon) brightness expanded
+ *
+ * Smooth animated transition between the two states:
+ * - Volume width animates between 164.dp (expanded) and 42.dp (minimized)
+ * - Brightness width animates between 42.dp (minimized) and 164.dp (expanded)
+ * - Tapping either minimized button smoothly switches the expanded focus
+ * - Scrubbing/dragging either slider dynamically swaps the icon with the live percentage readout
+ */
+@Composable
+fun ModernTopRightControls(
+  viewModel: PlayerViewModel,
+  resetControlsTimestamp: () -> Unit,
+  surfaceColor: Color,
+  borderStroke: BorderStroke,
+  modifier: Modifier = Modifier,
+) {
+  val haptic = LocalHapticFeedback.current
+  val currentVolume by viewModel.currentVolume.collectAsState()
+  val maxVolume = viewModel.maxVolume.coerceAtLeast(1)
+  var previousVolume by remember { mutableIntStateOf(currentVolume.takeIf { it > 0 } ?: (maxVolume / 2)) }
+
+  val currentBrightness by viewModel.currentBrightness.collectAsState()
+
+  var activeTarget by remember { mutableStateOf(ModernTopRightTarget.VOLUME) }
+  var isScrubbingVolume by remember { mutableStateOf(false) }
+  var isScrubbingBrightness by remember { mutableStateOf(false) }
+
+  var volTrackWidthPx by remember { mutableIntStateOf(0) }
+  var briTrackWidthPx by remember { mutableIntStateOf(0) }
+
+  val volumeFraction = (currentVolume.toFloat() / maxVolume.toFloat()).coerceIn(0f, 1f)
+  val brightnessFraction = currentBrightness.coerceIn(0f, 1f)
+
+  val themePrimary = MaterialTheme.colorScheme.primary
+
+  val speakerIcon = when {
+    currentVolume == 0 -> Icons.AutoMirrored.Filled.VolumeMute
+    currentVolume < maxVolume / 2 -> Icons.AutoMirrored.Filled.VolumeDown
+    else -> Icons.AutoMirrored.Filled.VolumeUp
+  }
+
+  val isVolumeExpanded = activeTarget == ModernTopRightTarget.VOLUME
+  val isBrightnessExpanded = !isVolumeExpanded
+
+  val transitionSpec = tween<Dp>(durationMillis = 300, easing = FastOutSlowInEasing)
+  val volumeWidth by animateDpAsState(
+    targetValue = if (isVolumeExpanded) 164.dp else 42.dp,
+    animationSpec = transitionSpec,
+    label = "ModernVolumeWidth",
+  )
+  val brightnessWidth by animateDpAsState(
+    targetValue = if (isBrightnessExpanded) 164.dp else 42.dp,
+    animationSpec = transitionSpec,
+    label = "ModernBrightnessWidth",
+  )
+
+  Row(
+    modifier = modifier,
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+  ) {
+    // 1. Volume (Always Left)
+    Surface(
+      modifier = Modifier
+        .width(volumeWidth)
+        .height(42.dp)
+        .clip(RoundedCornerShape(21.dp))
+        .then(
+          if (!isVolumeExpanded) {
+            Modifier.clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = ripple(bounded = true, radius = 21.dp),
+              onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                activeTarget = ModernTopRightTarget.VOLUME
+              },
+            )
+          } else {
+            Modifier
+          }
+        ),
+      shape = RoundedCornerShape(21.dp),
+      color = surfaceColor,
+      border = borderStroke,
+    ) {
+      Crossfade(
+        targetState = isVolumeExpanded,
+        animationSpec = tween(180),
+        label = "ModernVolumeContent",
+      ) { expanded ->
+        if (!expanded) {
+          Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = speakerIcon,
+              contentDescription = "Switch to Volume slider",
+              tint = Color.White,
+              modifier = Modifier.size(20.dp),
+            )
+          }
+        } else {
+          Row(
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+          ) {
+            // Horizontal volume slider track
+            Box(
+              modifier = Modifier
+                .weight(1f)
+                .height(24.dp)
+                .onSizeChanged { volTrackWidthPx = it.width }
+                .pointerInput(maxVolume) {
+                  detectTapGestures { offset ->
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    resetControlsTimestamp()
+                    if (volTrackWidthPx > 0) {
+                      val fraction = (offset.x / volTrackWidthPx).coerceIn(0f, 1f)
+                      val newVol = (fraction * maxVolume).roundToInt()
+                      viewModel.changeVolumeTo(newVol)
+                      if (newVol > 0) previousVolume = newVol
+                    }
+                  }
+                }
+                .pointerInput(maxVolume) {
+                  detectDragGestures(
+                    onDragStart = { offset ->
+                      isScrubbingVolume = true
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                      resetControlsTimestamp()
+                      if (volTrackWidthPx > 0) {
+                        val fraction = (offset.x / volTrackWidthPx).coerceIn(0f, 1f)
+                        val newVol = (fraction * maxVolume).roundToInt()
+                        viewModel.changeVolumeTo(newVol)
+                        if (newVol > 0) previousVolume = newVol
+                      }
+                    },
+                    onDragEnd = {
+                      isScrubbingVolume = false
+                    },
+                    onDragCancel = {
+                      isScrubbingVolume = false
+                    },
+                    onDrag = { change, _ ->
+                      change.consume()
+                      resetControlsTimestamp()
+                      if (volTrackWidthPx > 0) {
+                        val fraction = (change.position.x / volTrackWidthPx).coerceIn(0f, 1f)
+                        val newVol = (fraction * maxVolume).roundToInt()
+                        viewModel.changeVolumeTo(newVol)
+                        if (newVol > 0) previousVolume = newVol
+                      }
+                    },
+                  )
+                },
+              contentAlignment = Alignment.CenterStart,
+            ) {
+              Canvas(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(5.dp),
+              ) {
+                val w = size.width
+                val h = size.height
+                val radius = CornerRadius(h / 2f, h / 2f)
+
+                // Unfilled / remaining track
+                drawRoundRect(
+                  color = Color.White.copy(alpha = 0.28f),
+                  size = size,
+                  cornerRadius = radius,
+                )
+
+                // Filled active volume with theme primary color
+                val filledWidth = volumeFraction * w
+                if (filledWidth > 0.5f) {
+                  drawRoundRect(
+                    color = themePrimary,
+                    size = Size(filledWidth, h),
+                    cornerRadius = radius,
+                  )
+                }
+              }
+            }
+
+            // Trailing slot: if scrubbing, display number; otherwise speaker icon
+            Box(
+              modifier = Modifier.widthIn(min = 28.dp),
+              contentAlignment = Alignment.Center,
+            ) {
+              if (isScrubbingVolume) {
+                Text(
+                  text = "${(volumeFraction * 100).roundToInt()}%",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = Color.White,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Center,
+                  ),
+                )
+              } else {
+                Icon(
+                  imageVector = speakerIcon,
+                  contentDescription = "Mute / Unmute",
+                  tint = Color.White,
+                  modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .clickable {
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                      resetControlsTimestamp()
+                      if (currentVolume > 0) {
+                        previousVolume = currentVolume
+                        viewModel.changeVolumeTo(0)
+                      } else {
+                        viewModel.changeVolumeTo(previousVolume.takeIf { it > 0 } ?: (maxVolume / 2))
+                      }
+                    },
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Brightness (Always Right)
+    Surface(
+      modifier = Modifier
+        .width(brightnessWidth)
+        .height(42.dp)
+        .clip(RoundedCornerShape(21.dp))
+        .then(
+          if (!isBrightnessExpanded) {
+            Modifier.clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = ripple(bounded = true, radius = 21.dp),
+              onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                activeTarget = ModernTopRightTarget.BRIGHTNESS
+              },
+            )
+          } else {
+            Modifier
+          }
+        ),
+      shape = RoundedCornerShape(21.dp),
+      color = surfaceColor,
+      border = borderStroke,
+    ) {
+      Crossfade(
+        targetState = isBrightnessExpanded,
+        animationSpec = tween(180),
+        label = "ModernBrightnessContent",
+      ) { expanded ->
+        if (!expanded) {
+          Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = Icons.Default.BrightnessMedium,
+              contentDescription = "Switch to Brightness slider",
+              tint = Color.White,
+              modifier = Modifier.size(20.dp),
+            )
+          }
+        } else {
+          Row(
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+          ) {
+            // Horizontal brightness slider track
+            Box(
+              modifier = Modifier
+                .weight(1f)
+                .height(24.dp)
+                .onSizeChanged { briTrackWidthPx = it.width }
+                .pointerInput(Unit) {
+                  detectTapGestures { offset ->
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    resetControlsTimestamp()
+                    if (briTrackWidthPx > 0) {
+                      val fraction = (offset.x / briTrackWidthPx).coerceIn(0f, 1f)
+                      viewModel.changeBrightnessTo(fraction)
+                    }
+                  }
+                }
+                .pointerInput(Unit) {
+                  detectDragGestures(
+                    onDragStart = { offset ->
+                      isScrubbingBrightness = true
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                      resetControlsTimestamp()
+                      if (briTrackWidthPx > 0) {
+                        val fraction = (offset.x / briTrackWidthPx).coerceIn(0f, 1f)
+                        viewModel.changeBrightnessTo(fraction)
+                      }
+                    },
+                    onDragEnd = {
+                      isScrubbingBrightness = false
+                    },
+                    onDragCancel = {
+                      isScrubbingBrightness = false
+                    },
+                    onDrag = { change, _ ->
+                      change.consume()
+                      resetControlsTimestamp()
+                      if (briTrackWidthPx > 0) {
+                        val fraction = (change.position.x / briTrackWidthPx).coerceIn(0f, 1f)
+                        viewModel.changeBrightnessTo(fraction)
+                      }
+                    },
+                  )
+                },
+              contentAlignment = Alignment.CenterStart,
+            ) {
+              Canvas(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(5.dp),
+              ) {
+                val w = size.width
+                val h = size.height
+                val radius = CornerRadius(h / 2f, h / 2f)
+
+                // Unfilled track
+                drawRoundRect(
+                  color = Color.White.copy(alpha = 0.28f),
+                  size = size,
+                  cornerRadius = radius,
+                )
+
+                // Filled brightness track with theme primary color
+                val filledWidth = brightnessFraction * w
+                if (filledWidth > 0.5f) {
+                  drawRoundRect(
+                    color = themePrimary,
+                    size = Size(filledWidth, h),
+                    cornerRadius = radius,
+                  )
+                }
+              }
+            }
+
+            // Trailing slot: if scrubbing, display number; otherwise brightness icon
+            Box(
+              modifier = Modifier.widthIn(min = 28.dp),
+              contentAlignment = Alignment.Center,
+            ) {
+              if (isScrubbingBrightness) {
+                Text(
+                  text = "${(brightnessFraction * 100).roundToInt()}%",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = Color.White,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Center,
+                  ),
+                )
+              } else {
+                Icon(
+                  imageVector = Icons.Default.BrightnessMedium,
+                  contentDescription = "Brightness",
+                  tint = Color.White,
+                  modifier = Modifier.size(20.dp),
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Backward compatibility alias for ModernTopRightControls.
  */
 @Composable
 fun ModernVolumePill(
@@ -439,122 +878,13 @@ fun ModernVolumePill(
   surfaceColor: Color,
   borderStroke: BorderStroke,
   modifier: Modifier = Modifier,
-) {
-  val currentVolume by viewModel.currentVolume.collectAsState()
-  val maxVolume = viewModel.maxVolume.coerceAtLeast(1)
-  var previousVolume by remember { mutableIntStateOf(currentVolume.takeIf { it > 0 } ?: (maxVolume / 2)) }
-
-  var trackWidthPx by remember { mutableIntStateOf(0) }
-  val volumeFraction = (currentVolume.toFloat() / maxVolume.toFloat()).coerceIn(0f, 1f)
-
-  Surface(
-    modifier = modifier.height(42.dp),
-    shape = RoundedCornerShape(21.dp),
-    color = surfaceColor,
-    border = borderStroke,
-  ) {
-    Row(
-      modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-      // Horizontal volume slider track
-      Box(
-        modifier = Modifier
-          .width(100.dp)
-          .height(24.dp)
-          .onSizeChanged { trackWidthPx = it.width }
-          .pointerInput(maxVolume) {
-            detectTapGestures { offset ->
-              resetControlsTimestamp()
-              if (trackWidthPx > 0) {
-                val fraction = (offset.x / trackWidthPx).coerceIn(0f, 1f)
-                val newVol = (fraction * maxVolume).roundToInt()
-                viewModel.changeVolumeTo(newVol)
-                if (newVol > 0) previousVolume = newVol
-              }
-            }
-          }
-          .pointerInput(maxVolume) {
-            detectDragGestures(
-              onDragStart = { offset ->
-                resetControlsTimestamp()
-                if (trackWidthPx > 0) {
-                  val fraction = (offset.x / trackWidthPx).coerceIn(0f, 1f)
-                  val newVol = (fraction * maxVolume).roundToInt()
-                  viewModel.changeVolumeTo(newVol)
-                  if (newVol > 0) previousVolume = newVol
-                }
-              },
-              onDrag = { change, _ ->
-                change.consume()
-                resetControlsTimestamp()
-                if (trackWidthPx > 0) {
-                  val fraction = (change.position.x / trackWidthPx).coerceIn(0f, 1f)
-                  val newVol = (fraction * maxVolume).roundToInt()
-                  viewModel.changeVolumeTo(newVol)
-                  if (newVol > 0) previousVolume = newVol
-                }
-              }
-            )
-          },
-        contentAlignment = Alignment.CenterStart,
-      ) {
-        Canvas(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(5.dp),
-        ) {
-          val w = size.width
-          val h = size.height
-          val radius = CornerRadius(h / 2f, h / 2f)
-
-          // Unfilled / remaining track
-          drawRoundRect(
-            color = Color.White.copy(alpha = 0.28f),
-            size = size,
-            cornerRadius = radius,
-          )
-
-          // Filled active volume
-          val filledWidth = volumeFraction * w
-          if (filledWidth > 0.5f) {
-            drawRoundRect(
-              color = Color.White,
-              size = Size(filledWidth, h),
-              cornerRadius = radius,
-            )
-          }
-        }
-      }
-
-      // Speaker icon (tap to mute/unmute)
-      val speakerIcon = when {
-        currentVolume == 0 -> Icons.AutoMirrored.Filled.VolumeMute
-        currentVolume < maxVolume / 2 -> Icons.AutoMirrored.Filled.VolumeDown
-        else -> Icons.AutoMirrored.Filled.VolumeUp
-      }
-
-      Icon(
-        imageVector = speakerIcon,
-        contentDescription = "Mute / Unmute",
-        tint = Color.White,
-        modifier = Modifier
-          .size(20.dp)
-          .clip(CircleShape)
-          .clickable {
-            resetControlsTimestamp()
-            if (currentVolume > 0) {
-              previousVolume = currentVolume
-              viewModel.changeVolumeTo(0)
-            } else {
-              viewModel.changeVolumeTo(previousVolume.takeIf { it > 0 } ?: (maxVolume / 2))
-            }
-          },
-      )
-    }
-  }
-}
+) = ModernTopRightControls(
+  viewModel = viewModel,
+  resetControlsTimestamp = resetControlsTimestamp,
+  surfaceColor = surfaceColor,
+  borderStroke = borderStroke,
+  modifier = modifier,
+)
 
 /**
  * Center floating circular glass transport controls:
@@ -570,6 +900,8 @@ fun ModernCenterTransportControls(
   borderStroke: BorderStroke,
   modifier: Modifier = Modifier,
 ) {
+  val haptic = LocalHapticFeedback.current
+
   Row(
     modifier = modifier,
     verticalAlignment = Alignment.CenterVertically,
@@ -581,9 +913,12 @@ fun ModernCenterTransportControls(
         .size(52.dp)
         .clip(CircleShape)
         .clickable(
-          interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+          interactionSource = remember { MutableInteractionSource() },
           indication = ripple(bounded = true, radius = 26.dp),
-          onClick = onRewind,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onRewind()
+          },
         ),
       shape = CircleShape,
       color = surfaceColor,
@@ -605,9 +940,12 @@ fun ModernCenterTransportControls(
         .size(68.dp)
         .clip(CircleShape)
         .clickable(
-          interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+          interactionSource = remember { MutableInteractionSource() },
           indication = ripple(bounded = true, radius = 34.dp),
-          onClick = onPlayPause,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onPlayPause()
+          },
         ),
       shape = CircleShape,
       color = surfaceColor,
@@ -629,9 +967,12 @@ fun ModernCenterTransportControls(
         .size(52.dp)
         .clip(CircleShape)
         .clickable(
-          interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+          interactionSource = remember { MutableInteractionSource() },
           indication = ripple(bounded = true, radius = 26.dp),
-          onClick = onForward,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onForward()
+          },
         ),
       shape = CircleShape,
       color = surfaceColor,
@@ -651,17 +992,40 @@ fun ModernCenterTransportControls(
 
 /**
  * Bottom-right floating glass actions pill:
- * [ Subtitles | Audio waveform | Speed/More ]
+ * Features Subtitles, Audio tracks, Explain (core feature), and Menu by default,
+ * and dynamically adapts to buttons configured in Landscape Controls.
  */
 @Composable
 fun ModernBottomActionsPill(
+  buttons: List<PlayerButton> = emptyList(),
   onOpenSubtitles: () -> Unit,
   onOpenAudio: () -> Unit,
+  onOpenExplain: () -> Unit = {},
   onOpenMore: () -> Unit,
+  onOpenSheet: (Sheets) -> Unit = {},
+  onOpenPanel: (Panels) -> Unit = {},
+  viewModel: PlayerViewModel? = null,
+  activity: PlayerActivity? = null,
+  chapters: List<Segment> = emptyList(),
+  currentChapter: Int? = null,
   surfaceColor: Color,
   borderStroke: BorderStroke,
+  resetControlsTimestamp: () -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
+  val haptic = LocalHapticFeedback.current
+
+  val displayButtons = if (buttons.isNotEmpty()) {
+    buttons
+  } else {
+    listOf(
+      PlayerButton.SUBTITLES,
+      PlayerButton.AUDIO_TRACK,
+      PlayerButton.EXPLAIN,
+      PlayerButton.MORE_OPTIONS,
+    )
+  }
+
   Surface(
     modifier = modifier.height(42.dp),
     shape = RoundedCornerShape(21.dp),
@@ -673,50 +1037,134 @@ fun ModernBottomActionsPill(
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      // Subtitles
-      Icon(
-        imageVector = Icons.Default.Subtitles,
-        contentDescription = "Subtitles",
-        tint = Color.White,
-        modifier = Modifier
-          .size(20.dp)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 18.dp),
-            onClick = onOpenSubtitles,
-          ),
-      )
+      displayButtons.forEach { button ->
+        when (button) {
+          PlayerButton.SUBTITLES -> {
+            Icon(
+              imageVector = Icons.Default.Subtitles,
+              contentDescription = "Subtitles",
+              tint = Color.White,
+              modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = ripple(bounded = true, radius = 18.dp),
+                  onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onOpenSubtitles()
+                  },
+                ),
+            )
+          }
 
-      // Audio tracks (waveform / audio icon)
-      Icon(
-        imageVector = Icons.Outlined.GraphicEq,
-        contentDescription = "Audio Tracks",
-        tint = Color.White,
-        modifier = Modifier
-          .size(20.dp)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 18.dp),
-            onClick = onOpenAudio,
-          ),
-      )
+          PlayerButton.AUDIO_TRACK -> {
+            Icon(
+              imageVector = Icons.Outlined.GraphicEq,
+              contentDescription = "Audio Tracks",
+              tint = Color.White,
+              modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = ripple(bounded = true, radius = 18.dp),
+                  onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onOpenAudio()
+                  },
+                ),
+            )
+          }
 
-      // Playback speed / More options
-      Icon(
-        imageVector = Icons.Outlined.Speed,
-        contentDescription = "Speed and Settings",
-        tint = Color.White,
-        modifier = Modifier
-          .size(20.dp)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 18.dp),
-            onClick = onOpenMore,
-          ),
-      )
+          PlayerButton.EXPLAIN -> {
+            Icon(
+              imageVector = Icons.Outlined.Translate,
+              contentDescription = "Explain",
+              tint = Color.White,
+              modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = ripple(bounded = true, radius = 18.dp),
+                  onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onOpenExplain()
+                  },
+                ),
+            )
+          }
+
+          PlayerButton.MORE_OPTIONS -> {
+            Icon(
+              imageVector = Icons.Outlined.MoreVert,
+              contentDescription = "Menu and More Options",
+              tint = Color.White,
+              modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = ripple(bounded = true, radius = 18.dp),
+                  onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onOpenMore()
+                  },
+                ),
+            )
+          }
+
+          else -> {
+            if (viewModel != null && activity != null) {
+              RenderPlayerButton(
+                button = button,
+                chapters = chapters,
+                currentChapter = currentChapter,
+                isPortrait = false,
+                isSpeedNonOne = false,
+                currentZoom = 1f,
+                aspect = VideoAspect.Fit,
+                mediaTitle = null,
+                hideBackground = true,
+                decoder = app.aryan447.mpvium.ui.player.Decoder.SW,
+                playbackSpeed = 1f,
+                onBackPress = {},
+                onOpenSheet = { sheet ->
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  onOpenSheet(sheet)
+                },
+                onOpenPanel = { panel ->
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  onOpenPanel(panel)
+                },
+                viewModel = viewModel,
+                activity = activity,
+                buttonSize = 28.dp,
+              )
+            } else {
+              Icon(
+                imageVector = button.icon,
+                contentDescription = button.name,
+                tint = Color.White,
+                modifier = Modifier
+                  .size(20.dp)
+                  .clip(CircleShape)
+                  .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(bounded = true, radius = 18.dp),
+                    onClick = {
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                      onOpenMore()
+                    },
+                  ),
+              )
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -736,6 +1184,8 @@ fun ModernSeekbarSection(
   onToggleInvertDuration: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  val haptic = LocalHapticFeedback.current
+
   Column(
     modifier = modifier
       .fillMaxWidth()
@@ -785,7 +1235,10 @@ fun ModernSeekbarSection(
         ),
         modifier = Modifier
           .clip(RoundedCornerShape(4.dp))
-          .clickable(onClick = onToggleInvertDuration),
+          .clickable {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onToggleInvertDuration()
+          },
       )
     }
   }
@@ -793,6 +1246,8 @@ fun ModernSeekbarSection(
 
 /**
  * Interactive progress track inside the Modern player layout.
+ * Adapts to theme colors (MaterialTheme.colorScheme.primary) and respects
+ * chaptersInSeekbar preference.
  */
 @Composable
 fun ModernSeekbarTrack(
@@ -804,6 +1259,11 @@ fun ModernSeekbarTrack(
   onSeekingChanged: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  val haptic = LocalHapticFeedback.current
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val chaptersInSeekbar by appearancePreferences.chaptersInSeekbar.collectAsState()
+  val seekbarStyle by appearancePreferences.seekbarStyle.collectAsState()
+
   var isDragging by remember { mutableStateOf(false) }
   var dragPosition by remember { mutableFloatStateOf(position) }
   var trackWidthPx by remember { mutableIntStateOf(0) }
@@ -816,22 +1276,28 @@ fun ModernSeekbarTrack(
   val displayPosition = if (isDragging) dragPosition else position
   val playedFraction = if (duration > 0f) (displayPosition / duration).coerceIn(0f, 1f) else 0f
 
+  val baseHeight = if (seekbarStyle == SeekbarStyle.Thick) 7.dp else 5.dp
+  val expandedHeight = if (seekbarStyle == SeekbarStyle.Thick) 10.dp else 7.dp
+
   val animatedTrackHeight by animateDpAsState(
-    targetValue = if (isDragging) 7.dp else 5.dp,
+    targetValue = if (isDragging) expandedHeight else baseHeight,
     animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
     label = "trackHeight",
   )
 
+  val themePrimary = MaterialTheme.colorScheme.primary
+
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .height(20.dp)
+      .height(24.dp)
       .onSizeChanged { trackWidthPx = it.width }
       .pointerInput(Unit) {
         detectTapGestures(
           onTap = { offset ->
             val currDuration = latestDuration
             if (currDuration <= 0f || trackWidthPx <= 0) return@detectTapGestures
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             val fraction = (offset.x / trackWidthPx.toFloat()).coerceIn(0f, 1f)
             val target = fraction * currDuration
             latestOnSeekTo(target, false)
@@ -843,6 +1309,7 @@ fun ModernSeekbarTrack(
           onDragStart = { offset ->
             val currDuration = latestDuration
             if (currDuration <= 0f || trackWidthPx <= 0) return@detectDragGestures
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             isDragging = true
             latestOnSeekingChanged(true)
             val fraction = (offset.x / trackWidthPx.toFloat()).coerceIn(0f, 1f)
@@ -850,6 +1317,7 @@ fun ModernSeekbarTrack(
             latestOnSeekTo(dragPosition, true)
           },
           onDragEnd = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             isDragging = false
             latestOnSeekingChanged(false)
             latestOnSeekTo(dragPosition, false)
@@ -886,7 +1354,7 @@ fun ModernSeekbarTrack(
       val bgPath = Path().apply {
         addRoundRect(RoundRect(0f, 0f, w, h, cornerRadius))
       }
-      drawPath(bgPath, Color.White.copy(alpha = 0.28f))
+      drawPath(bgPath, Color.White.copy(alpha = 0.24f))
 
       // 2. Cache ranges (buffer band)
       if (duration > 0f) {
@@ -899,34 +1367,48 @@ fun ModernSeekbarTrack(
             val cachePath = Path().apply {
               addRoundRect(RoundRect(startX, 0f, endX, h, cornerRadius))
             }
-            drawPath(cachePath, Color.White.copy(alpha = 0.45f))
+            drawPath(cachePath, themePrimary.copy(alpha = 0.40f))
           }
         }
       }
 
-      // 3. Played progress track
+      // 3. Played progress track (themed with MaterialTheme.colorScheme.primary)
       val playedWidth = playedFraction * w
       if (playedWidth > 0.5f) {
         val playedPath = Path().apply {
           addRoundRect(RoundRect(0f, 0f, playedWidth, h, cornerRadius))
         }
-        drawPath(playedPath, Color.White)
+        drawPath(playedPath, themePrimary)
       }
 
-      // 4. Chapter ticks (gaps)
-      if (duration > 0f && chapters.isNotEmpty()) {
-        val gapWidth = 1.5.dp.toPx()
+      // 4. Chapter ticks (gaps) - strictly gated by chaptersInSeekbar preference
+      if (chaptersInSeekbar && duration > 0f && chapters.isNotEmpty()) {
+        val gapWidth = 2.dp.toPx()
         for (chapter in chapters) {
           val chFraction = (chapter.start / duration).coerceIn(0f, 1f)
           if (chFraction > 0.01f && chFraction < 0.99f) {
             val chX = chFraction * w
             drawRect(
-              color = Color.Black.copy(alpha = 0.60f),
+              color = Color.Black.copy(alpha = 0.65f),
               topLeft = Offset(chX - gapWidth / 2f, 0f),
               size = Size(gapWidth, h),
             )
           }
         }
+      }
+
+      // 5. Thumb indicator when dragging
+      if (isDragging && playedWidth > 0.5f) {
+        drawCircle(
+          color = Color.White,
+          radius = (h / 2f) + 2.5.dp.toPx(),
+          center = Offset(playedWidth.coerceIn(0f, w), h / 2f),
+        )
+        drawCircle(
+          color = themePrimary,
+          radius = (h / 2f),
+          center = Offset(playedWidth.coerceIn(0f, w), h / 2f),
+        )
       }
     }
   }

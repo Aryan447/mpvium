@@ -79,6 +79,12 @@ class AppearancePreferences(
       "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP,EXPLAIN",
     )
 
+  val modernActionControls =
+    preferenceStore.getString(
+      "modern_action_controls",
+      "SUBTITLES,AUDIO_TRACK,EXPLAIN,MORE_OPTIONS",
+    )
+
   fun setHomeSectionVisible(section: HomeSection, visible: Boolean) {
     when (section) {
       HomeSection.FEATURED -> showFeaturedHero.set(visible)
