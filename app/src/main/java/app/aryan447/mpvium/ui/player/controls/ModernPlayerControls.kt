@@ -29,10 +29,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -916,32 +918,33 @@ fun ModernTopRightControls(
         }
       }
     }
-
-    // Vertical brightness slider that slides down vertically under the brightness icon
-    // when the user swipes on the left side to adjust brightness
-    AnimatedVisibility(
-      visible = isBrightnessSliderShown,
-      enter = slideInVertically(
-        initialOffsetY = { -it },
-        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-      ) + fadeIn(animationSpec = tween(200)),
-      exit = slideOutVertically(
-        targetOffsetY = { -it },
-        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
-      ) + fadeOut(animationSpec = tween(200)),
-    ) {
-      ModernVerticalBrightnessSlider(
-        brightness = currentBrightness,
-        onBrightnessChange = {
-          resetControlsTimestamp()
-          viewModel.changeBrightnessTo(it)
-        },
-        surfaceColor = surfaceColor,
-        borderStroke = borderStroke,
-        themePrimary = themePrimary,
-      )
-    }
   }
+
+  // Vertical brightness slider that slides down vertically under the brightness icon
+  // when the user swipes on the left side to adjust brightness
+  AnimatedVisibility(
+    visible = isBrightnessSliderShown,
+    enter = slideInVertically(
+      initialOffsetY = { -it },
+      animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+    ) + fadeIn(animationSpec = tween(200)),
+    exit = slideOutVertically(
+      targetOffsetY = { -it },
+      animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+    ) + fadeOut(animationSpec = tween(200)),
+  ) {
+    ModernVerticalBrightnessSlider(
+      brightness = currentBrightness,
+      onBrightnessChange = {
+        resetControlsTimestamp()
+        viewModel.changeBrightnessTo(it)
+      },
+      surfaceColor = surfaceColor,
+      borderStroke = borderStroke,
+      themePrimary = themePrimary,
+    )
+  }
+}
 }
 
 /**
@@ -1005,7 +1008,7 @@ fun ModernVerticalBrightnessSlider(
       modifier = Modifier
         .fillMaxSize()
         .padding(vertical = 10.dp),
-      horizontalAlignment = Alignment.CenterVertically,
+      horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
       // Percentage text at top
