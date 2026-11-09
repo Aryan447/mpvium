@@ -2,6 +2,8 @@
 
 ### Added
 
+- Modern player brightness gesture: vertical brightness slider slides down vertically under the top-right brightness button during on-screen brightness swipe gestures, keeping the Modern player interface visible and displaying real-time level and percentage feedback without screen collision.
+- Modern player seekbar styles: added support for Standard, Wavy, and Thick seekbar styles in Modern player layout, with Standard configured as the default and configurable via Settings → Appearance → Controls.
 - Modern player layout option (Settings → Appearance → Player Layout): modeled after Apple TV's native player interface. Features a top-left floating glass pill with close (✕) and PiP buttons; expandable top-right Volume & Brightness controls with live scrub percentage readout and round toggle button; center floating circular glass transport controls (10s skip and hero play/pause); bottom-left two-line show title (episode name on top, series name with chevron below for TV shows, or single clean movie title for movies); customizable bottom-right actions pill (Subtitles, Audio Track, Explain, and Menu); theme-colored seekbar with elapsed/remaining timers, chapter dividers gated by settings, and system gesture navigation clearance; and tactile haptic feedback across all controls.
 - Custom series: create and edit your own TV shows from any videos with custom title, release year, poster cover, and drag-and-drop episode reordering with explicit season and episode numbering.
 - Custom series entry points: selection mode in Folders and Files tabs now features "Add to series…" next to "Add to playlist", and the Shows tab header includes a direct "Create series" action with helpful empty-state guidance.
@@ -37,6 +39,11 @@
 
 ### Fixed
 
+- Modern player seekbar: eliminated seekbar haptics, prevented paused playback from automatically resuming upon releasing the seekbar, and added vertical swipe-up scrubbing speed tiers (1x, 2x, 4x, 8x) with floating rate popup matching the Classic player.
+- Player gesture overlays: hid Modern player UI controls during volume and brightness vertical swipe gestures to prevent on-screen collision with titles and action buttons.
+- Volume controls: eliminated duplicate vertical volume slider during physical volume key presses while Modern controls are shown, and added live volume percentage readout to the top-right volume capsule when pressing physical volume buttons.
+- Modern player intro skip: moved Skip Intro and Skip Recap chips below the top-right volume/brightness capsule in landscape to eliminate visual collision.
+- Navigation: fixed Audio tab not appearing on the home bottom navigation bar when enabled in settings.
 - Prevented seekbar track expansion and wavy line flattening during on-screen horizontal swipe gestures by decoupling direct seekbar touch scrubbing from external gesture seeking.
 - Fixed seekbar handle and timer micro-jitter during horizontal swipe-to-seek gestures by strictly locking `visualPosition` and `seekbarPosition` during `PlayerUpdates.HorizontalSeek`.
 - Player: fixed a launch crash (`NullPointerException` inside `Flow.combine`) when opening the player while the lean seek cache is enabled, caused by the visibility observer reading player state before it was initialized.

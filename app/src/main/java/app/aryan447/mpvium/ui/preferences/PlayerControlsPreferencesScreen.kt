@@ -266,14 +266,27 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Seekbar Section
           item {
-            PreferenceSectionHeader(title = "Seekbar Style", count = SeekbarStyle.entries.size)
+            PreferenceSectionHeader(
+              title = if (isModernLayout) "Seekbar Style (Modern)" else "Seekbar Style",
+              count = SeekbarStyle.entries.size,
+            )
           }
 
           item {
-            val seekbarStyle by appearancePrefs.seekbarStyle.collectAsState()
+            val seekbarStyle by if (isModernLayout) {
+              appearancePrefs.modernSeekbarStyle.collectAsState()
+            } else {
+              appearancePrefs.seekbarStyle.collectAsState()
+            }
             SliderStylePicker(
               selected = seekbarStyle,
-              onSelect = { appearancePrefs.seekbarStyle.set(it) },
+              onSelect = {
+                if (isModernLayout) {
+                  appearancePrefs.modernSeekbarStyle.set(it)
+                } else {
+                  appearancePrefs.seekbarStyle.set(it)
+                }
+              },
             )
           }
 

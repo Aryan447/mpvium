@@ -43,6 +43,7 @@ class AppearancePreferences(
   val showMoviesSection = preferenceStore.getBoolean("show_movies_section", true)
   val showFoldersSection = preferenceStore.getBoolean("show_folders_section", true)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Wavy)
+  val modernSeekbarStyle = preferenceStore.getEnum("modern_seekbar_style", SeekbarStyle.Standard)
   val chaptersInSeekbar = preferenceStore.getBoolean("chapters_in_seekbar", false)
   val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Wavy)
   val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Wavy)
