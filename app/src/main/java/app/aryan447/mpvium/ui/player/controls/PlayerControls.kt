@@ -524,7 +524,7 @@ fun PlayerControls(
         val areSlidersShown = isBrightnessSliderShown || isVolumeSliderShown
 
         AnimatedVisibility(
-          isBrightnessSliderShown,
+          isBrightnessSliderShown && (!isModern || !controlsShown),
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) {
@@ -554,7 +554,7 @@ fun PlayerControls(
         ) { BrightnessSlider(brightness, 0f..1f, seekbarStyle = brightnessSliderStyle) }
 
         AnimatedVisibility(
-          isVolumeSliderShown,
+          isVolumeSliderShown && (!isModern || !controlsShown),
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) {
@@ -836,7 +836,7 @@ fun PlayerControls(
             onOpenSheet = onOpenSheet,
             onOpenPanel = onOpenPanel,
             activity = activity,
-            controlsShown = controlsShown && !areSlidersShown,
+            controlsShown = if (isModern) controlsShown else (controlsShown && !areSlidersShown),
             areControlsLocked = areControlsLocked,
             isSeeking = isSeeking,
             onSeekingChanged = { isSeeking = it },
