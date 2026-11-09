@@ -475,11 +475,17 @@ enum class ModernTopRightTarget {
 }
 
 /**
- * Top-right expandable controls with Volume and Brightness:
- * - One slider is expanded in a sleek frosted capsule with an interactive level track.
- * - The other control is minimized to a round 42.dp icon button on the left.
- * - Tapping the minimized round button expands it and minimizes the other to the left.
- * - When dragging/swiping either slider track, the icon is replaced with the number/percentage.
+ * Top-right expandable controls with Volume (left) and Brightness (right):
+ * - When Volume is expanded:
+ *     volume expanded (brightness minimized round icon)
+ * - When Brightness is expanded:
+ *     (volume minimized round icon) brightness expanded
+ *
+ * Smooth animated transition between the two states:
+ * - Volume width animates between 164.dp (expanded) and 42.dp (minimized)
+ * - Brightness width animates between 42.dp (minimized) and 164.dp (expanded)
+ * - Tapping either minimized button smoothly switches the expanded focus
+ * - Scrubbing/dragging either slider dynamically swaps the icon with the live percentage readout
  */
 @Composable
 fun ModernTopRightControls(
@@ -514,74 +520,93 @@ fun ModernTopRightControls(
     else -> Icons.AutoMirrored.Filled.VolumeUp
   }
 
+  val isVolumeExpanded = activeTarget == ModernTopRightTarget.VOLUME
+  val isBrightnessExpanded = !isVolumeExpanded
+
+  val transitionSpec = tween<Dp>(durationMillis = 300, easing = FastOutSlowInEasing)
+  val volumeWidth by animateDpAsState(
+    targetValue = if (isVolumeExpanded) 164.dp else 42.dp,
+    animationSpec = transitionSpec,
+    label = "ModernVolumeWidth",
+  )
+  val brightnessWidth by animateDpAsState(
+    targetValue = if (isBrightnessExpanded) 164.dp else 42.dp,
+    animationSpec = transitionSpec,
+    label = "ModernBrightnessWidth",
+  )
+
   Row(
-    modifier = modifier.animateContentSize(animationSpec = tween(220, easing = FastOutSlowInEasing)),
+    modifier = modifier,
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    if (activeTarget == ModernTopRightTarget.VOLUME) {
-      // 1. Minimized Brightness Button (round icon button on the left)
-      Surface(
-        modifier = Modifier
-          .size(42.dp)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 21.dp),
-            onClick = {
-              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-              resetControlsTimestamp()
-              activeTarget = ModernTopRightTarget.BRIGHTNESS
-            },
-          ),
-        shape = CircleShape,
-        color = surfaceColor,
-        border = borderStroke,
+    // 1. Volume (Always Left)
+    Surface(
+      modifier = Modifier
+        .width(volumeWidth)
+        .height(42.dp)
+        .clip(RoundedCornerShape(21.dp))
+        .then(
+          if (!isVolumeExpanded) {
+            Modifier.clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = ripple(bounded = true, radius = 21.dp),
+              onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                activeTarget = ModernTopRightTarget.VOLUME
+              },
+            )
+          } else {
+            Modifier
+          }
+        ),
+      shape = RoundedCornerShape(21.dp),
+      color = surfaceColor,
+      border = borderStroke,
+    ) {
+      Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
       ) {
-        Box(contentAlignment = Alignment.Center) {
-          Icon(
-            imageVector = Icons.Default.BrightnessMedium,
-            contentDescription = "Switch to Brightness slider",
-            tint = Color.White,
-            modifier = Modifier.size(20.dp),
-          )
-        }
-      }
-
-      // 2. Expanded Volume Slider Capsule
-      Surface(
-        modifier = Modifier.height(42.dp),
-        shape = RoundedCornerShape(21.dp),
-        color = surfaceColor,
-        border = borderStroke,
-      ) {
-        Row(
-          modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(10.dp),
+        AnimatedVisibility(
+          visible = !isVolumeExpanded,
+          enter = fadeIn(tween(160, delayMillis = 100)),
+          exit = fadeOut(tween(100)),
         ) {
-          // Horizontal volume slider track
           Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = speakerIcon,
+              contentDescription = "Switch to Volume slider",
+              tint = Color.White,
+              modifier = Modifier.size(20.dp),
+            )
+          }
+        }
+
+        AnimatedVisibility(
+          visible = isVolumeExpanded,
+          enter = fadeIn(tween(180, delayMillis = 100)),
+          exit = fadeOut(tween(100)),
+        ) {
+          Row(
             modifier = Modifier
-              .width(100.dp)
-              .height(24.dp)
-              .onSizeChanged { volTrackWidthPx = it.width }
-              .pointerInput(maxVolume) {
-                detectTapGestures { offset ->
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  if (volTrackWidthPx > 0) {
-                    val fraction = (offset.x / volTrackWidthPx).coerceIn(0f, 1f)
-                    val newVol = (fraction * maxVolume).roundToInt()
-                    viewModel.changeVolumeTo(newVol)
-                    if (newVol > 0) previousVolume = newVol
-                  }
-                }
-              }
-              .pointerInput(maxVolume) {
-                detectDragGestures(
-                  onDragStart = { offset ->
-                    isScrubbingVolume = true
+              .fillMaxSize()
+              .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+          ) {
+            // Horizontal volume slider track
+            Box(
+              modifier = Modifier
+                .weight(1f)
+                .height(24.dp)
+                .onSizeChanged { volTrackWidthPx = it.width }
+                .pointerInput(maxVolume) {
+                  detectTapGestures { offset ->
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     resetControlsTimestamp()
                     if (volTrackWidthPx > 0) {
@@ -590,231 +615,267 @@ fun ModernTopRightControls(
                       viewModel.changeVolumeTo(newVol)
                       if (newVol > 0) previousVolume = newVol
                     }
-                  },
-                  onDragEnd = {
-                    isScrubbingVolume = false
-                  },
-                  onDragCancel = {
-                    isScrubbingVolume = false
-                  },
-                  onDrag = { change, _ ->
-                    change.consume()
-                    resetControlsTimestamp()
-                    if (volTrackWidthPx > 0) {
-                      val fraction = (change.position.x / volTrackWidthPx).coerceIn(0f, 1f)
-                      val newVol = (fraction * maxVolume).roundToInt()
-                      viewModel.changeVolumeTo(newVol)
-                      if (newVol > 0) previousVolume = newVol
-                    }
-                  }
-                )
-              },
-            contentAlignment = Alignment.CenterStart,
-          ) {
-            Canvas(
-              modifier = Modifier
-                .fillMaxWidth()
-                .height(5.dp),
-            ) {
-              val w = size.width
-              val h = size.height
-              val radius = CornerRadius(h / 2f, h / 2f)
-
-              // Unfilled / remaining track
-              drawRoundRect(
-                color = Color.White.copy(alpha = 0.28f),
-                size = size,
-                cornerRadius = radius,
-              )
-
-              // Filled active volume with theme primary color
-              val filledWidth = volumeFraction * w
-              if (filledWidth > 0.5f) {
-                drawRoundRect(
-                  color = themePrimary,
-                  size = Size(filledWidth, h),
-                  cornerRadius = radius,
-                )
-              }
-            }
-          }
-
-          // Trailing slot: if scrubbing, display number; otherwise speaker icon
-          Box(
-            modifier = Modifier.widthIn(min = 28.dp),
-            contentAlignment = Alignment.Center,
-          ) {
-            if (isScrubbingVolume) {
-              Text(
-                text = "${(volumeFraction * 100).roundToInt()}%",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 11.sp,
-                  color = Color.White,
-                  fontFamily = FontFamily.Monospace,
-                  textAlign = TextAlign.Center,
-                ),
-              )
-            } else {
-              Icon(
-                imageVector = speakerIcon,
-                contentDescription = "Mute / Unmute",
-                tint = Color.White,
-                modifier = Modifier
-                  .size(20.dp)
-                  .clip(CircleShape)
-                  .clickable {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    resetControlsTimestamp()
-                    if (currentVolume > 0) {
-                      previousVolume = currentVolume
-                      viewModel.changeVolumeTo(0)
-                    } else {
-                      viewModel.changeVolumeTo(previousVolume.takeIf { it > 0 } ?: (maxVolume / 2))
-                    }
-                  },
-              )
-            }
-          }
-        }
-      }
-    } else {
-      // 1. Minimized Volume Button (round icon button on the left)
-      Surface(
-        modifier = Modifier
-          .size(42.dp)
-          .clip(CircleShape)
-          .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(bounded = true, radius = 21.dp),
-            onClick = {
-              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-              resetControlsTimestamp()
-              activeTarget = ModernTopRightTarget.VOLUME
-            },
-          ),
-        shape = CircleShape,
-        color = surfaceColor,
-        border = borderStroke,
-      ) {
-        Box(contentAlignment = Alignment.Center) {
-          Icon(
-            imageVector = speakerIcon,
-            contentDescription = "Switch to Volume slider",
-            tint = Color.White,
-            modifier = Modifier.size(20.dp),
-          )
-        }
-      }
-
-      // 2. Expanded Brightness Slider Capsule
-      Surface(
-        modifier = Modifier.height(42.dp),
-        shape = RoundedCornerShape(21.dp),
-        color = surfaceColor,
-        border = borderStroke,
-      ) {
-        Row(
-          modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-          // Horizontal brightness slider track
-          Box(
-            modifier = Modifier
-              .width(100.dp)
-              .height(24.dp)
-              .onSizeChanged { briTrackWidthPx = it.width }
-              .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  if (briTrackWidthPx > 0) {
-                    val fraction = (offset.x / briTrackWidthPx).coerceIn(0f, 1f)
-                    viewModel.changeBrightnessTo(fraction)
                   }
                 }
+                .pointerInput(maxVolume) {
+                  detectDragGestures(
+                    onDragStart = { offset ->
+                      isScrubbingVolume = true
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                      resetControlsTimestamp()
+                      if (volTrackWidthPx > 0) {
+                        val fraction = (offset.x / volTrackWidthPx).coerceIn(0f, 1f)
+                        val newVol = (fraction * maxVolume).roundToInt()
+                        viewModel.changeVolumeTo(newVol)
+                        if (newVol > 0) previousVolume = newVol
+                      }
+                    },
+                    onDragEnd = {
+                      isScrubbingVolume = false
+                    },
+                    onDragCancel = {
+                      isScrubbingVolume = false
+                    },
+                    onDrag = { change, _ ->
+                      change.consume()
+                      resetControlsTimestamp()
+                      if (volTrackWidthPx > 0) {
+                        val fraction = (change.position.x / volTrackWidthPx).coerceIn(0f, 1f)
+                        val newVol = (fraction * maxVolume).roundToInt()
+                        viewModel.changeVolumeTo(newVol)
+                        if (newVol > 0) previousVolume = newVol
+                      }
+                    },
+                  )
+                },
+              contentAlignment = Alignment.CenterStart,
+            ) {
+              Canvas(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(5.dp),
+              ) {
+                val w = size.width
+                val h = size.height
+                val radius = CornerRadius(h / 2f, h / 2f)
+
+                // Unfilled / remaining track
+                drawRoundRect(
+                  color = Color.White.copy(alpha = 0.28f),
+                  size = size,
+                  cornerRadius = radius,
+                )
+
+                // Filled active volume with theme primary color
+                val filledWidth = volumeFraction * w
+                if (filledWidth > 0.5f) {
+                  drawRoundRect(
+                    color = themePrimary,
+                    size = Size(filledWidth, h),
+                    cornerRadius = radius,
+                  )
+                }
               }
-              .pointerInput(Unit) {
-                detectDragGestures(
-                  onDragStart = { offset ->
-                    isScrubbingBrightness = true
+            }
+
+            // Trailing slot: if scrubbing, display number; otherwise speaker icon
+            Box(
+              modifier = Modifier.widthIn(min = 28.dp),
+              contentAlignment = Alignment.Center,
+            ) {
+              if (isScrubbingVolume) {
+                Text(
+                  text = "${(volumeFraction * 100).roundToInt()}%",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = Color.White,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Center,
+                  ),
+                )
+              } else {
+                Icon(
+                  imageVector = speakerIcon,
+                  contentDescription = "Mute / Unmute",
+                  tint = Color.White,
+                  modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .clickable {
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                      resetControlsTimestamp()
+                      if (currentVolume > 0) {
+                        previousVolume = currentVolume
+                        viewModel.changeVolumeTo(0)
+                      } else {
+                        viewModel.changeVolumeTo(previousVolume.takeIf { it > 0 } ?: (maxVolume / 2))
+                      }
+                    },
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Brightness (Always Right)
+    Surface(
+      modifier = Modifier
+        .width(brightnessWidth)
+        .height(42.dp)
+        .clip(RoundedCornerShape(21.dp))
+        .then(
+          if (!isBrightnessExpanded) {
+            Modifier.clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = ripple(bounded = true, radius = 21.dp),
+              onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                activeTarget = ModernTopRightTarget.BRIGHTNESS
+              },
+            )
+          } else {
+            Modifier
+          }
+        ),
+      shape = RoundedCornerShape(21.dp),
+      color = surfaceColor,
+      border = borderStroke,
+    ) {
+      Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+      ) {
+        AnimatedVisibility(
+          visible = !isBrightnessExpanded,
+          enter = fadeIn(tween(160, delayMillis = 100)),
+          exit = fadeOut(tween(100)),
+        ) {
+          Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = Icons.Default.BrightnessMedium,
+              contentDescription = "Switch to Brightness slider",
+              tint = Color.White,
+              modifier = Modifier.size(20.dp),
+            )
+          }
+        }
+
+        AnimatedVisibility(
+          visible = isBrightnessExpanded,
+          enter = fadeIn(tween(180, delayMillis = 100)),
+          exit = fadeOut(tween(100)),
+        ) {
+          Row(
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+          ) {
+            // Horizontal brightness slider track
+            Box(
+              modifier = Modifier
+                .weight(1f)
+                .height(24.dp)
+                .onSizeChanged { briTrackWidthPx = it.width }
+                .pointerInput(Unit) {
+                  detectTapGestures { offset ->
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     resetControlsTimestamp()
                     if (briTrackWidthPx > 0) {
                       val fraction = (offset.x / briTrackWidthPx).coerceIn(0f, 1f)
                       viewModel.changeBrightnessTo(fraction)
                     }
-                  },
-                  onDragEnd = {
-                    isScrubbingBrightness = false
-                  },
-                  onDragCancel = {
-                    isScrubbingBrightness = false
-                  },
-                  onDrag = { change, _ ->
-                    change.consume()
-                    resetControlsTimestamp()
-                    if (briTrackWidthPx > 0) {
-                      val fraction = (change.position.x / briTrackWidthPx).coerceIn(0f, 1f)
-                      viewModel.changeBrightnessTo(fraction)
-                    }
                   }
-                )
-              },
-            contentAlignment = Alignment.CenterStart,
-          ) {
-            Canvas(
-              modifier = Modifier
-                .fillMaxWidth()
-                .height(5.dp),
+                }
+                .pointerInput(Unit) {
+                  detectDragGestures(
+                    onDragStart = { offset ->
+                      isScrubbingBrightness = true
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                      resetControlsTimestamp()
+                      if (briTrackWidthPx > 0) {
+                        val fraction = (offset.x / briTrackWidthPx).coerceIn(0f, 1f)
+                        viewModel.changeBrightnessTo(fraction)
+                      }
+                    },
+                    onDragEnd = {
+                      isScrubbingBrightness = false
+                    },
+                    onDragCancel = {
+                      isScrubbingBrightness = false
+                    },
+                    onDrag = { change, _ ->
+                      change.consume()
+                      resetControlsTimestamp()
+                      if (briTrackWidthPx > 0) {
+                        val fraction = (change.position.x / briTrackWidthPx).coerceIn(0f, 1f)
+                        viewModel.changeBrightnessTo(fraction)
+                      }
+                    },
+                  )
+                },
+              contentAlignment = Alignment.CenterStart,
             ) {
-              val w = size.width
-              val h = size.height
-              val radius = CornerRadius(h / 2f, h / 2f)
+              Canvas(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(5.dp),
+              ) {
+                val w = size.width
+                val h = size.height
+                val radius = CornerRadius(h / 2f, h / 2f)
 
-              // Unfilled track
-              drawRoundRect(
-                color = Color.White.copy(alpha = 0.28f),
-                size = size,
-                cornerRadius = radius,
-              )
-
-              // Filled brightness track with theme primary color
-              val filledWidth = brightnessFraction * w
-              if (filledWidth > 0.5f) {
+                // Unfilled track
                 drawRoundRect(
-                  color = themePrimary,
-                  size = Size(filledWidth, h),
+                  color = Color.White.copy(alpha = 0.28f),
+                  size = size,
                   cornerRadius = radius,
                 )
+
+                // Filled brightness track with theme primary color
+                val filledWidth = brightnessFraction * w
+                if (filledWidth > 0.5f) {
+                  drawRoundRect(
+                    color = themePrimary,
+                    size = Size(filledWidth, h),
+                    cornerRadius = radius,
+                  )
+                }
               }
             }
-          }
 
-          // Trailing slot: if scrubbing, display number; otherwise brightness icon
-          Box(
-            modifier = Modifier.widthIn(min = 28.dp),
-            contentAlignment = Alignment.Center,
-          ) {
-            if (isScrubbingBrightness) {
-              Text(
-                text = "${(brightnessFraction * 100).roundToInt()}%",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 11.sp,
-                  color = Color.White,
-                  fontFamily = FontFamily.Monospace,
-                  textAlign = TextAlign.Center,
-                ),
-              )
-            } else {
-              Icon(
-                imageVector = Icons.Default.BrightnessMedium,
-                contentDescription = "Brightness",
-                tint = Color.White,
-                modifier = Modifier.size(20.dp),
-              )
+            // Trailing slot: if scrubbing, display number; otherwise brightness icon
+            Box(
+              modifier = Modifier.widthIn(min = 28.dp),
+              contentAlignment = Alignment.Center,
+            ) {
+              if (isScrubbingBrightness) {
+                Text(
+                  text = "${(brightnessFraction * 100).roundToInt()}%",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = Color.White,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Center,
+                  ),
+                )
+              } else {
+                Icon(
+                  imageVector = Icons.Default.BrightnessMedium,
+                  contentDescription = "Brightness",
+                  tint = Color.White,
+                  modifier = Modifier.size(20.dp),
+                )
+              }
             }
           }
         }
