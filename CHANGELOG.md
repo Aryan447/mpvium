@@ -36,6 +36,8 @@
 
 ### Changed
 
+- Modern player volume and brightness indicator icons: dynamically swap the minimized control icon (volume shows brightness icon during brightness adjustments; brightness shows volume icon during vertical gestures, horizontal slider scrubbing, and hardware volume button presses) and immediately restore original icons as soon as the active adjustment and percentage readout end.
+
 - Player layout styles: renamed the original glass-pill layout to **Classic** and introduced **Modern** (an Apple TV style floating glass interface with unobstructed video, expandable volume & brightness controls, center transport, show header, customizable actions pill, and system gesture exclusion). Legacy Cinema and Minimal settings seamlessly migrate to Modern.
 - Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
 - Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.

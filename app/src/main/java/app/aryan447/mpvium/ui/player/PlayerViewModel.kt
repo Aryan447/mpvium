@@ -1563,6 +1563,7 @@ class PlayerViewModel(
   }
 
   fun displayBrightnessSlider() {
+    isVolumeSliderShown.value = false
     isBrightnessSliderShown.value = true
     brightnessSliderTimestamp.value = System.currentTimeMillis()
   }
@@ -1613,6 +1614,7 @@ class PlayerViewModel(
   }
 
   fun displayVolumeSlider() {
+    isBrightnessSliderShown.value = false
     isVolumeSliderShown.value = true
     volumeSliderTimestamp.value = System.currentTimeMillis()
   }

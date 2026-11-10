@@ -535,25 +535,27 @@ fun ModernTopRightControls(
   val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
 
   var showVolumeNumberTemporarily by remember { mutableStateOf(false) }
+  var showBrightnessNumberTemporarily by remember { mutableStateOf(false) }
   var lastObservedVolume by remember { mutableIntStateOf(currentVolume) }
   LaunchedEffect(currentVolume) {
     if (lastObservedVolume != currentVolume) {
       lastObservedVolume = currentVolume
+      showBrightnessNumberTemporarily = false
       activeTarget = ModernTopRightTarget.VOLUME
       showVolumeNumberTemporarily = true
-      delay(1500)
+      delay(1000)
       showVolumeNumberTemporarily = false
     }
   }
 
-  var showBrightnessNumberTemporarily by remember { mutableStateOf(false) }
   var lastObservedBrightness by remember { mutableFloatStateOf(currentBrightness) }
   LaunchedEffect(currentBrightness) {
     if (kotlin.math.abs(lastObservedBrightness - currentBrightness) > 0.005f) {
       lastObservedBrightness = currentBrightness
+      showVolumeNumberTemporarily = false
       activeTarget = ModernTopRightTarget.BRIGHTNESS
       showBrightnessNumberTemporarily = true
-      delay(1500)
+      delay(1000)
       showBrightnessNumberTemporarily = false
       if (!isBrightnessSliderShown) {
         activeTarget = ModernTopRightTarget.VOLUME
@@ -564,7 +566,9 @@ fun ModernTopRightControls(
   LaunchedEffect(isBrightnessSliderShown) {
     if (isBrightnessSliderShown) {
       activeTarget = ModernTopRightTarget.BRIGHTNESS
+      showVolumeNumberTemporarily = false
     } else {
+      showBrightnessNumberTemporarily = false
       activeTarget = ModernTopRightTarget.VOLUME
     }
   }
@@ -572,8 +576,17 @@ fun ModernTopRightControls(
   LaunchedEffect(isVolumeSliderShown) {
     if (isVolumeSliderShown) {
       activeTarget = ModernTopRightTarget.VOLUME
+      showBrightnessNumberTemporarily = false
+    } else {
+      showVolumeNumberTemporarily = false
     }
   }
+
+  val isVolumeAdjusting = isScrubbingVolume || showVolumeNumberTemporarily || isVolumeSliderShown
+  val isBrightnessAdjusting = isScrubbingBrightness || showBrightnessNumberTemporarily || isBrightnessSliderShown
+
+  val showBrightnessIconOnVolume = isBrightnessAdjusting && !isVolumeAdjusting
+  val showVolumeIconOnBrightness = isVolumeAdjusting && !isBrightnessAdjusting
 
   var volTrackWidthPx by remember { mutableIntStateOf(0) }
   var briTrackWidthPx by remember { mutableIntStateOf(0) }
@@ -623,6 +636,8 @@ fun ModernTopRightControls(
               onClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 resetControlsTimestamp()
+                showBrightnessNumberTemporarily = false
+                viewModel.isBrightnessSliderShown.value = false
                 activeTarget = ModernTopRightTarget.VOLUME
               },
             )
@@ -645,8 +660,8 @@ fun ModernTopRightControls(
             contentAlignment = Alignment.Center,
           ) {
             Icon(
-              imageVector = speakerIcon,
-              contentDescription = "Switch to Volume slider",
+              imageVector = if (showBrightnessIconOnVolume) Icons.Default.BrightnessMedium else speakerIcon,
+              contentDescription = if (showBrightnessIconOnVolume) "Brightness" else "Switch to Volume slider",
               tint = Color.White,
               modifier = Modifier.size(20.dp),
             )
@@ -674,6 +689,7 @@ fun ModernTopRightControls(
                       val newVol = (fraction * maxVolume).roundToInt()
                       viewModel.changeVolumeTo(newVol)
                       if (newVol > 0) previousVolume = newVol
+                      viewModel.displayVolumeSlider()
                     }
                   }
                 }
@@ -681,6 +697,8 @@ fun ModernTopRightControls(
                   detectDragGestures(
                     onDragStart = { offset ->
                       isScrubbingVolume = true
+                      showBrightnessNumberTemporarily = false
+                      viewModel.isBrightnessSliderShown.value = false
                       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                       resetControlsTimestamp()
                       if (volTrackWidthPx > 0) {
@@ -692,9 +710,11 @@ fun ModernTopRightControls(
                     },
                     onDragEnd = {
                       isScrubbingVolume = false
+                      viewModel.displayVolumeSlider()
                     },
                     onDragCancel = {
                       isScrubbingVolume = false
+                      viewModel.displayVolumeSlider()
                     },
                     onDrag = { change, _ ->
                       change.consume()
@@ -743,7 +763,7 @@ fun ModernTopRightControls(
               modifier = Modifier.widthIn(min = 28.dp),
               contentAlignment = Alignment.Center,
             ) {
-              if (isScrubbingVolume || showVolumeNumberTemporarily || isVolumeSliderShown) {
+              if (isVolumeAdjusting) {
                 Text(
                   text = "${(volumeFraction * 100).roundToInt()}%",
                   style = MaterialTheme.typography.labelSmall.copy(
@@ -794,6 +814,8 @@ fun ModernTopRightControls(
               onClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 resetControlsTimestamp()
+                showVolumeNumberTemporarily = false
+                viewModel.isVolumeSliderShown.value = false
                 activeTarget = ModernTopRightTarget.BRIGHTNESS
               },
             )
@@ -816,8 +838,8 @@ fun ModernTopRightControls(
             contentAlignment = Alignment.Center,
           ) {
             Icon(
-              imageVector = Icons.Default.BrightnessMedium,
-              contentDescription = "Switch to Brightness slider",
+              imageVector = if (showVolumeIconOnBrightness) speakerIcon else Icons.Default.BrightnessMedium,
+              contentDescription = if (showVolumeIconOnBrightness) "Volume" else "Switch to Brightness slider",
               tint = Color.White,
               modifier = Modifier.size(20.dp),
             )
@@ -843,6 +865,7 @@ fun ModernTopRightControls(
                     if (briTrackWidthPx > 0) {
                       val fraction = (offset.x / briTrackWidthPx).coerceIn(0f, 1f)
                       viewModel.changeBrightnessTo(fraction)
+                      viewModel.displayBrightnessSlider()
                     }
                   }
                 }
@@ -850,6 +873,8 @@ fun ModernTopRightControls(
                   detectDragGestures(
                     onDragStart = { offset ->
                       isScrubbingBrightness = true
+                      showVolumeNumberTemporarily = false
+                      viewModel.isVolumeSliderShown.value = false
                       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                       resetControlsTimestamp()
                       if (briTrackWidthPx > 0) {
@@ -859,9 +884,11 @@ fun ModernTopRightControls(
                     },
                     onDragEnd = {
                       isScrubbingBrightness = false
+                      viewModel.displayBrightnessSlider()
                     },
                     onDragCancel = {
                       isScrubbingBrightness = false
+                      viewModel.displayBrightnessSlider()
                     },
                     onDrag = { change, _ ->
                       change.consume()
@@ -908,7 +935,7 @@ fun ModernTopRightControls(
               modifier = Modifier.widthIn(min = 28.dp),
               contentAlignment = Alignment.Center,
             ) {
-              if (isScrubbingBrightness || showBrightnessNumberTemporarily || isBrightnessSliderShown) {
+              if (isBrightnessAdjusting) {
                 Text(
                   text = "${(brightnessFraction * 100).roundToInt()}%",
                   style = MaterialTheme.typography.labelSmall.copy(

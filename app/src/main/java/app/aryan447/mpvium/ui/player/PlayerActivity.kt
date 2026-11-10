@@ -2882,19 +2882,13 @@ class PlayerActivity :
 
       KeyEvent.KEYCODE_VOLUME_UP -> {
         viewModel.changeVolumeBy(volumeStep())
-        val isModern = appearancePreferences.playerLayout.get() == PlayerLayout.MODERN
-        if (!isModern || !viewModel.controlsShown.value) {
-          viewModel.displayVolumeSlider()
-        }
+        viewModel.displayVolumeSlider()
         return true
       }
 
       KeyEvent.KEYCODE_VOLUME_DOWN -> {
         viewModel.changeVolumeBy(-volumeStep())
-        val isModern = appearancePreferences.playerLayout.get() == PlayerLayout.MODERN
-        if (!isModern || !viewModel.controlsShown.value) {
-          viewModel.displayVolumeSlider()
-        }
+        viewModel.displayVolumeSlider()
         return true
       }
 
