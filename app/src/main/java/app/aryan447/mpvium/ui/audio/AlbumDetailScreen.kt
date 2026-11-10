@@ -149,8 +149,10 @@ data class AlbumDetailScreen(
                 ),
             ) {
               AlbumArtImage(
-                artworkUri = album.artworkUri,
-                contentDescription = album.title,
+                album = album,
+                albumTitle = album?.title ?: albumTitle,
+                artworkUri = album?.artworkUri,
+                contentDescription = album?.title ?: albumTitle,
                 modifier = Modifier.fillMaxSize(),
               )
             }

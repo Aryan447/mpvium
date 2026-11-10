@@ -203,6 +203,8 @@ fun AudioPlayerSurface(
             ),
         ) {
           AlbumArtImage(
+            albumTitle = album,
+            artistName = artist,
             artworkUri = artworkUri,
             contentDescription = title,
             modifier = Modifier.fillMaxSize(),
