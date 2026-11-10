@@ -41,6 +41,8 @@ import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.databinding.PlayerLayoutBinding
 import app.aryan447.mpvium.domain.playbackstate.PlaybackCheckpointDecider
 import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.domain.audio.AudioArtworkStore
+import app.aryan447.mpvium.domain.media.model.LocalAlbum
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
@@ -167,6 +169,11 @@ class PlayerActivity :
    * Manager for file operations.
    */
   private val fileManager: FileManager by inject()
+
+  /**
+   * Store for audio artwork.
+   */
+  private val audioArtworkStore: AudioArtworkStore by inject()
 
   /**
    * Track selector for automatic audio/subtitle selection
@@ -3094,6 +3101,10 @@ class PlayerActivity :
       runCatching { MPVLib.getPropertyString("metadata/artist") }.getOrNull() ?: ""
     }
     val albumArtUri = viewModel.audioArtUri.value
+    val album = viewModel.audioAlbum.value
+    val albumKey = if (album.isNotBlank() || artist.isNotBlank()) {
+      LocalAlbum.createId(album, artist)
+    } else ""
     val albumArtBitmap = if (albumArtUri != null) {
       runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -3102,6 +3113,8 @@ class PlayerActivity :
           contentResolver.openInputStream(albumArtUri)?.use { android.graphics.BitmapFactory.decodeStream(it) }
         }
       }.getOrNull()
+    } else if (albumKey.isNotBlank()) {
+      audioArtworkStore.getFromMemory(albumKey, 512)
     } else null
     val thumbnail = albumArtBitmap ?: runCatching { MPVLib.grabThumbnail(1080) }.getOrNull()
 
@@ -3113,6 +3126,22 @@ class PlayerActivity :
 
     // Store thumbnail in companion object for service to access
     MediaPlaybackService.thumbnail = thumbnail
+
+    if (viewModel.isAudioMode.value && (album.isNotBlank() || artist.isNotBlank())) {
+      lifecycleScope.launch(Dispatchers.IO) {
+        val loaded = audioArtworkStore.loadArtwork(album, artist, albumArtUri = albumArtUri, maxDimension = 512)
+        if (loaded != null) {
+          MediaPlaybackService.thumbnail = loaded
+          if (serviceBound && mediaPlaybackService != null) {
+            mediaPlaybackService?.setMediaInfo(
+              title = fileName,
+              artist = artist,
+              thumbnail = loaded,
+            )
+          }
+        }
+      }
+    }
 
     try {
       startForegroundService(intent)
@@ -3388,11 +3417,34 @@ class PlayerActivity :
         album = viewModel.audioAlbum.value,
         artUri = viewModel.audioArtUri.value,
       )
+      val curAlbum = viewModel.audioAlbum.value
+      val curArtist = viewModel.audioArtist.value
+      val curKey = if (curAlbum.isNotBlank() || curArtist.isNotBlank()) LocalAlbum.createId(curAlbum, curArtist) else ""
+      if (curKey.isNotBlank()) {
+        audioArtworkStore.getFromMemory(curKey, 512)?.let {
+          MediaPlaybackService.thumbnail = it
+        }
+      }
       mediaPlaybackService?.setMediaInfo(
         title = fileName,
-        artist = viewModel.audioArtist.value,
+        artist = curArtist,
         thumbnail = MediaPlaybackService.thumbnail,
       )
+      if (curKey.isNotBlank()) {
+        lifecycleScope.launch(Dispatchers.IO) {
+          val loaded = audioArtworkStore.loadArtwork(curAlbum, curArtist, albumArtUri = viewModel.audioArtUri.value, maxDimension = 512)
+          if (loaded != null) {
+            MediaPlaybackService.thumbnail = loaded
+            if (serviceBound && mediaPlaybackService != null) {
+              mediaPlaybackService?.setMediaInfo(
+                title = fileName,
+                artist = curArtist,
+                thumbnail = loaded,
+              )
+            }
+          }
+        }
+      }
     }
 
     // Set HTTP headers (including referer) for network streams
