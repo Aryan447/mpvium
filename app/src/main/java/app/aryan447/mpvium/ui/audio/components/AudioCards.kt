@@ -81,6 +81,7 @@ fun AlbumCard(
         ),
     ) {
       AlbumArtImage(
+        album = album,
         artworkUri = album.artworkUri,
         contentDescription = album.title,
         modifier = Modifier.fillMaxWidth(),
@@ -150,6 +151,7 @@ fun AlbumRow(
         ),
     ) {
       AlbumArtImage(
+        album = album,
         artworkUri = album.artworkUri,
         contentDescription = album.title,
         modifier = Modifier.fillMaxWidth(),
@@ -221,6 +223,7 @@ fun TrackRow(
           .background(MaterialTheme.colorScheme.surfaceContainerHigh),
       ) {
         AlbumArtImage(
+          track = track,
           artworkUri = track.albumArtUri,
           contentDescription = track.title,
           modifier = Modifier.fillMaxWidth(),

@@ -23,10 +23,13 @@ object AudioPlayerLauncher {
     val playlistUris = ArrayList(album.tracks.map { it.uri })
 
     val intent = Intent(context, PlayerActivity::class.java).apply {
+      action = Intent.ACTION_VIEW
       data = selectedTrack.uri
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
       putParcelableArrayListExtra("playlist", playlistUris)
       putExtra("playlist_index", index)
       putExtra("is_audio_mode", true)
+      putExtra("title", selectedTrack.title)
       putExtra("media_title", selectedTrack.title)
       putExtra("media_artist", selectedTrack.artist)
       putExtra("album_title", album.title)
@@ -43,10 +46,13 @@ object AudioPlayerLauncher {
     val playlistUris = ArrayList(queue.map { it.uri })
 
     val intent = Intent(context, PlayerActivity::class.java).apply {
+      action = Intent.ACTION_VIEW
       data = track.uri
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
       putParcelableArrayListExtra("playlist", playlistUris)
       putExtra("playlist_index", index)
       putExtra("is_audio_mode", true)
+      putExtra("title", track.title)
       putExtra("media_title", track.title)
       putExtra("media_artist", track.artist)
       putExtra("album_title", track.album)

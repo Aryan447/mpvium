@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 
 class AudioRepository(
   private val context: Context,
+  private val artworkStore: AudioArtworkStore? = null,
 ) {
   private val _libraryData = MutableStateFlow(AudioLibraryData())
   val libraryData: StateFlow<AudioLibraryData> = _libraryData.asStateFlow()
@@ -31,6 +32,8 @@ class AudioRepository(
       val data = AudioScanUtils.scanAudio(context)
       _libraryData.value = data
       _hasAudio.value = data.tracks.isNotEmpty()
+      val activeAlbumKeys = data.albums.map { it.id }.toSet()
+      artworkStore?.prune(activeAlbumKeys)
       data
     } finally {
       _isLoading.value = false

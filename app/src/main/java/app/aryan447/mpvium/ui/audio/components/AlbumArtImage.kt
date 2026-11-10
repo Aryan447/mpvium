@@ -1,73 +1,82 @@
 package app.aryan447.mpvium.ui.audio.components
 
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
-import android.util.LruCache
-import android.util.Size
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Audiotrack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import app.aryan447.mpvium.domain.audio.AudioArtworkStore
+import app.aryan447.mpvium.domain.media.model.LocalAlbum
+import app.aryan447.mpvium.domain.media.model.LocalAudioTrack
+import org.koin.compose.koinInject
 
-private val albumArtCache = LruCache<String, Bitmap>(64)
-
+/**
+ * Modern Compose Image component for audio album covers.
+ *
+ * Implements Spec 15 requirements:
+ * 1. Embedded art first via [MediaMetadataRetriever]; network fallback next.
+ * 2. Network source: MusicBrainz + Cover Art Archive (keyless).
+ * 3. Offline cache following [AudioArtworkStore]'s durable pattern, keyed by album+artist.
+ * 4. Graceful fallback: a generated placeholder tile (initials on a tonal surface)
+ *    when both embedded and network art are missing — no broken-image icon.
+ * 5. Extends the existing image-loading and caching stack without secondary libraries.
+ */
 @Composable
 fun AlbumArtImage(
-  artworkUri: Uri?,
+  artworkUri: Uri? = null,
   modifier: Modifier = Modifier,
+  album: LocalAlbum? = null,
+  track: LocalAudioTrack? = null,
+  albumTitle: String? = null,
+  artistName: String? = null,
   contentDescription: String? = null,
   contentScale: ContentScale = ContentScale.Crop,
   targetSizePx: Int = 300,
 ) {
-  val context = LocalContext.current
-  val cacheKey = artworkUri?.toString() ?: ""
+  val artworkStore = koinInject<AudioArtworkStore>()
 
-  var bitmap by remember(cacheKey) {
-    mutableStateOf(if (cacheKey.isNotEmpty()) albumArtCache.get(cacheKey) else null)
+  val resolvedTitle = album?.title ?: track?.album ?: albumTitle.orEmpty()
+  val resolvedArtist = album?.artist ?: track?.artist ?: artistName.orEmpty()
+  val resolvedTracks = album?.tracks ?: (track?.let { listOf(it) } ?: emptyList())
+  val resolvedUri = artworkUri ?: album?.artworkUri ?: track?.albumArtUri
+
+  val resolvedKey = when {
+    album != null -> album.id
+    track != null -> track.albumKey
+    resolvedTitle.isNotBlank() || resolvedArtist.isNotBlank() -> LocalAlbum.createId(resolvedTitle, resolvedArtist)
+    resolvedUri != null -> resolvedUri.toString()
+    else -> ""
   }
 
-  LaunchedEffect(cacheKey) {
-    if (cacheKey.isEmpty() || artworkUri == null) {
-      bitmap = null
-      return@LaunchedEffect
-    }
+  val cappedDimension = targetSizePx.coerceAtLeast(1)
 
-    val cached = albumArtCache.get(cacheKey)
-    if (cached != null) {
-      bitmap = cached
-      return@LaunchedEffect
-    }
+  var bitmap by remember(resolvedKey, cappedDimension) {
+    mutableStateOf(if (resolvedKey.isNotBlank()) artworkStore.getFromMemory(resolvedKey, cappedDimension) else null)
+  }
 
-    val loaded = withContext(Dispatchers.IO) {
-      loadAlbumArtBitmap(context, artworkUri, targetSizePx)
-    }
-    if (loaded != null) {
-      albumArtCache.put(cacheKey, loaded)
-      bitmap = loaded
+  LaunchedEffect(resolvedKey, cappedDimension, resolvedUri) {
+    if (bitmap != null) return@LaunchedEffect
+
+    if (resolvedTitle.isNotBlank() || resolvedArtist.isNotBlank() || resolvedTracks.isNotEmpty() || resolvedUri != null) {
+      val loaded = artworkStore.loadArtwork(
+        album = resolvedTitle,
+        artist = resolvedArtist,
+        tracks = resolvedTracks,
+        albumArtUri = resolvedUri,
+        maxDimension = cappedDimension,
+      )
+      if (loaded != null) {
+        bitmap = loaded
+      }
     }
   }
 
@@ -85,67 +94,12 @@ fun AlbumArtImage(
         contentScale = contentScale,
       )
     } else {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center,
-      ) {
-        Icon(
-          imageVector = Icons.Filled.Audiotrack,
-          contentDescription = contentDescription,
-          tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-          modifier = Modifier.size(36.dp),
-        )
-      }
+      AlbumPlaceholderTile(
+        title = resolvedTitle,
+        artist = resolvedArtist,
+        key = resolvedKey,
+        modifier = Modifier.fillMaxSize(),
+      )
     }
-  }
-}
-
-private fun loadAlbumArtBitmap(context: Context, uri: Uri, targetSizePx: Int): Bitmap? {
-  return try {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      try {
-        context.contentResolver.loadThumbnail(uri, Size(targetSizePx, targetSizePx), null)
-      } catch (_: Exception) {
-        loadWithBitmapFactory(context, uri, targetSizePx)
-      }
-    } else {
-      loadWithBitmapFactory(context, uri, targetSizePx)
-    }
-  } catch (_: Exception) {
-    null
-  }
-}
-
-private fun loadWithBitmapFactory(context: Context, uri: Uri, targetSizePx: Int): Bitmap? {
-  return try {
-    context.contentResolver.openInputStream(uri)?.use { stream ->
-      val options = BitmapFactory.Options().apply {
-        inJustDecodeBounds = true
-      }
-      BitmapFactory.decodeStream(stream, null, options)
-
-      val originalWidth = options.outWidth
-      val originalHeight = options.outHeight
-      if (originalWidth <= 0 || originalHeight <= 0) return null
-
-      var sampleSize = 1
-      while (originalWidth / (sampleSize * 2) >= targetSizePx &&
-        originalHeight / (sampleSize * 2) >= targetSizePx
-      ) {
-        sampleSize *= 2
-      }
-
-      val decodeOptions = BitmapFactory.Options().apply {
-        inSampleSize = sampleSize
-      }
-
-      context.contentResolver.openInputStream(uri)?.use { inputStream ->
-        BitmapFactory.decodeStream(inputStream, null, decodeOptions)
-      }
-    }
-  } catch (_: Exception) {
-    null
   }
 }

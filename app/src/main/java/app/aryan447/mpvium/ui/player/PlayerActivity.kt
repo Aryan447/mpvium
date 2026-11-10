@@ -41,6 +41,8 @@ import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.databinding.PlayerLayoutBinding
 import app.aryan447.mpvium.domain.playbackstate.PlaybackCheckpointDecider
 import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.domain.audio.AudioArtworkStore
+import app.aryan447.mpvium.domain.media.model.LocalAlbum
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
@@ -167,6 +169,11 @@ class PlayerActivity :
    * Manager for file operations.
    */
   private val fileManager: FileManager by inject()
+
+  /**
+   * Store for audio artwork.
+   */
+  private val audioArtworkStore: AudioArtworkStore by inject()
 
   /**
    * Track selector for automatic audio/subtitle selection
@@ -442,7 +449,8 @@ class PlayerActivity :
     val albumTitle = intent.getStringExtra("album_title") ?: ""
     val albumArtUriString = intent.getStringExtra("album_art_uri")
     val albumArtUri = albumArtUriString?.let { runCatching { Uri.parse(it) }.getOrNull() }
-    viewModel.setAudioMode(isAudioMode, fileName, mediaArtist, albumTitle, albumArtUri)
+    val audioTitle = intent.getStringExtra("title") ?: intent.getStringExtra("media_title") ?: fileName
+    viewModel.setAudioMode(isAudioMode, audioTitle, mediaArtist, albumTitle, albumArtUri)
 
     // Set HTTP headers (including referer) BEFORE playing the file
     setHttpHeadersFromExtras(intent.extras)
@@ -464,7 +472,19 @@ class PlayerActivity :
 
     // Only set orientation immediately if NOT in Video mode
     // For Video mode, wait for video-params/aspect to become available
-    if (playerPreferences.orientation.get() != PlayerOrientation.Video) {
+    if (isAudioMode) {
+      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      window.statusBarColor = android.graphics.Color.TRANSPARENT
+      window.navigationBarColor = android.graphics.Color.TRANSPARENT
+      try {
+        windowInsetsController.apply {
+          show(WindowInsetsCompat.Type.statusBars())
+          show(WindowInsetsCompat.Type.navigationBars())
+        }
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to show system bars for audio mode", e)
+      }
+    } else if (playerPreferences.orientation.get() != PlayerOrientation.Video) {
       setOrientation()
     }
 
@@ -875,6 +895,20 @@ class PlayerActivity :
   }
 
   private fun setupSystemUI() {
+    if (viewModel.isAudioMode.value) {
+      window.statusBarColor = android.graphics.Color.TRANSPARENT
+      window.navigationBarColor = android.graphics.Color.TRANSPARENT
+      try {
+        windowInsetsController.apply {
+          show(WindowInsetsCompat.Type.statusBars())
+          show(WindowInsetsCompat.Type.navigationBars())
+        }
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to setup audio mode system UI insets", e)
+      }
+      return
+    }
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       window.attributes.layoutInDisplayCutoutMode =
         WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
@@ -1363,7 +1397,7 @@ class PlayerActivity :
     when (intent.action) {
       Intent.ACTION_VIEW -> intent.data?.resolveUri(this)
       Intent.ACTION_SEND -> parsePathFromSendIntent(intent)
-      else -> intent.getStringExtra("uri")
+      else -> intent.getStringExtra("uri") ?: intent.data?.resolveUri(this)
     }
 
   /**
@@ -1661,8 +1695,8 @@ class PlayerActivity :
           playlistIndex < playlist.size - 1
         }
 
-        // Check if autoplay next video is enabled
-        val autoplayEnabled = playerPreferences.autoplayNextVideo.get()
+        // Check if autoplay next video is enabled (always auto-advance in audio mode)
+        val autoplayEnabled = viewModel.isAudioMode.value || playerPreferences.autoplayNextVideo.get()
 
         if (hasNextItem && (autoplayEnabled || viewModel.shouldRepeatPlaylist())) {
           // Play next item in playlist
@@ -2621,6 +2655,29 @@ class PlayerActivity :
     }
     mediaIdentifier = getMediaIdentifier(intent, fileName)
 
+    val isAudioMode = intent.getBooleanExtra("is_audio_mode", false) ||
+      FileTypeUtils.isAudioFileName(fileName) ||
+      (intent.data?.let { FileTypeUtils.isAudioFileName(it.lastPathSegment ?: "") } == true)
+    if (isAudioMode) {
+      val mediaArtist = intent.getStringExtra("media_artist") ?: ""
+      val albumTitle = intent.getStringExtra("album_title") ?: ""
+      val albumArtUriString = intent.getStringExtra("album_art_uri")
+      val albumArtUri = albumArtUriString?.let { runCatching { Uri.parse(it) }.getOrNull() }
+      val audioTitle = intent.getStringExtra("title") ?: intent.getStringExtra("media_title") ?: fileName
+      viewModel.setAudioMode(true, audioTitle, mediaArtist, albumTitle, albumArtUri)
+      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      window.statusBarColor = android.graphics.Color.TRANSPARENT
+      window.navigationBarColor = android.graphics.Color.TRANSPARENT
+      try {
+        windowInsetsController.apply {
+          show(WindowInsetsCompat.Type.statusBars())
+          show(WindowInsetsCompat.Type.navigationBars())
+        }
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to show system bars in onNewIntent", e)
+      }
+    }
+
     // Set HTTP headers (including referer) BEFORE loading the new file
     setHttpHeadersFromExtras(intent.extras)
 
@@ -2718,6 +2775,11 @@ class PlayerActivity :
    * to the correct orientation, starting with landscape as fallback.
    */
   private fun setOrientation() {
+    if (viewModel.isAudioMode.value) {
+      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      return
+    }
+
     val orientationPref = playerPreferences.orientation.get()
 
     requestedOrientation =
@@ -3039,6 +3101,10 @@ class PlayerActivity :
       runCatching { MPVLib.getPropertyString("metadata/artist") }.getOrNull() ?: ""
     }
     val albumArtUri = viewModel.audioArtUri.value
+    val album = viewModel.audioAlbum.value
+    val albumKey = if (album.isNotBlank() || artist.isNotBlank()) {
+      LocalAlbum.createId(album, artist)
+    } else ""
     val albumArtBitmap = if (albumArtUri != null) {
       runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -3047,6 +3113,8 @@ class PlayerActivity :
           contentResolver.openInputStream(albumArtUri)?.use { android.graphics.BitmapFactory.decodeStream(it) }
         }
       }.getOrNull()
+    } else if (albumKey.isNotBlank()) {
+      audioArtworkStore.getFromMemory(albumKey, 512)
     } else null
     val thumbnail = albumArtBitmap ?: runCatching { MPVLib.grabThumbnail(1080) }.getOrNull()
 
@@ -3058,6 +3126,22 @@ class PlayerActivity :
 
     // Store thumbnail in companion object for service to access
     MediaPlaybackService.thumbnail = thumbnail
+
+    if (viewModel.isAudioMode.value && (album.isNotBlank() || artist.isNotBlank())) {
+      lifecycleScope.launch(Dispatchers.IO) {
+        val loaded = audioArtworkStore.loadArtwork(album, artist, albumArtUri = albumArtUri, maxDimension = 512)
+        if (loaded != null) {
+          MediaPlaybackService.thumbnail = loaded
+          if (serviceBound && mediaPlaybackService != null) {
+            mediaPlaybackService?.setMediaInfo(
+              title = fileName,
+              artist = artist,
+              thumbnail = loaded,
+            )
+          }
+        }
+      }
+    }
 
     try {
       startForegroundService(intent)
@@ -3333,11 +3417,34 @@ class PlayerActivity :
         album = viewModel.audioAlbum.value,
         artUri = viewModel.audioArtUri.value,
       )
+      val curAlbum = viewModel.audioAlbum.value
+      val curArtist = viewModel.audioArtist.value
+      val curKey = if (curAlbum.isNotBlank() || curArtist.isNotBlank()) LocalAlbum.createId(curAlbum, curArtist) else ""
+      if (curKey.isNotBlank()) {
+        audioArtworkStore.getFromMemory(curKey, 512)?.let {
+          MediaPlaybackService.thumbnail = it
+        }
+      }
       mediaPlaybackService?.setMediaInfo(
         title = fileName,
-        artist = viewModel.audioArtist.value,
+        artist = curArtist,
         thumbnail = MediaPlaybackService.thumbnail,
       )
+      if (curKey.isNotBlank()) {
+        lifecycleScope.launch(Dispatchers.IO) {
+          val loaded = audioArtworkStore.loadArtwork(curAlbum, curArtist, albumArtUri = viewModel.audioArtUri.value, maxDimension = 512)
+          if (loaded != null) {
+            MediaPlaybackService.thumbnail = loaded
+            if (serviceBound && mediaPlaybackService != null) {
+              mediaPlaybackService?.setMediaInfo(
+                title = fileName,
+                artist = curArtist,
+                thumbnail = loaded,
+              )
+            }
+          }
+        }
+      }
     }
 
     // Set HTTP headers (including referer) for network streams
