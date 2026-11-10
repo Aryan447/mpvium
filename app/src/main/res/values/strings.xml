@@ -772,4 +772,25 @@
   <string name="player_play">Play</string>
   <string name="player_pause">Pause</string>
   <string name="player_repeat">Repeat</string>
+  <string name="home_section_continue_listening">Continue Listening</string>
+  <string name="continue_listening_remove">Remove from Continue Listening</string>
+  <string name="audio_filter_audiobooks">Audiobooks</string>
+  <string name="audio_filter_discourses">Discourses</string>
+  <string name="audiobooks_empty_title">No audiobooks found</string>
+  <string name="audiobooks_empty_message">Place audiobook files or folders in your device storage to browse and listen to them here</string>
+  <string name="discourses_empty_title">No discourses or talks found</string>
+  <string name="discourses_empty_message">Place lecture series or talks in your device storage to browse them by speaker and collection</string>
+  <string name="audiobook_chapters_count">%1$d chapters</string>
+  <string name="audiobook_chapters_header">Chapters</string>
+  <string name="audiobook_resume_part">Resume Part %1$d</string>
+  <string name="audiobook_speed_dialog_title">Playback Speed</string>
+  <string name="audiobook_speed_dialog_summary">Remembered for this audiobook</string>
+  <string name="audiobook_not_found">Audiobook not found</string>
+  <string name="discourse_parts_count">%1$d parts</string>
+  <string name="discourse_lectures_header">Lectures &amp; Talks</string>
+  <string name="discourse_resume_part">Resume Part %1$d</string>
+  <string name="discourse_not_found">Discourse collection not found</string>
+  <string name="discourse_chapters_subtitle">%1$d chapters in this part</string>
+  <string name="chapters_per_part_action">View chapters</string>
+  <string name="no_chapters_found">No embedded chapters found for this part</string>
 </resources>

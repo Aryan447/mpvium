@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.di
 
 import app.aryan447.mpvium.domain.anime4k.Anime4KManager
+import app.aryan447.mpvium.domain.audio.AudioCollectionsRepository
 import app.aryan447.mpvium.domain.audio.AudioRepository
 import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.SeriesDetector
@@ -35,4 +36,5 @@ val domainModule = module {
     single { StreamingMetadataRepository(androidContext(), get(), get(), get(), get()) }
     single { SubtitleProfileRepository(androidContext(), get(), get()) }
     single { AudioRepository(androidContext()) }
+    single { AudioCollectionsRepository(androidContext(), get(), get(), get()) }
 }

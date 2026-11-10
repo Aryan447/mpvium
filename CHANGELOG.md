@@ -2,6 +2,10 @@
 
 ### Added
 
+- Audio collections: support for audiobooks and discourses/talks with grouping on top of audio, natural chapter ordering, and dedicated browsing filters in the Audio tab.
+- Audiobooks: folder and album grouping with natural chapter ordering, per-book resume continuing from the saved part, and remembered playback speed per book.
+- Discourses and lecture series: speaker and collection grouping with resume across parts and embedded/CUE chapter list per part.
+- Continue Listening on Home: new home feed section (`HomeSection.CONTINUE_LISTENING`) showing active audiobooks and lecture series with resume across parts, orderable and toggleable under Settings → Appearance → Home sections.
 - Modern player brightness gesture: vertical brightness slider slides down vertically under the top-right brightness button during on-screen brightness swipe gestures, keeping the Modern player interface visible and displaying real-time level and percentage feedback without screen collision.
 - Modern player seekbar styles: added support for Standard, Wavy, and Thick seekbar styles in Modern player layout, with Standard configured as the default and configurable via Settings → Appearance → Controls.
 - Modern player layout option (Settings → Appearance → Player Layout): modeled after Apple TV's native player interface. Features a top-left floating glass pill with close (✕) and PiP buttons; expandable top-right Volume & Brightness controls with live scrub percentage readout and round toggle button; center floating circular glass transport controls (10s skip and hero play/pause); bottom-left two-line show title (episode name on top, series name with chevron below for TV shows, or single clean movie title for movies); customizable bottom-right actions pill (Subtitles, Audio Track, Explain, and Menu); theme-colored seekbar with elapsed/remaining timers, chapter dividers gated by settings, and system gesture navigation clearance; and tactile haptic feedback across all controls.

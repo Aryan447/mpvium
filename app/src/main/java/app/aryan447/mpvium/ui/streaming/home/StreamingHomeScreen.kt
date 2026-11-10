@@ -108,6 +108,8 @@ import app.aryan447.mpvium.ui.browser.dialogs.MarkAsDialog
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
+import app.aryan447.mpvium.ui.audio.AudioPlayerLauncher
+import app.aryan447.mpvium.ui.streaming.components.ContinueListeningRow
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
@@ -148,6 +150,7 @@ object StreamingHomeScreen : Screen {
     val showFeaturedHero by appearancePreferences.showFeaturedHero.collectAsState()
     val homeSectionOrder by appearancePreferences.homeSectionOrder.collectAsState()
     val showContinueWatching by appearancePreferences.showContinueWatching.collectAsState()
+    val showContinueListening by appearancePreferences.showContinueListening.collectAsState()
     val showUpNext by appearancePreferences.showUpNext.collectAsState()
     val showRecentlyAdded by appearancePreferences.showRecentlyAdded.collectAsState()
     val showShowsSection by appearancePreferences.showShowsSection.collectAsState()
@@ -462,6 +465,30 @@ object StreamingHomeScreen : Screen {
                           onSeeAllClick = { backstack.add(RecentlyPlayedScreen) },
                           onItemRemove = { item -> viewModel.removeFromContinueWatching(item) },
                           onMarkAsClick = { item -> markAsTarget = item },
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                      }
+                    }
+                  }
+
+                  HomeSection.CONTINUE_LISTENING -> {
+                    // Continue Listening Row (Audiobooks & Discourses)
+                    if (showContinueListening && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.CONTINUE_WATCHING)
+                      && state.continueListening.isNotEmpty()
+                    ) {
+                      item(key = "home_continue_listening") {
+                        ContinueListeningRow(
+                          items = state.continueListening,
+                          onItemClick = { item ->
+                            AudioPlayerLauncher.playTrack(
+                              context = context,
+                              track = item.targetTrack,
+                              queue = item.queue,
+                            )
+                          },
+                          onItemRemove = { item ->
+                            viewModel.removeFromContinueListening(item)
+                          },
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                       }
