@@ -442,7 +442,8 @@ class PlayerActivity :
     val albumTitle = intent.getStringExtra("album_title") ?: ""
     val albumArtUriString = intent.getStringExtra("album_art_uri")
     val albumArtUri = albumArtUriString?.let { runCatching { Uri.parse(it) }.getOrNull() }
-    viewModel.setAudioMode(isAudioMode, fileName, mediaArtist, albumTitle, albumArtUri)
+    val audioTitle = intent.getStringExtra("title") ?: intent.getStringExtra("media_title") ?: fileName
+    viewModel.setAudioMode(isAudioMode, audioTitle, mediaArtist, albumTitle, albumArtUri)
 
     // Set HTTP headers (including referer) BEFORE playing the file
     setHttpHeadersFromExtras(intent.extras)
@@ -464,7 +465,19 @@ class PlayerActivity :
 
     // Only set orientation immediately if NOT in Video mode
     // For Video mode, wait for video-params/aspect to become available
-    if (playerPreferences.orientation.get() != PlayerOrientation.Video) {
+    if (isAudioMode) {
+      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      window.statusBarColor = android.graphics.Color.TRANSPARENT
+      window.navigationBarColor = android.graphics.Color.TRANSPARENT
+      try {
+        windowInsetsController.apply {
+          show(WindowInsetsCompat.Type.statusBars())
+          show(WindowInsetsCompat.Type.navigationBars())
+        }
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to show system bars for audio mode", e)
+      }
+    } else if (playerPreferences.orientation.get() != PlayerOrientation.Video) {
       setOrientation()
     }
 
@@ -875,6 +888,20 @@ class PlayerActivity :
   }
 
   private fun setupSystemUI() {
+    if (viewModel.isAudioMode.value) {
+      window.statusBarColor = android.graphics.Color.TRANSPARENT
+      window.navigationBarColor = android.graphics.Color.TRANSPARENT
+      try {
+        windowInsetsController.apply {
+          show(WindowInsetsCompat.Type.statusBars())
+          show(WindowInsetsCompat.Type.navigationBars())
+        }
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to setup audio mode system UI insets", e)
+      }
+      return
+    }
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       window.attributes.layoutInDisplayCutoutMode =
         WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
@@ -1363,7 +1390,7 @@ class PlayerActivity :
     when (intent.action) {
       Intent.ACTION_VIEW -> intent.data?.resolveUri(this)
       Intent.ACTION_SEND -> parsePathFromSendIntent(intent)
-      else -> intent.getStringExtra("uri")
+      else -> intent.getStringExtra("uri") ?: intent.data?.resolveUri(this)
     }
 
   /**
@@ -1661,8 +1688,8 @@ class PlayerActivity :
           playlistIndex < playlist.size - 1
         }
 
-        // Check if autoplay next video is enabled
-        val autoplayEnabled = playerPreferences.autoplayNextVideo.get()
+        // Check if autoplay next video is enabled (always auto-advance in audio mode)
+        val autoplayEnabled = viewModel.isAudioMode.value || playerPreferences.autoplayNextVideo.get()
 
         if (hasNextItem && (autoplayEnabled || viewModel.shouldRepeatPlaylist())) {
           // Play next item in playlist
@@ -2621,6 +2648,29 @@ class PlayerActivity :
     }
     mediaIdentifier = getMediaIdentifier(intent, fileName)
 
+    val isAudioMode = intent.getBooleanExtra("is_audio_mode", false) ||
+      FileTypeUtils.isAudioFileName(fileName) ||
+      (intent.data?.let { FileTypeUtils.isAudioFileName(it.lastPathSegment ?: "") } == true)
+    if (isAudioMode) {
+      val mediaArtist = intent.getStringExtra("media_artist") ?: ""
+      val albumTitle = intent.getStringExtra("album_title") ?: ""
+      val albumArtUriString = intent.getStringExtra("album_art_uri")
+      val albumArtUri = albumArtUriString?.let { runCatching { Uri.parse(it) }.getOrNull() }
+      val audioTitle = intent.getStringExtra("title") ?: intent.getStringExtra("media_title") ?: fileName
+      viewModel.setAudioMode(true, audioTitle, mediaArtist, albumTitle, albumArtUri)
+      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      window.statusBarColor = android.graphics.Color.TRANSPARENT
+      window.navigationBarColor = android.graphics.Color.TRANSPARENT
+      try {
+        windowInsetsController.apply {
+          show(WindowInsetsCompat.Type.statusBars())
+          show(WindowInsetsCompat.Type.navigationBars())
+        }
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to show system bars in onNewIntent", e)
+      }
+    }
+
     // Set HTTP headers (including referer) BEFORE loading the new file
     setHttpHeadersFromExtras(intent.extras)
 
@@ -2718,6 +2768,11 @@ class PlayerActivity :
    * to the correct orientation, starting with landscape as fallback.
    */
   private fun setOrientation() {
+    if (viewModel.isAudioMode.value) {
+      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      return
+    }
+
     val orientationPref = playerPreferences.orientation.get()
 
     requestedOrientation =
