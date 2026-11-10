@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.GlassKind
+import app.aryan447.mpvium.ui.theme.GlassStyle
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
@@ -39,7 +40,6 @@ import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import androidx.compose.foundation.isSystemInDarkTheme
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
 
 /**
  * Material 3 Floating Button Bar for file/folder operations
@@ -68,7 +68,7 @@ fun BrowserBottomBar(
   onAddToSeriesClick: (() -> Unit)? = null,
   showAddToSeries: Boolean = true,
   hazeState: HazeState? = null,
-  hazeStyle: HazeStyle? = null,
+  hazeStyle: GlassStyle? = null,
 ) {
   AnimatedVisibility(
     visible = isSelectionMode,

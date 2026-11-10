@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -18,15 +19,13 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 
 /**
  * Clear Liquid Glass core kit (iOS-inspired).
  *
  * Provides true optical clarity:
- * - Live optical backdrop blur via Haze 1.5.3 (hazeEffect + hazeSource)
+ * - Clear (unblurred) backdrop sampling; [HazeState] is kept for layout
+ *   compatibility and future Haze effects
  * - Directional specular rim gradient (bright overhead light catch on top edge, subtle shadow below)
  * - Refractive top-lip specular glint (internal reflection inside curved glass thickness)
  * - Crystal dark-tinted glass in dark theme (never chalky or milky white) and luminous clarity in light theme
@@ -78,6 +77,16 @@ val LocalGlass = compositionLocalOf { false }
 
 val GlassHazeBlurRadius: Dp = GlassTokens.blurRadius
 
+/**
+ * Immutable appearance of a glass surface.
+ *
+ * Clear Liquid Glass is fill-only (no backdrop blur), so this carries just the
+ * container colour. Haze 2 removed the readable `HazeStyle` that this code
+ * previously borrowed for the same purpose.
+ */
+@Immutable
+data class GlassStyle(val backgroundColor: Color)
+
 /** State holder for glass layout compatibility. */
 @Composable
 fun rememberGlassHazeState(): HazeState = remember { HazeState() }
@@ -97,14 +106,7 @@ fun Modifier.glassBackdrop(
 fun glassHazeStyle(
   isDark: Boolean,
   kind: GlassKind = GlassKind.Bar,
-): HazeStyle {
-  val base = glassFrostColor(isDark = isDark, kind = kind)
-  return HazeStyle(
-    backgroundColor = base,
-    tint = null,
-    blurRadius = 0.dp,
-  )
-}
+): GlassStyle = GlassStyle(backgroundColor = glassFrostColor(isDark = isDark, kind = kind))
 
 /**
  * Clear-glass chrome modifier: crystal optical transparency +
@@ -112,7 +114,7 @@ fun glassHazeStyle(
  */
 fun Modifier.glassChrome(
   state: HazeState,
-  style: HazeStyle,
+  style: GlassStyle,
   shape: RoundedCornerShape = GlassTokens.pillShape,
   enabled: Boolean,
   rim: Boolean = false,
