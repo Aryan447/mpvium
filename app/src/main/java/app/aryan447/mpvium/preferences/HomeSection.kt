@@ -10,6 +10,7 @@ enum class HomeSection(
 ) {
   FEATURED("FEATURED", "Featured banner"),
   CONTINUE_WATCHING("CONTINUE_WATCHING", "Continue Watching"),
+  CONTINUE_LISTENING("CONTINUE_LISTENING", "Continue Listening"),
   UP_NEXT("UP_NEXT", "Up Next"),
   RECENTLY_ADDED("RECENTLY_ADDED", "Recently Added"),
   SHOWS("SHOWS", "Shows"),

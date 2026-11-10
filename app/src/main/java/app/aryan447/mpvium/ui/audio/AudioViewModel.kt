@@ -5,8 +5,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import app.aryan447.mpvium.domain.audio.AudioCollectionsRepository
 import app.aryan447.mpvium.domain.audio.AudioLibraryData
 import app.aryan447.mpvium.domain.audio.AudioRepository
+import app.aryan447.mpvium.domain.audio.model.LocalAudiobook
+import app.aryan447.mpvium.domain.audio.model.LocalDiscourse
 import app.aryan447.mpvium.domain.media.model.LocalAlbum
 import app.aryan447.mpvium.domain.media.model.LocalAudioArtist
 import app.aryan447.mpvium.domain.media.model.LocalAudioTrack
@@ -24,6 +27,8 @@ import java.util.Locale
 
 enum class AudioTabFilter {
   ALBUMS,
+  AUDIOBOOKS,
+  DISCOURSES,
   TRACKS,
   ARTISTS,
   ;
@@ -34,6 +39,7 @@ class AudioViewModel(
 ) : AndroidViewModel(application), KoinComponent {
 
   private val audioRepository: AudioRepository by inject()
+  private val audioCollectionsRepository: AudioCollectionsRepository by inject()
 
   private val _filter = MutableStateFlow(AudioTabFilter.ALBUMS)
   val filter: StateFlow<AudioTabFilter> = _filter.asStateFlow()
@@ -88,6 +94,36 @@ class AudioViewModel(
     } else {
       data.artists.filter {
         it.name.lowercase(Locale.getDefault()).contains(clean)
+      }
+    }
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+  val filteredAudiobooks: StateFlow<List<LocalAudiobook>> = combine(
+    audioCollectionsRepository.audiobooks,
+    _searchQuery,
+  ) { books, query ->
+    val clean = query.trim().lowercase(Locale.getDefault())
+    if (clean.isBlank()) {
+      books
+    } else {
+      books.filter {
+        it.title.lowercase(Locale.getDefault()).contains(clean) ||
+          it.author.lowercase(Locale.getDefault()).contains(clean)
+      }
+    }
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+  val filteredDiscourses: StateFlow<List<LocalDiscourse>> = combine(
+    audioCollectionsRepository.discourses,
+    _searchQuery,
+  ) { discourses, query ->
+    val clean = query.trim().lowercase(Locale.getDefault())
+    if (clean.isBlank()) {
+      discourses
+    } else {
+      discourses.filter {
+        it.collection.lowercase(Locale.getDefault()).contains(clean) ||
+          it.speaker.lowercase(Locale.getDefault()).contains(clean)
       }
     }
   }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

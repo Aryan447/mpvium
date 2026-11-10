@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Cloud
@@ -535,6 +536,7 @@ object AppearancePreferencesScreen : Screen {
                             val order = remember(orderRaw) { HomeSection.parseOrder(orderRaw) }
                             val showFeaturedHero by preferences.showFeaturedHero.collectAsState()
                             val showContinueWatching by preferences.showContinueWatching.collectAsState()
+                            val showContinueListening by preferences.showContinueListening.collectAsState()
                             val showUpNext by preferences.showUpNext.collectAsState()
                             val showRecentlyAdded by preferences.showRecentlyAdded.collectAsState()
                             val showShowsSection by preferences.showShowsSection.collectAsState()
@@ -543,6 +545,7 @@ object AppearancePreferencesScreen : Screen {
                             fun isVisible(section: HomeSection): Boolean = when (section) {
                                 HomeSection.FEATURED -> showFeaturedHero
                                 HomeSection.CONTINUE_WATCHING -> showContinueWatching
+                                HomeSection.CONTINUE_LISTENING -> showContinueListening
                                 HomeSection.UP_NEXT -> showUpNext
                                 HomeSection.RECENTLY_ADDED -> showRecentlyAdded
                                 HomeSection.SHOWS -> showShowsSection
@@ -596,6 +599,7 @@ private fun homeSectionIcon(section: HomeSection): ImageVector =
     when (section) {
         HomeSection.FEATURED -> Icons.Outlined.Movie
         HomeSection.CONTINUE_WATCHING -> Icons.Outlined.History
+        HomeSection.CONTINUE_LISTENING -> Icons.Outlined.Audiotrack
         HomeSection.UP_NEXT -> Icons.Outlined.SkipNext
         HomeSection.RECENTLY_ADDED -> Icons.Outlined.NewReleases
         HomeSection.SHOWS -> Icons.Outlined.Tv

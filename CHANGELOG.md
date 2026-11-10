@@ -2,6 +2,10 @@
 
 ### Added
 
+- Audio collections: support for audiobooks and discourses/talks with grouping on top of audio, natural chapter ordering, and dedicated browsing filters in the Audio tab.
+- Audiobooks: folder and album grouping with natural chapter ordering, per-book resume continuing from the saved part, and remembered playback speed per book.
+- Discourses and lecture series: speaker and collection grouping with resume across parts and embedded/CUE chapter list per part.
+- Continue Listening on Home: new home feed section (`HomeSection.CONTINUE_LISTENING`) showing active audiobooks and lecture series with resume across parts, orderable and toggleable under Settings → Appearance → Home sections.
 - Audio album covers: automatic resolution of real album covers with embedded art extraction via `MediaMetadataRetriever` first, falling back to keyless network lookup via MusicBrainz and Cover Art Archive with rate limiting (1 req/sec) and proper User-Agent headers.
 - Offline audio artwork cache: durable on-disk cache following `StreamingArtworkStore`'s pattern keyed by `album+artist` that is never evicted while albums remain in the library and prunes automatically when albums are deleted.
 - Generated album placeholder: graceful fallback tile with album initials on dynamic Material 3 tonal surfaces when embedded and online artwork are unavailable, preventing broken-image placeholders.

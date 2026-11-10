@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import app.aryan447.mpvium.domain.audio.AudioCollectionsRepository
+import app.aryan447.mpvium.domain.audio.model.ContinueListeningItem
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.domain.streaming.ContinueWatchingDismissals
 import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
@@ -31,6 +33,7 @@ data class StreamingHomeUiState(
   val isLoading: Boolean = true,
   val heroSeries: LocalSeries? = null,
   val continueWatching: List<ContinueWatchingItem> = emptyList(),
+  val continueListening: List<ContinueListeningItem> = emptyList(),
   val series: List<LocalSeries> = emptyList(),
   val movies: List<LocalMovie> = emptyList(),
   val folders: List<VideoFolder> = emptyList(),
@@ -48,6 +51,7 @@ class StreamingHomeViewModel(
   private val metadataRepository: StreamingMetadataRepository by inject(StreamingMetadataRepository::class.java)
   private val introSkipRepository: IntroSkipRepository by inject(IntroSkipRepository::class.java)
   private val subtitleProfileRepository: SubtitleProfileRepository by inject(SubtitleProfileRepository::class.java)
+  private val audioCollectionsRepository: AudioCollectionsRepository by inject(AudioCollectionsRepository::class.java)
 
   private val _uiState = MutableStateFlow(StreamingHomeUiState())
   val uiState: StateFlow<StreamingHomeUiState> = _uiState.asStateFlow()
@@ -73,18 +77,32 @@ class StreamingHomeViewModel(
         }
       }
     }
+    // Observe Continue Listening items from audio collections
+    viewModelScope.launch {
+      audioCollectionsRepository.continueListening.collect { items ->
+        _uiState.update { it.copy(continueListening = items) }
+      }
+    }
     // The player notifies after its final position is persisted, which can
     // land after ON_RESUME. Reload then so remaining times reflect the
     // newly saved value instead of a stale pre-save read.
     viewModelScope.launch(Dispatchers.IO) {
       MediaLibraryEvents.changes.collectLatest {
         loadLibrary()
+        audioCollectionsRepository.refresh()
       }
     }
   }
 
   fun refresh() {
     loadLibrary()
+    viewModelScope.launch(Dispatchers.IO) {
+      audioCollectionsRepository.refresh()
+    }
+  }
+
+  fun removeFromContinueListening(item: ContinueListeningItem) {
+    audioCollectionsRepository.dismissContinueListening(item)
   }
 
   /**

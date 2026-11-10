@@ -58,6 +58,10 @@ import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.audio.components.AlbumCard
 import app.aryan447.mpvium.ui.audio.components.AlbumRow
 import app.aryan447.mpvium.ui.audio.components.ArtistRow
+import app.aryan447.mpvium.ui.audio.components.AudiobookCard
+import app.aryan447.mpvium.ui.audio.components.AudiobookRow
+import app.aryan447.mpvium.ui.audio.components.DiscourseCard
+import app.aryan447.mpvium.ui.audio.components.DiscourseRow
 import app.aryan447.mpvium.ui.audio.components.TrackRow
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
 import app.aryan447.mpvium.ui.browser.components.MediaLayoutToggle
@@ -89,6 +93,8 @@ object AudioScreen : Screen {
     val isSearching by vm.isSearching.collectAsState()
     val isLoading by vm.isLoading.collectAsState()
     val albums by vm.filteredAlbums.collectAsState()
+    val audiobooks by vm.filteredAudiobooks.collectAsState()
+    val discourses by vm.filteredDiscourses.collectAsState()
     val tracks by vm.filteredTracks.collectAsState()
     val artists by vm.filteredArtists.collectAsState()
     val libraryData by vm.libraryData.collectAsState()
@@ -159,7 +165,7 @@ object AudioScreen : Screen {
                 )
               }
 
-              if (filter == AudioTabFilter.ALBUMS) {
+              if (filter == AudioTabFilter.ALBUMS || filter == AudioTabFilter.AUDIOBOOKS || filter == AudioTabFilter.DISCOURSES) {
                 MediaLayoutToggle(
                   mode = layoutAudio,
                   onToggle = {
@@ -195,6 +201,8 @@ object AudioScreen : Screen {
               .padding(horizontal = 16.dp, vertical = 8.dp),
           ) {
             val albumsLabel = stringResource(R.string.audio_filter_albums)
+            val audiobooksLabel = stringResource(R.string.audio_filter_audiobooks)
+            val discoursesLabel = stringResource(R.string.audio_filter_discourses)
             val tracksLabel = stringResource(R.string.audio_filter_tracks)
             val artistsLabel = stringResource(R.string.audio_filter_artists)
 
@@ -205,6 +213,8 @@ object AudioScreen : Screen {
               labelOf = {
                 when (it) {
                   AudioTabFilter.ALBUMS -> albumsLabel
+                  AudioTabFilter.AUDIOBOOKS -> audiobooksLabel
+                  AudioTabFilter.DISCOURSES -> discoursesLabel
                   AudioTabFilter.TRACKS -> tracksLabel
                   AudioTabFilter.ARTISTS -> artistsLabel
                 }
@@ -263,6 +273,106 @@ object AudioScreen : Screen {
                         album = album,
                         onClick = {
                           backstack.add(AlbumDetailScreen(album.id, album.title))
+                        },
+                      )
+                    }
+                  }
+                }
+              }
+
+              AudioTabFilter.AUDIOBOOKS -> {
+                if (audiobooks.isEmpty()) {
+                  EmptyState(
+                    icon = if (searchQuery.isNotEmpty()) Icons.Filled.Search else Icons.Filled.Audiotrack,
+                    title = if (searchQuery.isNotEmpty()) {
+                      stringResource(R.string.audio_empty_search_title)
+                    } else {
+                      stringResource(R.string.audiobooks_empty_title)
+                    },
+                    message = if (searchQuery.isNotEmpty()) {
+                      stringResource(R.string.audio_empty_search_message, searchQuery)
+                    } else {
+                      stringResource(R.string.audiobooks_empty_message)
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                  )
+                } else if (layoutAudio == MediaLayoutMode.GRID) {
+                  LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 140.dp),
+                    contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = bottomPadding),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                  ) {
+                    items(audiobooks, key = { it.id }) { book ->
+                      AudiobookCard(
+                        audiobook = book,
+                        onClick = {
+                          backstack.add(AudiobookDetailScreen(book.id, book.title))
+                        },
+                      )
+                    }
+                  }
+                } else {
+                  LazyColumn(
+                    contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = bottomPadding),
+                    modifier = Modifier.fillMaxSize(),
+                  ) {
+                    items(audiobooks, key = { it.id }) { book ->
+                      AudiobookRow(
+                        audiobook = book,
+                        onClick = {
+                          backstack.add(AudiobookDetailScreen(book.id, book.title))
+                        },
+                      )
+                    }
+                  }
+                }
+              }
+
+              AudioTabFilter.DISCOURSES -> {
+                if (discourses.isEmpty()) {
+                  EmptyState(
+                    icon = if (searchQuery.isNotEmpty()) Icons.Filled.Search else Icons.Filled.Audiotrack,
+                    title = if (searchQuery.isNotEmpty()) {
+                      stringResource(R.string.audio_empty_search_title)
+                    } else {
+                      stringResource(R.string.discourses_empty_title)
+                    },
+                    message = if (searchQuery.isNotEmpty()) {
+                      stringResource(R.string.audio_empty_search_message, searchQuery)
+                    } else {
+                      stringResource(R.string.discourses_empty_message)
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                  )
+                } else if (layoutAudio == MediaLayoutMode.GRID) {
+                  LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 140.dp),
+                    contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = bottomPadding),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                  ) {
+                    items(discourses, key = { it.id }) { discourse ->
+                      DiscourseCard(
+                        discourse = discourse,
+                        onClick = {
+                          backstack.add(DiscourseDetailScreen(discourse.id, discourse.collection))
+                        },
+                      )
+                    }
+                  }
+                } else {
+                  LazyColumn(
+                    contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = bottomPadding),
+                    modifier = Modifier.fillMaxSize(),
+                  ) {
+                    items(discourses, key = { it.id }) { discourse ->
+                      DiscourseRow(
+                        discourse = discourse,
+                        onClick = {
+                          backstack.add(DiscourseDetailScreen(discourse.id, discourse.collection))
                         },
                       )
                     }
