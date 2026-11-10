@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.DarkMode
@@ -56,6 +58,7 @@ import app.aryan447.mpvium.preferences.GesturePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
+import app.aryan447.mpvium.ui.browser.MainTab
 import app.aryan447.mpvium.ui.preferences.components.ThemePicker
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
@@ -81,12 +84,59 @@ object AppearancePreferencesScreen : Screen {
         val appTheme by preferences.appTheme.collectAsState()
         val haptic = LocalHapticFeedback.current
 
+        val unifiedTitlesTab by preferences.unifiedTitlesTab.collectAsState()
+        val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
+        val tabsToShow = remember(unifiedTitlesTab) {
+            if (unifiedTitlesTab) {
+                listOf(
+                    MainTab.HOME,
+                    MainTab.TITLES,
+                    MainTab.FOLDERS,
+                    MainTab.LIBRARY,
+                    MainTab.PLAYLISTS,
+                    MainTab.AUDIO,
+                )
+            } else {
+                listOf(
+                    MainTab.HOME,
+                    MainTab.SHOWS,
+                    MainTab.MOVIES,
+                    MainTab.FOLDERS,
+                    MainTab.LIBRARY,
+                    MainTab.PLAYLISTS,
+                    MainTab.AUDIO,
+                )
+            }
+        }
+
         // Determine if we're in dark mode for theme preview
         val isDarkMode = when (darkMode) {
             DarkMode.Dark -> true
             DarkMode.Light -> false
             DarkMode.System -> systemDarkTheme
         }
+
+        val listState = rememberLazyListState()
+        val highlightState = rememberSettingsHighlightState(
+            screen = AppearancePreferencesScreen,
+            listState = listState,
+            keyToIndex = mapOf(
+                "appearance.theme" to 1,
+                "appearance.amoled" to 1,
+                "appearance.pill_nav" to 1,
+                "appearance.bottom_nav_labels" to 1,
+                "appearance.bottom_nav_tabs" to 3,
+                "appearance.unified_titles_tab" to 3,
+                "appearance.unlimited_name_lines" to 5,
+                "appearance.show_unplayed_old_video_label" to 5,
+                "appearance.unplayed_old_video_days" to 5,
+                "appearance.auto_scroll" to 5,
+                "appearance.tap_thumbnail_to_select" to 5,
+                "appearance.show_network_thumbnails" to 5,
+                "appearance.show_featured_hero" to 7,
+                "appearance.home_sections" to 7,
+            ),
+        )
 
         Scaffold(
             topBar = {
@@ -95,6 +145,7 @@ object AppearancePreferencesScreen : Screen {
         ) { padding ->
             ProvidePreferenceLocals {
                 LazyColumn(
+                    state = listState,
                     modifier =
                     Modifier
                         .fillMaxSize()
@@ -109,7 +160,11 @@ object AppearancePreferencesScreen : Screen {
 
                     item {
                         PreferenceCard {
-                            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(vertical = 8.dp)
+                                    .settingsHighlightTarget(highlightState, "appearance.theme"),
+                            ) {
                                 // Dark mode selector
                                 ExpressiveChoiceRow(
                                     options = DarkMode.entries,
@@ -156,6 +211,7 @@ object AppearancePreferencesScreen : Screen {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.amoled"),
                                 enabled = darkMode != DarkMode.Light && appTheme != AppTheme.Glass
                             )
 
@@ -176,6 +232,7 @@ object AppearancePreferencesScreen : Screen {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.pill_nav"),
                             )
 
                             PreferenceDivider()
@@ -195,6 +252,36 @@ object AppearancePreferencesScreen : Screen {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.bottom_nav_labels"),
+                            )
+                        }
+                    }
+
+                    item {
+                        PreferenceSectionHeader(
+                            title = stringResource(id = R.string.pref_appearance_category_seekbar),
+                            count = 1,
+                        )
+                    }
+
+                    item {
+                        PreferenceCard {
+                            val chaptersInSeekbar by preferences.chaptersInSeekbar.collectAsState()
+                            HapticSwitchPreference(
+                                value = chaptersInSeekbar,
+                                onValueChange = { preferences.chaptersInSeekbar.set(it) },
+                                icon = { PreferenceRowIcon(icon = Icons.Outlined.Bookmarks) },
+                                title = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_chapters_in_seekbar_title),
+                                    )
+                                },
+                                summary = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_chapters_in_seekbar_summary),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
                             )
                         }
                     }
@@ -202,20 +289,44 @@ object AppearancePreferencesScreen : Screen {
                     item {
                         PreferenceSectionHeader(
                             title = stringResource(id = R.string.pref_appearance_category_bottom_nav),
-                            count = app.aryan447.mpvium.ui.browser.MainTab.entries.size,
+                            count = tabsToShow.size + 1,
                         )
                     }
 
                     item {
-                        PreferenceCard {
-                            val bottomNavTabs by preferences.bottomNavTabs.collectAsState()
+                        PreferenceCard(
+                            modifier = Modifier.settingsHighlightTarget(
+                                state = highlightState,
+                                key = "appearance.bottom_nav_tabs",
+                                isCard = true,
+                            ),
+                        ) {
                             Text(
                                 text = stringResource(id = R.string.pref_appearance_bottom_nav_tabs_summary),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             )
-                            app.aryan447.mpvium.ui.browser.MainTab.entries.forEachIndexed { tabIndex, tab ->
+                            HapticSwitchPreference(
+                                value = unifiedTitlesTab,
+                                onValueChange = { enabled ->
+                                    preferences.unifiedTitlesTab.set(enabled)
+                                    val current = preferences.bottomNavTabs.get()
+                                    val updated = if (enabled) {
+                                        (current - "SHOWS" - "MOVIES") + "TITLES"
+                                    } else {
+                                        (current - "TITLES") + setOf("SHOWS", "MOVIES")
+                                    }
+                                    if (updated.isNotEmpty()) {
+                                        preferences.bottomNavTabs.set(updated)
+                                    }
+                                },
+                                icon = { PreferenceRowIcon(icon = Icons.Outlined.Movie) },
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_unified_titles_tab_title)) },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_unified_titles_tab_summary)) },
+                            )
+                            PreferenceDivider()
+                            tabsToShow.forEachIndexed { tabIndex, tab ->
                                 val isEnabled = tab.key in bottomNavTabs
                                 // Keep at least one tab: disable turning off the last one.
                                 val canToggle = isEnabled && bottomNavTabs.size > 1 || !isEnabled
@@ -233,7 +344,7 @@ object AppearancePreferencesScreen : Screen {
                                     title = { Text(text = tab.label) },
                                     enabled = canToggle,
                                 )
-                                if (tabIndex < app.aryan447.mpvium.ui.browser.MainTab.entries.size - 1) {
+                                if (tabIndex < tabsToShow.size - 1) {
                                     PreferenceDivider()
                                 }
                             }
@@ -264,7 +375,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.unlimited_name_lines"),
                             )
 
                             PreferenceDivider()
@@ -284,7 +396,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.show_unplayed_old_video_label"),
                             )
 
                             PreferenceDivider()
@@ -307,6 +420,7 @@ object AppearancePreferencesScreen : Screen {
                                 },
                                 onSliderValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
                                 sliderValue = unplayedOldVideoDays.toFloat(),
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.unplayed_old_video_days"),
                                 enabled = showUnplayedOldVideoLabel
                             )
 
@@ -325,7 +439,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(R.string.pref_appearance_auto_scroll_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.auto_scroll"),
                             )
 
                             PreferenceDivider()
@@ -368,7 +483,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.tap_thumbnail_to_select"),
                             )
 
                             PreferenceDivider()
@@ -388,7 +504,8 @@ object AppearancePreferencesScreen : Screen {
                                         text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_summary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                }
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.show_network_thumbnails"),
                             )
                         }
                     }
@@ -401,7 +518,13 @@ object AppearancePreferencesScreen : Screen {
                     }
 
                     item {
-                        PreferenceCard {
+                        PreferenceCard(
+                            modifier = Modifier.settingsHighlightTarget(
+                                state = highlightState,
+                                key = "appearance.home_sections",
+                                isCard = true,
+                            ),
+                        ) {
                             Text(
                                 text = stringResource(id = R.string.pref_appearance_home_sections_summary),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -442,6 +565,11 @@ object AppearancePreferencesScreen : Screen {
                                     onMoveDown = {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         preferences.moveHomeSection(section, 1)
+                                    },
+                                    modifier = if (section == HomeSection.FEATURED) {
+                                        Modifier.settingsHighlightTarget(highlightState, "appearance.show_featured_hero")
+                                    } else {
+                                        Modifier
                                     },
                                 )
                             }
@@ -485,10 +613,11 @@ private fun HomeSectionRow(
     canMoveDown: Boolean,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

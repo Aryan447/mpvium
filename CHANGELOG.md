@@ -1,9 +1,71 @@
 ## Unreleased
 
+### Added
+
+- Modern player brightness gesture: vertical brightness slider slides down vertically under the top-right brightness button during on-screen brightness swipe gestures, keeping the Modern player interface visible and displaying real-time level and percentage feedback without screen collision.
+- Modern player seekbar styles: added support for Standard, Wavy, and Thick seekbar styles in Modern player layout, with Standard configured as the default and configurable via Settings → Appearance → Controls.
+- Modern player layout option (Settings → Appearance → Player Layout): modeled after Apple TV's native player interface. Features a top-left floating glass pill with close (✕) and PiP buttons; expandable top-right Volume & Brightness controls with live scrub percentage readout and round toggle button; center floating circular glass transport controls (10s skip and hero play/pause); bottom-left two-line show title (episode name on top, series name with chevron below for TV shows, or single clean movie title for movies); customizable bottom-right actions pill (Subtitles, Audio Track, Explain, and Menu); theme-colored seekbar with elapsed/remaining timers, chapter dividers gated by settings, and system gesture navigation clearance; and tactile haptic feedback across all controls.
+- Custom series: create and edit your own TV shows from any videos with custom title, release year, poster cover, and drag-and-drop episode reordering with explicit season and episode numbering.
+- Custom series entry points: selection mode in Folders and Files tabs now features "Add to series…" next to "Add to playlist", and the Shows tab header includes a direct "Create series" action with helpful empty-state guidance.
+- Series detail screen integration: custom series render identically to auto-detected shows with deterministic identifiers (`custom:<id>`), with dedicated Edit and safe Delete actions that remove only the series grouping without touching underlying video files.
+- Library exclusion overlay: videos claimed by a custom series are automatically excluded from automatic scanner grouping to eliminate duplicate entries in TV shows and movies.
+- Audio library tab (`MainTab.AUDIO` at canonical index 6): dedicated library for local audio with MediaStore scanning across albums, artists, and tracks, plus album artwork support without polluting video folders or tabs. Automatically hides when no audio exists on device while staying toggleable in Settings → Appearance.
+- Audio browsing & layouts: browse by Albums (grid or list view, persisted independently via `layout_audio`), All tracks, and Artists, with album detail view and queue playback.
+- Audio player surface: dedicated audio-mode player interface featuring album artwork cover, title, artist, seekbar, queue sheet, and playback controls with video gestures disabled.
+- Audio background playback: persistent background playback with media notification and lock screen controls via `MediaPlaybackService`, with graceful handling when `POST_NOTIFICATIONS` permission is denied.
+- Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
+- Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
+- Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
+- Aura theme: a built-in content-driven theme positioned third in the theme picker (Default, Dynamic, Aura, Cinema, …) whose accents and ambient glow dynamically adapt to the poster of recently played content in Continue Watching, previewing titles while browsing series and movie detail screens, and gracefully falling back to a neutral built-in identity when contrast or chroma checks require it.
+- Opt-in "Lean seek cache" setting (Settings → Advanced) that deepens the demuxer cache around the playhead for faster seeking on local and network sources alike. Automatically sizes forward and backward byte budgets according to memory class and bitrate, clamps to conservative 96 MB forward / 128 MB backward ceilings, and displays seekable cache ranges behind the seekbar rail when enabled.
+- Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
+- Automatic vs manual library scanning mode in Settings → Folders.
+- Promoted Playlists to a first-class bottom-navigation tab (enabled by default) with an empty-state create action and direct access from the main navigation bar.
+- Movies: length filtering is a clock button with a dropdown next to the sort control, replacing the second chip row above the grid; its menu offers Any length, 30 min+, 1 h+, and 1.5 h+, and the button fills while a threshold is active.
+- Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
+- Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
+- Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.
+- Periodic playback checkpoint: saves progress while playing (default every 30 s, configurable under Settings → Player to 15 s, 30 s, 1 min, or 5 min) when playback moves by at least 5 s, surviving process kills, force stops, PiP, and background playback.
+
+### Changed
+
+- Player layout styles: renamed the original glass-pill layout to **Classic** and introduced **Modern** (an Apple TV style floating glass interface with unobstructed video, expandable volume & brightness controls, center transport, show header, customizable actions pill, and system gesture exclusion). Legacy Cinema and Minimal settings seamlessly migrate to Modern.
+- Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
+- Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
+- Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
+- External subtitle tracks added from online search now show a friendly label (language · quality · source · group) in the subtitle list.
+- Improved seeking performance: added adaptive precision (exact for short skips, keyframes for large jumps) to avoid decoder freezes on heavy media.
+- Fixed seekbar thumb snapping backward on gesture release when keyframe seeking is active.
+
 ### Fixed
 
+- Modern player seekbar: eliminated seekbar haptics, prevented paused playback from automatically resuming upon releasing the seekbar, and added vertical swipe-up scrubbing speed tiers (1x, 2x, 4x, 8x) with floating rate popup matching the Classic player.
+- Player gesture overlays: hid Modern player UI controls during volume and brightness vertical swipe gestures to prevent on-screen collision with titles and action buttons.
+- Volume controls: eliminated duplicate vertical volume slider during physical volume key presses while Modern controls are shown, and added live volume percentage readout to the top-right volume capsule when pressing physical volume buttons.
+- Modern player intro skip: moved Skip Intro and Skip Recap chips below the top-right volume/brightness capsule in landscape to eliminate visual collision.
+- Navigation: fixed Audio tab not appearing on the home bottom navigation bar when enabled in settings.
+- Prevented seekbar track expansion and wavy line flattening during on-screen horizontal swipe gestures by decoupling direct seekbar touch scrubbing from external gesture seeking.
+- Fixed seekbar handle and timer micro-jitter during horizontal swipe-to-seek gestures by strictly locking `visualPosition` and `seekbarPosition` during `PlayerUpdates.HorizontalSeek`.
+- Player: fixed a launch crash (`NullPointerException` inside `Flow.combine`) when opening the player while the lean seek cache is enabled, caused by the visibility observer reading player state before it was initialized.
+- Adding a second subtitle in the same language from online search now saves a separate file and appears as its own external track, instead of overwriting the first download and being silently ignored.
+- Online subtitle rows show a per-result progress spinner and ignore repeat taps while that result is downloading.
+- Playback state persistence: writes are now application-scoped so activity destruction or force-stop cannot drop the final write; saves on pause, stop, track changes, task removal, and memory trim; and guards against overwriting good positions with 0.
+- Subtitle scope setting (Global or Per-title): remember subtitle position and scale per show or per movie instead of one global pair.
+- Reset actions: forget subtitle settings for the current title from the subtitle sheet, and a global "Clear all subtitle profiles" option in Settings → Subtitles.
+- Metadata overrides: manually edit title, release year, and cover art (via system photo picker) for movies and TV shows from their detail screens; overrides work offline and survive rescans, forced refreshes, and cache migrations.
+- Option to toggle video chapter markers in the seekbar (Settings → Appearance → Seekbar).
+- Settings search direct jump & highlight: tapping a search result from either the settings dashboard inline search or the standalone search screen now navigates directly to the exact option row or section card, smoothly scrolling it into view and momentarily highlighting it with an accent tint.
+- Media filename parsing: anime episodes with years in titles (e.g. `Jujutsu Kaisen (2020) - 05.mkv`, `Kaguya-sama 2019 - 11.mkv`) are now properly recognized as series episodes rather than movies.
+- Multi-episode media files (`S01E01E02`, `S01E01-E02`, `1x01-02`, `- 01-02`) now parse deterministically to the first episode without leaking trailing episode numbers into episode titles.
+- Series identity: fansub release tags (`[SubsPlease]`, `[1080p]`, CRC hashes, `【】`, underscores) collapse reliably to the same series key as clean titles.
+- Folder fallbacks: subfolder episode naming such as `Show/Season 2/01 - Title.mkv` and `Show/01x02.mkv` now correctly resolve show titles, seasons, and episode titles.
+- Mixed episode numbering: folders containing explicit `SxxExx` files now map bare anime dash-numbered (`- NN`) episodes into the same season, preventing show splitting and duplicate episode entries.
+- Title vs release year: movies with numbers in their title (`1917 (2019)`, `2012 (2009)`, `Blade Runner 2049 (2017)`) retain the number in the title and take the year from parentheses; bare years are never returned as titles.
 - Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
 - Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
+- Fixed timestamp desync between the center overlay and seekbar when swiping past 15 seconds.
+- Ensured swipe gestures land on the exact target timestamp without snapping back to earlier keyframes.
+- Exact seeks now let hardware decoders drop intermediate frames while catching up (`hr-seek-framedrop`, `hr-seek-demuxer-offset`, `framedrop=vo`), so long jumps land without stalling on slower VPUs.
 
 ## V1.3.0
 

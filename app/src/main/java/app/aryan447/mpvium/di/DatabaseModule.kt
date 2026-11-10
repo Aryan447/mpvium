@@ -358,8 +358,38 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
 val MIGRATION_8_9 = object : Migration(8, 9) {
   override fun migrate(db: SupportSQLiteDatabase) {
     try {
-      android.util.Log.d("Migration_8_9", "Starting migration from version 8 to 9 (schema repair)")
+      android.util.Log.d("Migration_8_9", "Starting migration from version 8 to 9")
 
+      // ===== 1. Create library_index table for persistent library snapshot =====
+      db.execSQL(
+        """
+        CREATE TABLE IF NOT EXISTS `library_index` (
+          `path` TEXT NOT NULL,
+          `size` INTEGER NOT NULL,
+          `mtimeMs` INTEGER NOT NULL,
+          `parsedTitle` TEXT NOT NULL,
+          `parsedYear` TEXT,
+          `parsedSeason` INTEGER,
+          `parsedEpisode` INTEGER,
+          `parsedEpisodeTitle` TEXT,
+          `parsedType` TEXT NOT NULL,
+          `mediaStoreId` INTEGER NOT NULL,
+          `displayName` TEXT NOT NULL,
+          `durationMs` INTEGER NOT NULL,
+          `dateAdded` INTEGER NOT NULL,
+          `mimeType` TEXT NOT NULL,
+          `bucketId` TEXT NOT NULL,
+          `bucketDisplayName` TEXT NOT NULL,
+          `width` INTEGER NOT NULL,
+          `height` INTEGER NOT NULL,
+          `fps` REAL NOT NULL,
+          `lastScanned` INTEGER NOT NULL,
+          PRIMARY KEY(`path`)
+        )
+        """.trimIndent(),
+      )
+
+      // ===== 2. Schema repair for PlaybackStateEntity if needed =====
       // Check current schema to see if we need to repair
       val cursor = db.query("PRAGMA table_info(PlaybackStateEntity)")
       val existingColumns = mutableSetOf<String>()
@@ -459,6 +489,62 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
   }
 }
 
+/**
+ * Migration from version 9 to version 10
+ *
+ * Changes:
+ * - Adds custom_series table for user-curated TV shows
+ * - Adds custom_series_item table with foreign key cascade to custom_series and indices
+ */
+val MIGRATION_9_10 = object : Migration(9, 10) {
+  override fun migrate(db: SupportSQLiteDatabase) {
+    try {
+      android.util.Log.d("Migration_9_10", "Starting migration from version 9 to 10")
+
+      db.execSQL(
+        """
+        CREATE TABLE IF NOT EXISTS `custom_series` (
+          `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+          `title` TEXT NOT NULL,
+          `year` TEXT,
+          `posterPath` TEXT,
+          `tmdbId` INTEGER,
+          `createdAt` INTEGER NOT NULL,
+          `updatedAt` INTEGER NOT NULL
+        )
+        """.trimIndent(),
+      )
+
+      db.execSQL(
+        """
+        CREATE TABLE IF NOT EXISTS `custom_series_item` (
+          `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+          `seriesId` INTEGER NOT NULL,
+          `filePath` TEXT NOT NULL,
+          `fileName` TEXT NOT NULL,
+          `season` INTEGER NOT NULL,
+          `episode` INTEGER NOT NULL,
+          `position` INTEGER NOT NULL,
+          FOREIGN KEY(`seriesId`) REFERENCES `custom_series`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+        )
+        """.trimIndent(),
+      )
+
+      db.execSQL(
+        "CREATE INDEX IF NOT EXISTS `index_custom_series_item_seriesId` ON `custom_series_item` (`seriesId`)"
+      )
+      db.execSQL(
+        "CREATE INDEX IF NOT EXISTS `index_custom_series_item_filePath` ON `custom_series_item` (`filePath`)"
+      )
+
+      android.util.Log.d("Migration_9_10", "Migration completed successfully")
+    } catch (e: Exception) {
+      android.util.Log.e("Migration_9_10", "Migration failed", e)
+      throw e
+    }
+  }
+}
+
 
 val DatabaseModule =
   module {
@@ -474,7 +560,7 @@ val DatabaseModule =
       Room
         .databaseBuilder(context, MpviumDatabase::class.java, "mpvium.db")
         .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
         .fallbackToDestructiveMigration(true) // Fallback if migration fails (last resort)
         .build()
     }
@@ -509,6 +595,21 @@ val DatabaseModule =
     single {
       PlaylistRepository(
         playlistDao = get<MpviumDatabase>().playlistDao(),
+      )
+    }
+
+    single {
+      get<MpviumDatabase>().libraryIndexDao()
+    }
+
+    single {
+      get<MpviumDatabase>().customSeriesDao()
+    }
+
+    single {
+      app.aryan447.mpvium.database.repository.CustomSeriesRepository(
+        customSeriesDao = get(),
+        artworkStore = get(),
       )
     }
   }

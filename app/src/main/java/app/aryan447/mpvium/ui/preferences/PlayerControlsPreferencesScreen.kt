@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -57,12 +58,15 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.PlayerLayout
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SeekbarStyle
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.preferences.components.PlayerButtonChip
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -75,6 +79,7 @@ enum class ControlRegion {
   BOTTOM_RIGHT,
   BOTTOM_LEFT,
   PORTRAIT_BOTTOM,
+  MODERN_ACTIONS,
 }
 
 @Serializable
@@ -85,6 +90,8 @@ object PlayerControlsPreferencesScreen : Screen {
     val backstack = LocalBackStack.current
     val appearancePrefs = koinInject<AppearancePreferences>()
     val playerPrefs = koinInject<PlayerPreferences>()
+
+    val playerLayout by appearancePrefs.playerLayout.collectAsState()
 
     // Get the current state for all four regions
     val topRState by appearancePrefs.topRightControls.collectAsState()
@@ -108,6 +115,28 @@ object PlayerControlsPreferencesScreen : Screen {
       appearancePrefs.parseButtons(portraitBottomState, mutableSetOf())
     }
 
+    val modernActionState by appearancePrefs.modernActionControls.collectAsState()
+    val modernActionButtons = remember(modernActionState) {
+      appearancePrefs.parseButtons(modernActionState, mutableSetOf())
+    }
+
+    val listState = rememberLazyListState()
+    val highlightState = rememberSettingsHighlightState(
+      screen = PlayerControlsPreferencesScreen,
+      listState = listState,
+      keyToIndex = mapOf(
+        "player.controls.player_layout" to 1,
+        "player.controls.layout" to 3,
+        "player.controls.top_right" to 3,
+        "player.controls.bottom_right" to 3,
+        "player.controls.bottom_left" to 3,
+        "player.controls.portrait_bottom" to 5,
+        "player.controls.colors" to 13,
+        "player.controls.hide_buttons_background" to 13,
+        "player.controls.hide_control_time" to 13,
+      ),
+    )
+
     Scaffold(
       topBar = {
         SettingsTopBar(title = stringResource(id = R.string.pref_layout_title))
@@ -115,45 +144,105 @@ object PlayerControlsPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier =
             Modifier
               .fillMaxSize()
               .padding(padding),
         ) {
-          // Landscape Controls Section
+          // Player Layout Style Section
           item {
-            PreferenceSectionHeader(title = "Landscape Controls", count = 3)
+            PreferenceSectionHeader(
+              title = stringResource(id = R.string.pref_player_layout_style_title),
+              count = PlayerLayout.entries.size,
+            )
           }
 
           item {
-            PreferenceCard {
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_top_right_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.TOP_RIGHT))
+            val layoutLabels = mapOf(
+              PlayerLayout.CLASSIC to stringResource(R.string.pref_player_layout_classic),
+              PlayerLayout.MODERN to stringResource(R.string.pref_player_layout_modern),
+            )
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "player.controls.player_layout",
+                isCard = true,
+              ),
+            ) {
+              ExpressiveChoiceRow(
+                options = PlayerLayout.entries,
+                selected = playerLayout,
+                labelOf = { layoutLabels.getValue(it) },
+                onSelect = { selectedLayout ->
+                  appearancePrefs.playerLayout.set(selectedLayout)
                 },
+                equalWidth = true,
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(MaterialTheme.spacing.medium),
               )
-              PreferenceIconSummary(buttons = topRightButtons)
+            }
+          }
 
-              PreferenceDivider()
+          // Landscape Controls Section
+          val isModernLayout = playerLayout == PlayerLayout.MODERN
+          item {
+            PreferenceSectionHeader(
+              title = if (isModernLayout) "Landscape Controls (Modern)" else "Landscape Controls",
+              count = if (isModernLayout) 1 else 3,
+            )
+          }
 
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_bottom_right_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_RIGHT))
-                },
-              )
-              PreferenceIconSummary(buttons = bottomRightButtons)
+          item {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "player.controls.layout",
+                isCard = true,
+              ),
+            ) {
+              if (isModernLayout) {
+                PreferenceCategoryWithEditButton(
+                  title = "Action Shortcuts (Bottom Right)",
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.MODERN_ACTIONS))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_right"),
+                )
+                PreferenceIconSummary(buttons = modernActionButtons)
+              } else {
+                PreferenceCategoryWithEditButton(
+                  title = stringResource(id = R.string.pref_layout_top_right_controls),
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.TOP_RIGHT))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.top_right"),
+                )
+                PreferenceIconSummary(buttons = topRightButtons)
 
-              PreferenceDivider()
+                PreferenceDivider()
 
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_bottom_left_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_LEFT))
-                },
-              )
-              PreferenceIconSummary(buttons = bottomLeftButtons)
+                PreferenceCategoryWithEditButton(
+                  title = stringResource(id = R.string.pref_layout_bottom_right_controls),
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_RIGHT))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_right"),
+                )
+                PreferenceIconSummary(buttons = bottomRightButtons)
+
+                PreferenceDivider()
+
+                PreferenceCategoryWithEditButton(
+                  title = stringResource(id = R.string.pref_layout_bottom_left_controls),
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.BOTTOM_LEFT))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_left"),
+                )
+                PreferenceIconSummary(buttons = bottomLeftButtons)
+              }
             }
           }
 
@@ -164,13 +253,12 @@ object PlayerControlsPreferencesScreen : Screen {
 
           item {
             PreferenceCard {
-
-
               PreferenceCategoryWithEditButton(
                 title = stringResource(id = R.string.pref_layout_portrait_bottom_controls),
                 onClick = {
                   backstack.add(ControlLayoutEditorScreen(ControlRegion.PORTRAIT_BOTTOM))
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.portrait_bottom"),
               )
               PreferenceIconSummary(buttons = portraitBottomButtons)
             }
@@ -178,14 +266,27 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Seekbar Section
           item {
-            PreferenceSectionHeader(title = "Seekbar Style", count = SeekbarStyle.entries.size)
+            PreferenceSectionHeader(
+              title = if (isModernLayout) "Seekbar Style (Modern)" else "Seekbar Style",
+              count = SeekbarStyle.entries.size,
+            )
           }
 
           item {
-            val seekbarStyle by appearancePrefs.seekbarStyle.collectAsState()
+            val seekbarStyle by if (isModernLayout) {
+              appearancePrefs.modernSeekbarStyle.collectAsState()
+            } else {
+              appearancePrefs.seekbarStyle.collectAsState()
+            }
             SliderStylePicker(
               selected = seekbarStyle,
-              onSelect = { appearancePrefs.seekbarStyle.set(it) },
+              onSelect = {
+                if (isModernLayout) {
+                  appearancePrefs.modernSeekbarStyle.set(it)
+                } else {
+                  appearancePrefs.seekbarStyle.set(it)
+                }
+              },
             )
           }
 
@@ -253,6 +354,7 @@ object PlayerControlsPreferencesScreen : Screen {
                     ),
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.colors"),
               )
 
               PreferenceDivider()
@@ -271,6 +373,7 @@ object PlayerControlsPreferencesScreen : Screen {
                     text = stringResource(id = R.string.pref_appearance_hide_player_buttons_background_summary),
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.hide_buttons_background"),
               )
 
               PreferenceDivider()
@@ -304,6 +407,7 @@ object PlayerControlsPreferencesScreen : Screen {
                     },
                   )
                 },
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.hide_control_time"),
               )
             }
 
@@ -365,10 +469,11 @@ object PlayerControlsPreferencesScreen : Screen {
   private fun PreferenceCategoryWithEditButton(
     title: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
   ) {
     Row(
       modifier =
-        Modifier
+        modifier
           .fillMaxWidth()
           .clickable(onClick = onClick)
           .padding(horizontal = 16.dp, vertical = 12.dp),

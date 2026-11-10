@@ -23,6 +23,8 @@
   <string name="pref_appearance_show_bottom_nav_labels_title">Show tab labels</string>
   <string name="pref_appearance_show_bottom_nav_labels_summary">Show text under bottom navigation icons</string>
   <string name="pref_appearance_bottom_nav_tabs_summary">Choose which tabs appear in the bottom bar</string>
+  <string name="pref_appearance_unified_titles_tab_title">Unified Titles tab</string>
+  <string name="pref_appearance_unified_titles_tab_summary">Combine TV Shows and Movies into a single Titles tab</string>
   <!-- Onboarding -->
   <string name="onboarding_skip">Skip</string>
   <string name="onboarding_next">Next</string>
@@ -95,10 +97,14 @@
   <string name="pref_appearance_auto_scroll_summary">Automatically scroll to the last played video when opening video lists</string>
   <string name="pref_appearance_watched_threshold_title">Watched threshold</string>
   <string name="pref_appearance_watched_threshold_summary">Mark video as watched when playback reaches %d%%</string>
+  <string name="pref_appearance_category_seekbar">Seekbar</string>
+  <string name="pref_appearance_chapters_in_seekbar_title">Show chapter markers</string>
+  <string name="pref_appearance_chapters_in_seekbar_summary">Show chapter boundaries on the seekbar track</string>
   <string name="video_label_new">NEW</string>
   <!-- Theme names -->
   <string name="theme_default">Default</string>
   <string name="theme_dynamic">Dynamic</string>
+  <string name="theme_aura">Aura</string>
   <string name="theme_cinema">Cinema</string>
   <string name="theme_noir_cinema">Noir Cinema</string>
   <string name="theme_glass">Glass</string>
@@ -152,6 +158,11 @@
   <string name="pref_layout_preview">Preview</string>
   <string name="pref_layout_reset_title">Reset layout?</string>
   <string name="pref_layout_reset_summary">All customized player control layouts will be reset to default positions</string>
+  <string name="pref_player_layout_style_title">Layout Style</string>
+  <string name="pref_player_layout_style_summary">Choose between the Classic glass-pill controls or the Modern layout</string>
+  <string name="pref_player_layout_classic">Classic</string>
+  <string name="pref_player_layout_modern">Modern</string>
+  <string name="pref_player_layout_cinema">Modern</string>
   <string name="pref_player">Player</string>
   <string name="pref_player_summary">Orientation, gestures and controls</string>
   <string name="pref_player_orientation">Orientation</string>
@@ -179,6 +190,11 @@
   <string name="pref_player_title_mode_two">Two lines</string>
   <string name="pref_player_title_mode_episode">Episode/title only</string>
   <string name="pref_player_remember_brightness">Remember display brightness</string>
+  <string name="pref_player_save_position_interval">Save position every</string>
+  <string name="pref_player_save_position_interval_15s">15 s</string>
+  <string name="pref_player_save_position_interval_30s">30 s</string>
+  <string name="pref_player_save_position_interval_1m">1 min</string>
+  <string name="pref_player_save_position_interval_5m">5 min</string>
   <string name="pref_player_gestures">Gestures</string>
   <string name="pref_player_gestures_brightness">Brightness gestures</string>
   <string name="pref_player_gestures_volume">Volume gestures</string>
@@ -271,6 +287,11 @@
   <string name="pref_subtitles_autoload_summary">Automatically load external subtitles with the same name.</string>
   <string name="pref_subtitles_save_location">Subtitle Save Location</string>
   <string name="pref_subtitles_search_online">Online Subtitle Search…</string>
+  <string name="player_sheets_subtitle_download">Download subtitle</string>
+  <string name="player_sheets_subtitle_already_added">Subtitle already added</string>
+  <string name="player_sheets_subtitle_hearing_impaired">Hearing impaired</string>
+  <string name="player_sheets_online_results">Online Results (%1$d)</string>
+  <string name="player_sheets_subtitle_pick_title">Pick a title on the left to load subtitles</string>
   <string name="pref_subtitles_subdl_languages">Subtitle Languages</string>
   <string name="all_languages">All (Selective Filtering)</string>
   <string name="pref_subtitles_clear_downloads">Clear Subtitle Downloads</string>
@@ -314,6 +335,10 @@
   <string name="pref_advanced_cleared_fonts_cache">Cleared cached fonts</string>
   <string name="pref_advanced_enable_recently_played_title">Recently Played</string>
   <string name="pref_advanced_enable_recently_played_summary">Track and display recently played videos and playlists</string>
+  <string name="pref_advanced_lean_seek_cache_title">Lean seek cache</string>
+  <string name="pref_advanced_lean_seek_cache_summary_off">OFF by default. Keeps more of the video around the playhead in memory so seeking responds faster. Uses more RAM. Changes apply on the next playback start.</string>
+  <string name="pref_advanced_lean_seek_cache_summary_on">%1$d MB forward / %2$d MB back, approximately %3$s each way on this device. Uses more RAM; changes apply on the next playback start.</string>
+  <string name="pref_advanced_lean_seek_cache_summary_on_fallback">%1$d MB forward / %2$d MB back. Actual window depends on bitrate and cache availability. Uses more RAM; changes apply on the next playback start.</string>
   <string name="pref_advanced_features_tooltip">Enable experimental or advanced features such as stats page and Anime4K upscaling</string>
   <string name="pref_anime4k_title">Anime4K upscaling (Experimental)</string>
   <string name="pref_anime4k_summary">Enable Anime4K upscaling filter</string>
@@ -367,6 +392,18 @@
   <string name="player_sheets_sub_position">Position</string>
   <string name="pref_subtitles_persist_pos_title">Persist subtitle position</string>
   <string name="pref_subtitles_persist_pos_summary">Save moved subtitle position across all videos</string>
+  <string name="pref_subtitles_scope_title">Subtitle scope</string>
+  <string name="pref_subtitles_scope_global">Global</string>
+  <string name="pref_subtitles_scope_global_summary">Use one position and scale for all videos</string>
+  <string name="pref_subtitles_scope_per_title">Per-title</string>
+  <string name="pref_subtitles_scope_per_title_summary">Remember position and scale per show or movie</string>
+  <string name="pref_subtitles_clear_all_profiles">Clear all subtitle profiles</string>
+  <string name="pref_subtitles_clear_all_profiles_summary">Remove saved subtitle positions and scales for all titles</string>
+  <string name="pref_subtitles_clear_all_profiles_dialog_title">Clear subtitle profiles?</string>
+  <string name="pref_subtitles_clear_all_profiles_dialog_message">This will reset subtitle position and scale to global defaults for all shows and movies.</string>
+  <string name="toast_subtitle_profiles_cleared">Subtitle profiles cleared</string>
+  <string name="player_sheets_forget_subtitle_settings">Forget this title\'s subtitle settings</string>
+  <string name="toast_subtitle_settings_forgotten">Reset subtitle settings to global defaults</string>
   <string name="subtitle_double_tap_to_reset">Double-tap subtitle to reset position</string>
   <string name="subtitle_position_format">Subtitles: %d</string>
   <string name="subtitle_position_reset">Subtitles reset (%d)</string>
@@ -514,6 +551,9 @@
   <string name="pref_folders_clear_all_whitelist">Clear all whitelisted folders</string>
   <string name="pref_folders_clear_all_whitelist_confirm_title">Clear all whitelisted folders?</string>
   <string name="pref_folders_clear_all_whitelist_confirm_message">This will remove all folders from the whitelist and show every folder again. You can add them back later.</string>
+  <string name="pref_folders_scan_mode_title">Automatic library scan</string>
+  <string name="pref_folders_scan_mode_auto_summary">Automatically scans storage when library tabs open</string>
+  <string name="pref_folders_scan_mode_manual_summary">Only scans on pull-to-refresh or manual rescan</string>
   <string name="library_sources_banner_message">Home, Shows and Movies show only whitelisted folders. Folders and Files still show full storage.</string>
   <string name="library_sources_empty_action">Manage library folders</string>
   <!-- M3U Playlist Strings -->
@@ -621,6 +661,11 @@
   <string name="playlist_refresh_success">Playlist refreshed successfully</string>
   <string name="playlist_refresh_error">Failed to refresh playlist: %s</string>
   <string name="playlist_m3u_badge">M3U</string>
+  <string name="no_playlists_title">No playlists yet</string>
+  <string name="no_playlists_message">Create a playlist or add one from an M3U URL</string>
+  <string name="no_playlists_found">No playlists found</string>
+  <string name="no_playlists_found_message">Try a different search term</string>
+  <string name="clear_search">Clear search</string>
   <!-- Manual watch status (Mark as) -->
   <string name="mark_as_action">Mark as</string>
   <string name="mark_as_title">Mark %1$d video(s) as</string>
@@ -634,4 +679,97 @@
   <string name="mark_as_none_summary">Clear any status and show as plain unplayed</string>
   <string name="mark_as_updated">Watch status updated</string>
   <string name="mark_as_failed">Failed to update watch status</string>
+  <!-- Movie duration filters -->
+  <string name="movie_duration_filter_all">Any length</string>
+  <string name="movie_duration_filter_30m">30 min+</string>
+  <string name="movie_duration_filter_1h">1 h+</string>
+  <string name="movie_duration_filter_1h30m">1.5 h+</string>
+  <string name="movie_duration_filter_content_description">Duration filter: %1$s</string>
+  <!-- Layout mode toggle -->
+  <string name="action_switch_to_grid">Switch to grid</string>
+  <string name="action_switch_to_list">Switch to list</string>
+  <!-- Metadata overrides -->
+  <string name="metadata_edit_title">Edit metadata</string>
+  <string name="metadata_field_title">Title</string>
+  <string name="metadata_field_year">Year</string>
+  <string name="metadata_field_poster">Poster</string>
+  <string name="metadata_change_poster">Change poster</string>
+  <string name="metadata_remove_poster">Remove poster</string>
+  <string name="metadata_reset_automatic">Reset to automatic</string>
+  <string name="metadata_save">Save</string>
+  <!-- Titles tab -->
+  <string name="tab_titles">Titles</string>
+  <string name="search">Search</string>
+  <string name="titles_search_placeholder">Search titles…</string>
+  <string name="titles_filter_all">All</string>
+  <string name="titles_filter_shows">TV Shows</string>
+  <string name="titles_filter_movies">Movies</string>
+  <string name="titles_empty_no_titles_title">No titles detected</string>
+  <string name="titles_empty_no_titles_message">Add movies or TV shows to your device storage to see them here</string>
+  <string name="titles_empty_no_shows_title">No TV shows detected</string>
+  <string name="titles_empty_no_shows_message">Add TV shows with S01E01 or season folders to see them here</string>
+  <string name="titles_empty_no_movies_title">No movies detected</string>
+  <string name="titles_empty_no_movies_message">Add movie files to your device storage to see them here</string>
+  <string name="titles_empty_search_no_titles_title">No titles found</string>
+  <string name="titles_empty_search_no_titles_message">No titles match \'%1$s\'</string>
+  <string name="titles_empty_search_no_shows_title">No TV shows found</string>
+  <string name="titles_empty_search_no_shows_message">No TV shows match \'%1$s\'</string>
+  <string name="titles_empty_search_no_movies_title">No movies found</string>
+  <string name="titles_empty_search_no_movies_message">No movies match \'%1$s\'</string>
+  <string name="titles_empty_filter_no_titles">No matching titles</string>
+  <string name="titles_empty_filter_no_shows">No matching TV shows</string>
+  <string name="titles_empty_filter_no_movies">No matching movies</string>
+  <string name="titles_empty_filter_message">Try a different filter</string>
+  <string name="titles_empty_filter_watch_state_message">Try a different watch-state filter</string>
+  <string name="titles_empty_action_show_all">Show all</string>
+  <string name="titles_pane_select_title">Select a title</string>
+  <string name="titles_pane_select_message">Pick a show or movie to see details, actions and matches here</string>
+  <string name="title_watch_filter_content_description">Watch filter: %1$s</string>
+  <!-- Custom series -->
+  <string name="add_to_series">Add to series…</string>
+  <string name="create_series">Create series</string>
+  <string name="edit_series">Edit series</string>
+  <string name="new_series">New series</string>
+  <string name="delete_custom_series_title">Delete custom series?</string>
+  <string name="delete_custom_series_message">This will delete the custom series \"%1$s\" grouping. Your video files will NOT be deleted.</string>
+  <string name="delete_series_action">Delete series</string>
+  <string name="custom_series_builder_title">Episodes</string>
+  <string name="custom_series_episodes_count">%1$d episodes</string>
+  <string name="custom_series_add_episodes">Add episodes</string>
+  <string name="custom_series_drag_to_reorder">Drag to reorder</string>
+  <string name="custom_series_empty_shows_help">Add TV shows with S01E01 or season folders to see them here, or build your own custom show out of any videos.</string>
+  <string name="custom_series_pick_poster">Add cover</string>
+  <string name="custom_series_season_episode_dialog_title">Edit season &amp; episode</string>
+  <string name="custom_series_season_label">Season</string>
+  <string name="custom_series_episode_label">Episode</string>
+  <string name="custom_series_saved">Series saved</string>
+  <string name="custom_series_choose_series">Add to series</string>
+  <string name="custom_series_create_new">Create new series</string>
+  <string name="custom_series_added_to">Added to \"%1$s\"</string>
+
+  <!-- Audio library -->
+  <string name="tab_audio">Audio</string>
+  <string name="audio_search_placeholder">Search audio…</string>
+  <string name="audio_filter_albums">Albums</string>
+  <string name="audio_filter_tracks">All tracks</string>
+  <string name="audio_filter_artists">Artists</string>
+  <string name="audio_empty_no_audio_title">No audio files found</string>
+  <string name="audio_empty_no_audio_message">Add songs, albums, or audio tracks to your device storage to see them here</string>
+  <string name="audio_empty_search_title">No audio matches found</string>
+  <string name="audio_empty_search_message">No audio matches \'%1$s\'</string>
+  <string name="audio_play_all">Play all</string>
+  <string name="audio_shuffle">Shuffle</string>
+  <string name="audio_queue">Queue</string>
+  <string name="audio_now_playing">Now playing</string>
+  <string name="audio_track_count">%1$d tracks</string>
+  <string name="audio_album_count">%1$d albums</string>
+  <string name="audio_unknown_artist">Unknown Artist</string>
+  <string name="audio_unknown_album">Unknown Album</string>
+  <string name="audio_unknown_track">Unknown Track</string>
+  <string name="pref_appearance_audio_tab">Audio tab</string>
+  <string name="player_previous">Previous</string>
+  <string name="player_next">Next</string>
+  <string name="player_play">Play</string>
+  <string name="player_pause">Pause</string>
+  <string name="player_repeat">Repeat</string>
 </resources>

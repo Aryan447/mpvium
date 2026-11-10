@@ -13,12 +13,20 @@ class AppearancePreferences(
   val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Default)
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
   val playerFullColors = preferenceStore.getBoolean("full_player_colors", false)
+  val playerLayout =
+    preferenceStore.getObject(
+      "player_layout",
+      PlayerLayout.CLASSIC,
+      serializer = { it.name },
+      deserializer = { PlayerLayout.fromString(it) },
+    )
   val pillNavigationBar = preferenceStore.getBoolean("pill_navigation_bar", true)
   val showBottomNavLabels = preferenceStore.getBoolean("show_bottom_nav_labels", true)
+  val unifiedTitlesTab = preferenceStore.getBoolean("unified_titles_tab", true)
   val bottomNavTabs =
     preferenceStore.getStringSet(
       "bottom_nav_tabs",
-      setOf("HOME", "SHOWS", "MOVIES", "FOLDERS", "LIBRARY"),
+      app.aryan447.mpvium.ui.browser.MainTab.defaultKeys,
     )
   val onboardingCompleted = preferenceStore.getBoolean("onboarding_completed", false)
   val unlimitedNameLines = preferenceStore.getBoolean("unlimited_name_lines", false)
@@ -35,6 +43,8 @@ class AppearancePreferences(
   val showMoviesSection = preferenceStore.getBoolean("show_movies_section", true)
   val showFoldersSection = preferenceStore.getBoolean("show_folders_section", true)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Wavy)
+  val modernSeekbarStyle = preferenceStore.getEnum("modern_seekbar_style", SeekbarStyle.Standard)
+  val chaptersInSeekbar = preferenceStore.getBoolean("chapters_in_seekbar", false)
   val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Wavy)
   val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Wavy)
 
@@ -68,6 +78,12 @@ class AppearancePreferences(
     preferenceStore.getString(
       "portrait_bottom_controls",
       "AUDIO_TRACK,SUBTITLES,PLAYBACK_SPEED,BOOKMARKS_CHAPTERS,PICTURE_IN_PICTURE,MORE_OPTIONS,AB_LOOP,EXPLAIN",
+    )
+
+  val modernActionControls =
+    preferenceStore.getString(
+      "modern_action_controls",
+      "SUBTITLES,AUDIO_TRACK,EXPLAIN,MORE_OPTIONS",
     )
 
   fun setHomeSectionVisible(section: HomeSection, visible: Boolean) {

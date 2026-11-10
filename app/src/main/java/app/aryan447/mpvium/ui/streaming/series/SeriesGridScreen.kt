@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -22,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tv
@@ -68,20 +73,24 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.R
-import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
+import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
 import app.aryan447.mpvium.preferences.SeriesSort
 import app.aryan447.mpvium.preferences.StreamingPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
+import app.aryan447.mpvium.ui.browser.components.MediaLayoutToggle
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
+import app.aryan447.mpvium.ui.streaming.components.SeriesListRow
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
@@ -103,9 +112,11 @@ object SeriesGridScreen : Screen {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
     val streamingPreferences = koinInject<StreamingPreferences>()
-    val seriesDetector = koinInject<SeriesDetector>()
+    val libraryIndexRepository = koinInject<LibraryIndexRepository>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
+    val browserPreferences = koinInject<BrowserPreferences>()
+    val layoutShows by browserPreferences.layoutShows.collectAsState()
     // Empty-state hint (issue #87): when whitelist-only leaves no results,
     // offer a one-tap route to Settings → Folders.
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
@@ -128,6 +139,20 @@ object SeriesGridScreen : Screen {
     var refreshKey by remember { mutableIntStateOf(0) }
     val isRefreshing = remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
+
+    var lastLayoutMode by remember { mutableStateOf(layoutShows) }
+    LaunchedEffect(layoutShows) {
+      if (lastLayoutMode != layoutShows) {
+        if (layoutShows == MediaLayoutMode.GRID) {
+          gridState.scrollToItem(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
+        } else {
+          listState.scrollToItem(gridState.firstVisibleItemIndex, gridState.firstVisibleItemScrollOffset)
+        }
+        lastLayoutMode = layoutShows
+      }
+    }
+
     // Master-detail on wide screens when this grid is the tab root.
     // Pushed instances (e.g. from home See-all) stay single-pane.
     var selectedSeriesId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -135,15 +160,20 @@ object SeriesGridScreen : Screen {
     BackHandler(enabled = twoPane && selectedSeriesId != null) {
       selectedSeriesId = null
     }
-    val atTop by remember {
+    val isGrid = layoutShows == MediaLayoutMode.GRID
+    val atTop by remember(isGrid) {
       derivedStateOf {
-        gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0
+        if (isGrid) {
+          gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0
+        } else {
+          listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+        }
       }
     }
 
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary(force = isRefreshing.value)
         // Drop cached TMDB entries for shows with zero episodes left.
         // Remaining shows reuse their cache with no re-scrape.
         runCatching {
@@ -277,6 +307,20 @@ object SeriesGridScreen : Screen {
               IconButton(onClick = { isSearching = true }) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
+              IconButton(onClick = { backstack.add(CustomSeriesBuilderScreen()) }) {
+                Icon(
+                  Icons.Filled.Add,
+                  contentDescription = stringResource(R.string.create_series),
+                )
+              }
+              MediaLayoutToggle(
+                mode = layoutShows,
+                onToggle = {
+                  val next = if (layoutShows == MediaLayoutMode.GRID) MediaLayoutMode.LIST else MediaLayoutMode.GRID
+                  browserPreferences.layoutShows.set(next)
+                },
+                modifier = Modifier.padding(horizontal = 4.dp),
+              )
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             modifier = Modifier.glassChrome(
@@ -304,6 +348,8 @@ object SeriesGridScreen : Screen {
               onClearSearch = { searchQuery = "" },
               columns = columns,
               gridState = gridState,
+              listState = listState,
+              layoutMode = layoutShows,
               navigationBarHeight = navigationBarHeight,
               isRefreshing = isRefreshing,
               onRefresh = { refreshKey++ },
@@ -317,6 +363,7 @@ object SeriesGridScreen : Screen {
               libraryFiltered = libraryFiltered,
               onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onSeriesClick = { selectedSeriesId = it.id },
+              onCreateSeries = { backstack.add(CustomSeriesBuilderScreen()) },
             )
           }
           VerticalDivider(modifier = Modifier.fillMaxHeight())
@@ -341,6 +388,8 @@ object SeriesGridScreen : Screen {
           onClearSearch = { searchQuery = "" },
           columns = columns,
           gridState = gridState,
+          listState = listState,
+          layoutMode = layoutShows,
           navigationBarHeight = navigationBarHeight,
           isRefreshing = isRefreshing,
           onRefresh = { refreshKey++ },
@@ -354,6 +403,7 @@ object SeriesGridScreen : Screen {
           libraryFiltered = libraryFiltered,
           onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onSeriesClick = { backstack.add(SeriesDetailScreen(it.id)) },
+          onCreateSeries = { backstack.add(CustomSeriesBuilderScreen()) },
         )
       }
     }
@@ -369,6 +419,8 @@ private fun SeriesGridContent(
   onClearSearch: () -> Unit,
   columns: Int,
   gridState: LazyGridState,
+  listState: LazyListState,
+  layoutMode: MediaLayoutMode,
   navigationBarHeight: Dp,
   isRefreshing: MutableState<Boolean>,
   onRefresh: suspend () -> Unit,
@@ -382,6 +434,7 @@ private fun SeriesGridContent(
   libraryFiltered: Boolean,
   onManageLibrarySources: () -> Unit,
   onSeriesClick: (LocalSeries) -> Unit,
+  onCreateSeries: () -> Unit,
 ) {
   if (isLoading) {
     Box(
@@ -405,7 +458,7 @@ private fun SeriesGridContent(
         searchQuery.isNotBlank() -> "No TV shows match '$searchQuery'"
         filteringByWatchState -> "Try a different watch-state filter"
         libraryFiltered -> stringResource(R.string.library_sources_banner_message)
-        else -> "Add TV shows with S01E01 or season folders to see them here"
+        else -> stringResource(R.string.custom_series_empty_shows_help)
       },
       modifier = Modifier
         .fillMaxSize()
@@ -414,13 +467,13 @@ private fun SeriesGridContent(
         searchQuery.isNotBlank() -> "Clear search"
         filteringByWatchState -> "Show all"
         libraryFiltered -> stringResource(R.string.library_sources_empty_action)
-        else -> null
+        else -> stringResource(R.string.create_series)
       },
       onAction = when {
         searchQuery.isNotBlank() -> onClearSearch
         filteringByWatchState -> ({ onSeriesFilterChange(SeriesWatchFilter.ALL) })
         libraryFiltered -> onManageLibrarySources
-        else -> null
+        else -> onCreateSeries
       },
     )
   } else {
@@ -432,43 +485,82 @@ private fun SeriesGridContent(
         .fillMaxSize()
         .padding(innerPadding),
     ) {
-      LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        state = gridState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-          start = 12.dp,
-          end = 12.dp,
-          top = 8.dp,
-          bottom = navigationBarHeight + 24.dp,
-        ),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-      ) {
-        item(span = { GridItemSpan(columns) }) {
-          Column {
-            LibraryFilterBar(
-              options = SeriesWatchFilter.entries,
-              selected = seriesFilter,
-              labelOf = { it.label },
-              onSelect = onSeriesFilterChange,
-              sorts = seriesSortOptions,
-              selectedSort = seriesSort,
-              onSortSelect = onSeriesSortChange,
-              modifier = Modifier.padding(horizontal = 4.dp),
-            )
-            LibraryResultCount(
-              shown = filteredSeries.size,
-              total = totalSeriesCount,
+      if (layoutMode == MediaLayoutMode.GRID) {
+        LazyVerticalGrid(
+          columns = GridCells.Fixed(columns),
+          state = gridState,
+          modifier = Modifier.fillMaxSize(),
+          contentPadding = PaddingValues(
+            start = 12.dp,
+            end = 12.dp,
+            top = 8.dp,
+            bottom = navigationBarHeight + 24.dp,
+          ),
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+          verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+          item(span = { GridItemSpan(columns) }) {
+            Column {
+              LibraryFilterBar(
+                options = SeriesWatchFilter.entries,
+                selected = seriesFilter,
+                labelOf = { it.label },
+                onSelect = onSeriesFilterChange,
+                sorts = seriesSortOptions,
+                selectedSort = seriesSort,
+                onSortSelect = onSeriesSortChange,
+                modifier = Modifier.padding(horizontal = 4.dp),
+              )
+              LibraryResultCount(
+                shown = filteredSeries.size,
+                total = totalSeriesCount,
+              )
+            }
+          }
+          items(filteredSeries, key = { "grid_series_${it.id}" }) { series ->
+            SeriesPosterCard(
+              series = series,
+              onClick = { onSeriesClick(series) },
+              cardWidth = 180.dp,
             )
           }
         }
-        items(filteredSeries, key = { "grid_series_${it.id}" }) { series ->
-          SeriesPosterCard(
-            series = series,
-            onClick = { onSeriesClick(series) },
-            cardWidth = 180.dp,
-          )
+      } else {
+        LazyColumn(
+          state = listState,
+          modifier = Modifier.fillMaxSize(),
+          contentPadding = PaddingValues(
+            start = 12.dp,
+            end = 12.dp,
+            top = 8.dp,
+            bottom = navigationBarHeight + 24.dp,
+          ),
+          verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          item(key = "filter_bar") {
+            Column {
+              LibraryFilterBar(
+                options = SeriesWatchFilter.entries,
+                selected = seriesFilter,
+                labelOf = { it.label },
+                onSelect = onSeriesFilterChange,
+                sorts = seriesSortOptions,
+                selectedSort = seriesSort,
+                onSortSelect = onSeriesSortChange,
+                modifier = Modifier.padding(horizontal = 4.dp),
+              )
+              LibraryResultCount(
+                shown = filteredSeries.size,
+                total = totalSeriesCount,
+              )
+            }
+          }
+          items(filteredSeries, key = { "list_series_${it.id}" }) { series ->
+            SeriesListRow(
+              series = series,
+              onClick = { onSeriesClick(series) },
+            )
+          }
         }
       }
     }

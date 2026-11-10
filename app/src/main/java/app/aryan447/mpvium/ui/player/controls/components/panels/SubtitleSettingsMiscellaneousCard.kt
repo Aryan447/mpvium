@@ -21,19 +21,24 @@ import app.aryan447.mpvium.preferences.preference.collectAsState as collectPrefe
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.SubtitleScope
 import app.aryan447.mpvium.preferences.preference.deleteAndGet
 import app.aryan447.mpvium.presentation.components.ExpandableCard
 import app.aryan447.mpvium.presentation.components.SliderItem
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import app.aryan447.mpvium.ui.player.controls.CARDS_MAX_WIDTH
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
 import app.aryan447.mpvium.ui.player.controls.panelCardsColors
 import app.aryan447.mpvium.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import app.aryan447.mpvium.ui.preferences.HapticSwitchPreference
 import org.koin.compose.koinInject
@@ -41,6 +46,8 @@ import org.koin.compose.koinInject
 @Composable
 fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
   val preferences = koinInject<SubtitlesPreferences>()
+  val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
+  val coroutineScope = rememberCoroutineScope()
   var isExpanded by remember { mutableStateOf(true) }
   ExpandableCard(
     isExpanded,
@@ -91,7 +98,17 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
           value = subScale ?: preferences.subScale.get(),
           valueText = (subScale ?: preferences.subScale.get()).toFixed(2).toString(),
           onChange = {
-            preferences.subScale.set(it)
+            if (preferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+              val mediaTitle = MPVLib.getPropertyString("media-title") ?: ""
+              val path = MPVLib.getPropertyString("path")
+              val key = subtitleProfileRepository.resolveKey(mediaTitle, path)
+              val currentPos = MPVLib.getPropertyInt("sub-pos") ?: preferences.subPos.get()
+              coroutineScope.launch(Dispatchers.IO) {
+                subtitleProfileRepository.saveProfile(key, subPos = currentPos, subScale = it)
+              }
+            } else {
+              preferences.subScale.set(it)
+            }
             MPVLib.setPropertyFloat("sub-scale", it)
           },
           max = 5f,
@@ -108,7 +125,15 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
           value = subPos ?: preferences.subPos.get(),
           valueText = (subPos ?: preferences.subPos.get()).toString(),
           onChange = {
-            if (persistSubPos) {
+            if (preferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+              val mediaTitle = MPVLib.getPropertyString("media-title") ?: ""
+              val path = MPVLib.getPropertyString("path")
+              val key = subtitleProfileRepository.resolveKey(mediaTitle, path)
+              val currentScale = MPVLib.getPropertyFloat("sub-scale") ?: preferences.subScale.get()
+              coroutineScope.launch(Dispatchers.IO) {
+                subtitleProfileRepository.saveProfile(key, subPos = it, subScale = currentScale)
+              }
+            } else if (persistSubPos) {
               preferences.subPos.set(it)
             }
             MPVLib.setPropertyInt("sub-pos", it)
@@ -137,6 +162,14 @@ fun SubtitlesMiscellaneousCard(modifier: Modifier = Modifier) {
         ) {
           TextButton(
             onClick = {
+              if (preferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                val mediaTitle = MPVLib.getPropertyString("media-title") ?: ""
+                val path = MPVLib.getPropertyString("path")
+                val key = subtitleProfileRepository.resolveKey(mediaTitle, path)
+                coroutineScope.launch(Dispatchers.IO) {
+                  subtitleProfileRepository.deleteProfile(key)
+                }
+              }
               preferences.subPos.deleteAndGet().let {
                 MPVLib.setPropertyInt("sub-pos", it)
                 MPVLib.setPropertyInt("secondary-sub-pos", (it - 10).coerceIn(0, 110))

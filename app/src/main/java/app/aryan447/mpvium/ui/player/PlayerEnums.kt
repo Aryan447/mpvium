@@ -64,6 +64,16 @@ enum class PlayerTitleMode(
   EpisodeOnly(R.string.pref_player_title_mode_episode),
 }
 
+enum class SavePositionInterval(
+  @StringRes val titleRes: Int,
+  val seconds: Int,
+) {
+  FifteenSeconds(R.string.pref_player_save_position_interval_15s, 15),
+  ThirtySeconds(R.string.pref_player_save_position_interval_30s, 30),
+  OneMinute(R.string.pref_player_save_position_interval_1m, 60),
+  FiveMinutes(R.string.pref_player_save_position_interval_5m, 300),
+}
+
 enum class HoldControlTarget {
   Brightness,
   Volume,
@@ -187,7 +197,7 @@ sealed class PlayerUpdates {
   data class HorizontalSeek(
     val currentTime: String,
     val seekDelta: String,
-    val position: Float,
+    val position: Float?,
   ) : PlayerUpdates()
 
   data class ShowText(

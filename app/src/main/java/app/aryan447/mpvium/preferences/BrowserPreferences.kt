@@ -35,7 +35,12 @@ class BrowserPreferences(
   val showFramerateInResolution = preferenceStore.getBoolean("show_framerate_in_resolution", false)
   val showSubtitleIndicator = preferenceStore.getBoolean("show_subtitle_indicator", false)
   val showProgressBar = preferenceStore.getBoolean("show_progress_bar", true)
-  val mediaLayoutMode = preferenceStore.getEnum("media_layout_mode", MediaLayoutMode. LIST)
+  val layoutTitles = preferenceStore.getEnum("layout_titles", MediaLayoutMode.GRID)
+  val layoutShows = preferenceStore.getEnum("layout_shows", MediaLayoutMode.GRID)
+  val layoutMovies = preferenceStore.getEnum("layout_movies", MediaLayoutMode.GRID)
+  val layoutFolders = preferenceStore.getEnum("layout_folders", MediaLayoutMode.LIST)
+  val layoutAudio = preferenceStore.getEnum("layout_audio", MediaLayoutMode.GRID)
+  val mediaLayoutMode = layoutFolders
 
   // Visibility preferences for folder card chips
   val showTotalVideosChip = preferenceStore.getBoolean("show_total_videos_chip", true)

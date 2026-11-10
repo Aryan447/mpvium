@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ButtonDefaults
@@ -71,18 +72,35 @@ fun <T> ExpressiveChoiceRow(
       modifier = modifier,
       horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
     ) {
-      itemsIndexed(options, key = { _, option -> labelOf(option) }) { index, option ->
-        ChoiceToggle(
-          label = labelOf(option),
-          isSelected = option == selected,
-          index = index,
-          count = options.size,
-          centered = false,
-          colors = colors,
-          onSelect = { onSelect(option) },
-        )
-      }
+      choiceItems(
+        options = options,
+        selected = selected,
+        labelOf = labelOf,
+        onSelect = onSelect,
+        colors = colors,
+      )
     }
+  }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private fun <T> LazyListScope.choiceItems(
+  options: List<T>,
+  selected: T,
+  labelOf: (T) -> String,
+  onSelect: (T) -> Unit,
+  colors: ToggleButtonColors,
+) {
+  itemsIndexed(options, key = { _, option -> labelOf(option) }) { index, option ->
+    ChoiceToggle(
+      label = labelOf(option),
+      isSelected = option == selected,
+      index = index,
+      count = options.size,
+      centered = false,
+      colors = colors,
+      onSelect = { onSelect(option) },
+    )
   }
 }
 

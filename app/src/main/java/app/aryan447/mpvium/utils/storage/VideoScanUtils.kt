@@ -282,7 +282,7 @@ object VideoScanUtils {
 
     // Formatting utilities
 
-    private fun formatDuration(durationMs: Long): String {
+    fun formatDuration(durationMs: Long): String {
         if (durationMs <= 0) return "0s"
 
         val seconds = durationMs / 1000
@@ -297,7 +297,7 @@ object VideoScanUtils {
         }
     }
 
-    private fun formatFileSize(bytes: Long): String {
+    fun formatFileSize(bytes: Long): String {
         if (bytes <= 0) return "0 B"
         val units = arrayOf("B", "KB", "MB", "GB", "TB")
         val digitGroups = (log10(bytes.toDouble()) / log10(1024.0)).toInt()
@@ -346,6 +346,44 @@ object FileTypeUtils {
         val extension = file.extension.lowercase(Locale.getDefault())
         return VIDEO_EXTENSIONS.contains(extension)
     }
+
+    // Audio file extensions (separate from VIDEO_EXTENSIONS to prevent polluting video tabs/folders)
+    val AUDIO_EXTENSIONS = setOf(
+        "mp3", "flac", "wav", "m4a", "aac", "ogg", "oga", "opus", "wma", "alac", "aiff", "ape"
+    )
+
+    /**
+     * Checks if a file is an audio file based on extension
+     */
+    fun isAudioFile(file: File): Boolean {
+        val extension = file.extension.lowercase(Locale.getDefault())
+        return AUDIO_EXTENSIONS.contains(extension)
+    }
+
+    /**
+     * Checks if a filename has an audio extension
+     */
+    fun isAudioFileName(name: String): Boolean {
+        val extension = name.substringAfterLast('.', "").lowercase(Locale.getDefault())
+        return AUDIO_EXTENSIONS.contains(extension)
+    }
+
+    /**
+     * Gets MIME type from audio file extension
+     */
+    fun getAudioMimeTypeFromExtension(extension: String): String =
+        when (extension.lowercase(Locale.getDefault())) {
+            "mp3" -> "audio/mpeg"
+            "flac" -> "audio/flac"
+            "wav" -> "audio/wav"
+            "m4a", "alac" -> "audio/mp4"
+            "aac" -> "audio/aac"
+            "ogg", "oga", "opus" -> "audio/ogg"
+            "wma" -> "audio/x-ms-wma"
+            "aiff" -> "audio/x-aiff"
+            "ape" -> "audio/x-ape"
+            else -> "audio/*"
+        }
 
   /**
      * Gets MIME type from file extension

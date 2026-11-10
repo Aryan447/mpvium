@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -68,22 +72,28 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
-import app.aryan447.mpvium.domain.streaming.SeriesDetector
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
+import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.MediaLayoutMode
 import app.aryan447.mpvium.preferences.MovieSort
 import app.aryan447.mpvium.preferences.StreamingPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
 import app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight
+import app.aryan447.mpvium.ui.browser.components.MediaLayoutToggle
 import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.dialogs.DeleteConfirmationDialog
 import app.aryan447.mpvium.ui.preferences.FoldersPreferencesScreen
 import app.aryan447.mpvium.ui.streaming.components.LibraryFilterBar
 import app.aryan447.mpvium.ui.streaming.components.LibraryResultCount
+import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilter
+import app.aryan447.mpvium.ui.streaming.components.MovieDurationFilterButton
+import app.aryan447.mpvium.ui.streaming.components.MovieListRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.MovieWatchFilter
 import app.aryan447.mpvium.ui.streaming.components.SortOption
@@ -108,10 +118,12 @@ object MoviesGridScreen : Screen {
     val context = LocalContext.current
     val backstack = LocalBackStack.current
     val streamingPreferences = koinInject<StreamingPreferences>()
-    val seriesDetector = koinInject<SeriesDetector>()
+    val libraryIndexRepository = koinInject<LibraryIndexRepository>()
     val metadataRepository = koinInject<StreamingMetadataRepository>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
     val foldersPreferences = koinInject<FoldersPreferences>()
+    val browserPreferences = koinInject<BrowserPreferences>()
+    val layoutMovies by browserPreferences.layoutMovies.collectAsState()
     // Empty-state hint (issue #87): when whitelist-only leaves no results,
     // offer a one-tap route to Settings → Folders.
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
@@ -135,6 +147,20 @@ object MoviesGridScreen : Screen {
     var refreshKey by remember { mutableIntStateOf(0) }
     val isRefreshing = remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
+
+    var lastLayoutMode by remember { mutableStateOf(layoutMovies) }
+    LaunchedEffect(layoutMovies) {
+      if (lastLayoutMode != layoutMovies) {
+        if (layoutMovies == MediaLayoutMode.GRID) {
+          gridState.scrollToItem(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
+        } else {
+          listState.scrollToItem(gridState.firstVisibleItemIndex, gridState.firstVisibleItemScrollOffset)
+        }
+        lastLayoutMode = layoutMovies
+      }
+    }
+
     // Master-detail on wide screens when this grid is the tab root.
     // Pushed instances (e.g. from home See-all) stay single-pane.
     var selectedMovieId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -142,16 +168,21 @@ object MoviesGridScreen : Screen {
     BackHandler(enabled = twoPane && selectedMovieId != null) {
       selectedMovieId = null
     }
-    val atTop by remember {
+    val isGrid = layoutMovies == MediaLayoutMode.GRID
+    val atTop by remember(isGrid) {
       derivedStateOf {
-        gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0
+        if (isGrid) {
+          gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0
+        } else {
+          listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+        }
       }
     }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
-        val detected = seriesDetector.detectLibrary()
+        val detected = libraryIndexRepository.getLibrary(force = isRefreshing.value)
         // The scanner treats every non-episode file as a movie. Keep reels,
         // trailers, social exports and personal clips out of the Movies grid;
         // they are not deleted or moved, and Folders still lists every file.
@@ -202,12 +233,13 @@ object MoviesGridScreen : Screen {
 
     var movieFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val movieFilter = MovieWatchFilter.entries[movieFilterOrdinal.coerceIn(MovieWatchFilter.entries.indices)]
+    val movieDurationFilter by streamingPreferences.movieDurationFilter.collectAsState()
     val movieSort by streamingPreferences.movieSort.collectAsState()
     val movieSortOptions = remember {
       MovieSort.entries.map { SortOption(it, it.label) }
     }
 
-    val filteredMovies = remember(movieList, searchQuery, movieFilter, movieSort) {
+    val filteredMovies = remember(movieList, searchQuery, movieFilter, movieDurationFilter, movieSort) {
       var result = if (searchQuery.isBlank()) {
         movieList
       } else {
@@ -218,6 +250,12 @@ object MoviesGridScreen : Screen {
         MovieWatchFilter.UNWATCHED -> result.filter { !it.isWatched && it.progressPercentage <= 0f }
         MovieWatchFilter.STARTED -> result.filter { !it.isWatched && it.progressPercentage > 0f }
         MovieWatchFilter.WATCHED -> result.filter { it.isWatched }
+      }
+      result = when (movieDurationFilter) {
+        MovieDurationFilter.ALL -> result
+        MovieDurationFilter.AT_LEAST_30M -> result.filter { it.video.duration >= 30 * 60 * 1000L }
+        MovieDurationFilter.AT_LEAST_1H -> result.filter { it.video.duration >= 60 * 60 * 1000L }
+        MovieDurationFilter.AT_LEAST_1H30M -> result.filter { it.video.duration >= 90 * 60 * 1000L }
       }
       result = when (movieSort) {
         MovieSort.NAME -> result.sortedBy { it.title.lowercase() }
@@ -290,6 +328,14 @@ object MoviesGridScreen : Screen {
               IconButton(onClick = { isSearching = true }) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
+              MediaLayoutToggle(
+                mode = layoutMovies,
+                onToggle = {
+                  val next = if (layoutMovies == MediaLayoutMode.GRID) MediaLayoutMode.LIST else MediaLayoutMode.GRID
+                  browserPreferences.layoutMovies.set(next)
+                },
+                modifier = Modifier.padding(horizontal = 4.dp),
+              )
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             modifier = Modifier.glassChrome(
@@ -317,12 +363,16 @@ object MoviesGridScreen : Screen {
               onClearSearch = { searchQuery = "" },
               columns = columns,
               gridState = gridState,
+              listState = listState,
+              layoutMode = layoutMovies,
               navigationBarHeight = navigationBarHeight,
               isRefreshing = isRefreshing,
               onRefresh = { refreshKey++ },
               refreshEnabled = atTop && !isLoading,
               movieFilter = movieFilter,
               onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
+              movieDurationFilter = movieDurationFilter,
+              onMovieDurationFilterChange = { streamingPreferences.movieDurationFilter.set(it) },
               movieSort = movieSort,
               movieSortOptions = movieSortOptions,
               onMovieSortChange = { streamingPreferences.movieSort.set(it) },
@@ -355,12 +405,16 @@ object MoviesGridScreen : Screen {
           onClearSearch = { searchQuery = "" },
           columns = columns,
           gridState = gridState,
+          listState = listState,
+          layoutMode = layoutMovies,
           navigationBarHeight = navigationBarHeight,
           isRefreshing = isRefreshing,
           onRefresh = { refreshKey++ },
           refreshEnabled = atTop && !isLoading,
           movieFilter = movieFilter,
           onMovieFilterChange = { movieFilterOrdinal = it.ordinal },
+          movieDurationFilter = movieDurationFilter,
+          onMovieDurationFilterChange = { streamingPreferences.movieDurationFilter.set(it) },
           movieSort = movieSort,
           movieSortOptions = movieSortOptions,
           onMovieSortChange = { streamingPreferences.movieSort.set(it) },
@@ -404,12 +458,16 @@ private fun MoviesGridContent(
   onClearSearch: () -> Unit,
   columns: Int,
   gridState: LazyGridState,
+  listState: LazyListState,
+  layoutMode: MediaLayoutMode,
   navigationBarHeight: Dp,
   isRefreshing: MutableState<Boolean>,
   onRefresh: suspend () -> Unit,
   refreshEnabled: Boolean,
   movieFilter: MovieWatchFilter,
   onMovieFilterChange: (MovieWatchFilter) -> Unit,
+  movieDurationFilter: MovieDurationFilter,
+  onMovieDurationFilterChange: (MovieDurationFilter) -> Unit,
   movieSort: MovieSort,
   movieSortOptions: List<SortOption<MovieSort>>,
   onMovieSortChange: (MovieSort) -> Unit,
@@ -430,16 +488,20 @@ private fun MoviesGridContent(
     }
   } else if (filteredMovies.isEmpty()) {
     val filteringByWatchState = movieFilter != MovieWatchFilter.ALL
+    val filteringByDuration = movieDurationFilter != MovieDurationFilter.ALL
+    val hasFilter = filteringByWatchState || filteringByDuration
     EmptyState(
       icon = Icons.Filled.Movie,
       title = when {
         searchQuery.isNotBlank() -> "No movies found"
+        filteringByWatchState && filteringByDuration -> "No matching movies"
         filteringByWatchState -> "No ${movieFilter.label.lowercase()} movies"
+        filteringByDuration -> "No movies (${stringResource(movieDurationFilter.labelRes)})"
         else -> "No movies detected"
       },
       message = when {
         searchQuery.isNotBlank() -> "No movies match '$searchQuery'"
-        filteringByWatchState -> "Try a different watch-state filter"
+        hasFilter -> "Try a different filter"
         libraryFiltered -> stringResource(R.string.library_sources_banner_message)
         else -> "Add movie files to your device storage to see them here"
       },
@@ -448,13 +510,16 @@ private fun MoviesGridContent(
         .padding(innerPadding),
       actionLabel = when {
         searchQuery.isNotBlank() -> "Clear search"
-        filteringByWatchState -> "Show all"
+        hasFilter -> "Show all"
         libraryFiltered -> stringResource(R.string.library_sources_empty_action)
         else -> null
       },
       onAction = when {
         searchQuery.isNotBlank() -> onClearSearch
-        filteringByWatchState -> ({ onMovieFilterChange(MovieWatchFilter.ALL) })
+        hasFilter -> ({
+          onMovieFilterChange(MovieWatchFilter.ALL)
+          onMovieDurationFilterChange(MovieDurationFilter.ALL)
+        })
         libraryFiltered -> onManageLibrarySources
         else -> null
       },
@@ -468,44 +533,94 @@ private fun MoviesGridContent(
         .fillMaxSize()
         .padding(innerPadding),
     ) {
-      LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        state = gridState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-          start = 12.dp,
-          end = 12.dp,
-          top = 8.dp,
-          bottom = navigationBarHeight + 24.dp,
-        ),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-      ) {
-        item(span = { GridItemSpan(columns) }) {
-          Column {
-            LibraryFilterBar(
-              options = MovieWatchFilter.entries,
-              selected = movieFilter,
-              labelOf = { it.label },
-              onSelect = onMovieFilterChange,
-              sorts = movieSortOptions,
-              selectedSort = movieSort,
-              onSortSelect = onMovieSortChange,
-              modifier = Modifier.padding(horizontal = 4.dp),
-            )
-            LibraryResultCount(
-              shown = filteredMovies.size,
-              total = totalMovieCount,
+      if (layoutMode == MediaLayoutMode.GRID) {
+        LazyVerticalGrid(
+          columns = GridCells.Fixed(columns),
+          state = gridState,
+          modifier = Modifier.fillMaxSize(),
+          contentPadding = PaddingValues(
+            start = 12.dp,
+            end = 12.dp,
+            top = 8.dp,
+            bottom = navigationBarHeight + 24.dp,
+          ),
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+          verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+          item(span = { GridItemSpan(columns) }) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              LibraryFilterBar(
+                options = MovieWatchFilter.entries,
+                selected = movieFilter,
+                labelOf = { it.label },
+                onSelect = onMovieFilterChange,
+                sorts = movieSortOptions,
+                selectedSort = movieSort,
+                onSortSelect = onMovieSortChange,
+                modifier = Modifier.padding(horizontal = 4.dp),
+              ) {
+                MovieDurationFilterButton(
+                  selected = movieDurationFilter,
+                  onSelect = onMovieDurationFilterChange,
+                )
+              }
+              LibraryResultCount(
+                shown = filteredMovies.size,
+                total = totalMovieCount,
+              )
+            }
+          }
+          items(filteredMovies, key = { "grid_movie_${it.video.id}" }) { movie ->
+            MoviePosterCard(
+              movie = movie,
+              onClick = { onMovieClick(movie) },
+              onLongClick = { onMovieLongClick(movie) },
+              cardWidth = 180.dp,
             )
           }
         }
-        items(filteredMovies, key = { "grid_movie_${it.video.id}" }) { movie ->
-          MoviePosterCard(
-            movie = movie,
-            onClick = { onMovieClick(movie) },
-            onLongClick = { onMovieLongClick(movie) },
-            cardWidth = 180.dp,
-          )
+      } else {
+        LazyColumn(
+          state = listState,
+          modifier = Modifier.fillMaxSize(),
+          contentPadding = PaddingValues(
+            start = 12.dp,
+            end = 12.dp,
+            top = 8.dp,
+            bottom = navigationBarHeight + 24.dp,
+          ),
+          verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          item(key = "filter_bar") {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              LibraryFilterBar(
+                options = MovieWatchFilter.entries,
+                selected = movieFilter,
+                labelOf = { it.label },
+                onSelect = onMovieFilterChange,
+                sorts = movieSortOptions,
+                selectedSort = movieSort,
+                onSortSelect = onMovieSortChange,
+                modifier = Modifier.padding(horizontal = 4.dp),
+              ) {
+                MovieDurationFilterButton(
+                  selected = movieDurationFilter,
+                  onSelect = onMovieDurationFilterChange,
+                )
+              }
+              LibraryResultCount(
+                shown = filteredMovies.size,
+                total = totalMovieCount,
+              )
+            }
+          }
+          items(filteredMovies, key = { "list_movie_${it.video.id}" }) { movie ->
+            MovieListRow(
+              movie = movie,
+              onClick = { onMovieClick(movie) },
+              onLongClick = { onMovieLongClick(movie) },
+            )
+          }
         }
       }
     }

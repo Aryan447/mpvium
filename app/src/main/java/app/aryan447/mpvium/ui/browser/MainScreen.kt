@@ -54,9 +54,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
+import app.aryan447.mpvium.domain.audio.AudioRepository
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.audio.AudioScreen
 import app.aryan447.mpvium.ui.browser.folderlist.FolderListScreen
 import app.aryan447.mpvium.ui.streaming.home.StreamingHomeScreen
 import app.aryan447.mpvium.ui.theme.DarkMode
@@ -70,9 +72,14 @@ import app.aryan447.mpvium.ui.theme.glassNavigationRailItemColors
 import app.aryan447.mpvium.ui.theme.glassRimBrush
 import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import app.aryan447.mpvium.ui.browser.playlist.PlaylistScreen
 import app.aryan447.mpvium.ui.streaming.more.MoreLibraryScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesGridScreen
+import app.aryan447.mpvium.ui.streaming.titles.TitlesScreen
+import app.aryan447.mpvium.ui.streaming.titles.TitlesTypeFilter
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -99,9 +106,11 @@ object MainScreen : Screen {
   /**
    * Request a tab switch from outside composition (e.g. launcher shortcuts).
    * Persisted so it survives process recreation, and consumed by [Content].
+   * Historical index 2 (Movies) maps to canonical index 1 (Titles) with the
+   * Movies filter preselected.
    */
   fun requestTab(index: Int) {
-    val clamped = index.coerceIn(0, 4)
+    val clamped = index.coerceIn(0, 5)
     persistentSelectedTab = clamped
     _tabRequest.value = clamped
   }
@@ -150,7 +159,13 @@ object MainScreen : Screen {
     navItems.forEach { tab ->
       ShortNavigationBarItem(
         icon = { Icon(tab.icon, contentDescription = tab.label) },
-        label = if (showLabels) ({ Text(tab.label) }) else null,
+        label = if (showLabels) ({
+          Text(
+            text = tab.label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+          )
+        }) else null,
         selected = selectedCanonicalIndex == tab.canonicalIndex,
         onClick = { onSelectTab(tab.canonicalIndex) },
         colors = glassShortNavigationBarItemColors(),
@@ -162,7 +177,7 @@ object MainScreen : Screen {
   @Composable
   @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
   override fun Content() {
-    // Canonical 0..4 tab id (matches launcher shortcuts). The visible list
+    // Canonical 0..5 tab id (matches launcher shortcuts). The visible list
     // below may hide tabs, so selection is always stored canonically.
     var selectedTabId by rememberSaveable {
       mutableIntStateOf(persistentSelectedTab)
@@ -190,8 +205,13 @@ object MainScreen : Screen {
     }
     val glassHaze = rememberGlassHazeState()
     val glassStyle = glassHazeStyle(isDark = isDark, kind = GlassKind.Bar)
-    val navItems = remember(enabledBottomTabs) {
-      MainTab.visibleTabs(enabledBottomTabs)
+    val audioRepository = koinInject<AudioRepository>()
+    val hasAudio by audioRepository.hasAudio.collectAsState()
+    LaunchedEffect(Unit) {
+      audioRepository.checkHasAudio()
+    }
+    val navItems = remember(enabledBottomTabs, hasAudio) {
+      MainTab.visibleTabs(enabledBottomTabs, hasAudio)
     }
 
     fun selectTab(index: Int) {
@@ -233,13 +253,18 @@ object MainScreen : Screen {
     val tabRequest by _tabRequest.collectAsState()
 
     // Consume any pending external tab request (e.g. launcher shortcut).
+    // Historical index 2 opens Titles with Movies filter preselected when
+    // unified Titles tab is active, or the separate Movies tab if enabled.
     // A hidden tab falls back to the first visible tab so the bar always
     // shows a selected indicator.
     LaunchedEffect(tabRequest, navItems) {
       tabRequest?.let { requested ->
         _tabRequest.value = null
         val target =
-          if (navItems.any { it.canonicalIndex == requested }) {
+          if (requested == 2 && navItems.none { it == MainTab.MOVIES }) {
+            TitlesScreen.preselectFilter(TitlesTypeFilter.MOVIES)
+            1
+          } else if (navItems.any { it.canonicalIndex == requested }) {
             requested
           } else {
             navItems.first().canonicalIndex
@@ -380,7 +405,13 @@ object MainScreen : Screen {
                 navItems.forEach { tab ->
                   NavigationRailItem(
                     icon = { Icon(tab.icon, contentDescription = tab.label) },
-                    label = if (showBottomNavLabels) ({ Text(tab.label) }) else null,
+                    label = if (showBottomNavLabels) ({
+                      Text(
+                        text = tab.label,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                      )
+                    }) else null,
                     alwaysShowLabel = showBottomNavLabels,
                     selected = selectedTabId == tab.canonicalIndex,
                     onClick = { selectTab(tab.canonicalIndex) },
@@ -421,10 +452,13 @@ object MainScreen : Screen {
           ) {
             when (targetTab) {
               0 -> StreamingHomeScreen.Content()
-              1 -> SeriesGridScreen.Content()
-              2 -> MoviesGridScreen.Content()
+              1 -> if (navItems.any { it == MainTab.SHOWS }) SeriesGridScreen.Content() else TitlesScreen().Content()
+              2 -> if (navItems.any { it == MainTab.MOVIES }) MoviesGridScreen.Content() else TitlesScreen(TitlesTypeFilter.MOVIES).Content()
               3 -> FolderListScreen.Content()
               4 -> MoreLibraryScreen.Content()
+              5 -> PlaylistScreen.Content()
+              6 -> AudioScreen.Content()
+              else -> TitlesScreen().Content()
             }
           }
         }
@@ -437,3 +471,133 @@ object MainScreen : Screen {
 
 // CompositionLocal for navigation bar height
 val LocalNavigationBarHeight = compositionLocalOf { 0.dp }
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun MainBottomBarPreviewLayout(
+  navItems: List<MainTab>,
+  selectedCanonicalIndex: Int,
+  showLabels: Boolean,
+  pillNavigationBar: Boolean,
+) {
+  if (pillNavigationBar) {
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp)
+        .padding(bottom = 16.dp),
+      contentAlignment = Alignment.Center,
+    ) {
+      Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+      ) {
+        ShortNavigationBar(
+          modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+          containerColor = Color.Transparent,
+          windowInsets = WindowInsets(0, 0, 0, 0),
+          arrangement = ShortNavigationBarArrangement.EqualWeight,
+        ) {
+          navItems.forEach { tab ->
+            ShortNavigationBarItem(
+              icon = { Icon(tab.icon, contentDescription = tab.label) },
+              label = if (showLabels) ({
+                Text(
+                  text = tab.label,
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                )
+              }) else null,
+              selected = selectedCanonicalIndex == tab.canonicalIndex,
+              onClick = {},
+            )
+          }
+        }
+      }
+    }
+  } else {
+    ShortNavigationBar(
+      modifier = Modifier.clip(
+        RoundedCornerShape(
+          topStart = 20.dp,
+          topEnd = 20.dp,
+          bottomStart = 0.dp,
+          bottomEnd = 0.dp,
+        )
+      ),
+      containerColor = MaterialTheme.colorScheme.surfaceContainer,
+      windowInsets = WindowInsets(0, 0, 0, 0),
+      arrangement = ShortNavigationBarArrangement.EqualWeight,
+    ) {
+      navItems.forEach { tab ->
+        ShortNavigationBarItem(
+          icon = { Icon(tab.icon, contentDescription = tab.label) },
+          label = if (showLabels) ({
+            Text(
+              text = tab.label,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+            )
+          }) else null,
+          selected = selectedCanonicalIndex == tab.canonicalIndex,
+          onClick = {},
+        )
+      }
+    }
+  }
+}
+
+@Preview(name = "5 Tabs - 360dp Pill with Labels", widthDp = 360)
+@Composable
+private fun MainBottomBarFiveTabsPillWithLabelsPreview() {
+  MaterialTheme {
+    MainBottomBarPreviewLayout(
+      navItems = MainTab.visibleTabs(MainTab.defaultKeys),
+      selectedCanonicalIndex = 5,
+      showLabels = true,
+      pillNavigationBar = true,
+    )
+  }
+}
+
+@Preview(name = "5 Tabs - 360dp Pill without Labels", widthDp = 360)
+@Composable
+private fun MainBottomBarFiveTabsPillNoLabelsPreview() {
+  MaterialTheme {
+    MainBottomBarPreviewLayout(
+      navItems = MainTab.visibleTabs(MainTab.defaultKeys),
+      selectedCanonicalIndex = 5,
+      showLabels = false,
+      pillNavigationBar = true,
+    )
+  }
+}
+
+@Preview(name = "4 Tabs - 360dp Pill with Labels", widthDp = 360)
+@Composable
+private fun MainBottomBarFourTabsPillWithLabelsPreview() {
+  MaterialTheme {
+    MainBottomBarPreviewLayout(
+      navItems = MainTab.visibleTabs(setOf("HOME", "TITLES", "FOLDERS", "LIBRARY")),
+      selectedCanonicalIndex = 0,
+      showLabels = true,
+      pillNavigationBar = true,
+    )
+  }
+}
+
+@Preview(name = "5 Tabs - 360dp Standard with Labels", widthDp = 360)
+@Composable
+private fun MainBottomBarFiveTabsStandardWithLabelsPreview() {
+  MaterialTheme {
+    MainBottomBarPreviewLayout(
+      navItems = MainTab.visibleTabs(MainTab.defaultKeys),
+      selectedCanonicalIndex = 5,
+      showLabels = true,
+      pillNavigationBar = false,
+    )
+  }
+}

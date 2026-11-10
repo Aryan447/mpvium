@@ -1,12 +1,14 @@
 package app.aryan447.mpvium.ui.player.controls.components.sheets
 
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
+import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -18,12 +20,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.components.PlayerSheet
@@ -35,12 +40,13 @@ import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.utils.media.MediaInfoParser
+import app.aryan447.mpvium.utils.media.SubtitleReleaseParser
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
 sealed class OnlineSubtitleItem {
   data class OnlineTrack(val subtitle: WyzieSubtitle) : OnlineSubtitleItem()
-  data class Header(val title: String) : OnlineSubtitleItem()
+  data class Header(val title: String, val isOnline: Boolean = false) : OnlineSubtitleItem()
   object Divider : OnlineSubtitleItem()
 }
 
@@ -50,6 +56,7 @@ fun OnlineSubtitleSearchSheet(
   onDownloadOnline: (WyzieSubtitle) -> Unit,
   isSearching: Boolean = false,
   isDownloading: Boolean = false,
+  downloadingUrls: Set<String> = emptySet(),
   searchResults: ImmutableList<WyzieSubtitle> = emptyList<WyzieSubtitle>().toImmutableList(),
   isOnlineSectionExpanded: Boolean = true,
   onToggleOnlineSection: () -> Unit = {},
@@ -109,6 +116,7 @@ fun OnlineSubtitleSearchSheet(
       mediaInfoTitle = mediaInfo.title,
       isSearching = isSearching,
       isDownloading = isDownloading,
+      downloadingUrls = downloadingUrls,
       isSearchingMedia = isSearchingMedia,
       searchResults = searchResults,
       isOnlineSectionExpanded = isOnlineSectionExpanded,
@@ -132,12 +140,13 @@ fun OnlineSubtitleSearchSheet(
     return
   }
 
-  val items = remember(searchResults, isSearching, isOnlineSectionExpanded) {
+  val onlineResultsLabel = stringResource(R.string.player_sheets_online_results, searchResults.size)
+  val items = remember(searchResults, isSearching, isOnlineSectionExpanded, onlineResultsLabel) {
     val list = mutableListOf<OnlineSubtitleItem>()
 
     // Online Search Results section
     if (searchResults.isNotEmpty() || isSearching) {
-        list.add(OnlineSubtitleItem.Header("Online Results (${searchResults.size})"))
+        list.add(OnlineSubtitleItem.Header(onlineResultsLabel, isOnline = true))
         if (isOnlineSectionExpanded) {
             list.addAll(searchResults.map { OnlineSubtitleItem.OnlineTrack(it) })
         }
@@ -227,11 +236,12 @@ fun OnlineSubtitleSearchSheet(
             WyzieSubtitleRow(
                 subtitle = item.subtitle,
                 onDownload = { onDownloadOnline(item.subtitle) },
+                isDownloading = item.subtitle.url in downloadingUrls,
                 modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = 2.dp)
             )
         }
         is OnlineSubtitleItem.Header -> {
-            val isOnlineHeader = item.title.startsWith("Online Results")
+            val isOnlineHeader = item.isOnline
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -281,6 +291,7 @@ private fun TwoPaneSubtitleSearch(
   mediaInfoTitle: String,
   isSearching: Boolean,
   isDownloading: Boolean,
+  downloadingUrls: Set<String>,
   isSearchingMedia: Boolean,
   searchResults: ImmutableList<WyzieSubtitle>,
   isOnlineSectionExpanded: Boolean,
@@ -408,7 +419,7 @@ private fun TwoPaneSubtitleSearch(
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
             Text(
-              text = "Online Results (${searchResults.size})",
+              text = stringResource(R.string.player_sheets_online_results, searchResults.size),
               style = MaterialTheme.typography.labelLarge,
               color = MaterialTheme.colorScheme.primary,
               fontWeight = FontWeight.Bold,
@@ -428,6 +439,7 @@ private fun TwoPaneSubtitleSearch(
                     WyzieSubtitleRow(
                       subtitle = subtitle,
                       onDownload = { onDownloadOnline(subtitle) },
+                      isDownloading = subtitle.url in downloadingUrls,
                       modifier = Modifier.padding(
                         horizontal = MaterialTheme.spacing.small,
                         vertical = 2.dp
@@ -448,7 +460,7 @@ private fun TwoPaneSubtitleSearch(
               }
               else -> {
                 Text(
-                  text = "Pick a title on the left to load subtitles",
+                  text = stringResource(R.string.player_sheets_subtitle_pick_title),
                   style = MaterialTheme.typography.bodyMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
                   textAlign = TextAlign.Center,
@@ -563,35 +575,137 @@ fun WyzieSubtitleRow(
     subtitle: WyzieSubtitle,
     onDownload: () -> Unit,
     modifier: Modifier = Modifier,
+    isDownloading: Boolean = false,
 ) {
+    val parsed = remember(subtitle.displayName) {
+        SubtitleReleaseParser.parse(subtitle.displayName)
+    }
+    val haptic = LocalHapticFeedback.current
+    val hearingImpairedLabel = stringResource(R.string.player_sheets_subtitle_hearing_impaired)
+    val releaseGroup = parsed.releaseGroup ?: subtitle.origin?.takeIf { it.isNotBlank() }
+    val meta = buildList {
+        add(subtitle.displayLanguage)
+        subtitle.format?.takeIf { it.isNotBlank() }?.let { add(it.uppercase()) }
+        subtitle.source?.takeIf { it.isNotBlank() }?.let(::add)
+        if (subtitle.isHearingImpaired) add(hearingImpairedLabel)
+    }.joinToString(" · ")
+
     Surface(
-        modifier = modifier.fillMaxWidth().clickable { onDownload() },
+        modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .clickable(enabled = !isDownloading) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onDownload()
+                }
+                .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.smaller),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = subtitle.languageBadge,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = subtitle.displayName,
+                    text = parsed.displayTitle.ifBlank { subtitle.displayName },
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = subtitle.displayLanguage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                    subtitle.source?.let { Text(text = " • $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
-                    subtitle.format?.let { Text(text = " • ${it.uppercase()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline) }
+                if (parsed.hasTechnicalTags || releaseGroup != null || subtitle.extraReleaseCount > 0) {
+                    Spacer(Modifier.height(MaterialTheme.spacing.extraSmall))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)
+                    ) {
+                        parsed.quality?.let { SubtitleTag(it, highlighted = true) }
+                        listOfNotNull(
+                            parsed.source,
+                            parsed.videoCodec,
+                            parsed.audio,
+                            parsed.edition,
+                            releaseGroup
+                        ).forEach { SubtitleTag(it) }
+                        if (subtitle.extraReleaseCount > 0) {
+                            SubtitleTag("+${subtitle.extraReleaseCount}")
+                        }
+                    }
                 }
+                Spacer(Modifier.height(MaterialTheme.spacing.extraSmall))
+                Text(
+                    text = meta,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-            IconButton(onClick = onDownload) {
-                Icon(imageVector = Icons.Default.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+
+            if (isDownloading) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(8.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                IconButton(onClick = onDownload) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = stringResource(R.string.player_sheets_subtitle_download),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun SubtitleTag(
+    text: String,
+    highlighted: Boolean = false,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = if (highlighted) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        maxLines = 1,
+        modifier = Modifier
+            .background(
+                if (highlighted) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHighest
+                },
+                MaterialTheme.shapes.small
+            )
+            .padding(horizontal = MaterialTheme.spacing.smaller, vertical = MaterialTheme.spacing.extraSmall)
+    )
 }
 
 @Composable

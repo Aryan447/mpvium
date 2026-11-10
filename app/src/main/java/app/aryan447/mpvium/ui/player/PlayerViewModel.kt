@@ -25,7 +25,9 @@ import app.aryan447.mpvium.repository.wyzie.WyzieSearchRepository
 import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
 import app.aryan447.mpvium.utils.media.ChecksumUtils
 import app.aryan447.mpvium.utils.media.MediaInfoParser
+import app.aryan447.mpvium.utils.media.SubtitleReleaseParser
 import `is`.xyz.mpv.MPVLib
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
@@ -111,6 +113,10 @@ class PlayerViewModel(
   private val _isDownloadingSub = MutableStateFlow(false)
   val isDownloadingSub: StateFlow<Boolean> = _isDownloadingSub.asStateFlow()
 
+  /** URLs of individual search results currently being downloaded. */
+  private val _downloadingSubtitleUrls = MutableStateFlow<Set<String>>(emptySet())
+  val downloadingSubtitleUrls: StateFlow<Set<String>> = _downloadingSubtitleUrls.asStateFlow()
+
   private val _isSearchingSub = MutableStateFlow(false)
   val isSearchingSub: StateFlow<Boolean> = _isSearchingSub.asStateFlow()
 
@@ -180,7 +186,38 @@ class PlayerViewModel(
 
   // Media title for subtitle association (must be declared before init blocks that reference it)
   var currentMediaTitle: String = ""
+  var currentFilePath: String? = null
   private var lastAutoSelectedMediaTitle: String? = null
+
+  // Audio-only mode properties
+  private val _isAudioMode = MutableStateFlow(false)
+  val isAudioMode: StateFlow<Boolean> = _isAudioMode.asStateFlow()
+
+  private val _audioTitle = MutableStateFlow("")
+  val audioTitle: StateFlow<String> = _audioTitle.asStateFlow()
+
+  private val _audioArtist = MutableStateFlow("")
+  val audioArtist: StateFlow<String> = _audioArtist.asStateFlow()
+
+  private val _audioAlbum = MutableStateFlow("")
+  val audioAlbum: StateFlow<String> = _audioAlbum.asStateFlow()
+
+  private val _audioArtUri = MutableStateFlow<Uri?>(null)
+  val audioArtUri: StateFlow<Uri?> = _audioArtUri.asStateFlow()
+
+  fun setAudioMode(
+    enabled: Boolean,
+    title: String? = null,
+    artist: String? = null,
+    album: String? = null,
+    artUri: Uri? = null,
+  ) {
+    _isAudioMode.value = enabled
+    title?.let { _audioTitle.value = it }
+    artist?.let { _audioArtist.value = it }
+    album?.let { _audioAlbum.value = it }
+    _audioArtUri.value = artUri
+  }
 
   // Audio state
   val currentVolume = MutableStateFlow(host.audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
@@ -270,6 +307,15 @@ class PlayerViewModel(
   private val _seekBarShown = MutableStateFlow(false)
   val seekBarShown: StateFlow<Boolean> = _seekBarShown.asStateFlow()
 
+  // Demuxer cache state (Spec 17: Lean seek cache)
+  private val _cacheRanges = MutableStateFlow<ImmutableList<SeekCacheResolver.SeekableRange>>(persistentListOf())
+  val cacheRanges: StateFlow<ImmutableList<SeekCacheResolver.SeekableRange>> = _cacheRanges.asStateFlow()
+
+  private val _forwardCacheDuration = MutableStateFlow(0f)
+  val forwardCacheDuration: StateFlow<Float> = _forwardCacheDuration.asStateFlow()
+
+  private var cachePollJob: Job? = null
+
   private val _areControlsLocked = MutableStateFlow(false)
   val areControlsLocked: StateFlow<Boolean> = _areControlsLocked.asStateFlow()
 
@@ -333,6 +379,9 @@ class PlayerViewModel(
   // External subtitle tracking
   private val _externalSubtitles = mutableListOf<String>()
   val externalSubtitles: List<String> get() = _externalSubtitles.toList()
+
+  // Friendly labels for downloaded external subtitles, keyed by source URI.
+  private val externalSubtitleLabels = mutableMapOf<String, String>()
 
   // Mapping from mpv internal path/URI to the original source URI (resolves deletion issues)
   private val mpvPathToUriMap = mutableMapOf<String, String>()
@@ -407,7 +456,21 @@ class PlayerViewModel(
           // Update hr-seek settings dynamically
           MPVLib.setPropertyString("hr-seek", if (shouldUsePreciseSeeking) "yes" else "no")
           MPVLib.setPropertyString("hr-seek-framedrop", "yes")
+          MPVLib.setPropertyString("hr-seek-demuxer-offset", "0")
+          MPVLib.setPropertyString("framedrop", "vo")
         }
+      }
+    }
+
+    // Observe controls visibility and leanSeekCache preference to manage cache polling.
+    // Must stay in this (later) init block: `controlsShown`/`seekBarShown` are declared
+    // above the previous init block, so referencing them there collects null flows and
+    // crashes the ViewModel with a NullPointerException inside Flow.combine.
+    viewModelScope.launch {
+      combine(controlsShown, seekBarShown, advancedPreferences.leanSeekCache.changes()) { c, s, lean ->
+        (c || s) && lean
+      }.collect { shouldPoll ->
+        updateCachePolling(shouldPoll)
       }
     }
   }
@@ -451,9 +514,6 @@ class PlayerViewModel(
      * (~0.5-1s on high-res content). Keep the player paused through the
      * landing and only resume once video-pts crosses the target.
      */
-    const val SEEK_LAND_WAIT_TIMEOUT_MS = 1500L
-    const val VIDEO_LAND_TOLERANCE_SEC = 0.15
-    const val VIDEO_LAND_POLL_MS = 25L
     val VALID_SUBTITLE_EXTENSIONS =
       setOf(
         // Common & modern
@@ -519,11 +579,21 @@ class PlayerViewModel(
     }
   }
 
-  fun addSubtitle(uri: Uri, select: Boolean = true, silent: Boolean = false) {
+  fun addSubtitle(
+    uri: Uri,
+    select: Boolean = true,
+    silent: Boolean = false,
+    displayLabel: String? = null,
+  ) {
     viewModelScope.launch(Dispatchers.IO) {
       val uriString = uri.toString()
       if (_externalSubtitles.contains(uriString)) {
         android.util.Log.d("PlayerViewModel", "Subtitle already tracked, skipping: $uriString")
+        if (!silent) {
+          withContext(Dispatchers.Main) {
+            showToast(host.context.getString(R.string.player_sheets_subtitle_already_added))
+          }
+        }
         return@launch
       }
 
@@ -562,8 +632,12 @@ class PlayerViewModel(
         if (!_externalSubtitles.contains(uriString)) {
           _externalSubtitles.add(uriString)
         }
+        if (!displayLabel.isNullOrBlank()) {
+          externalSubtitleLabels[uriString] = displayLabel
+        }
 
-        val displayName = fileName.take(30).let { if (fileName.length > 30) "$it..." else it }
+        val displayName = displayLabel?.takeIf { it.isNotBlank() }
+          ?: fileName.take(30).let { if (fileName.length > 30) "$it..." else it }
         if (!silent) {
           withContext(Dispatchers.Main) {
             showToast("$displayName added")
@@ -610,12 +684,14 @@ class PlayerViewModel(
     }
   }
 
-  fun setMediaTitle(mediaTitle: String) {
+  fun setMediaTitle(mediaTitle: String, filePath: String? = null) {
+    currentFilePath = filePath ?: MPVLib.getPropertyString("path")
     if (currentMediaTitle != mediaTitle) {
       currentMediaTitle = mediaTitle
       lastAutoSelectedMediaTitle = null
       // Clear external subtitles when media changes
       _externalSubtitles.clear()
+      externalSubtitleLabels.clear()
       // Scan for previously downloaded/added subtitles
       scanLocalSubtitles(mediaTitle)
 
@@ -1006,6 +1082,7 @@ class PlayerViewModel(
 
         if (deleted) {
           _externalSubtitles.remove(originalUriString)
+          externalSubtitleLabels.remove(originalUriString)
           mpvPathToUriMap.remove(mpvPath)
           withContext(Dispatchers.Main) {
             showToast("Subtitle deleted")
@@ -1120,17 +1197,43 @@ class PlayerViewModel(
   }
 
   fun downloadSubtitle(subtitle: WyzieSubtitle) {
+      if (subtitle.url in _downloadingSubtitleUrls.value) return
       viewModelScope.launch {
+          _downloadingSubtitleUrls.update { it + subtitle.url }
           _isDownloadingSub.value = true
-          wyzieRepository.download(subtitle, currentMediaTitle)
-              .onSuccess { uri ->
-                  addSubtitle(uri)
-              }
-              .onFailure {
-                  showToast("Download failed: ${it.message}")
-              }
-          _isDownloadingSub.value = false
+          try {
+              wyzieRepository.download(subtitle, currentMediaTitle)
+                  .onSuccess { uri ->
+                      addSubtitle(uri, displayLabel = subtitleTrackLabel(subtitle))
+                  }
+                  .onFailure {
+                      showToast("Download failed: ${it.message}")
+                  }
+          } finally {
+              _downloadingSubtitleUrls.update { it - subtitle.url }
+              _isDownloadingSub.value = _downloadingSubtitleUrls.value.isNotEmpty()
+          }
       }
+  }
+
+  /** Friendly label for the external track list, e.g. "English · 1080p · WEB-DL · FGT". */
+  private fun subtitleTrackLabel(subtitle: WyzieSubtitle): String {
+      val parsed = SubtitleReleaseParser.parse(subtitle.displayName)
+      val parts = buildList {
+          add(subtitle.displayLanguage)
+          parsed.quality?.let(::add)
+          parsed.source?.let(::add)
+          parsed.videoCodec?.let(::add)
+          (parsed.releaseGroup ?: subtitle.origin)?.let(::add)
+          if (subtitle.isHearingImpaired) add("HI")
+      }
+      return parts.distinct().joinToString(" · ")
+  }
+
+  /** Label for a track's external filename, if it was added from online search. */
+  fun externalSubtitleLabelFor(pathOrUri: String): String? {
+      val uri = mpvPathToUriMap[pathOrUri] ?: pathOrUri
+      return externalSubtitleLabels[uri]
   }
 
 
@@ -1284,83 +1387,32 @@ class PlayerViewModel(
     coalesceSeek(offset)
   }
 
-  fun seekTo(position: Int, isScrubbing: Boolean = false) {
+  fun seekTo(position: Int, isScrubbing: Boolean = false, exact: Boolean = false) {
     if (isScrubbing) {
       val now = android.os.SystemClock.uptimeMillis()
       if (now - lastScrubSeekUptimeMs < SCRUB_SEEK_THROTTLE_MS) return
       lastScrubSeekUptimeMs = now
     }
     val sequence = seekSequence.incrementAndGet()
-    // Duration is already observed as a flow; reuse the cached value so the
-    // seek command dispatches without a blocking property round-trip first.
     val cachedDuration = duration
     viewModelScope.launch(Dispatchers.IO) {
-      dispatchAbsoluteSeek(position, isScrubbing, sequence, cachedDuration)
+      dispatchAbsoluteSeek(position, isScrubbing, sequence, cachedDuration, forceExact = exact)
     }
   }
 
-  /**
-   * Ordered seek-then-resume for gesture releases (seekbar scrub, swipe).
-   * The old call pattern — `seekTo()` + `unpause()` as two fire-and-forget
-   * coroutines — let the unpause win the race: playback resumed at the
-   * pre-seek position, then the seek landed, costing a visible hitch plus a
-   * ~1s cache/decoder re-stall on slower devices. Issuing both from one IO
-   * coroutine keeps mpv-side order: seek first, resume after. Resume is
-   * unconditional: in the rare case this seek is superseded mid-flight, a
-   * stuck-paused player (needs a manual play tap) is worse than a resume
-   * the newer seek immediately corrects.
-   */
-  fun seekToAndResume(position: Int) {
+  fun seekToAndResume(position: Int, exact: Boolean = false) {
     val sequence = seekSequence.incrementAndGet()
     val cachedDuration = duration
     viewModelScope.launch(Dispatchers.IO) {
-      // The scrub/swipe already parked mpv near the requested target with
-      // throttled keyframe seeks, so re-issuing an exact seek for a target
-      // within the landing tolerance re-decodes from that keyframe forward —
-      // on tablets decoding high-res content that shows up as a ~0.5-1s
-      // freeze after the seek lands. Skip the redundant exact seek and let
-      // playback resume instantly from where mpv already is.
-      val live = MPVLib.getPropertyDouble("time-pos")
-      val farSeek = live == null || abs(live - position.toDouble()) > SEEK_SETTLE_TOLERANCE_SEC.toDouble()
-
-      // A landed keyframe seek jumps the audio clock (and time-pos) straight
-      // to the target while the video pipeline still decodes from the
-      // keyframe toward it, so resuming right away leaves the picture frozen
-      // while audio + the timer keep advancing. Hold the clock by keeping the
-      // player paused through the landing, waiting for the video to catch up,
-      // and only then resume — playback restarts in sync instead of chasing.
-      val wasPlaying = !(MPVLib.getPropertyBoolean("pause") ?: true)
-      if (wasPlaying && farSeek) {
-        MPVLib.setPropertyBoolean("pause", true)
-      }
-      if (farSeek && dispatchAbsoluteSeek(position, isScrubbing = false, sequence, cachedDuration)) {
-        // Wait (still paused) for video-pts to cross the target. Bounded and
-        // cancellable; falls through to resume if the property is unavailable
-        // (audio-only), the decoder stalls, or the seek is superseded.
-        awaitVideoAtOrAfter(position)
-      }
+      dispatchAbsoluteSeek(
+        position = position,
+        isScrubbing = false,
+        sequence = sequence,
+        cachedDuration = cachedDuration,
+        forceExact = exact,
+      )
       withContext(Dispatchers.Main) { host.requestAudioFocus() }
       MPVLib.setPropertyBoolean("pause", false)
-    }
-  }
-
-  /**
-   * While paused, mpv still decodes forward from the seek keyframe to display
-   * the frame at the target, so video-pts advances with playback held. Wait
-   * until it reaches the target (within tolerance) before resume so audio can
-   * never outrun a video that is still decoding from the keyframe. Gives up
-   * instead of extending the pause when the video track is absent, mpv
-   * pauses-for-cache, or the deadline elapses.
-   */
-  private suspend fun awaitVideoAtOrAfter(targetSec: Int) {
-    if (MPVLib.getPropertyDouble("video-pts") == null) return
-    val deadline = System.currentTimeMillis() + SEEK_LAND_WAIT_TIMEOUT_MS
-    while (System.currentTimeMillis() < deadline) {
-      if (MPVLib.getPropertyBoolean("paused-for-cache") == true) return
-      val videoPts = MPVLib.getPropertyDouble("video-pts")
-      if (videoPts == null) return
-      if (videoPts >= targetSec - VIDEO_LAND_TOLERANCE_SEC) return
-      delay(VIDEO_LAND_POLL_MS)
     }
   }
 
@@ -1374,6 +1426,7 @@ class PlayerViewModel(
     isScrubbing: Boolean,
     sequence: Int,
     cachedDuration: Int?,
+    forceExact: Boolean = false,
   ): Boolean {
     val maxDuration = cachedDuration ?: MPVLib.getPropertyInt("duration") ?: 0
     var clampedPosition = position.coerceIn(0, maxDuration)
@@ -1389,23 +1442,21 @@ class PlayerViewModel(
 
     if (clampedPosition !in 0..maxDuration) return false
 
-    // Cancel pending relative seek before absolute seek
     seekCoalesceJob?.cancel()
     pendingSeekOffset = 0
 
-    // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
     val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || maxDuration < 120
-    // During active scrubbing (dragging finger), use fast keyframe seeking for butter-smooth preview updates without decoder stalls.
-    // On release or discrete seek, use precise exact seeking if enabled.
-    val seekMode = if (isScrubbing) {
-      "absolute+keyframes"
-    } else if (shouldUsePreciseSeeking) {
-      "absolute+exact"
-    } else {
-      "absolute+keyframes"
+
+    // 1. Scrubbing (holding finger down): keyframes for smooth continuous scrubbing
+    // 2. Gesture swipe release (forceExact): ALWAYS exact so 5:37 lands on 5:37
+    // 3. Seekbar tap: keyframe by default (or exact if precise seeking is enabled in settings)
+    val seekMode = when {
+      isScrubbing -> "absolute+keyframes"
+      forceExact -> "absolute+exact"
+      shouldUsePreciseSeeking -> "absolute+exact"
+      else -> "absolute+keyframes"
     }
-    // Drop superseded requests: only the latest tap/drag position
-    // is allowed to reach mpv.
+
     if (sequence != seekSequence.get()) return false
     MPVLib.command("seek", clampedPosition.toString(), seekMode)
     return true
@@ -2405,6 +2456,46 @@ class PlayerViewModel(
     playerUpdate.value = PlayerUpdates.ShowText(if (newState) "V-Flip On" else "V-Flip Off")
   }
 
+  // ==================== Demuxer Cache Polling (Spec 17) ====================
+
+  fun updateCachePolling(isControlsVisible: Boolean) {
+    val enabled = advancedPreferences.leanSeekCache.get()
+    if (!enabled || !isControlsVisible) {
+      cachePollJob?.cancel()
+      cachePollJob = null
+      if (!enabled) {
+        _cacheRanges.value = persistentListOf()
+        _forwardCacheDuration.value = 0f
+      }
+      return
+    }
+
+    if (cachePollJob?.isActive == true) return
+
+    cachePollJob = viewModelScope.launch(Dispatchers.Default) {
+      while (isActive) {
+        pollDemuxerCache()
+        delay(600) // ~1.67 Hz (<= 2 Hz requirement)
+      }
+    }
+  }
+
+  private fun pollDemuxerCache() {
+    val node = runCatching { MPVLib.getPropertyNode("demuxer-cache-state") }.getOrNull()
+    val cacheSecs = runCatching {
+      MPVLib.getPropertyDouble("demuxer-cache-time")
+        ?: MPVLib.getPropertyDouble("demuxer-cache-duration")
+        ?: 0.0
+    }.getOrDefault(0.0).toFloat()
+    _forwardCacheDuration.value = cacheSecs
+
+    val parsed = SeekCacheResolver.parseDemuxerCacheRanges(node)
+    val current = _cacheRanges.value
+    if (SeekCacheResolver.hasCacheRangesChanged(current, parsed)) {
+      _cacheRanges.value = parsed.toImmutableList()
+    }
+  }
+
   // ==================== Utility ====================
 
   fun showToast(message: String) {
@@ -2412,6 +2503,8 @@ class PlayerViewModel(
   }
 
   override fun onCleared() {
+    cachePollJob?.cancel()
+    cachePollJob = null
     super.onCleared()
   }
 }

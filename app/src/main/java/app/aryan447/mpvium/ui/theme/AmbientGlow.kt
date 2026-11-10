@@ -1,11 +1,13 @@
 package app.aryan447.mpvium.ui.theme
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -54,8 +56,18 @@ fun Modifier.themeGlow(): Modifier = composed {
   val background = MaterialTheme.colorScheme.background
   val isDark = background.luminance() < 0.5f
   val isAmoled = isDark && background.luminance() < 0.001f
-  val tint = MaterialTheme.colorScheme.primary
-  val accent = MaterialTheme.colorScheme.tertiary
+  val targetTint = MaterialTheme.colorScheme.primary
+  val targetAccent = MaterialTheme.colorScheme.tertiary
+  val tint by animateColorAsState(
+    targetValue = targetTint,
+    animationSpec = tween(durationMillis = GLOW_ENTER_MS, easing = FastOutSlowInEasing),
+    label = "themeGlowTint",
+  )
+  val accent by animateColorAsState(
+    targetValue = targetAccent,
+    animationSpec = tween(durationMillis = GLOW_ENTER_MS, easing = FastOutSlowInEasing),
+    label = "themeGlowAccent",
+  )
   val enter = remember { Animatable(0f) }
   LaunchedEffect(Unit) {
     enter.animateTo(

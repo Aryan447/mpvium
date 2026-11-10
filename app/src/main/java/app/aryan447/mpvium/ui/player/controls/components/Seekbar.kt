@@ -2,7 +2,6 @@ package app.aryan447.mpvium.ui.player.controls.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -53,8 +52,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -63,6 +64,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,16 +76,28 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.PlayerLayout
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
+import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.preferences.SeekbarStyle
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.snap
+import androidx.compose.foundation.isSystemInDarkTheme
+import app.aryan447.mpvium.ui.player.SeekCacheResolver
+import app.aryan447.mpvium.ui.theme.AppTheme
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import org.koin.compose.koinInject
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -201,9 +216,18 @@ fun SeekbarWithTimers(
   seekbarStyle: SeekbarStyle = SeekbarStyle.Wavy,
   loopStart: Float? = null,
   loopEnd: Float? = null,
+  chaptersInSeekbar: Boolean? = null,
+  cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange> = persistentListOf(),
+  forwardCacheDuration: Float = 0f,
+  isLeanSeekCacheEnabled: Boolean = false,
+  isExternalSeeking: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
+  val appearancePreferences = if (LocalInspectionMode.current) null else koinInject<AppearancePreferences>()
+  val prefChaptersInSeekbar by appearancePreferences?.chaptersInSeekbar?.collectAsState() ?: remember { mutableStateOf(false) }
+  val showChapters = chaptersInSeekbar ?: prefChaptersInSeekbar
   var isUserInteracting by remember { mutableStateOf(false) }
   var userPosition by remember { mutableFloatStateOf(position) }
 
@@ -265,8 +289,33 @@ fun SeekbarWithTimers(
     scrubTier = 0
   }
 
-  LaunchedEffect(position, dragActive, settling) {
-    if (dragActive) return@LaunchedEffect // finger down: preview owns the thumb
+  // Hand-off from an external (gesture swipe) preview to the settle guard.
+  // The gesture clears PlayerUpdates.HorizontalSeek as soon as the exact
+  // seek is dispatched, not when it lands, so the live poll is still at the
+  // pre-seek position for a few frames. Park the thumb on the last previewed
+  // timestamp until mpv confirms, instead of visibly snapping backward.
+  var externalSeekTarget by remember { mutableFloatStateOf(Float.NaN) }
+  LaunchedEffect(isExternalSeeking, position) {
+    if (isExternalSeeking) {
+      // An external gesture owns the thumb: drop any in-flight local settle
+      // hold (tap/scrub) so it can't pin the handle to an older position and
+      // desync it from the center HUD badge.
+      if (settling || isUserInteracting) {
+        settling = false
+        isUserInteracting = false
+        settleTarget = Float.NaN
+      }
+      externalSeekTarget = position
+    } else if (!externalSeekTarget.isNaN()) {
+      val target = externalSeekTarget
+      externalSeekTarget = Float.NaN
+      userPosition = target
+      enterSettling(target)
+    }
+  }
+
+  LaunchedEffect(position, dragActive, settling, isExternalSeeking) {
+    if (dragActive || isExternalSeeking) return@LaunchedEffect // finger down: preview owns the thumb
     if (settling) {
       val target = settleTarget
       if (target.isNaN()) {
@@ -326,13 +375,24 @@ fun SeekbarWithTimers(
     }
   }
 
+  // Single source of truth for the thumb, the track fill and the left timer.
+  // A gesture preview (local drag or external swipe-seek) must win over the
+  // follower's animated value; otherwise the ~24 FPS live polls fight the
+  // preview and the handle/timer visibly dance. Computed once here so the
+  // timer and every seekbar style can never disagree by a frame.
+  val visualPosition = when {
+    isUserInteracting -> userPosition
+    isExternalSeeking -> position
+    else -> animatedPosition.value
+  }
+
   Row(
     modifier = modifier.height(48.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
   ) {
     VideoTimer(
-      value = if (isUserInteracting) userPosition else position,
+      value = visualPosition,
       timersInverted.first,
       onClick = {
         clickEvent()
@@ -365,53 +425,67 @@ fun SeekbarWithTimers(
           .height(32.dp),
         contentAlignment = Alignment.Center,
       ) {
-      when (seekbarStyle) {
-        SeekbarStyle.Standard -> {
-          StandardSeekbar(
-            position = if (isUserInteracting) userPosition else animatedPosition.value,
-            duration = duration,
-            chapters = chapters,
-            isPaused = paused,
-            isScrubbing = isUserInteracting,
-            seekbarStyle = SeekbarStyle.Standard,
-            // Touch handled by parent overlay (single gesture handler).
-            onSeek = { },
-            onSeekFinished = { },
-            loopStart = loopStart,
-            loopEnd = loopEnd,
-          )
+        when (seekbarStyle) {
+          SeekbarStyle.Standard -> {
+            StandardSeekbar(
+              position = visualPosition,
+              duration = duration,
+              chapters = chapters,
+              isPaused = paused,
+              isScrubbing = isUserInteracting,
+              seekbarStyle = SeekbarStyle.Standard,
+              cinema = isModern,
+              // Touch handled by parent overlay (single gesture handler).
+              onSeek = { },
+              onSeekFinished = { },
+              loopStart = loopStart,
+              loopEnd = loopEnd,
+              chaptersInSeekbar = showChapters,
+              cacheRanges = cacheRanges,
+              forwardCacheDuration = forwardCacheDuration,
+              isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
+            )
+          }
+          SeekbarStyle.Wavy -> {
+            SquigglySeekbar(
+              position = visualPosition,
+              duration = duration,
+              chapters = chapters,
+              isPaused = paused,
+              isScrubbing = isUserInteracting,
+              useWavySeekbar = true,
+              seekbarStyle = SeekbarStyle.Wavy,
+              onSeek = { }, // Touch handled by parent
+              onSeekFinished = { }, // Touch handled by parent
+              loopStart = loopStart,
+              loopEnd = loopEnd,
+              chaptersInSeekbar = showChapters,
+              cacheRanges = cacheRanges,
+              forwardCacheDuration = forwardCacheDuration,
+              isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
+            )
+          }
+          SeekbarStyle.Thick -> {
+            StandardSeekbar(
+              position = visualPosition,
+              duration = duration,
+              chapters = chapters,
+              isPaused = paused,
+              isScrubbing = isUserInteracting,
+              seekbarStyle = SeekbarStyle.Thick,
+              cinema = isModern,
+              // Touch handled by parent overlay (single gesture handler).
+              onSeek = { },
+              onSeekFinished = { },
+              loopStart = loopStart,
+              loopEnd = loopEnd,
+              chaptersInSeekbar = showChapters,
+              cacheRanges = cacheRanges,
+              forwardCacheDuration = forwardCacheDuration,
+              isLeanSeekCacheEnabled = isLeanSeekCacheEnabled,
+            )
+          }
         }
-        SeekbarStyle.Wavy -> {
-          SquigglySeekbar(
-            position = if (isUserInteracting) userPosition else animatedPosition.value,
-            duration = duration,
-            chapters = chapters,
-            isPaused = paused,
-            isScrubbing = isUserInteracting,
-            useWavySeekbar = true,
-            seekbarStyle = SeekbarStyle.Wavy,
-            onSeek = { }, // Touch handled by parent
-            onSeekFinished = { }, // Touch handled by parent
-            loopStart = loopStart,
-            loopEnd = loopEnd,
-          )
-        }
-        SeekbarStyle.Thick -> {
-          StandardSeekbar(
-            position = if (isUserInteracting) userPosition else animatedPosition.value,
-            duration = duration,
-            chapters = chapters,
-            isPaused = paused,
-            isScrubbing = isUserInteracting,
-            seekbarStyle = SeekbarStyle.Thick,
-            // Touch handled by parent overlay (single gesture handler).
-            onSeek = { },
-            onSeekFinished = { },
-            loopStart = loopStart,
-            loopEnd = loopEnd,
-          )
-        }
-      }
       }
 
       // Transparent touch overlay, drawn last so it is hit-tested first and
@@ -505,7 +579,7 @@ fun SeekbarWithTimers(
   }
 
     VideoTimer(
-      value = if (timersInverted.second) position - duration else duration,
+      value = if (timersInverted.second) visualPosition - duration else duration,
       isInverted = timersInverted.second,
       onClick = {
         clickEvent()
@@ -529,10 +603,52 @@ private fun SquigglySeekbar(
   onSeekFinished: () -> Unit,
   loopStart: Float? = null,
   loopEnd: Float? = null,
+  chaptersInSeekbar: Boolean = false,
+  cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange> = persistentListOf(),
+  forwardCacheDuration: Float = 0f,
+  isLeanSeekCacheEnabled: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val primaryColor = MaterialTheme.colorScheme.primary
   val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+  val density = LocalDensity.current
+
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val amoledMode by appearancePreferences.amoledMode.collectAsState()
+  val appTheme by appearancePreferences.appTheme.collectAsState()
+  val isDark = isSystemInDarkTheme()
+
+  val baseAlpha = when {
+    appTheme == AppTheme.Glass -> 0.18f
+    amoledMode && isDark -> 0.24f
+    isDark -> 0.16f
+    else -> 0.12f
+  }
+
+  val isForwardCollapsed = !isPaused && forwardCacheDuration <= 0.1f
+  val targetAlpha = if (isForwardCollapsed) baseAlpha * 0.5f else baseAlpha
+  val cacheBandAlpha by animateFloatAsState(
+    targetValue = targetAlpha,
+    animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+    label = "cacheBandAlpha",
+  )
+
+  val primaryForwardEnd = if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
+    cacheRanges.maxOfOrNull { it.end } ?: 0f
+  } else {
+    0f
+  }
+  var frozenForwardEnd by remember { mutableFloatStateOf(primaryForwardEnd) }
+  LaunchedEffect(isScrubbing) {
+    if (isScrubbing) {
+      frozenForwardEnd = primaryForwardEnd
+    }
+  }
+  val animatedForwardEnd by animateFloatAsState(
+    targetValue = if (isScrubbing) frozenForwardEnd else primaryForwardEnd,
+    animationSpec = if (isScrubbing) snap() else tween(durationMillis = 200, easing = LinearOutSlowInEasing),
+    label = "cacheForwardEnd",
+  )
 
   // Manual Interaction State Tracking
   var isPressed by remember { mutableStateOf(false) }
@@ -673,7 +789,7 @@ private fun SquigglySeekbar(
     val clipTop = lineAmplitude + strokeWidth
 
     val chapterGapHalf = 1.dp.toPx()
-    val chapterGaps = if (totalWidth > 0f && duration > 0f && chapters.isNotEmpty()) {
+    val chapterGaps = if (chaptersInSeekbar && totalWidth > 0f && duration > 0f && chapters.isNotEmpty()) {
       chapters.mapNotNull { chapter ->
         val chapterStart = chapter.start
         if (chapterStart > 0f && chapterStart < duration) {
@@ -728,9 +844,7 @@ private fun SquigglySeekbar(
       }
     }
 
-    // Played segment
-    drawPathWithGaps(0f, totalProgressPx, primaryColor)
-
+    // 1. Unplayed segment (rail)
     if (transitionEnabled) {
       val disabledAlpha = 77f / 255f
       drawPathWithGaps(totalProgressPx, totalWidth, primaryColor.copy(alpha = disabledAlpha))
@@ -743,6 +857,106 @@ private fun SquigglySeekbar(
         cap = StrokeCap.Round,
       )
     }
+
+    // 2. Cache band (gated by leanSeekCache pref only)
+    if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
+      val cacheAmplitude = lineAmplitude * 0.35f * heightFraction
+      val cachePath = Path()
+      cachePath.moveTo(waveStart, centerY)
+      var cX = waveStart
+      var cSign = 1f
+      var cAmp = cSign * cacheAmplitude
+
+      while (cX < waveEnd) {
+        cSign = -cSign
+        val nX = cX + dist
+        val mX = cX + dist / 2f
+        val nAmp = cSign * cacheAmplitude
+        cachePath.cubicTo(
+          mX,
+          centerY + cAmp,
+          mX,
+          centerY + nAmp,
+          nX,
+          centerY + nAmp,
+        )
+        cAmp = nAmp
+        cX = nX
+      }
+
+      val fadeBackwardPx = with(density) { 16.dp.toPx() }
+      val fadeForwardPx = with(density) { 24.dp.toPx() }
+
+      fun drawCachePathWithGaps(
+        startX: Float,
+        endX: Float,
+        brush: Brush,
+      ) {
+        if (endX <= startX) return
+        val relevantGaps = chapterGaps
+          .filter { (gStart, gEnd) -> gEnd > startX && gStart < endX }
+          .sortedBy { it.first }
+
+        var currentPos = startX
+        for ((gStart, gEnd) in relevantGaps) {
+          val segmentEnd = gStart.coerceAtMost(endX)
+          if (segmentEnd > currentPos) {
+            clipRect(
+              left = currentPos,
+              top = centerY - clipTop,
+              right = segmentEnd,
+              bottom = centerY + clipTop,
+            ) {
+              drawPath(
+                path = cachePath,
+                brush = brush,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+              )
+            }
+          }
+          currentPos = gEnd.coerceAtLeast(currentPos)
+        }
+        if (currentPos < endX) {
+          clipRect(
+            left = currentPos,
+            top = centerY - clipTop,
+            right = endX,
+            bottom = centerY + clipTop,
+          ) {
+            drawPath(
+              path = cachePath,
+              brush = brush,
+              style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+            )
+          }
+        }
+      }
+
+      for (range in cacheRanges) {
+        val rStartSec = range.start.coerceIn(0f, duration)
+        val rawEndSec = if (range.end >= primaryForwardEnd) animatedForwardEnd else range.end
+        val rEndSec = rawEndSec.coerceIn(0f, duration)
+        val rStartX = (rStartSec / duration) * totalWidth
+        val rEndX = (rEndSec / duration) * totalWidth
+        val rangeWidth = rEndX - rStartX
+        if (rangeWidth > 1f) {
+          val bRatio = (fadeBackwardPx / rangeWidth).coerceIn(0f, 0.45f)
+          val fRatio = (fadeForwardPx / rangeWidth).coerceIn(0f, 0.45f)
+          val brush = Brush.horizontalGradient(
+            0.0f to primaryColor.copy(alpha = 0f),
+            bRatio to primaryColor.copy(alpha = cacheBandAlpha),
+            (1.0f - fRatio) to primaryColor.copy(alpha = cacheBandAlpha),
+            1.0f to primaryColor.copy(alpha = 0f),
+            startX = rStartX,
+            endX = rEndX,
+          )
+          drawCachePathWithGaps(rStartX, rEndX, brush)
+        }
+      }
+    }
+
+    // 3. Played segment (played fill stays dominant)
+    drawPathWithGaps(0f, totalProgressPx, primaryColor)
 
     // Draw round cap
     val startAmp = kotlin.math.cos(kotlin.math.abs(waveStart) / waveLength * (2f * kotlin.math.PI.toFloat()))
@@ -812,6 +1026,22 @@ fun VideoTimer(
   onClick: () -> Unit = {},
 ) {
   val interactionSource = remember { MutableInteractionSource() }
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
+  val timerStyle =
+    if (isModern) {
+      MaterialTheme.typography.labelLarge.copy(
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.8.sp,
+        shadow = Shadow(
+          color = Color.Black.copy(alpha = 0.85f),
+          offset = Offset(0f, 1f),
+          blurRadius = 4f,
+        ),
+      )
+    } else {
+      LocalTextStyle.current
+    }
   Text(
     modifier =
       modifier
@@ -823,8 +1053,44 @@ fun VideoTimer(
         )
         .wrapContentHeight(Alignment.CenterVertically),
     text = Utils.prettyTime(value.toInt(), isInverted),
+    style = timerStyle,
     color = LocalPlayerColors.current.timerContent,
     textAlign = TextAlign.Center,
+  )
+}
+
+@Composable
+fun CompactTimecode(
+  position: Float,
+  duration: Float,
+  isInverted: Boolean,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val clickEvent = LocalPlayerButtonsClickEvent.current
+  val interactionSource = remember { MutableInteractionSource() }
+  val currentText = Utils.prettyTime(position.toInt(), false)
+  val totalValue = if (isInverted) position - duration else duration
+  val totalText = Utils.prettyTime(totalValue.toInt(), isInverted)
+  val colors = LocalPlayerColors.current
+  Text(
+    modifier = modifier
+      .clickable(
+        interactionSource = interactionSource,
+        indication = ripple(),
+        onClick = {
+          clickEvent()
+          onClick()
+        },
+      )
+      .padding(horizontal = MaterialTheme.spacing.smaller, vertical = MaterialTheme.spacing.extraSmall),
+    text = "$currentText / $totalText",
+    color = colors.timerContent,
+    style = MaterialTheme.typography.labelMedium.copy(
+      fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+      fontWeight = FontWeight.Medium,
+    ),
+    textAlign = TextAlign.End,
   )
 }
 
@@ -837,14 +1103,57 @@ fun StandardSeekbar(
     isScrubbing: Boolean = false,
     useWavySeekbar: Boolean = false,
     seekbarStyle: SeekbarStyle = SeekbarStyle.Standard,
+    cinema: Boolean = false,
     onSeek: (Float) -> Unit,
     onSeekFinished: () -> Unit,
     loopStart: Float? = null,
     loopEnd: Float? = null,
+    chaptersInSeekbar: Boolean = false,
+    cacheRanges: ImmutableList<SeekCacheResolver.SeekableRange> = persistentListOf(),
+    forwardCacheDuration: Float = 0f,
+    isLeanSeekCacheEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val interactionSource = remember { MutableInteractionSource() }
+    val density = LocalDensity.current
+
+    val appearancePreferences = koinInject<AppearancePreferences>()
+    val amoledMode by appearancePreferences.amoledMode.collectAsState()
+    val appTheme by appearancePreferences.appTheme.collectAsState()
+    val isDark = isSystemInDarkTheme()
+
+    val baseAlpha = when {
+        appTheme == AppTheme.Glass -> 0.18f
+        amoledMode && isDark -> 0.24f
+        isDark -> 0.16f
+        else -> 0.12f
+    }
+
+    val isForwardCollapsed = !isPaused && forwardCacheDuration <= 0.1f
+    val targetAlpha = if (isForwardCollapsed) baseAlpha * 0.5f else baseAlpha
+    val cacheBandAlpha by animateFloatAsState(
+        targetValue = targetAlpha,
+        animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+        label = "standardCacheBandAlpha",
+    )
+
+    val primaryForwardEnd = if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
+        cacheRanges.maxOfOrNull { it.end } ?: 0f
+    } else {
+        0f
+    }
+    var frozenForwardEnd by remember { mutableFloatStateOf(primaryForwardEnd) }
+    LaunchedEffect(isScrubbing) {
+        if (isScrubbing) {
+            frozenForwardEnd = primaryForwardEnd
+        }
+    }
+    val animatedForwardEnd by animateFloatAsState(
+        targetValue = if (isScrubbing) frozenForwardEnd else primaryForwardEnd,
+        animationSpec = if (isScrubbing) snap() else tween(durationMillis = 200, easing = LinearOutSlowInEasing),
+        label = "standardCacheForwardEnd",
+    )
 
     // Animation state (same as SquigglySeekbar). Runs directly in the
     // LaunchedEffect so toggle flapping cancels instead of leaking.
@@ -878,11 +1187,33 @@ fun StandardSeekbar(
     )
 
     val isThick = seekbarStyle == SeekbarStyle.Thick
-    val baseTrackHeight = if (isThick) 16.dp else 4.dp
+    // Cinema keeps the Classic row and timers, but the rail reads like an
+    // edit timeline: hairline track and a thin vertical playhead rather than
+    // a round knob. Thick stays exactly as the user configured it.
+    val isCinemaRail = cinema && !isThick
+    val baseTrackHeight = if (isThick) 16.dp else if (isCinemaRail) 3.dp else 4.dp
     val trackHeightDp = (if (isThick) baseTrackHeight * heightFraction else baseTrackHeight) * scrubThickness
-    val thumbWidth = if (isThick) 6.dp else 14.dp
-    val thumbHeight = if (isThick) 16.dp * scrubThickness else 14.dp
-    val thumbShape = if (isThick) RoundedCornerShape(3.dp) else CircleShape
+    val thumbWidth =
+        when {
+            isCinemaRail -> if (isScrubbing) 4.dp else 2.dp
+            isThick -> 6.dp
+            else -> 14.dp
+        }
+    val thumbHeight =
+        when {
+            isCinemaRail -> if (isScrubbing) 18.dp else 12.dp
+            isThick -> 16.dp * scrubThickness
+            else -> 14.dp
+        }
+    val thumbShape =
+        when {
+            isCinemaRail -> RoundedCornerShape(1.dp)
+            isThick -> RoundedCornerShape(3.dp)
+            else -> CircleShape
+        }
+    val thumbColor = if (isCinemaRail) Color.White else primaryColor
+    val unplayedTrackColor =
+        if (isCinemaRail) Color.White.copy(alpha = 0.20f) else primaryColor.copy(alpha = 0.3f)
 
     // Non-interactive visual only: the parent touch overlay is the single
     // gesture handler for every style. Leaving this Slider enabled would add
@@ -904,8 +1235,6 @@ fun StandardSeekbar(
         enabled = false,
         interactionSource = interactionSource,
         track = { sliderState ->
-            val disabledAlpha = 0.3f
-
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -933,7 +1262,7 @@ fun StandardSeekbar(
                 val thumbGapStart = (playedPx - gapHalf).coerceIn(0f, size.width)
                 val thumbGapEnd = (playedPx + gapHalf).coerceIn(0f, size.width)
 
-                val chapterGaps = if (chapters.isNotEmpty()) {
+                val chapterGaps = if (chaptersInSeekbar && chapters.isNotEmpty()) {
                     chapters.mapNotNull { chapter ->
                         val chapterStart = chapter.start
                         if (chapterStart > min && chapterStart < max) {
@@ -1007,7 +1336,96 @@ fun StandardSeekbar(
 
                 // 1. Unplayed Background
                 val unplayedStart = if (isThick) thumbGapEnd else playedPx
-                drawRangeWithGaps(unplayedStart, size.width, chapterGaps, primaryColor.copy(alpha = disabledAlpha))
+                drawRangeWithGaps(unplayedStart, size.width, chapterGaps, unplayedTrackColor)
+
+                // Cache band (gated by leanSeekCache pref only)
+                if (isLeanSeekCacheEnabled && cacheRanges.isNotEmpty() && duration > 0f) {
+                    val fadeBackwardPx = with(density) { 16.dp.toPx() }
+                    val fadeForwardPx = with(density) { 24.dp.toPx() }
+
+                    fun drawCacheSegment(startX: Float, endX: Float, brush: Brush) {
+                        if (endX - startX < 0.5f) return
+
+                        val path = Path()
+                        val isOuterLeft = startX <= 0.5f
+                        val isInnerLeft = isThick && kotlin.math.abs(startX - thumbGapEnd) < 0.5f
+
+                        val cornerRadiusLeft = when {
+                            isOuterLeft -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
+                            isInnerLeft -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
+                            else -> androidx.compose.ui.geometry.CornerRadius.Zero
+                        }
+
+                        val isOuterRight = endX >= size.width - 0.5f
+                        val isInnerRight = isThick && kotlin.math.abs(endX - thumbGapStart) < 0.5f
+
+                        val cornerRadiusRight = when {
+                            isOuterRight -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
+                            isInnerRight -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
+                            else -> androidx.compose.ui.geometry.CornerRadius.Zero
+                        }
+
+                        path.addRoundRect(
+                            androidx.compose.ui.geometry.RoundRect(
+                                left = startX,
+                                top = 0f,
+                                right = endX,
+                                bottom = trackHeight,
+                                topLeftCornerRadius = cornerRadiusLeft,
+                                bottomLeftCornerRadius = cornerRadiusLeft,
+                                topRightCornerRadius = cornerRadiusRight,
+                                bottomRightCornerRadius = cornerRadiusRight
+                            )
+                        )
+                        drawPath(path, brush)
+                    }
+
+                    fun drawCacheRangeWithGaps(
+                        rangeStart: Float,
+                        rangeEnd: Float,
+                        gaps: List<Pair<Float, Float>>,
+                        brush: Brush
+                    ) {
+                        if (rangeEnd <= rangeStart) return
+                        val relevantGaps = gaps
+                            .filter { (gStart, gEnd) -> gEnd > rangeStart && gStart < rangeEnd }
+                            .sortedBy { it.first }
+
+                        var currentPos = rangeStart
+                        for ((gStart, gEnd) in relevantGaps) {
+                            val segmentEnd = gStart.coerceAtMost(rangeEnd)
+                            if (segmentEnd > currentPos) {
+                                drawCacheSegment(currentPos, segmentEnd, brush)
+                            }
+                            currentPos = gEnd.coerceAtLeast(currentPos)
+                        }
+                        if (currentPos < rangeEnd) {
+                            drawCacheSegment(currentPos, rangeEnd, brush)
+                        }
+                    }
+
+                    for (range in cacheRanges) {
+                        val rStartSec = range.start.coerceIn(0f, duration)
+                        val rawEndSec = if (range.end >= primaryForwardEnd) animatedForwardEnd else range.end
+                        val rEndSec = rawEndSec.coerceIn(0f, duration)
+                        val rStartX = (rStartSec / duration) * size.width
+                        val rEndX = (rEndSec / duration) * size.width
+                        val rangeWidth = rEndX - rStartX
+                        if (rangeWidth > 1f) {
+                            val bRatio = (fadeBackwardPx / rangeWidth).coerceIn(0f, 0.45f)
+                            val fRatio = (fadeForwardPx / rangeWidth).coerceIn(0f, 0.45f)
+                            val brush = Brush.horizontalGradient(
+                                0.0f to primaryColor.copy(alpha = 0f),
+                                bRatio to primaryColor.copy(alpha = cacheBandAlpha),
+                                (1.0f - fRatio) to primaryColor.copy(alpha = cacheBandAlpha),
+                                1.0f to primaryColor.copy(alpha = 0f),
+                                startX = rStartX,
+                                endX = rEndX,
+                            )
+                            drawCacheRangeWithGaps(rStartX, rEndX, chapterGaps, brush)
+                        }
+                    }
+                }
 
                 // 2. Played
                 val playedEnd = if (isThick) thumbGapStart else playedPx
@@ -1062,7 +1480,7 @@ fun StandardSeekbar(
                     modifier = Modifier
                         .width(thumbWidth)
                         .height(thumbHeight)
-                        .background(primaryColor, thumbShape)
+                        .background(thumbColor, thumbShape)
                 )
             }
         )

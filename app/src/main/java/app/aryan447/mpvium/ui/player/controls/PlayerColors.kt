@@ -71,8 +71,34 @@ private val DefaultPlayerColors =
 val LocalPlayerColors = staticCompositionLocalOf { DefaultPlayerColors }
 
 @Composable
-fun playerColorsFor(fullColors: Boolean): PlayerColors {
+fun playerColorsFor(
+  fullColors: Boolean,
+  modern: Boolean = false,
+  cinema: Boolean = modern,
+): PlayerColors {
   val scheme = MaterialTheme.colorScheme
+  if (modern || cinema) {
+    // Modern removes the heavy glass borders: bare clean glyphs and sleek floating pills over the scrim.
+    return PlayerColors(
+      controlFill = Color.Transparent,
+      controlBorder = Color.Transparent,
+      controlContent = ModernChrome.glyph,
+      controlIconContent = ModernChrome.glyph,
+      onVideoContent = ModernChrome.glyph,
+      onVideoIconContent = ModernChrome.glyph,
+      accent = scheme.primary,
+      accentContent = scheme.onPrimary,
+      activeFill = ModernChrome.activeFill,
+      activeContent = ModernChrome.glyph,
+      activeOnVideoContent = ModernChrome.glyph,
+      playPauseFill = ModernChrome.heroFill,
+      playPauseContent = ModernChrome.heroContent,
+      timerContent = ModernChrome.glyphMuted,
+      chipFill = scheme.surfaceContainer.copy(alpha = 0.95f),
+      chipContent = scheme.onSurface,
+      chipIconContent = scheme.primary,
+    )
+  }
   // Player chrome sits on top of video, not on an app surface. A light
   // scheme's `primary` is dark because it targets light surfaces, so over
   // video the bright inverse primary is the readable accent; dark schemes

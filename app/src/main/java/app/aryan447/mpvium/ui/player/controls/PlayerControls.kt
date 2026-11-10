@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.player.controls
 
 import androidx.activity.compose.LocalActivity
+import app.aryan447.mpvium.preferences.AdvancedPreferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -28,10 +29,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -45,7 +44,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FastForward
@@ -60,7 +58,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -74,14 +71,14 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -92,6 +89,7 @@ import kotlin.math.roundToInt
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.preferences.preference.deleteAndGet
@@ -137,6 +135,13 @@ import kotlin.math.abs
 @Suppress("CompositionLocalAllowlist")
 val LocalPlayerButtonsClickEvent = staticCompositionLocalOf { {} }
 
+/**
+ * The active player layout. Components deep in the control tree (buttons,
+ * seekbar, transport) read this instead of injecting preferences again.
+ */
+@Suppress("CompositionLocalAllowlist")
+val LocalPlayerLayout = staticCompositionLocalOf { PlayerLayout.CLASSIC }
+
 fun <T> playerControlsExitAnimationSpec(): FiniteAnimationSpec<T> =
   tween(
     durationMillis = 300,
@@ -164,14 +169,33 @@ fun PlayerControls(
 ) {
   val spacing = MaterialTheme.spacing
   val appearancePreferences = koinInject<AppearancePreferences>()
-  val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
+  val playerLayout by appearancePreferences.playerLayout.collectAsState()
+  val isModern = playerLayout == PlayerLayout.MODERN
+  val rawHideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
+  val hideBackground = rawHideBackground || isModern
+  val amoledMode by appearancePreferences.amoledMode.collectAsState()
   val playerFullColors by appearancePreferences.playerFullColors.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
+  val invertDuration by playerPreferences.invertDuration.collectAsState()
   val audioPreferences = koinInject<AudioPreferences>()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
+  val advancedPreferences = koinInject<AdvancedPreferences>()
+  val leanSeekCache by advancedPreferences.leanSeekCache.collectAsState()
+  val cacheRanges by viewModel.cacheRanges.collectAsState()
+  val forwardCacheDuration by viewModel.forwardCacheDuration.collectAsState()
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
+  val isAudioMode by viewModel.isAudioMode.collectAsState()
+  if (isAudioMode) {
+    app.aryan447.mpvium.ui.player.audio.AudioPlayerSurface(
+      viewModel = viewModel,
+      onBackPress = onBackPress,
+      modifier = modifier,
+    )
+    return
+  }
+
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
   val seekBarShown by viewModel.seekBarShown.collectAsState()
   val pausedForCache by MPVLib.propBoolean["paused-for-cache"].collectAsState()
@@ -262,10 +286,15 @@ fun PlayerControls(
     resetControlsTimestamp,
     areControlsLocked,
     isUnlockSliderDragging,
+    playerLayout,
   ) {
     if (controlsShown && paused == false && !isSeeking && !isUnlockSliderDragging) {
-      // Use 2 second delay when controls are locked, otherwise use user preference
-      val delayTime = if (areControlsLocked) 2000L else playerTimeToDisappear.toLong()
+      // Use 2.5 second delay in Modern mode, 2 second delay when controls are locked, otherwise user preference
+      val delayTime = when {
+        areControlsLocked -> 2000L
+        isModern -> 2500L
+        else -> playerTimeToDisappear.toLong()
+      }
       delay(delayTime)
       viewModel.hideControls()
     }
@@ -285,13 +314,19 @@ fun PlayerControls(
   DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime, interactionSource)
 
   CompositionLocalProvider(
-    LocalPlayerColors provides playerColorsFor(playerFullColors),
+    LocalPlayerColors provides playerColorsFor(playerFullColors, modern = isModern),
+    LocalPlayerLayout provides playerLayout,
     LocalRippleConfiguration provides playerRippleConfiguration,
     LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
     LocalContentColor provides Color.White,
   ) {
+    val layoutDirection = if (isModern) {
+      LocalLayoutDirection.current
+    } else {
+      LayoutDirection.Ltr
+    }
     CompositionLocalProvider(
-      LocalLayoutDirection provides LayoutDirection.Ltr,
+      LocalLayoutDirection provides layoutDirection,
     ) {
       val configuration = LocalConfiguration.current
       val isPortrait by remember(configuration) {
@@ -314,15 +349,60 @@ fun PlayerControls(
         modifier =
           modifier
             .fillMaxSize()
-            .background(
-              Brush.verticalGradient(
-                Pair(0f, Color.Black),
-                Pair(.4f, Color.Transparent),
-                Pair(.6f, Color.Transparent),
-                Pair(1f, Color.Black),
-              ),
-              // No vignette in the Glass theme: chrome floats clean over video.
-              alpha = if (LocalGlass.current || !showVignette) 0f else transparentOverlay,
+            .then(
+              if (isModern) {
+                Modifier.drawBehind {
+                  val alpha = transparentOverlay
+                  if (alpha > 0f) {
+                    val topAlpha = if (amoledMode) 0.78f else 0.65f
+                    val bottomAlpha = if (amoledMode) 0.82f else 0.70f
+                    val topScrimHeight = (if (isPortrait) 150.dp else 130.dp).toPx()
+                    // Portrait stacks seekbar -> transport -> bottom row, so the
+                    // scrim has to reach past the seekbar's new insets.
+                    val bottomScrimHeight = (if (isPortrait) 300.dp else 160.dp).toPx()
+
+                    drawRect(
+                      brush = Brush.verticalGradient(
+                        0.00f to Color.Black.copy(alpha = topAlpha * alpha),
+                        0.20f to Color.Black.copy(alpha = topAlpha * 0.85f * alpha),
+                        0.40f to Color.Black.copy(alpha = topAlpha * 0.60f * alpha),
+                        0.65f to Color.Black.copy(alpha = topAlpha * 0.30f * alpha),
+                        0.85f to Color.Black.copy(alpha = topAlpha * 0.10f * alpha),
+                        1.00f to Color.Transparent,
+                        startY = 0f,
+                        endY = topScrimHeight,
+                      ),
+                      size = Size(size.width, topScrimHeight),
+                    )
+
+                    drawRect(
+                      brush = Brush.verticalGradient(
+                        0.00f to Color.Transparent,
+                        0.15f to Color.Black.copy(alpha = bottomAlpha * 0.10f * alpha),
+                        0.35f to Color.Black.copy(alpha = bottomAlpha * 0.30f * alpha),
+                        0.60f to Color.Black.copy(alpha = bottomAlpha * 0.60f * alpha),
+                        0.80f to Color.Black.copy(alpha = bottomAlpha * 0.85f * alpha),
+                        1.00f to Color.Black.copy(alpha = bottomAlpha * alpha),
+                        startY = size.height - bottomScrimHeight,
+                        endY = size.height,
+                      ),
+                      topLeft = Offset(0f, size.height - bottomScrimHeight),
+                      size = Size(size.width, bottomScrimHeight),
+                    )
+                  }
+                }
+              } else {
+                Modifier.background(
+                  Brush.verticalGradient(
+                    Pair(0f, Color.Black),
+                    Pair(.4f, Color.Transparent),
+                    Pair(.6f, Color.Transparent),
+                    Pair(1f, Color.Black),
+                  ),
+                  // No vignette in the Glass theme: chrome floats clean over video.
+                  alpha = if (LocalGlass.current || !showVignette) 0f else transparentOverlay,
+                )
+              }
             ),
       ) {
         val (topLeftControls, topRightControls) = createRefs()
@@ -444,7 +524,7 @@ fun PlayerControls(
         val areSlidersShown = isBrightnessSliderShown || isVolumeSliderShown
 
         AnimatedVisibility(
-          isBrightnessSliderShown,
+          isBrightnessSliderShown && (!isModern || !controlsShown),
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) {
@@ -474,7 +554,7 @@ fun PlayerControls(
         ) { BrightnessSlider(brightness, 0f..1f, seekbarStyle = brightnessSliderStyle) }
 
         AnimatedVisibility(
-          isVolumeSliderShown,
+          isVolumeSliderShown && (!isModern || !controlsShown),
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) {
@@ -523,20 +603,29 @@ fun PlayerControls(
         }
 
         val holdForMultipleSpeed by playerPreferences.holdForMultipleSpeed.collectAsState()
-        val currentPlayerUpdate by viewModel.playerUpdate.collectAsState()
-        // While a horizontal swipe-seek is active, drive the seekbar and its
-        // timers from the gesture preview instead of the lagging live mpv
-        // position, so the pill and the seekbar can't show different seconds.
-        val seekPreviewPosition = (currentPlayerUpdate as? PlayerUpdates.HorizontalSeek)?.position
+        val playerUpdate by viewModel.playerUpdate.collectAsState()
+        val livePos by viewModel.precisePosition.collectAsState()
+
+        val isSwipeSeeking = playerUpdate is PlayerUpdates.HorizontalSeek
+        val seekbarPosition = if (playerUpdate is PlayerUpdates.HorizontalSeek) {
+          (playerUpdate as PlayerUpdates.HorizontalSeek).position ?: livePos
+        } else {
+          livePos
+        }
         val aspectRatio by viewModel.videoAspect.collectAsState()
         val currentAspectRatio by viewModel.currentAspectRatio.collectAsState()
         val videoZoom by viewModel.videoZoom.collectAsState()
 
-        LaunchedEffect(currentPlayerUpdate, aspectRatio, videoZoom) {
-          if (currentPlayerUpdate is PlayerUpdates.MultipleSpeed ||
-            currentPlayerUpdate is PlayerUpdates.DynamicSpeedControl ||
-            currentPlayerUpdate is PlayerUpdates.HoldControls ||
-            currentPlayerUpdate is PlayerUpdates.None
+        LaunchedEffect(playerUpdate, aspectRatio, videoZoom) {
+          if (playerUpdate is PlayerUpdates.MultipleSpeed ||
+            playerUpdate is PlayerUpdates.DynamicSpeedControl ||
+            playerUpdate is PlayerUpdates.HoldControls ||
+            // The swipe-seek gesture owns this update: it refreshes on every
+            // pointer move and clears it on release/cancel. Auto-clearing it
+            // after 2 s would hide the HUD and drop the seekbar back to the
+            // lagging live position mid-gesture (thumb jump + timer desync).
+            playerUpdate is PlayerUpdates.HorizontalSeek ||
+            playerUpdate is PlayerUpdates.None
           ) {
             return@LaunchedEffect
           }
@@ -545,7 +634,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          currentPlayerUpdate !is PlayerUpdates.None,
+          playerUpdate !is PlayerUpdates.None,
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier =
@@ -562,7 +651,7 @@ fun PlayerControls(
                 top.linkTo(parent.top, if (isPortrait) 104.dp else 64.dp)
               },
         ) {
-          when (val update = currentPlayerUpdate) {
+          when (val update = playerUpdate) {
             is PlayerUpdates.MultipleSpeed -> MultipleSpeedPlayerUpdate(currentSpeed = holdForMultipleSpeed)
             is PlayerUpdates.HoldControls -> {
               HoldControlsPlayerUpdate(selected = update.selected)
@@ -736,8 +825,53 @@ fun PlayerControls(
           )
         }
 
+        if (isModern) {
+          val modernActionControlsState by appearancePreferences.modernActionControls.collectAsState()
+          val modernActionButtons = remember(modernActionControlsState) {
+            appearancePreferences.parseButtons(modernActionControlsState, mutableSetOf())
+          }
+          ModernPlayerControls(
+            viewModel = viewModel,
+            onBackPress = onBackPress,
+            onOpenSheet = onOpenSheet,
+            onOpenPanel = onOpenPanel,
+            activity = activity,
+            controlsShown = if (isModern) controlsShown else (controlsShown && !areSlidersShown),
+            areControlsLocked = areControlsLocked,
+            isSeeking = isSeeking,
+            onSeekingChanged = { isSeeking = it },
+            resetControlsTimestamp = { resetControlsTimestamp = System.currentTimeMillis() },
+            paused = paused == true,
+            position = seekbarPosition,
+            duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
+            isSwipeSeeking = isSwipeSeeking,
+            chapters = chapters.toImmutableList(),
+            currentChapter = currentChapter,
+            cacheRanges = cacheRanges.toImmutableList(),
+            forwardCacheDuration = forwardCacheDuration,
+            isLeanSeekCacheEnabled = leanSeekCache,
+            invertDuration = invertDuration,
+            onToggleInvertDuration = {
+              resetControlsTimestamp = System.currentTimeMillis()
+              playerPreferences.invertDuration.set(!invertDuration)
+            },
+            mediaTitle = lookupRaw,
+            tmdbEpisodeTitle = tmdbEpisodeTitle,
+            topRightButtons = topRightButtons,
+            bottomRightButtons = bottomRightButtons,
+            actionButtons = modernActionButtons,
+            amoledMode = amoledMode,
+            showSystemStatusBar = showSystemStatusBar,
+            showSystemNavigationBar = showSystemNavigationBar,
+            tabletBottomOffset = tabletBottomOffset,
+            modifier = Modifier.fillMaxSize(),
+          )
+        }
+
+        val showLoadingCircle by playerPreferences.showLoadingCircle.collectAsState()
+
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked,
+          visible = (pausedForCache == true && showLoadingCircle) || (controlsShown && !areControlsLocked && !isModern),
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier =
@@ -752,8 +886,6 @@ fun PlayerControls(
               }
             },
         ) {
-          val showLoadingCircle by playerPreferences.showLoadingCircle.collectAsState()
-
           when {
             pausedForCache == true && showLoadingCircle -> {
               LoadingIndicator(
@@ -764,7 +896,7 @@ fun PlayerControls(
             else -> {
               if (playlistMode && viewModel.hasPlaylistSupport()) {
                 androidx.compose.foundation.layout.Row(
-                  horizontalArrangement = Arrangement.spacedBy(24.dp),
+                  horizontalArrangement = Arrangement.spacedBy(if (isModern) 32.dp else 24.dp),
                   verticalAlignment = Alignment.CenterVertically,
                 ) {
                   PlayerTransportButton(
@@ -776,6 +908,7 @@ fun PlayerControls(
                       if (viewModel.hasPrevious()) viewModel.playPrevious()
                     },
                     hideBackground = hideBackground,
+                    size = if (isModern) 60.dp else 56.dp,
                   )
 
                   PlayerPlayPauseButton(
@@ -785,6 +918,7 @@ fun PlayerControls(
                       viewModel.pauseUnpause()
                     },
                     hideBackground = hideBackground,
+                    size = if (isModern) 84.dp else 72.dp,
                   )
 
                   PlayerTransportButton(
@@ -796,6 +930,7 @@ fun PlayerControls(
                       if (viewModel.hasNext()) viewModel.playNext()
                     },
                     hideBackground = hideBackground,
+                    size = if (isModern) 60.dp else 56.dp,
                   )
                 }
               } else {
@@ -806,14 +941,17 @@ fun PlayerControls(
                     viewModel.pauseUnpause()
                   },
                   hideBackground = hideBackground,
+                  size = if (isModern) 84.dp else 72.dp,
                 )
               }
             }
           }
         }
 
+        val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked,
+          visible = controlsShown && !areControlsLocked && !isModern,
           enter =
             if (!reduceMotion) {
               slideInVertically(playerControlsEnterAnimationSpec()) { it } +
@@ -832,7 +970,6 @@ fun PlayerControls(
             Modifier
               .then(
                 if (showSystemNavigationBar) {
-                  val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
                   Modifier.padding(
                     start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
@@ -842,6 +979,10 @@ fun PlayerControls(
                 }
               )
               .constrainAs(seekbar) {
+                // Both layouts share the classic seekbar position: timers and
+                // the track sit in a 48 dp row just inside the bottom edge, so
+                // the track clears the system gesture area instead of being
+                // pinned to it (the old Cinema edge-to-edge rail).
                 if (isPortrait) {
                   bottom.linkTo(playerPauseButton.top, spacing.small)
                 } else {
@@ -851,12 +992,12 @@ fun PlayerControls(
                 end.linkTo(parent.end, spacing.large)
               },
         ) {
-          val invertDuration by playerPreferences.invertDuration.collectAsState()
           val seekbarStyle by appearancePreferences.seekbarStyle.collectAsState()
           var wasPlayerAlreadyPaused by remember { mutableStateOf(false) }
 
           SeekbarWithTimers(
-            position = seekPreviewPosition ?: precisePosition,
+            position = seekbarPosition,
+            isExternalSeeking = isSwipeSeeking,
             duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
             onValueChange = {
               if (!isSeeking) {
@@ -910,11 +1051,14 @@ fun PlayerControls(
             seekbarStyle = seekbarStyle,
             loopStart = abLoopA?.toFloat(),
             loopEnd = abLoopB?.toFloat(),
+            cacheRanges = cacheRanges,
+            forwardCacheDuration = forwardCacheDuration,
+            isLeanSeekCacheEnabled = leanSeekCache,
           )
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked,
+          visible = controlsShown && !areControlsLocked && !isModern,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +
@@ -985,7 +1129,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait,
+          visible = controlsShown && !areControlsLocked && !isPortrait && !isModern,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1066,6 +1210,8 @@ fun PlayerControls(
                 // so the chips never sit on the title pill or buttons.
                 if (isPortrait) {
                   top.linkTo(parent.top, 96.dp)
+                } else if (isModern) {
+                  top.linkTo(parent.top, if (showSystemStatusBar) 76.dp else 68.dp)
                 } else {
                   top.linkTo(topRightControls.bottom, 12.dp)
                 }
@@ -1143,7 +1289,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !areSlidersShown,
+          visible = controlsShown && !areControlsLocked && !areSlidersShown && !isModern,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1178,7 +1324,7 @@ fun PlayerControls(
                   end.linkTo(parent.end, spacing.large)
                   width = Dimension.fillToConstraints
                 } else {
-                  bottom.linkTo(seekbar.top, spacing.small)
+                  bottom.linkTo(seekbar.top, spacing.small + tabletBottomOffset)
                   end.linkTo(parent.end, spacing.large)
                 }
               },
@@ -1223,7 +1369,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown,
+          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown && !isModern,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +
@@ -1252,7 +1398,7 @@ fun PlayerControls(
                 }
               )
               .constrainAs(bottomLeftControls) {
-                bottom.linkTo(seekbar.top, spacing.small)
+                bottom.linkTo(seekbar.top, spacing.small + tabletBottomOffset)
                 start.linkTo(parent.start, spacing.large)
                 width = Dimension.fillToConstraints
                 end.linkTo(bottomRightControls.start, spacing.small)

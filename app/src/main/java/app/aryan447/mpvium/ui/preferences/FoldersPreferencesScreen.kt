@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
@@ -65,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.preferences.FoldersPreferences
+import app.aryan447.mpvium.preferences.LibraryScanMode
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.selection.SelectionState
@@ -91,6 +94,7 @@ object FoldersPreferencesScreen : Screen {
     val blacklistedFolders by preferences.blacklistedFolders.collectAsState()
     val whitelistedFolders by preferences.whitelistedFolders.collectAsState()
     val whitelistOnlyEnabled by preferences.whitelistOnlyEnabled.collectAsState()
+    val libraryScanMode by preferences.libraryScanMode.collectAsState()
     var availableFolders by remember { mutableStateOf<List<VideoFolder>>(emptyList()) }
     var availableWhitelistFolders by remember { mutableStateOf<List<VideoFolder>>(emptyList()) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -98,6 +102,14 @@ object FoldersPreferencesScreen : Screen {
     var isLoading by remember { mutableStateOf(false) }
     var isWhitelistLoading by remember { mutableStateOf(false) }
     var selectionState by remember { mutableStateOf(SelectionState<String>()) }
+    val listState = rememberLazyListState()
+    val highlightState = rememberSettingsHighlightState(
+      screen = FoldersPreferencesScreen,
+      listState = listState,
+      keyToIndex = mapOf(
+        "folders.general" to 1,
+      ),
+    )
     var whitelistSelectionState by remember { mutableStateOf(SelectionState<String>()) }
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showClearWhitelistDialog by remember { mutableStateOf(false) }
@@ -209,6 +221,7 @@ object FoldersPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
+          state = listState,
           modifier = Modifier
             .fillMaxSize()
             .padding(padding),
@@ -225,7 +238,13 @@ object FoldersPreferencesScreen : Screen {
           }
 
           item {
-            PreferenceCard {
+            PreferenceCard(
+              modifier = Modifier.settingsHighlightTarget(
+                state = highlightState,
+                key = "folders.general",
+                isCard = true,
+              ),
+            ) {
               HapticSwitchPreference(
                 value = whitelistOnlyEnabled,
                 onValueChange = { preferences.whitelistOnlyEnabled.set(it) },
@@ -234,6 +253,24 @@ object FoldersPreferencesScreen : Screen {
                 summary = {
                   Text(
                     stringResource(R.string.pref_folders_whitelist_only_summary),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+              )
+              PreferenceDivider()
+              HapticSwitchPreference(
+                value = libraryScanMode == LibraryScanMode.AUTO,
+                onValueChange = { isAuto ->
+                  preferences.libraryScanMode.set(if (isAuto) LibraryScanMode.AUTO else LibraryScanMode.MANUAL)
+                },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Refresh) },
+                title = { Text(stringResource(R.string.pref_folders_scan_mode_title)) },
+                summary = {
+                  Text(
+                    stringResource(
+                      if (libraryScanMode == LibraryScanMode.AUTO) R.string.pref_folders_scan_mode_auto_summary
+                      else R.string.pref_folders_scan_mode_manual_summary
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },

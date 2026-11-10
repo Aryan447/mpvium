@@ -47,6 +47,17 @@ enum class AppTheme(
     backgroundDark = Color(0xFF1C1B1F),
     isDynamic = true,
   ),
+  Aura(
+    titleRes = R.string.theme_aura,
+    primaryLight = AuraFallbackPalette.primaryLight,
+    primaryDark = AuraFallbackPalette.primaryDark,
+    secondaryLight = AuraFallbackPalette.secondaryLight,
+    secondaryDark = AuraFallbackPalette.secondaryDark,
+    tertiaryLight = AuraFallbackPalette.tertiaryLight,
+    tertiaryDark = AuraFallbackPalette.tertiaryDark,
+    backgroundLight = Color(0xFFF8F9FA),
+    backgroundDark = Color(0xFF121316),
+  ),
   Cinema(
     titleRes = R.string.theme_cinema,
     primaryLight = Color(0xFF8A5F00),
@@ -196,84 +207,28 @@ enum class AppTheme(
   /**
    * Get the light color scheme for this theme
    */
-  fun getLightColorScheme(): ColorScheme {
-    val surfaceTint = primaryLight.copy(alpha = 0.05f).compositeOver(backgroundLight)
-    return lightColorScheme(
-      primary = primaryLight,
-      onPrimary = Color.White,
-      primaryContainer = primaryLight.copy(alpha = 0.15f).compositeOver(Color.White),
-      onPrimaryContainer = primaryLight.darken(0.3f),
-      secondary = secondaryLight,
-      onSecondary = Color.White,
-      secondaryContainer = secondaryLight.copy(alpha = 0.15f).compositeOver(Color.White),
-      onSecondaryContainer = secondaryLight.darken(0.3f),
-      tertiary = tertiaryLight,
-      onTertiary = Color.White,
-      tertiaryContainer = tertiaryLight.copy(alpha = 0.15f).compositeOver(Color.White),
-      onTertiaryContainer = tertiaryLight.darken(0.3f),
-      error = Color(0xFFBA1A1A),
-      onError = Color.White,
-      errorContainer = Color(0xFFFFDAD6),
-      onErrorContainer = Color(0xFF93000A),
-      background = backgroundLight,
-      onBackground = Color(0xFF1C1B1F),
-      surface = backgroundLight,
-      onSurface = Color(0xFF1C1B1F),
-      surfaceVariant = primaryLight.copy(alpha = 0.08f).compositeOver(Color(0xFFF0F0F0)),
-      onSurfaceVariant = Color(0xFF49454F),
-      outline = secondaryLight.copy(alpha = 0.5f).compositeOver(Color(0xFF79747E)),
-      outlineVariant = primaryLight.copy(alpha = 0.12f).compositeOver(Color(0xFFCAC4D0)),
-      inverseSurface = backgroundDark,
-      inverseOnSurface = Color(0xFFF4EFF4),
-      inversePrimary = primaryDark,
-      surfaceContainerLowest = backgroundLight,
-      surfaceContainerLow = surfaceTint,
-      surfaceContainer = primaryLight.copy(alpha = 0.06f).compositeOver(backgroundLight),
-      surfaceContainerHigh = primaryLight.copy(alpha = 0.08f).compositeOver(backgroundLight),
-      surfaceContainerHighest = primaryLight.copy(alpha = 0.11f).compositeOver(backgroundLight),
-    )
-  }
+  fun getLightColorScheme(): ColorScheme = buildLightColorScheme(
+    primaryLight = primaryLight,
+    primaryDark = primaryDark,
+    secondaryLight = secondaryLight,
+    tertiaryLight = tertiaryLight,
+    backgroundLight = backgroundLight,
+    backgroundDark = backgroundDark,
+  )
 
   /**
    * Get the dark color scheme for this theme
    */
-  fun getDarkColorScheme(): ColorScheme {
-    val surfaceTint = primaryDark.copy(alpha = 0.05f).compositeOver(backgroundDark)
-    return darkColorScheme(
-      primary = primaryDark,
-      onPrimary = primaryLight.darken(0.5f),
-      primaryContainer = primaryLight.darken(0.3f),
-      onPrimaryContainer = primaryDark.lighten(0.1f),
-      secondary = secondaryDark,
-      onSecondary = secondaryLight.darken(0.5f),
-      secondaryContainer = secondaryLight.darken(0.3f),
-      onSecondaryContainer = secondaryDark.lighten(0.1f),
-      tertiary = tertiaryDark,
-      onTertiary = tertiaryLight.darken(0.5f),
-      tertiaryContainer = tertiaryLight.darken(0.3f),
-      onTertiaryContainer = tertiaryDark.lighten(0.1f),
-      error = Color(0xFFFFB4AB),
-      onError = Color(0xFF690005),
-      errorContainer = Color(0xFF93000A),
-      onErrorContainer = Color(0xFFFFDAD6),
-      background = backgroundDark,
-      onBackground = Color(0xFFE6E1E5),
-      surface = backgroundDark,
-      onSurface = Color(0xFFE6E1E5),
-      surfaceVariant = primaryDark.copy(alpha = 0.12f).compositeOver(Color(0xFF2A2A2A)),
-      onSurfaceVariant = Color(0xFFCAC4D0),
-      outline = secondaryDark.copy(alpha = 0.4f).compositeOver(Color(0xFF938F99)),
-      outlineVariant = primaryDark.copy(alpha = 0.15f).compositeOver(Color(0xFF49454F)),
-      inverseSurface = backgroundLight,
-      inverseOnSurface = Color(0xFF313033),
-      inversePrimary = primaryLight,
-      surfaceContainerLowest = backgroundDark.darken(0.2f),
-      surfaceContainerLow = surfaceTint,
-      surfaceContainer = primaryDark.copy(alpha = 0.05f).compositeOver(backgroundDark),
-      surfaceContainerHigh = primaryDark.copy(alpha = 0.08f).compositeOver(backgroundDark),
-      surfaceContainerHighest = primaryDark.copy(alpha = 0.11f).compositeOver(backgroundDark),
-    )
-  }
+  fun getDarkColorScheme(): ColorScheme = buildDarkColorScheme(
+    primaryLight = primaryLight,
+    primaryDark = primaryDark,
+    secondaryLight = secondaryLight,
+    secondaryDark = secondaryDark,
+    tertiaryLight = tertiaryLight,
+    tertiaryDark = tertiaryDark,
+    backgroundLight = backgroundLight,
+    backgroundDark = backgroundDark,
+  )
 
   /**
    * Get the AMOLED (pure black) color scheme for this theme.
@@ -282,7 +237,111 @@ enum class AppTheme(
    */
   fun getAmoledColorScheme(): ColorScheme {
     if (this == Glass) return getDarkColorScheme()
-    return getDarkColorScheme().copy(
+    return buildAmoledColorScheme(getDarkColorScheme(), primaryDark)
+  }
+}
+
+/**
+ * Shared tonal scheme builders used across all built-in themes and dynamic
+ * runtime schemes such as Aura.
+ */
+fun buildLightColorScheme(
+  primaryLight: Color,
+  primaryDark: Color,
+  secondaryLight: Color,
+  tertiaryLight: Color,
+  backgroundLight: Color,
+  backgroundDark: Color,
+): ColorScheme {
+  val surfaceTint = primaryLight.copy(alpha = 0.05f).compositeOver(backgroundLight)
+  return lightColorScheme(
+    primary = primaryLight,
+    onPrimary = Color.White,
+    primaryContainer = primaryLight.copy(alpha = 0.15f).compositeOver(Color.White),
+    onPrimaryContainer = primaryLight.darken(0.3f),
+    secondary = secondaryLight,
+    onSecondary = Color.White,
+    secondaryContainer = secondaryLight.copy(alpha = 0.15f).compositeOver(Color.White),
+    onSecondaryContainer = secondaryLight.darken(0.3f),
+    tertiary = tertiaryLight,
+    onTertiary = Color.White,
+    tertiaryContainer = tertiaryLight.copy(alpha = 0.15f).compositeOver(Color.White),
+    onTertiaryContainer = tertiaryLight.darken(0.3f),
+    error = Color(0xFFBA1A1A),
+    onError = Color.White,
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF93000A),
+    background = backgroundLight,
+    onBackground = Color(0xFF1C1B1F),
+    surface = backgroundLight,
+    onSurface = Color(0xFF1C1B1F),
+    surfaceVariant = primaryLight.copy(alpha = 0.08f).compositeOver(Color(0xFFF0F0F0)),
+    onSurfaceVariant = Color(0xFF49454F),
+    outline = secondaryLight.copy(alpha = 0.5f).compositeOver(Color(0xFF79747E)),
+    outlineVariant = primaryLight.copy(alpha = 0.12f).compositeOver(Color(0xFFCAC4D0)),
+    inverseSurface = backgroundDark,
+    inverseOnSurface = Color(0xFFF4EFF4),
+    inversePrimary = primaryDark,
+    surfaceContainerLowest = backgroundLight,
+    surfaceContainerLow = surfaceTint,
+    surfaceContainer = primaryLight.copy(alpha = 0.06f).compositeOver(backgroundLight),
+    surfaceContainerHigh = primaryLight.copy(alpha = 0.08f).compositeOver(backgroundLight),
+    surfaceContainerHighest = primaryLight.copy(alpha = 0.11f).compositeOver(backgroundLight),
+  )
+}
+
+fun buildDarkColorScheme(
+  primaryLight: Color,
+  primaryDark: Color,
+  secondaryLight: Color,
+  secondaryDark: Color,
+  tertiaryLight: Color,
+  tertiaryDark: Color,
+  backgroundLight: Color,
+  backgroundDark: Color,
+): ColorScheme {
+  val surfaceTint = primaryDark.copy(alpha = 0.05f).compositeOver(backgroundDark)
+  return darkColorScheme(
+    primary = primaryDark,
+    onPrimary = primaryLight.darken(0.5f),
+    primaryContainer = primaryLight.darken(0.3f),
+    onPrimaryContainer = primaryDark.lighten(0.1f),
+    secondary = secondaryDark,
+    onSecondary = secondaryLight.darken(0.5f),
+    secondaryContainer = secondaryLight.darken(0.3f),
+    onSecondaryContainer = secondaryDark.lighten(0.1f),
+    tertiary = tertiaryDark,
+    onTertiary = tertiaryLight.darken(0.5f),
+    tertiaryContainer = tertiaryLight.darken(0.3f),
+    onTertiaryContainer = tertiaryDark.lighten(0.1f),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = backgroundDark,
+    onBackground = Color(0xFFE6E1E5),
+    surface = backgroundDark,
+    onSurface = Color(0xFFE6E1E5),
+    surfaceVariant = primaryDark.copy(alpha = 0.12f).compositeOver(Color(0xFF2A2A2A)),
+    onSurfaceVariant = Color(0xFFCAC4D0),
+    outline = secondaryDark.copy(alpha = 0.4f).compositeOver(Color(0xFF938F99)),
+    outlineVariant = primaryDark.copy(alpha = 0.15f).compositeOver(Color(0xFF49454F)),
+    inverseSurface = backgroundLight,
+    inverseOnSurface = Color(0xFF313033),
+    inversePrimary = primaryLight,
+    surfaceContainerLowest = backgroundDark.darken(0.2f),
+    surfaceContainerLow = surfaceTint,
+    surfaceContainer = primaryDark.copy(alpha = 0.05f).compositeOver(backgroundDark),
+    surfaceContainerHigh = primaryDark.copy(alpha = 0.08f).compositeOver(backgroundDark),
+    surfaceContainerHighest = primaryDark.copy(alpha = 0.11f).compositeOver(backgroundDark),
+  )
+}
+
+fun buildAmoledColorScheme(
+  darkColorScheme: ColorScheme,
+  primaryDark: Color,
+): ColorScheme {
+  return darkColorScheme.copy(
     background = Color.Black,
     surface = Color.Black,
     surfaceVariant = primaryDark.copy(alpha = 0.08f).compositeOver(Color(0xFF1A1A1A)),
@@ -294,7 +353,6 @@ enum class AppTheme(
     surfaceDim = Color.Black,
     surfaceBright = primaryDark.copy(alpha = 0.06f).compositeOver(Color(0xFF2A2A2A)),
   )
-  }
 }
 
 // Extension functions for color manipulation

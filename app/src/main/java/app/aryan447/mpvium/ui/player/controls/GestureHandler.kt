@@ -65,6 +65,8 @@ import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.GesturePreferences
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
+import app.aryan447.mpvium.preferences.SubtitleScope
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.components.LeftSideOvalShape
 import app.aryan447.mpvium.presentation.components.RightSideOvalShape
@@ -76,6 +78,7 @@ import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.SingleActionGesture
 import app.aryan447.mpvium.ui.theme.playerRippleConfiguration
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -285,6 +288,7 @@ fun GestureHandler(
   val audioPreferences = koinInject<AudioPreferences>()
   val gesturePreferences = koinInject<GesturePreferences>()
   val subtitlesPreferences = koinInject<SubtitlesPreferences>()
+  val subtitleProfileRepository = koinInject<SubtitleProfileRepository>()
   val panelShown by viewModel.panelShown.collectAsState()
   val allowGesturesInPanels by playerPreferences.allowGesturesInPanels.collectAsState()
   val paused by MPVLib.propBoolean["pause"].collectAsState()
@@ -506,7 +510,15 @@ fun GestureHandler(
                     val actualSubPos = 100
                     MPVLib.setPropertyInt("sub-pos", actualSubPos)
                     MPVLib.setPropertyInt("secondary-sub-pos", (actualSubPos - 10).coerceIn(0, 110))
-                    if (subtitlesPreferences.persistSubPos.get()) {
+                    if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                      val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+                      val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+                      val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+                      val currentScale = MPVLib.getPropertyFloat("sub-scale") ?: subtitlesPreferences.subScale.get()
+                      coroutineScope.launch(Dispatchers.IO) {
+                        subtitleProfileRepository.saveProfile(key, subPos = actualSubPos, subScale = currentScale)
+                      }
+                    } else if (subtitlesPreferences.persistSubPos.get()) {
                       subtitlesPreferences.subPos.set(actualSubPos)
                     }
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1048,8 +1060,18 @@ fun GestureHandler(
             } else if (pointerCount > 1) {
               // Multi-finger gesture detected
               longPressJob.cancel()
-              if (subtitleDragActive && subtitlesPreferences.persistSubPos.get()) {
-                subtitlesPreferences.subPos.set(lastSubtitlePos)
+              if (subtitleDragActive) {
+                if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                  val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+                  val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+                  val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+                  val currentScale = MPVLib.getPropertyFloat("sub-scale") ?: subtitlesPreferences.subScale.get()
+                  coroutineScope.launch(Dispatchers.IO) {
+                    subtitleProfileRepository.saveProfile(key, subPos = lastSubtitlePos, subScale = currentScale)
+                  }
+                } else if (subtitlesPreferences.persistSubPos.get()) {
+                  subtitlesPreferences.subPos.set(lastSubtitlePos)
+                }
               }
               subtitleDragActive = false
               if (holdControlsActive) {
@@ -1084,8 +1106,18 @@ fun GestureHandler(
           longPressJob.cancel()
 
           // Subtitle drag ended: the new position sticks, the pill auto-clears
-          if (subtitleDragActive && subtitlesPreferences.persistSubPos.get()) {
-            subtitlesPreferences.subPos.set(lastSubtitlePos)
+          if (subtitleDragActive) {
+            if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+              val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+              val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+              val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+              val currentScale = MPVLib.getPropertyFloat("sub-scale") ?: subtitlesPreferences.subScale.get()
+              coroutineScope.launch(Dispatchers.IO) {
+                subtitleProfileRepository.saveProfile(key, subPos = lastSubtitlePos, subScale = currentScale)
+              }
+            } else if (subtitlesPreferences.persistSubPos.get()) {
+              subtitlesPreferences.subPos.set(lastSubtitlePos)
+            }
           }
           subtitleDragActive = false
 
@@ -1354,7 +1386,15 @@ fun GestureHandler(
             val tracker = subtitleTwoFingerTapTracker
             if (subtitleScaleStarted) {
               // Persist once when the pinch ends, not on every frame.
-              if (abs(subtitleScale - subtitlesPreferences.subScale.get()) > 0.001f) {
+              if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+                val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+                val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+                val currentPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+                coroutineScope.launch(Dispatchers.IO) {
+                  subtitleProfileRepository.saveProfile(key, subPos = currentPos, subScale = subtitleScale)
+                }
+              } else if (abs(subtitleScale - subtitlesPreferences.subScale.get()) > 0.001f) {
                 subtitlesPreferences.subScale.set(subtitleScale)
               }
               tracker.clear()
@@ -1386,7 +1426,17 @@ fun GestureHandler(
                 if (isDoubleTap) {
                   tracker.clear()
                   MPVLib.setPropertyFloat("sub-scale", 1f)
-                  subtitlesPreferences.subScale.set(1f)
+                  if (subtitlesPreferences.subtitleScope.get() == SubtitleScope.PER_TITLE) {
+                    val mediaTitle = viewModel.currentMediaTitle.ifBlank { MPVLib.getPropertyString("media-title") ?: "" }
+                    val filePath = viewModel.currentFilePath ?: MPVLib.getPropertyString("path")
+                    val key = subtitleProfileRepository.resolveKey(mediaTitle, filePath)
+                    val currentPos = MPVLib.getPropertyInt("sub-pos") ?: subtitlesPreferences.subPos.get()
+                    coroutineScope.launch(Dispatchers.IO) {
+                      subtitleProfileRepository.saveProfile(key, subPos = currentPos, subScale = 1f)
+                    }
+                  } else {
+                    subtitlesPreferences.subScale.set(1f)
+                  }
                   haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                   viewModel.playerUpdate.update {
                     PlayerUpdates.SubtitleScale(100, isReset = true)
@@ -1537,7 +1587,10 @@ fun GestureHandler(
 
                     gestureType = "horizontal_seek"
                     hasStartedSeeking = true
-                    initialVideoPosition = position?.toFloat() ?: 0f
+                    initialVideoPosition =
+                      (MPVLib.getPropertyDouble("time-pos")
+                        ?: position?.toDouble()
+                        ?: 0.0).toFloat()
 
                     // Pause before seeking to prevent decoder stalls.
                     // Transient: keeps audio focus for an instant resume.
@@ -1564,20 +1617,24 @@ fun GestureHandler(
                       fullSwipeSeconds = fullSwipeSeconds,
                     )
                     val targetPosition = (initialVideoPosition + seekAmount).coerceAtLeast(0f)
-                    val maxDuration = duration?.toFloat() ?: 0f
-                    // Stop just short of the very end: landing on it makes mpv
-                    // report EOF and "close after the end of playback" would
-                    // exit the player mid-swipe. Never clamps below the position
-                    // the gesture started from, so the guard itself can't seek
-                    // backwards when the video is already on its last second.
-                    val seekCeiling = if (maxDuration > 0f) {
-                      (maxDuration - SWIPE_SEEK_EOF_GUARD_SECONDS)
-                        .coerceAtLeast(initialVideoPosition)
-                        .coerceAtMost(maxDuration)
+                    // Prefer the live mpv duration if the Compose state has not
+                    // received it yet. A missing duration must NOT clamp every
+                    // forward seek to zero.
+                    val maxDuration = (duration?.toFloat()?.takeIf { it > 0f }
+                      ?: MPVLib.getPropertyDouble("duration")?.toFloat()?.takeIf { it > 0f })
+                      ?: 0f
+
+                    // Stop just short of EOF when duration is known. If duration
+                    // is temporarily unavailable, keep the calculated target.
+                    val clampedPosition = if (maxDuration > 0f) {
+                      targetPosition.coerceAtMost(
+                        (maxDuration - SWIPE_SEEK_EOF_GUARD_SECONDS)
+                          .coerceAtLeast(initialVideoPosition)
+                          .coerceAtMost(maxDuration),
+                      )
                     } else {
-                      maxDuration
+                      targetPosition
                     }
-                    val clampedPosition = targetPosition.coerceAtMost(seekCeiling)
                     lastClampedPosition = clampedPosition
 
                     // Quantize to whole seconds with rounding (not truncation) so tiny
@@ -1588,8 +1645,11 @@ fun GestureHandler(
                     val currentPos = previewSecond
                     val seekDelta = previewSecond - initialVideoPosition.roundToInt()
 
-                    // Fast keyframe seek during active drag for fluid 60fps preview updates
-                    viewModel.seekTo(previewSecond, isScrubbing = true)
+                    // Do not issue a new mpv seek on every pointer event.
+                    // Rapid queued seeks can complete out of order: a later
+                    // forward seek may briefly land, then an older seek can
+                    // pull playback back. Keep the preview responsive while
+                    // dragging and apply ONE exact seek when the gesture ends.
 
                     // Format and display time position updates
                     val currentTimeStr = formatSeekTime(currentPos)
@@ -1601,7 +1661,6 @@ fun GestureHandler(
                       "-${formatSeekTime(-seekDelta)}"
                     }
 
-                    // Use PlayerUpdates system like zoom updates
                     viewModel.playerUpdate.update {
                       PlayerUpdates.HorizontalSeek(currentTimeStr, deltaStr, previewSecond.toFloat())
                     }
@@ -1628,25 +1687,12 @@ fun GestureHandler(
           if (hasStartedSeeking) {
             val target = lastClampedPosition.roundToInt()
             if (!wasPlayerAlreadyPaused) {
-              viewModel.seekToAndResume(target)
+              viewModel.seekToAndResume(target, exact = true)
             } else {
-              viewModel.seekTo(target, isScrubbing = false)
+              viewModel.seekTo(target, isScrubbing = false, exact = true)
             }
-
-            // Hold the swipe preview until mpv confirms the landing (bounded
-            // wait) instead of a fixed delay: clearing too early would expose
-            // the stale pre-seek position underneath and snap the seekbar
-            // backward, the same race the seekbar settle guard prevents.
-            coroutineScope.launch {
-              val deadline = System.currentTimeMillis() + 2000L
-              while (System.currentTimeMillis() < deadline) {
-                val live = MPVLib.getPropertyDouble("time-pos")?.toFloat()
-                if (live != null && abs(live - target) <= 1.5f) break
-                delay(50)
-              }
-              viewModel.playerUpdate.update { PlayerUpdates.None }
-              viewModel.hideSeekBar()
-            }
+            viewModel.playerUpdate.update { PlayerUpdates.None }
+            viewModel.hideSeekBar()
           }
         }
       },
@@ -1842,3 +1888,4 @@ fun MovingChevron(
             }
     )
 }
+

@@ -35,6 +35,11 @@ class MediaPlaybackService :
   MediaBrowserServiceCompat(),
   MPVLib.EventObserver,
   KoinComponent {
+  interface PlaybackActionListener {
+    fun onSkipToNext()
+    fun onSkipToPrevious()
+  }
+
   companion object {
     private const val TAG = "MediaPlaybackService"
     private const val NOTIFICATION_ID = 1
@@ -42,6 +47,9 @@ class MediaPlaybackService :
 
     @Volatile
     internal var thumbnail: Bitmap? = null
+
+    @Volatile
+    var playbackActionListener: PlaybackActionListener? = null
 
     @Volatile
     private var isServiceRunning = false
@@ -148,6 +156,8 @@ class MediaPlaybackService :
         }
       ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), type)
       Log.d(TAG, "Foreground service started successfully")
+    } catch (e: SecurityException) {
+      Log.w(TAG, "POST_NOTIFICATIONS permission not granted, proceeding without notification", e)
     } catch (e: Exception) {
       Log.e(TAG, "Error starting foreground service", e)
     }
@@ -202,20 +212,30 @@ class MediaPlaybackService :
 
             override fun onSkipToNext() {
               Log.d(TAG, "onSkipToNext called")
-              // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-              val duration = MPVLib.getPropertyInt("duration") ?: 0
-              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || duration < 120
-              val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
-              MPVLib.command("seek", "10", seekMode)
+              val listener = playbackActionListener
+              if (listener != null) {
+                listener.onSkipToNext()
+              } else {
+                // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
+                val duration = MPVLib.getPropertyInt("duration") ?: 0
+                val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || duration < 120
+                val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
+                MPVLib.command("seek", "10", seekMode)
+              }
             }
 
             override fun onSkipToPrevious() {
               Log.d(TAG, "onSkipToPrevious called")
-              // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
-              val duration = MPVLib.getPropertyInt("duration") ?: 0
-              val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || duration < 120
-              val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
-              MPVLib.command("seek", "-10", seekMode)
+              val listener = playbackActionListener
+              if (listener != null) {
+                listener.onSkipToPrevious()
+              } else {
+                // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
+                val duration = MPVLib.getPropertyInt("duration") ?: 0
+                val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || duration < 120
+                val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"
+                MPVLib.command("seek", "-10", seekMode)
+              }
             }
 
             override fun onSeekTo(pos: Long) {
@@ -293,6 +313,8 @@ class MediaPlaybackService :
     try {
       val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
       notificationManager.notify(NOTIFICATION_ID, buildNotification())
+    } catch (e: SecurityException) {
+      Log.w(TAG, "POST_NOTIFICATIONS permission not granted, skipping notification update", e)
     } catch (e: Exception) {
       Log.e(TAG, "Error updating notification", e)
     }
@@ -480,8 +502,14 @@ class MediaPlaybackService :
   }
 
   override fun onTaskRemoved(rootIntent: Intent?) {
-    Log.d(TAG, "Task removed - killing playback and cleaning up service")
+    Log.d(TAG, "Task removed - saving checkpoint and cleaning up service")
     try {
+      try {
+        PlayerActivity.onTaskRemovedCheckpoint?.invoke()
+      } catch (e: Exception) {
+        Log.e(TAG, "Error saving checkpoint in onTaskRemoved", e)
+      }
+
       // Kill MPV playback immediately when task is removed
       try {
         MPVLib.command("quit")
