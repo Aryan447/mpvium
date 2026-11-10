@@ -480,10 +480,9 @@ object StreamingHomeScreen : Screen {
                         ContinueListeningRow(
                           items = state.continueListening,
                           onItemClick = { item ->
-                            AudioPlayerLauncher.playTrack(
+                            AudioPlayerLauncher.playContinueListening(
                               context = context,
-                              track = item.targetTrack,
-                              queue = item.queue,
+                              item = item,
                             )
                           },
                           onItemRemove = { item ->

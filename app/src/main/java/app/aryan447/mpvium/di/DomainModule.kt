@@ -38,5 +38,5 @@ val domainModule = module {
     single { SubtitleProfileRepository(androidContext(), get(), get()) }
     single { AudioArtworkStore(androidContext(), get()) }
     single { AudioRepository(androidContext(), get()) }
-    single { AudioCollectionsRepository(androidContext(), get(), get(), get()) }
+    single { AudioCollectionsRepository(androidContext(), get(), get(), get(), getOrNull()) }
 }

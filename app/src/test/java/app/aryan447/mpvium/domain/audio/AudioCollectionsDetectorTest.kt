@@ -139,4 +139,37 @@ class AudioCollectionsDetectorTest {
     assertTrue("Subtitle should contain speaker Alan Watts", item.subtitle.contains("Alan Watts"))
     assertEquals(part1.title, item.targetTrack.title)
   }
+
+  @Test
+  fun buildContinueListening_sortsByActualPlaybackTimestamp() {
+    val trackA = createTrack("Part 1", "Book A", "Author A", "/storage/Audiobooks/Book A/Part 1.mp3", durationMs = 100_000L)
+    val trackB = createTrack("Part 1", "Book B", "Author B", "/storage/Audiobooks/Book B/Part 1.mp3", durationMs = 100_000L)
+
+    val states = mapOf(
+      trackA.displayName to PlaybackStateEntity(mediaTitle = trackA.displayName, lastPosition = 20, playbackSpeed = 1.0, sid = -1, subDelay = 0, subSpeed = 1.0, aid = -1, audioDelay = 0),
+      trackB.displayName to PlaybackStateEntity(mediaTitle = trackB.displayName, lastPosition = 40, playbackSpeed = 1.0, sid = -1, subDelay = 0, subSpeed = 1.0, aid = -1, audioDelay = 0),
+    )
+
+    val books = AudioCollectionsDetector.detectAudiobooks(
+      tracks = listOf(trackA, trackB),
+      getStateForTrack = { states[it] },
+    )
+
+    // Book A played at t=1000, Book B played at t=2000 (more recent)
+    val timestamps = mapOf(
+      trackA.displayName to 1000L,
+      trackB.displayName to 2000L,
+    )
+
+    val clItems = AudioCollectionsDetector.buildContinueListening(
+      audiobooks = books,
+      discourses = emptyList(),
+      getStateForTrack = { states[it] },
+      getTimestampForTrack = { track -> timestamps[track.displayName] ?: 0L },
+    )
+
+    assertEquals(2, clItems.size)
+    assertEquals("Book B", clItems[0].title)
+    assertEquals("Book A", clItems[1].title)
+  }
 }

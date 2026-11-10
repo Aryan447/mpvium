@@ -150,7 +150,6 @@ class AudioViewModel(
   fun refresh() {
     viewModelScope.launch(Dispatchers.IO) {
       audioRepository.refresh()
-      audioCollectionsRepository.refresh()
     }
   }
 

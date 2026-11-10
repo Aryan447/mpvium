@@ -152,6 +152,9 @@ object AudioCollectionsDetector {
     audiobooks: List<LocalAudiobook>,
     discourses: List<LocalDiscourse>,
     getStateForTrack: (String) -> PlaybackStateEntity? = { null },
+    getTimestampForTrack: (LocalAudioTrack) -> Long = { track ->
+      (track.dateModified * 1000L).takeIf { it > 0L } ?: (track.dateAdded * 1000L)
+    },
   ): List<ContinueListeningItem> {
     val items = mutableListOf<ContinueListeningItem>()
 
@@ -164,7 +167,8 @@ object AudioCollectionsDetector {
 
       val activeTrack = book.currentPart ?: book.parts.firstOrNull() ?: continue
       val state = getStateForTrack(activeTrack.displayName) ?: getStateForTrack(activeTrack.path)
-      val timestamp = state?.let { System.currentTimeMillis() } ?: 0L
+      if (state == null && book.currentPartPositionMs == 0L) continue
+      val timestamp = getTimestampForTrack(activeTrack)
 
       val partProgress = if (activeTrack.duration > 0) {
         (book.currentPartPositionMs.toFloat() / activeTrack.duration).coerceIn(0.02f, 1f)
@@ -206,7 +210,8 @@ object AudioCollectionsDetector {
 
       val activeTrack = discourse.currentPart ?: discourse.parts.firstOrNull() ?: continue
       val state = getStateForTrack(activeTrack.displayName) ?: getStateForTrack(activeTrack.path)
-      val timestamp = state?.let { System.currentTimeMillis() } ?: 0L
+      if (state == null && discourse.currentPartPositionMs == 0L) continue
+      val timestamp = getTimestampForTrack(activeTrack)
 
       val partProgress = if (activeTrack.duration > 0) {
         (discourse.currentPartPositionMs.toFloat() / activeTrack.duration).coerceIn(0.02f, 1f)

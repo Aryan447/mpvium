@@ -89,6 +89,7 @@ class StreamingHomeViewModel(
     viewModelScope.launch(Dispatchers.IO) {
       MediaLibraryEvents.changes.collectLatest {
         loadLibrary()
+        audioCollectionsRepository.refresh()
       }
     }
   }

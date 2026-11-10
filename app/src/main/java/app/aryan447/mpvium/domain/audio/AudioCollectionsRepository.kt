@@ -2,6 +2,7 @@ package app.aryan447.mpvium.domain.audio
 
 import android.content.Context
 import android.util.Log
+import app.aryan447.mpvium.database.MpviumDatabase
 import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.domain.audio.model.AudioChapter
 import app.aryan447.mpvium.domain.audio.model.ContinueListeningItem
@@ -25,6 +26,7 @@ class AudioCollectionsRepository(
   private val audioRepository: AudioRepository,
   private val playbackStateRepository: PlaybackStateRepository,
   private val preferenceStore: PreferenceStore,
+  private val database: MpviumDatabase? = null,
 ) {
   private val TAG = "AudioCollectionsRepo"
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -38,8 +40,6 @@ class AudioCollectionsRepository(
   private val _continueListening = MutableStateFlow<List<ContinueListeningItem>>(emptyList())
   val continueListening: StateFlow<List<ContinueListeningItem>> = _continueListening.asStateFlow()
 
-  private val dismissedPref = preferenceStore.getStringSet("dismissed_continue_listening", emptySet())
-
   init {
     scope.launch {
       audioRepository.libraryData.collectLatest {
@@ -48,8 +48,10 @@ class AudioCollectionsRepository(
     }
   }
 
-  suspend fun refresh() = withContext(Dispatchers.IO) {
-    audioRepository.refresh()
+  suspend fun refresh(forceScan: Boolean = false) = withContext(Dispatchers.IO) {
+    if (forceScan || audioRepository.getLibrarySnapshot().tracks.isEmpty()) {
+      audioRepository.refresh()
+    }
     recomputeCollections()
   }
 
@@ -79,10 +81,8 @@ class AudioCollectionsRepository(
     AudioChapterExtractor.extractChapters(context, track)
 
   fun dismissContinueListening(item: ContinueListeningItem) {
-    val current = dismissedPref.get().toMutableSet()
-    current.add(item.id)
-    dismissedPref.set(current)
-
+    val key = "cl_dismissed_${item.id}"
+    preferenceStore.getLong(key, 0L).set(maxOf(System.currentTimeMillis(), item.lastPlayedTimestamp))
     _continueListening.value = _continueListening.value.filter { it.id != item.id }
   }
 
@@ -138,12 +138,30 @@ class AudioCollectionsRepository(
         getStateForTrack = getState,
       )
 
-      val dismissed = dismissedPref.get()
+      val recentPlayedMap = try {
+        database?.recentlyPlayedDao()?.getAllRecentlyPlayed()?.associate { it.fileName to it.timestamp } ?: emptyMap()
+      } catch (e: Exception) {
+        Log.w(TAG, "Error fetching recently played for collections", e)
+        emptyMap()
+      }
+
+      val getTimestamp: (LocalAudioTrack) -> Long = { track ->
+        recentPlayedMap[track.displayName]
+          ?: recentPlayedMap[track.path]
+          ?: (track.dateModified * 1000L).takeIf { it > 0L }
+          ?: (track.dateAdded * 1000L)
+      }
+
       val clItems = AudioCollectionsDetector.buildContinueListening(
         audiobooks = books,
         discourses = discoursesList,
         getStateForTrack = getState,
-      ).filterNot { dismissed.contains(it.id) }
+        getTimestampForTrack = getTimestamp,
+      ).filterNot { item ->
+        val key = "cl_dismissed_${item.id}"
+        val dismissedAt = preferenceStore.getLong(key, 0L).get()
+        dismissedAt > 0L && item.lastPlayedTimestamp <= dismissedAt
+      }
 
       _audiobooks.value = books
       _discourses.value = discoursesList
