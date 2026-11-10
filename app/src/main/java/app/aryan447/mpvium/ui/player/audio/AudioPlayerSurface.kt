@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -118,6 +119,13 @@ fun AudioPlayerSurface(
 
   val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+  val cutoutPadding = WindowInsets.displayCutout.asPaddingValues()
+
+  val topInset = maxOf(
+    statusBarPadding.calculateTopPadding(),
+    cutoutPadding.calculateTopPadding(),
+    24.dp,
+  )
 
   Surface(
     modifier = modifier.fillMaxSize(),
@@ -133,15 +141,15 @@ fun AudioPlayerSurface(
               MaterialTheme.colorScheme.surface,
             )
           )
-        )
-        .padding(
-          top = statusBarPadding.calculateTopPadding(),
-          bottom = navBarPadding.calculateBottomPadding(),
         ),
     ) {
       Column(
         modifier = Modifier
           .fillMaxSize()
+          .padding(
+            top = topInset + 8.dp,
+            bottom = maxOf(navBarPadding.calculateBottomPadding(), 16.dp),
+          )
           .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
