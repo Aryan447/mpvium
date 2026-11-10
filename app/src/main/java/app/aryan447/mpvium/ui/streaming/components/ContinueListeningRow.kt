@@ -142,7 +142,9 @@ fun ContinueListeningCard(
           .background(MaterialTheme.colorScheme.surfaceContainerHigh),
       ) {
         AlbumArtImage(
-          uri = item.artworkUri,
+          artworkUri = item.artworkUri,
+          albumTitle = item.title,
+          artistName = item.subtitle,
           contentDescription = item.title,
           modifier = Modifier.fillMaxSize(),
         )

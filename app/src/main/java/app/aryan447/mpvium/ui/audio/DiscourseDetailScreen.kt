@@ -165,6 +165,8 @@ data class DiscourseDetailScreen(
               ) {
                 AlbumArtImage(
                   artworkUri = discourse.artworkUri,
+                  albumTitle = discourse.collection,
+                  artistName = discourse.speaker,
                   contentDescription = discourse.collection,
                   modifier = Modifier.fillMaxSize(),
                 )

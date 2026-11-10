@@ -75,6 +75,8 @@ fun AudiobookCard(
     ) {
       AlbumArtImage(
         artworkUri = audiobook.artworkUri,
+        albumTitle = audiobook.title,
+        artistName = audiobook.author,
         contentDescription = audiobook.title,
         modifier = Modifier.fillMaxWidth(),
       )
@@ -160,6 +162,8 @@ fun AudiobookRow(
     ) {
       AlbumArtImage(
         artworkUri = audiobook.artworkUri,
+        albumTitle = audiobook.title,
+        artistName = audiobook.author,
         contentDescription = audiobook.title,
         modifier = Modifier.size(56.dp),
       )
@@ -236,6 +240,8 @@ fun DiscourseCard(
     ) {
       AlbumArtImage(
         artworkUri = discourse.artworkUri,
+        albumTitle = discourse.collection,
+        artistName = discourse.speaker,
         contentDescription = discourse.collection,
         modifier = Modifier.fillMaxWidth(),
       )
@@ -321,6 +327,8 @@ fun DiscourseRow(
     ) {
       AlbumArtImage(
         artworkUri = discourse.artworkUri,
+        albumTitle = discourse.collection,
+        artistName = discourse.speaker,
         contentDescription = discourse.collection,
         modifier = Modifier.size(56.dp),
       )

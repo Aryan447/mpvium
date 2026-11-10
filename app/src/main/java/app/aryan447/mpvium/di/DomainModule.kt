@@ -36,6 +36,7 @@ val domainModule = module {
     single { StreamingArtworkStore(androidContext(), get()) }
     single { StreamingMetadataRepository(androidContext(), get(), get(), get(), get()) }
     single { SubtitleProfileRepository(androidContext(), get(), get()) }
-    single { AudioRepository(androidContext()) }
+    single { AudioArtworkStore(androidContext(), get()) }
+    single { AudioRepository(androidContext(), get()) }
     single { AudioCollectionsRepository(androidContext(), get(), get(), get()) }
 }

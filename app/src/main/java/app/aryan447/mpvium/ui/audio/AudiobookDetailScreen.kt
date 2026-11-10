@@ -163,6 +163,8 @@ data class AudiobookDetailScreen(
               ) {
                 AlbumArtImage(
                   artworkUri = book.artworkUri,
+                  albumTitle = book.title,
+                  artistName = book.author,
                   contentDescription = book.title,
                   modifier = Modifier.fillMaxSize(),
                 )
