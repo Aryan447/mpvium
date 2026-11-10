@@ -36,6 +36,10 @@
 
 ### Changed
 
+- Default hold gesture action: changed default hold gesture action to Speed boost (2x speed) instead of Brightness / Volume on new installs.
+- Default subtitle scope: changed default subtitle scope from Global to Per-title (`SubtitleScope.PER_TITLE`), remembering subtitle position and scale individually per show or movie out of the box.
+- Default volume slider style: changed default volume slider style to Standard across player gesture indicators and appearance settings.
+- Default clean title style: changed default title style to Two lines (`PlayerTitleMode.TwoLine`), optimizing out-of-the-box presentation for episode headers in Modern player.
 - Modern player volume and brightness indicator icons: dynamically swap the minimized control icon (volume shows brightness icon during brightness adjustments; brightness shows volume icon during vertical gestures, horizontal slider scrubbing, and hardware volume button presses) and immediately restore original icons as soon as the active adjustment and percentage readout end.
 
 - Player layout styles: renamed the original glass-pill layout to **Classic** and introduced **Modern** (an Apple TV style floating glass interface with unobstructed video, expandable volume & brightness controls, center transport, show header, customizable actions pill, and system gesture exclusion). Legacy Cinema and Minimal settings seamlessly migrate to Modern.
@@ -48,6 +52,7 @@
 
 ### Fixed
 
+- Modern player clean titles: integrated the master Clean titles toggle and title style selection (Single line, Two lines, Episode only) into Modern player controls. Fixed episode header formatting so TV episodes properly display `S<season>:E<episode> "Episode Title"` on the top line above the series name rather than dropping season and episode numbers when an episode title is present.
 - Audio playback: fixed tracks failing to play from the Audio tab due to missing intent view action and URI read permissions, and ensured intent URI resolution fallbacks never drop audio media.
 - Audio player layout: padded the audio player top bar with status bar and display cutout insets so the "Now playing" header is never obscured under screen punch-hole camera cutouts.
 

@@ -17,7 +17,7 @@ class PlayerPreferences(
   val orientation = preferenceStore.getEnum("player_orientation", PlayerOrientation.Video)
   val invertDuration = preferenceStore.getBoolean("invert_duration")
   val holdForMultipleSpeed = preferenceStore.getFloat("hold_for_multiple_speed", 2f)
-  val holdGestureMode = preferenceStore.getEnum("hold_gesture_mode", HoldGestureMode.BrightnessVolume)
+  val holdGestureMode = preferenceStore.getEnum("hold_gesture_mode", HoldGestureMode.SpeedBoost)
   val showDynamicSpeedOverlay = preferenceStore.getBoolean("show_dynamic_speed_overlay", true)
   val showDoubleTapOvals = preferenceStore.getBoolean("show_double_tap_ovals", true)
   val showSeekTimeWhileSeeking = preferenceStore.getBoolean("show_seek_time_while_seeking", true)
@@ -81,8 +81,8 @@ class PlayerPreferences(
   // Master toggle for clean titles on shows and movies. When off, the raw filename is shown.
   val showEpisodeHeader = preferenceStore.getBoolean("show_episode_header", true)
 
-  // Clean title style, shown when the master toggle is on. Single line is the default.
-  val titleMode = preferenceStore.getEnum("player_title_mode", PlayerTitleMode.SingleLine)
+  // Clean title style, shown when the master toggle is on. Two lines is the default.
+  val titleMode = preferenceStore.getEnum("player_title_mode", PlayerTitleMode.TwoLine)
 
   val autoPiPOnNavigation = preferenceStore.getBoolean("auto_pip_on_navigation", false)
 

@@ -110,10 +110,12 @@ import app.aryan447.mpvium.preferences.SeekbarStyle
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
+import app.aryan447.mpvium.ui.player.PlayerTitleMode
 import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.SeekCacheResolver
 import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.player.VideoAspect
+import app.aryan447.mpvium.utils.media.EpisodeTitleFormatter
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
@@ -165,6 +167,8 @@ fun ModernPlayerControls(
   onToggleInvertDuration: () -> Unit,
   mediaTitle: String = "",
   tmdbEpisodeTitle: String? = null,
+  showEpisodeHeader: Boolean = true,
+  titleMode: PlayerTitleMode = PlayerTitleMode.TwoLine,
   topRightButtons: List<PlayerButton> = emptyList(),
   bottomRightButtons: List<PlayerButton> = emptyList(),
   actionButtons: List<PlayerButton> = emptyList(),
@@ -201,24 +205,14 @@ fun ModernPlayerControls(
   val surfaceColor = if (amoledMode) Color(0xCC0A0B0E) else Color(0x9916181D)
   val borderStroke = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f))
 
-  // Parse title to identify TV show vs Movie
-  val parsedInfo = remember(mediaTitle) {
-    if (mediaTitle.isNotBlank() && !mediaTitle.contains("://")) {
-      MediaInfoParser.parse(mediaTitle)
+  // Clean titles & title formatting for Modern player
+  val cleanTitle = remember(mediaTitle, tmdbEpisodeTitle, showEpisodeHeader) {
+    if (showEpisodeHeader && mediaTitle.isNotBlank()) {
+      EpisodeTitleFormatter.resolve(mediaTitle, tmdbEpisodeTitle)
     } else {
       null
     }
   }
-
-  val isTvShow = parsedInfo?.type == "tv"
-  val episodeTitle = if (isTvShow) {
-    parsedInfo?.episodeTitle?.takeIf { it.isNotBlank() }
-      ?: tmdbEpisodeTitle?.takeIf { it.isNotBlank() }
-      ?: (if (parsedInfo?.season != null && parsedInfo.episode != null) "S${parsedInfo.season}:E${parsedInfo.episode}" else null)
-  } else {
-    null
-  }
-  val seriesOrMovieTitle = parsedInfo?.title?.takeIf { it.isNotBlank() } ?: mediaTitle
 
   Box(
     modifier = modifier.fillMaxSize(),
@@ -355,14 +349,17 @@ fun ModernPlayerControls(
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.Bottom,
         ) {
-          // Title Block (Episode name on top, Series name below with chevron; or Movie name only)
-          if (isTvShow && episodeTitle != null) {
+          // Title Block (Two-line for TV show / subtitle, or single-line for movie / single-line mode / raw title)
+          val hasSubtitle = cleanTitle?.subtitle != null
+          val showTwoLines = showEpisodeHeader && titleMode == PlayerTitleMode.TwoLine && hasSubtitle
+
+          if (showTwoLines && cleanTitle != null && cleanTitle.subtitle != null) {
             Column(
               verticalArrangement = Arrangement.spacedBy(2.dp),
               modifier = Modifier.weight(1f, fill = false),
             ) {
               Text(
-                text = episodeTitle,
+                text = cleanTitle.subtitle,
                 style = MaterialTheme.typography.bodyMedium.copy(
                   color = Color.White.copy(alpha = 0.80f),
                   fontWeight = FontWeight.Normal,
@@ -388,7 +385,7 @@ fun ModernPlayerControls(
                   },
               ) {
                 Text(
-                  text = seriesOrMovieTitle,
+                  text = cleanTitle.title,
                   style = MaterialTheme.typography.titleLarge.copy(
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
@@ -407,21 +404,48 @@ fun ModernPlayerControls(
               }
             }
           } else {
-            // Movie: Single line with movie name only
+            val displayText = when {
+              !showEpisodeHeader || cleanTitle == null -> mediaTitle
+              titleMode == PlayerTitleMode.EpisodeOnly -> cleanTitle.detailOnly
+              titleMode == PlayerTitleMode.SingleLine -> cleanTitle.singleLine
+              else -> cleanTitle.title
+            }
             Column(
               modifier = Modifier.weight(1f, fill = false),
             ) {
-              Text(
-                text = seriesOrMovieTitle,
-                style = MaterialTheme.typography.titleLarge.copy(
-                  color = Color.White,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 20.sp,
-                  shadow = Shadow(color = Color.Black.copy(alpha = 0.6f), blurRadius = 6f),
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-              )
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                  .clip(RoundedCornerShape(4.dp))
+                  .clickable {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    resetControlsTimestamp()
+                    if (viewModel.hasPlaylistSupport()) {
+                      onOpenSheet(Sheets.Playlist)
+                    } else {
+                      onOpenSheet(Sheets.Chapters)
+                    }
+                  },
+              ) {
+                Text(
+                  text = displayText,
+                  style = MaterialTheme.typography.titleLarge.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 19.sp,
+                    shadow = Shadow(color = Color.Black.copy(alpha = 0.6f), blurRadius = 6f),
+                  ),
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                )
+                Icon(
+                  imageVector = Icons.Filled.ChevronRight,
+                  contentDescription = "Episodes / Chapters",
+                  tint = Color.White.copy(alpha = 0.80f),
+                  modifier = Modifier.size(22.dp),
+                )
+              }
             }
           }
 

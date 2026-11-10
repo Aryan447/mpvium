@@ -1,8 +1,6 @@
 package app.aryan447.mpvium.preferences
 
 import android.content.Context
-import android.content.res.Configuration
-import android.content.res.Resources
 import app.aryan447.mpvium.preferences.preference.Preference
 import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
@@ -14,9 +12,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.lang.reflect.InvocationHandler
-import java.lang.reflect.Proxy
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class BrowserPreferencesLayoutTest {
 
   private class InMemoryPreferenceStore : PreferenceStore {
@@ -110,34 +112,7 @@ class BrowserPreferencesLayoutTest {
     override fun getAll(): Map<String, *> = store
   }
 
-  private fun createMockContext(): Context {
-    val config = Configuration().apply {
-      smallestScreenWidthDp = 360
-    }
-    val resourcesHandler = InvocationHandler { _, method, _ ->
-      when (method.name) {
-        "getConfiguration" -> config
-        else -> null
-      }
-    }
-    val resources = Proxy.newProxyInstance(
-      Resources::class.java.classLoader,
-      arrayOf(Resources::class.java),
-      resourcesHandler,
-    ) as Resources
-
-    val contextHandler = InvocationHandler { _, method, _ ->
-      when (method.name) {
-        "getResources" -> resources
-        else -> null
-      }
-    }
-    return Proxy.newProxyInstance(
-      Context::class.java.classLoader,
-      arrayOf(Context::class.java),
-      contextHandler,
-    ) as Context
-  }
+  private fun createMockContext(): Context = RuntimeEnvironment.getApplication()
 
   @Test
   fun mediaLayoutMode_hasExpectedValuesAndDisplayNames() {

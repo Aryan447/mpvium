@@ -857,6 +857,8 @@ fun PlayerControls(
             },
             mediaTitle = lookupRaw,
             tmdbEpisodeTitle = tmdbEpisodeTitle,
+            showEpisodeHeader = showEpisodeHeader,
+            titleMode = titleMode,
             topRightButtons = topRightButtons,
             bottomRightButtons = bottomRightButtons,
             actionButtons = modernActionButtons,

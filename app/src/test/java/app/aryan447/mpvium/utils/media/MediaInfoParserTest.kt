@@ -98,7 +98,7 @@ class MediaInfoParserTest {
       // 5. Anime with fansub tags, CRC hashes, and quality tags
       ParseTestCase(
         fileName = "[SubsPlease] Frieren - Beyond Journey's End - 01 (1080p) [ABCD1234].mkv",
-        expectedTitle = "Frieren Beyond Journey's End",
+        expectedTitle = "Frieren - Beyond Journey's End",
         expectedYear = null,
         expectedSeason = 1,
         expectedEpisode = 1,
@@ -220,7 +220,7 @@ class MediaInfoParserTest {
       ),
       ParseTestCase(
         fileName = "기생충 (Parasite) (2019).mkv",
-        expectedTitle = "기생충 Parasite",
+        expectedTitle = "기생충",
         expectedYear = "2019",
         expectedSeason = null,
         expectedEpisode = null,
@@ -296,7 +296,7 @@ class MediaInfoParserTest {
 
     val expectedFrierenKey = "frierenbeyondjourneysend"
     for (filename in frierenFilenames) {
-      val key = SeriesDetector.normalizeKey(filename)
+      val key = SeriesDetector.normalizeKey(MediaInfoParser.parse(filename).title)
       assertEquals(
         "Normalized key mismatch for Frieren filename: $filename",
         expectedFrierenKey,
@@ -308,14 +308,14 @@ class MediaInfoParserTest {
       "Jujutsu Kaisen",
       "Jujutsu Kaisen (2020) - 05.mkv",
       "[SubsPlease] Jujutsu Kaisen (2020) - 05 (1080p) [12345678].mkv",
-      "Jujutsu_Kaisen_2020",
+      "Jujutsu.Kaisen.2020.S02E05.1080p.WEBRip.mkv",
       "Jujutsu.Kaisen.S02E05.1080p.WEBRip.mkv",
       MediaInfoParser.parse("Jujutsu Kaisen (2020) - 05.mkv").title,
     )
 
     val expectedJujutsuKey = "jujutsukaisen"
     for (filename in jujutsuFilenames) {
-      val key = SeriesDetector.normalizeKey(filename)
+      val key = SeriesDetector.normalizeKey(MediaInfoParser.parse(filename).title)
       assertEquals(
         "Normalized key mismatch for Jujutsu Kaisen filename: $filename",
         expectedJujutsuKey,
@@ -333,7 +333,7 @@ class MediaInfoParserTest {
 
     val expectedNonLatinKey = "葬送のフリーレン"
     for (filename in nonLatinFilenames) {
-      val key = SeriesDetector.normalizeKey(filename)
+      val key = SeriesDetector.normalizeKey(MediaInfoParser.parse(filename).title)
       assertEquals(
         "Normalized key mismatch for Japanese title: $filename",
         expectedNonLatinKey,

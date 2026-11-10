@@ -74,7 +74,7 @@ enum class MainTab(
         enabledKeys
       }
       val filtered = entries.filter { tab ->
-        tab.key in effectiveKeys
+        tab.key in effectiveKeys && (tab != AUDIO || hasAudio)
       }
       return filtered.ifEmpty { listOf(HOME, TITLES, FOLDERS, LIBRARY, PLAYLISTS) }
     }

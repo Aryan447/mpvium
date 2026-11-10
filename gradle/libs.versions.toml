@@ -21,6 +21,7 @@ preferenceKtx = "1.2.1"
 constraintlayout = "2.2.2"
 palette = "1.1.0"
 junit = "4.13.2"
+robolectric = "4.17"
 
 [libraries]
 androidx-palette = { module = "androidx.palette:palette-ktx", version.ref = "palette" }
@@ -79,6 +80,7 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [bundles]
 koin = ["koin-core", "koin-android", "koin-compose", "koin-viewmodel"]
