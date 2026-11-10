@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -238,7 +237,7 @@ fun ModernPlayerControls(
       Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
       ) {
         // Top-left Glass Pill: [ Close (✕) | PiP ]
         Surface(
@@ -532,6 +531,9 @@ fun ModernTopRightControls(
   var isScrubbingVolume by remember { mutableStateOf(false) }
   var isScrubbingBrightness by remember { mutableStateOf(false) }
 
+  val isVolumeSliderShown by viewModel.isVolumeSliderShown.collectAsState()
+  val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
+
   var showVolumeNumberTemporarily by remember { mutableStateOf(false) }
   var lastObservedVolume by remember { mutableIntStateOf(currentVolume) }
   LaunchedEffect(currentVolume) {
@@ -549,9 +551,27 @@ fun ModernTopRightControls(
   LaunchedEffect(currentBrightness) {
     if (kotlin.math.abs(lastObservedBrightness - currentBrightness) > 0.005f) {
       lastObservedBrightness = currentBrightness
+      activeTarget = ModernTopRightTarget.BRIGHTNESS
       showBrightnessNumberTemporarily = true
       delay(1500)
       showBrightnessNumberTemporarily = false
+      if (!isBrightnessSliderShown) {
+        activeTarget = ModernTopRightTarget.VOLUME
+      }
+    }
+  }
+
+  LaunchedEffect(isBrightnessSliderShown) {
+    if (isBrightnessSliderShown) {
+      activeTarget = ModernTopRightTarget.BRIGHTNESS
+    } else {
+      activeTarget = ModernTopRightTarget.VOLUME
+    }
+  }
+
+  LaunchedEffect(isVolumeSliderShown) {
+    if (isVolumeSliderShown) {
+      activeTarget = ModernTopRightTarget.VOLUME
     }
   }
 
@@ -584,17 +604,11 @@ fun ModernTopRightControls(
     label = "ModernBrightnessWidth",
   )
 
-  val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
-
-  Column(
+  Row(
     modifier = modifier,
-    horizontalAlignment = Alignment.End,
-    verticalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
     // 1. Volume (Always Left)
     Surface(
       modifier = Modifier
@@ -729,7 +743,7 @@ fun ModernTopRightControls(
               modifier = Modifier.widthIn(min = 28.dp),
               contentAlignment = Alignment.Center,
             ) {
-              if (isScrubbingVolume || showVolumeNumberTemporarily) {
+              if (isScrubbingVolume || showVolumeNumberTemporarily || isVolumeSliderShown) {
                 Text(
                   text = "${(volumeFraction * 100).roundToInt()}%",
                   style = MaterialTheme.typography.labelSmall.copy(
@@ -894,7 +908,7 @@ fun ModernTopRightControls(
               modifier = Modifier.widthIn(min = 28.dp),
               contentAlignment = Alignment.Center,
             ) {
-              if (isScrubbingBrightness || showBrightnessNumberTemporarily) {
+              if (isScrubbingBrightness || showBrightnessNumberTemporarily || isBrightnessSliderShown) {
                 Text(
                   text = "${(brightnessFraction * 100).roundToInt()}%",
                   style = MaterialTheme.typography.labelSmall.copy(
@@ -917,119 +931,6 @@ fun ModernTopRightControls(
           }
         }
       }
-    }
-  }
-
-  // Vertical brightness slider that slides down vertically under the brightness icon
-  // when the user swipes on the left side to adjust brightness
-  AnimatedVisibility(
-    visible = isBrightnessSliderShown,
-    enter = slideInVertically(
-      initialOffsetY = { -it },
-      animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-    ) + fadeIn(animationSpec = tween(200)),
-    exit = slideOutVertically(
-      targetOffsetY = { -it },
-      animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
-    ) + fadeOut(animationSpec = tween(200)),
-  ) {
-    ModernVerticalBrightnessSlider(
-      brightness = currentBrightness,
-      onBrightnessChange = {
-        resetControlsTimestamp()
-        viewModel.changeBrightnessTo(it)
-      },
-      surfaceColor = surfaceColor,
-      borderStroke = borderStroke,
-      themePrimary = themePrimary,
-    )
-  }
-}
-}
-
-/**
- * Elegant vertical brightness slider that slides down vertically from the top-right
- * brightness button when adjusting brightness via left-edge vertical gestures.
- */
-@Composable
-fun ModernVerticalBrightnessSlider(
-  brightness: Float,
-  onBrightnessChange: (Float) -> Unit,
-  surfaceColor: Color,
-  borderStroke: BorderStroke,
-  themePrimary: Color,
-  modifier: Modifier = Modifier,
-) {
-  val brightnessFraction = brightness.coerceIn(0f, 1f)
-  var trackHeightPx by remember { mutableIntStateOf(0) }
-
-  Box(
-    modifier = modifier
-      .width(42.dp)
-      .height(130.dp)
-      .clip(RoundedCornerShape(21.dp))
-      .background(surfaceColor)
-      .border(borderStroke, RoundedCornerShape(21.dp))
-      .onSizeChanged { trackHeightPx = it.height }
-      .pointerInput(Unit) {
-        detectTapGestures { offset ->
-          if (trackHeightPx > 0) {
-            val fraction = (1f - (offset.y / trackHeightPx.toFloat())).coerceIn(0f, 1f)
-            onBrightnessChange(fraction)
-          }
-        }
-      }
-      .pointerInput(Unit) {
-        detectDragGestures(
-          onDrag = { change, _ ->
-            change.consume()
-            if (trackHeightPx > 0) {
-              val fraction = (1f - (change.position.y / trackHeightPx.toFloat())).coerceIn(0f, 1f)
-              onBrightnessChange(fraction)
-            }
-          }
-        )
-      },
-  ) {
-    // 1. Fill track rising from bottom to top
-    Box(
-      modifier = Modifier
-        .align(Alignment.BottomCenter)
-        .fillMaxWidth()
-        .fillMaxHeight(brightnessFraction.coerceAtLeast(0.02f))
-        .background(
-          color = themePrimary.copy(alpha = 0.85f),
-          shape = RoundedCornerShape(21.dp),
-        ),
-    )
-
-    // 2. Icon and live percentage readout
-    Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(vertical = 10.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-      // Percentage text at top
-      Text(
-        text = "${(brightnessFraction * 100).roundToInt()}%",
-        style = MaterialTheme.typography.labelSmall.copy(
-          fontFamily = FontFamily.Monospace,
-          fontWeight = FontWeight.Bold,
-          fontSize = 11.sp,
-          color = Color.White,
-          shadow = Shadow(color = Color.Black.copy(alpha = 0.6f), blurRadius = 4f),
-        ),
-      )
-
-      // Brightness sun icon at bottom
-      Icon(
-        imageVector = Icons.Default.BrightnessMedium,
-        contentDescription = "Brightness",
-        tint = Color.White,
-        modifier = Modifier.size(18.dp),
-      )
     }
   }
 }

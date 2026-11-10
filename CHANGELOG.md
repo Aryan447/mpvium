@@ -2,7 +2,7 @@
 
 ### Added
 
-- Modern player brightness gesture: vertical brightness slider slides down vertically under the top-right brightness button during on-screen brightness swipe gestures, keeping the Modern player interface visible and displaying real-time level and percentage feedback without screen collision.
+- Modern player brightness gesture: swiping on the left edge smoothly expands the top-right brightness capsule and minimizes volume to a round toggle icon with real-time percentage feedback, keeping gesture behavior symmetrical and consistent with volume gestures.
 - Modern player seekbar styles: added support for Standard, Wavy, and Thick seekbar styles in Modern player layout, with Standard configured as the default and configurable via Settings → Appearance → Controls.
 - Modern player layout option (Settings → Appearance → Player Layout): modeled after Apple TV's native player interface. Features a top-left floating glass pill with close (✕) and PiP buttons; expandable top-right Volume & Brightness controls with live scrub percentage readout and round toggle button; center floating circular glass transport controls (10s skip and hero play/pause); bottom-left two-line show title (episode name on top, series name with chevron below for TV shows, or single clean movie title for movies); customizable bottom-right actions pill (Subtitles, Audio Track, Explain, and Menu); theme-colored seekbar with elapsed/remaining timers, chapter dividers gated by settings, and system gesture navigation clearance; and tactile haptic feedback across all controls.
 - Custom series: create and edit your own TV shows from any videos with custom title, release year, poster cover, and drag-and-drop episode reordering with explicit season and episode numbering.
@@ -38,6 +38,9 @@
 - Fixed seekbar thumb snapping backward on gesture release when keyframe seeking is active.
 
 ### Fixed
+
+- Audio playback: fixed tracks failing to play from the Audio tab due to missing intent view action and URI read permissions, and ensured intent URI resolution fallbacks never drop audio media.
+- Audio player layout: padded the audio player top bar with status bar and display cutout insets so the "Now playing" header is never obscured under screen punch-hole camera cutouts.
 
 - Modern player seekbar: eliminated seekbar haptics, prevented paused playback from automatically resuming upon releasing the seekbar, and added vertical swipe-up scrubbing speed tiers (1x, 2x, 4x, 8x) with floating rate popup matching the Classic player.
 - Player gesture overlays: hid Modern player UI controls during volume and brightness vertical swipe gestures to prevent on-screen collision with titles and action buttons.
