@@ -170,6 +170,25 @@ class PlayerViewModel(
   private val _precisePosition = MutableStateFlow(0f)
   val precisePosition = _precisePosition.asStateFlow()
 
+  // Seek settling guard: prevents seekbar and timers from snapping back
+  // to stale pre-seek time-pos polls while libmpv processes an asynchronous seek.
+  @Volatile
+  private var pendingSeekTarget: Float? = null
+  @Volatile
+  private var pendingSeekBase: Float = Float.NaN
+  @Volatile
+  private var pendingSeekTimeoutMs: Long = 0L
+
+  fun registerSeekTarget(target: Float) {
+    val currentPrecise = _precisePosition.value
+    if (pendingSeekBase.isNaN()) {
+      pendingSeekBase = currentPrecise
+    }
+    pendingSeekTarget = target
+    pendingSeekTimeoutMs = android.os.SystemClock.uptimeMillis() + 800L
+    _precisePosition.value = target
+  }
+
   private val _preciseDuration = MutableStateFlow(0f)
   val preciseDuration = _preciseDuration.asStateFlow()
 
@@ -227,9 +246,30 @@ class PlayerViewModel(
     // Poll precise position only when playing
     viewModelScope.launch {
       while (isActive) {
-        val time = MPVLib.getPropertyDouble("time-pos")
+        val time = MPVLib.getPropertyDouble("time-pos")?.toFloat()
         if (time != null) {
-          _precisePosition.value = time.toFloat()
+          val target = pendingSeekTarget
+          if (target != null) {
+            val now = android.os.SystemClock.uptimeMillis()
+            val base = pendingSeekBase
+            val distToTarget = kotlin.math.abs(time - target)
+            val distToBase = if (base.isNaN()) Float.MAX_VALUE else kotlin.math.abs(time - base)
+            val baseToTarget = if (base.isNaN()) 0f else kotlin.math.abs(base - target)
+
+            val landed = distToTarget <= 1.5f ||
+              (baseToTarget > 3.0f && distToBase >= 2.0f && distToTarget < distToBase) ||
+              now >= pendingSeekTimeoutMs
+
+            if (landed) {
+              pendingSeekTarget = null
+              pendingSeekBase = Float.NaN
+              _precisePosition.value = time
+            } else {
+              _precisePosition.value = target
+            }
+          } else {
+            _precisePosition.value = time
+          }
         }
         delay(42) // ~24fps updates
       }
@@ -1388,6 +1428,7 @@ class PlayerViewModel(
   }
 
   fun seekTo(position: Int, isScrubbing: Boolean = false, exact: Boolean = false) {
+    registerSeekTarget(position.toFloat())
     if (isScrubbing) {
       val now = android.os.SystemClock.uptimeMillis()
       if (now - lastScrubSeekUptimeMs < SCRUB_SEEK_THROTTLE_MS) return
@@ -1401,6 +1442,7 @@ class PlayerViewModel(
   }
 
   fun seekToAndResume(position: Int, exact: Boolean = false) {
+    registerSeekTarget(position.toFloat())
     val sequence = seekSequence.incrementAndGet()
     val cachedDuration = duration
     viewModelScope.launch(Dispatchers.IO) {
@@ -1480,9 +1522,12 @@ class PlayerViewModel(
           val currentPos = cachedPos ?: MPVLib.getPropertyInt("time-pos") ?: 0
 
           if (totalDuration > 0 && currentPos + toApply >= totalDuration) {
+              registerSeekTarget(totalDuration.toFloat())
               // If seeking past the end, force seek to 100% absolute to ensure EOF is triggered
               MPVLib.command("seek", "100", "absolute-percent+exact")
           } else {
+              val targetPos = (currentPos + toApply).coerceIn(0, totalDuration)
+              registerSeekTarget(targetPos.toFloat())
               // Use precise seeking for videos shorter than 2 minutes (120 seconds) or if preference is enabled
               val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || totalDuration < 120
               val seekMode = if (shouldUsePreciseSeeking) "relative+exact" else "relative+keyframes"

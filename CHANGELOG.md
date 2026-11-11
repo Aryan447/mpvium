@@ -52,6 +52,7 @@
 
 ### Fixed
 
+- Seekbar settling and position jitter: resolved seekbar and timer "dancing" and backward jump on seek release (across both Modern and Classic player styles) by guarding precise position updates with a target settle hold in PlayerViewModel, keeping the seekbar track and timers locked to the target until libmpv confirms the new position, and synchronizing Modern seekbar section timers during active scrubs.
 - Modern player clean titles: integrated the master Clean titles toggle and title style selection (Single line, Two lines, Episode only) into Modern player controls. Fixed episode header formatting so TV episodes properly display `S<season>:E<episode> "Episode Title"` on the top line above the series name rather than dropping season and episode numbers when an episode title is present.
 - Audio playback: fixed tracks failing to play from the Audio tab due to missing intent view action and URI read permissions, and ensured intent URI resolution fallbacks never drop audio media.
 - Audio player layout: padded the audio player top bar with status bar and display cutout insets so the "Now playing" header is never obscured under screen punch-hole camera cutouts.

@@ -383,7 +383,7 @@ fun SeekbarWithTimers(
   val visualPosition = when {
     isUserInteracting -> userPosition
     isExternalSeeking -> position
-    else -> animatedPosition.value
+    else -> position
   }
 
   Row(

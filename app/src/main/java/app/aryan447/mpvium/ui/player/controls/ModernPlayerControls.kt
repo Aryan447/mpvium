@@ -1304,6 +1304,10 @@ fun ModernSeekbarSection(
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
+  var isDragging by remember { mutableStateOf(false) }
+  var dragPosition by remember { mutableFloatStateOf(position) }
+
+  val effectivePosition = if (isDragging) dragPosition else position
 
   Column(
     modifier = modifier
@@ -1319,7 +1323,11 @@ fun ModernSeekbarSection(
       cacheRanges = cacheRanges,
       isPaused = isPaused,
       onSeekTo = onSeekTo,
-      onSeekingChanged = onSeekingChanged,
+      onSeekingChanged = { seeking ->
+        isDragging = seeking
+        onSeekingChanged(seeking)
+      },
+      onDragPositionChange = { dragPosition = it },
     )
 
     // Timers row
@@ -1330,7 +1338,7 @@ fun ModernSeekbarSection(
     ) {
       // Current position timer
       Text(
-        text = Utils.prettyTime(position.toInt(), false),
+        text = Utils.prettyTime(effectivePosition.toInt(), false),
         style = MaterialTheme.typography.labelSmall.copy(
           fontFamily = FontFamily.Monospace,
           fontWeight = FontWeight.Medium,
@@ -1341,7 +1349,7 @@ fun ModernSeekbarSection(
       )
 
       // Remaining / total duration timer
-      val rightTimerValue = if (invertDuration) position - duration else duration
+      val rightTimerValue = if (invertDuration) effectivePosition - duration else duration
       val durationFormatted = Utils.prettyTime(rightTimerValue.toInt(), invertDuration)
 
       Text(
@@ -1378,6 +1386,7 @@ fun ModernSeekbarTrack(
   isPaused: Boolean = false,
   onSeekTo: (Float, Boolean) -> Unit,
   onSeekingChanged: (Boolean) -> Unit,
+  onDragPositionChange: (Float) -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
   val appearancePreferences = koinInject<AppearancePreferences>()
@@ -1400,6 +1409,7 @@ fun ModernSeekbarTrack(
   val latestPosition by rememberUpdatedState(position)
   val latestOnSeekTo by rememberUpdatedState(onSeekTo)
   val latestOnSeekingChanged by rememberUpdatedState(onSeekingChanged)
+  val latestOnDragPositionChange by rememberUpdatedState(onDragPositionChange)
 
   val displayPosition = if (isDragging) dragPosition else position
   val playedFraction = if (duration > 0f) (displayPosition / duration).coerceIn(0f, 1f) else 0f
@@ -1494,6 +1504,7 @@ fun ModernSeekbarTrack(
             verticalDragPx = 0f
             scrubTier = 0
             dragPosition = dragAnchor
+            latestOnDragPositionChange(dragPosition)
             latestOnSeekTo(dragPosition, true)
           },
           onDragEnd = {
@@ -1507,6 +1518,7 @@ fun ModernSeekbarTrack(
             latestOnSeekingChanged(false)
             scrubTier = 0
             dragPosition = latestPosition
+            latestOnDragPositionChange(dragPosition)
           },
           onDrag = { change, dragAmount ->
             change.consume()
@@ -1520,6 +1532,7 @@ fun ModernSeekbarTrack(
             val deltaFraction = scaledDragDxPx.toDouble() / trackWidthPx.toDouble()
             dragPosition = ((anchorFraction + deltaFraction) * currDuration.toDouble())
               .toFloat().coerceIn(0f, currDuration)
+            latestOnDragPositionChange(dragPosition)
             latestOnSeekTo(dragPosition, true)
           }
         )
