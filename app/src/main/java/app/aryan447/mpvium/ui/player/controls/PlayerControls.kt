@@ -140,7 +140,7 @@ val LocalPlayerButtonsClickEvent = staticCompositionLocalOf { {} }
  * seekbar, transport) read this instead of injecting preferences again.
  */
 @Suppress("CompositionLocalAllowlist")
-val LocalPlayerLayout = staticCompositionLocalOf { PlayerLayout.CLASSIC }
+val LocalPlayerLayout = staticCompositionLocalOf { PlayerLayout.MODERN }
 
 fun <T> playerControlsExitAnimationSpec(): FiniteAnimationSpec<T> =
   tween(

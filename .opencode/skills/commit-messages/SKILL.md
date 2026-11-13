@@ -48,16 +48,9 @@ Impact
 - <metric>: <before> -> <after> (<±%>)
 - <metric>: <before> -> <after> (<±%>)
 
-Method
-- <device / ABI / Android version>, <build variant>, <n> runs, <median|mean>
-- <command or tool that produced the numbers>
-
-Verified
-- <gradle task, CI run link, manual steps>
 ```
 
-Drop the whole `Impact` block when you have no metric. `Method: unmeasured` is honest and
-allowed for structural work.
+Drop the whole `Impact` block when you have no metric. 
 
 ## Measuring on this project
 

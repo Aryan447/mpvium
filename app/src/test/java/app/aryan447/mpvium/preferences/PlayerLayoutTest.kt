@@ -14,8 +14,8 @@ class PlayerLayoutTest {
   }
 
   @Test
-  fun defaultLayoutIsClassic() {
-    assertEquals(PlayerLayout.CLASSIC, PlayerLayout.valueOf("CLASSIC"))
+  fun modernIsTheFirstAndDefaultLayout() {
+    assertEquals(PlayerLayout.MODERN, PlayerLayout.entries[0])
   }
 
   @Test
@@ -25,8 +25,8 @@ class PlayerLayoutTest {
 
   @Test
   fun playerLayoutEntriesOrderIsPreserved() {
-    assertEquals(PlayerLayout.CLASSIC, PlayerLayout.entries[0])
-    assertEquals(PlayerLayout.MODERN, PlayerLayout.entries[1])
+    assertEquals(PlayerLayout.MODERN, PlayerLayout.entries[0])
+    assertEquals(PlayerLayout.CLASSIC, PlayerLayout.entries[1])
   }
 
   @Test
@@ -36,6 +36,6 @@ class PlayerLayoutTest {
     assertEquals(PlayerLayout.MODERN, PlayerLayout.fromString("CINEMA"))
     assertEquals(PlayerLayout.CLASSIC, PlayerLayout.fromString("CLASSIC"))
     assertEquals(PlayerLayout.CLASSIC, PlayerLayout.fromString("GLASS_PILL"))
-    assertEquals(PlayerLayout.CLASSIC, PlayerLayout.fromString("UNKNOWN"))
+    assertEquals(PlayerLayout.MODERN, PlayerLayout.fromString("UNKNOWN"))
   }
 }

@@ -41,6 +41,18 @@ html[data-theme="dynamic"] {
   --border: #3e3a48;
 }
 
+html[data-theme="aura"] {
+  --bg: #121316;
+  --surface: #1a1c21;
+  --surface2: #232630;
+  --primary: #c2c7d6;
+  --secondary: #c3c7cc;
+  --tertiary: #d7c1cf;
+  --text: #eef0f4;
+  --muted: #a8adb9;
+  --border: #33373f;
+}
+
 html[data-theme="noir"] {
   --bg: #0a0b0d;
   --surface: #131518;

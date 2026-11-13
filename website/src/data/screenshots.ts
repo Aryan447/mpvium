@@ -34,10 +34,10 @@ export const shots: Shot[] = [
     caption: "Continue watching & browse.",
   },
   {
-    src: "/screenshots/mpvium-dark-default-movies.jpg",
-    alt: "mpvium movies grid",
-    title: "Movies",
-    caption: "Poster grid with durations.",
+    src: "/screenshots/mpvium-dark-default-titles.jpg",
+    alt: "mpvium titles grid",
+    title: "Titles",
+    caption: "Shows and movies in one grid.",
   },
   {
     src: "/screenshots/mpvium-dark-default-library.png",

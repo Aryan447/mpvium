@@ -104,6 +104,9 @@ class MPVView(
     // Set GPU API context (Vulkan or OpenGL)
     if (decoderPreferences.useVulkan.get()) {
       MPVLib.setOptionString("gpu-context", "androidvk")
+    } else {
+      MPVLib.setOptionString("gpu-context", "android")
+      MPVLib.setOptionString("opengl-es", "yes")
     }
 
     // Initial decoder from settings. HW falls back to SW; HW+ also tries direct output first.
@@ -115,7 +118,7 @@ class MPVView(
     }
 
     // Demuxer cache configuration.
-    // OFF path is sacred: exact legacy constants and the same initOptions branch as today.
+    // OFF path is sacred: matches mpv-android: bounds memory usage without constraining readahead buffers.
     // ON path: dynamically resolves safe cache budgets and readahead from device capabilities.
     if (advancedPreferences.leanSeekCache.get()) {
       val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager

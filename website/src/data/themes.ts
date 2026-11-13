@@ -8,6 +8,7 @@ export interface Theme {
 export const themes: Theme[] = [
   { id: "default", name: "Default", primary: "#E8B5EF", bg: "#161217" },
   { id: "dynamic", name: "Dynamic", primary: "#D0BCFF", bg: "#1C1B1F" },
+  { id: "aura", name: "Aura", primary: "#C2C7D6", bg: "#121316" },
   { id: "cinema", name: "Cinema", primary: "#FFD27A", bg: "#0F0607" },
   { id: "noir", name: "Noir Cinema", primary: "#E6E1D5", bg: "#0A0B0D" },
   { id: "glass", name: "Glass", primary: "#F2F2F2", bg: "#000000" },

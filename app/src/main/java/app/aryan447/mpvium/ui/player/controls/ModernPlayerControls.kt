@@ -126,7 +126,7 @@ import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
 /**
- * Modern player layout modeled after the Apple TV+ native interface.
+ * Modern player layout: unobstructed video with floating glass controls.
  *
  * Characteristics:
  * - Top-left: Floating dark glass pill with Close (✕) and PiP buttons.

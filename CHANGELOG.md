@@ -1,151 +1,108 @@
-## Unreleased
+# mpvium 1.5.0
+# The Evolution Update
 
-### Added
+mpvium 1.5.0 is the biggest release this project has shipped: more than seventy-five changes across the player, the library, and a brand-new audio side of the app. Video now has a second face built for the living room, audio finally lives in its own tab with books and lecture series in it, your own TV shows can be built from any folder, one tab holds everything you watch, and a theme borrows its colors from your library. Nearly every screen was rebuilt along the way, and the player spent the cycle hunting down seekbar jitter so you never see it again.
 
-- Audio collections: support for audiobooks and discourses/talks with grouping on top of audio, natural chapter ordering, and dedicated browsing filters in the Audio tab.
-- Audiobooks: folder and album grouping with natural chapter ordering, per-book resume continuing from the saved part, and remembered playback speed per book.
-- Discourses and lecture series: speaker and collection grouping with resume across parts and embedded/CUE chapter list per part.
-- Continue Listening on Home: new home feed section (`HomeSection.CONTINUE_LISTENING`) showing active audiobooks and lecture series with resume across parts, orderable and toggleable under Settings → Appearance → Home sections.
-- Audio album covers: automatic resolution of real album covers with embedded art extraction via `MediaMetadataRetriever` first, falling back to keyless network lookup via MusicBrainz and Cover Art Archive with rate limiting (1 req/sec) and proper User-Agent headers.
-- Offline audio artwork cache: durable on-disk cache following `StreamingArtworkStore`'s pattern keyed by `album+artist` that is never evicted while albums remain in the library and prunes automatically when albums are deleted.
-- Generated album placeholder: graceful fallback tile with album initials on dynamic Material 3 tonal surfaces when embedded and online artwork are unavailable, preventing broken-image placeholders.
-- Modern player brightness gesture: swiping on the left edge smoothly expands the top-right brightness capsule and minimizes volume to a round toggle icon with real-time percentage feedback, keeping gesture behavior symmetrical and consistent with volume gestures.
-- Modern player seekbar styles: added support for Standard, Wavy, and Thick seekbar styles in Modern player layout, with Standard configured as the default and configurable via Settings → Appearance → Controls.
-- Modern player layout option (Settings → Appearance → Player Layout): modeled after Apple TV's native player interface. Features a top-left floating glass pill with close (✕) and PiP buttons; expandable top-right Volume & Brightness controls with live scrub percentage readout and round toggle button; center floating circular glass transport controls (10s skip and hero play/pause); bottom-left two-line show title (episode name on top, series name with chevron below for TV shows, or single clean movie title for movies); customizable bottom-right actions pill (Subtitles, Audio Track, Explain, and Menu); theme-colored seekbar with elapsed/remaining timers, chapter dividers gated by settings, and system gesture navigation clearance; and tactile haptic feedback across all controls.
-- Custom series: create and edit your own TV shows from any videos with custom title, release year, poster cover, and drag-and-drop episode reordering with explicit season and episode numbering.
-- Custom series entry points: selection mode in Folders and Files tabs now features "Add to series…" next to "Add to playlist", and the Shows tab header includes a direct "Create series" action with helpful empty-state guidance.
-- Series detail screen integration: custom series render identically to auto-detected shows with deterministic identifiers (`custom:<id>`), with dedicated Edit and safe Delete actions that remove only the series grouping without touching underlying video files.
-- Library exclusion overlay: videos claimed by a custom series are automatically excluded from automatic scanner grouping to eliminate duplicate entries in TV shows and movies.
-- Audio library tab (`MainTab.AUDIO` at canonical index 6): dedicated library for local audio with MediaStore scanning across albums, artists, and tracks, plus album artwork support without polluting video folders or tabs. Automatically hides when no audio exists on device while staying toggleable in Settings → Appearance.
-- Audio browsing & layouts: browse by Albums (grid or list view, persisted independently via `layout_audio`), All tracks, and Artists, with album detail view and queue playback.
-- Audio player surface: dedicated audio-mode player interface featuring album artwork cover, title, artist, seekbar, queue sheet, and playback controls with video gestures disabled.
-- Audio background playback: persistent background playback with media notification and lock screen controls via `MediaPlaybackService`, with graceful handling when `POST_NOTIFICATIONS` permission is denied.
-- Unified Titles tab combining TV shows and movies into a single browsing experience at canonical index 1, with a segment control (All, TV Shows, Movies) as the primary filter row, watch-state and duration filter dropdown buttons, normalized sorting (Name, Recently added, Rating, Longest, Shortest), and layout toggle (grid/list).
-- Option under Settings → Appearance → Bottom navigation to separate TV Shows and Movies into distinct tabs instead of the unified Titles tab, with individual visibility toggles for each.
-- Reserved historical canonical index 2 for launcher shortcuts and external tab requests, automatically opening Titles with the Movies filter preselected.
-- Aura theme: a built-in content-driven theme positioned third in the theme picker (Default, Dynamic, Aura, Cinema, …) whose accents and ambient glow dynamically adapt to the poster of recently played content in Continue Watching, previewing titles while browsing series and movie detail screens, and gracefully falling back to a neutral built-in identity when contrast or chroma checks require it.
-- Opt-in "Lean seek cache" setting (Settings → Advanced) that deepens the demuxer cache around the playhead for faster seeking on local and network sources alike. Automatically sizes forward and backward byte budgets according to memory class and bitrate, clamps to conservative 96 MB forward / 128 MB backward ceilings, and displays seekable cache ranges behind the seekbar rail when enabled.
-- Library index cache: media parsing results are now stored in a Room snapshot and refreshed incrementally, avoiding full device scans on every tab change.
-- Automatic vs manual library scanning mode in Settings → Folders.
-- Promoted Playlists to a first-class bottom-navigation tab (enabled by default) with an empty-state create action and direct access from the main navigation bar.
-- Movies: length filtering is a clock button with a dropdown next to the sort control, replacing the second chip row above the grid; its menu offers Any length, 30 min+, 1 h+, and 1.5 h+, and the button fills while a threshold is active.
-- Grid or list layout choice per tab across Shows, Movies, and Folders, persisted independently across restarts (`layout_shows`, `layout_movies`, `layout_folders`).
-- Tap-to-toggle layout icon in each tab's top bar next to sort controls, matching the tonal icon-button style.
-- Dedicated list rows for Shows and Movies with poster thumbnails, title, year, and inline progress/watch state.
-- Periodic playback checkpoint: saves progress while playing (default every 30 s, configurable under Settings → Player to 15 s, 30 s, 1 min, or 5 min) when playback moves by at least 5 s, surviving process kills, force stops, PiP, and background playback.
+Already on mpvium? Open **About** and check for updates. New here? Grab the APK for your device and play something.
 
-### Changed
+## A player with two faces
 
-- Default hold gesture action: changed default hold gesture action to Speed boost (2x speed) instead of Brightness / Volume on new installs.
-- Default subtitle scope: changed default subtitle scope from Global to Per-title (`SubtitleScope.PER_TITLE`), remembering subtitle position and scale individually per show or movie out of the box.
-- Default volume slider style: changed default volume slider style to Standard across player gesture indicators and appearance settings.
-- Default clean title style: changed default title style to Two lines (`PlayerTitleMode.TwoLine`), optimizing out-of-the-box presentation for episode headers in Modern player.
-- Modern player volume and brightness indicator icons: dynamically swap the minimized control icon (volume shows brightness icon during brightness adjustments; brightness shows volume icon during vertical gestures, horizontal slider scrubbing, and hardware volume button presses) and immediately restore original icons as soon as the active adjustment and percentage readout end.
+The glass-pill player you already know is now **Classic**, and beside it sits **Modern**, the new default. It leaves the video alone: a floating glass pill top-left with close and picture-in-picture, expandable **Volume & Brightness** controls top-right with a live percentage, circular transport controls floating in the center, a two-line title bottom-left (episode above series, with a chevron into the show), and a customizable actions pill bottom-right for subtitles, audio track, Explain, and the menu. The seekbar follows your theme, chapter dividers stay gated by settings, everything keeps clear of gesture navigation, and every control answers with a tap of haptics. It's under **Settings → Appearance → Player Layout**; anyone on the old Cinema or Minimal layouts moves over automatically, and the old glass-pill chrome is one tap away if you want it back.
 
-- Player layout styles: renamed the original glass-pill layout to **Classic** and introduced **Modern** (an Apple TV style floating glass interface with unobstructed video, expandable volume & brightness controls, center transport, show header, customizable actions pill, and system gesture exclusion). Legacy Cinema and Minimal settings seamlessly migrate to Modern.
-- Switching between Home, Shows, Movies, and Insights tabs now shares a single background scan rather than triggering independent scans per tab.
-- Appearance settings: bottom-navigation tab manager now includes Playlists (6 total tabs), with individual visibility toggles and at-least-one-tab protection.
-- Online subtitle search results are now parsed into a clean title with quality, source, codec, audio, edition, and release-group pills, plus a language badge and provider/format line, instead of a wall of raw release names.
-- External subtitle tracks added from online search now show a friendly label (language · quality · source · group) in the subtitle list.
-- Improved seeking performance: added adaptive precision (exact for short skips, keyframes for large jumps) to avoid decoder freezes on heavy media.
-- Fixed seekbar thumb snapping backward on gesture release when keyframe seeking is active.
+<img src="docs/screenshots/mpvium-player.jpg" alt="Modern player" />
 
-### Fixed
+Brightness now moves the way volume does. Swipe the left edge and the top-right capsule expands with the real percentage while volume shrinks to a round toggle icon, so both gestures read identically and you always know which one you're touching.
 
-- Seekbar settling and position jitter: resolved seekbar and timer "dancing" and backward jump on seek release (across both Modern and Classic player styles) by guarding precise position updates with a target settle hold in PlayerViewModel, keeping the seekbar track and timers locked to the target until libmpv confirms the new position, and synchronizing Modern seekbar section timers during active scrubs.
-- Modern player clean titles: integrated the master Clean titles toggle and title style selection (Single line, Two lines, Episode only) into Modern player controls. Fixed episode header formatting so TV episodes properly display `S<season>:E<episode> "Episode Title"` on the top line above the series name rather than dropping season and episode numbers when an episode title is present.
-- Audio playback: fixed tracks failing to play from the Audio tab due to missing intent view action and URI read permissions, and ensured intent URI resolution fallbacks never drop audio media.
-- Audio player layout: padded the audio player top bar with status bar and display cutout insets so the "Now playing" header is never obscured under screen punch-hole camera cutouts.
+Seekbars in Modern come just like Classic in **Standard**, **Wavy**, and **Thick** — Standard by default, under **Settings → Appearance → Controls** — and the minimized volume and brightness icons swap to show which one is active during swipes, slider scrubs, and hardware volume presses, then snap back the moment you stop.
 
-- Modern player seekbar: eliminated seekbar haptics, prevented paused playback from automatically resuming upon releasing the seekbar, and added vertical swipe-up scrubbing speed tiers (1x, 2x, 4x, 8x) with floating rate popup matching the Classic player.
-- Player gesture overlays: hid Modern player UI controls during volume and brightness vertical swipe gestures to prevent on-screen collision with titles and action buttons.
-- Volume controls: eliminated duplicate vertical volume slider during physical volume key presses while Modern controls are shown, and added live volume percentage readout to the top-right volume capsule when pressing physical volume buttons.
-- Modern player intro skip: moved Skip Intro and Skip Recap chips below the top-right volume/brightness capsule in landscape to eliminate visual collision.
-- Navigation: fixed Audio tab not appearing on the home bottom navigation bar when enabled in settings.
-- Prevented seekbar track expansion and wavy line flattening during on-screen horizontal swipe gestures by decoupling direct seekbar touch scrubbing from external gesture seeking.
-- Fixed seekbar handle and timer micro-jitter during horizontal swipe-to-seek gestures by strictly locking `visualPosition` and `seekbarPosition` during `PlayerUpdates.HorizontalSeek`.
-- Player: fixed a launch crash (`NullPointerException` inside `Flow.combine`) when opening the player while the lean seek cache is enabled, caused by the visibility observer reading player state before it was initialized.
-- Adding a second subtitle in the same language from online search now saves a separate file and appears as its own external track, instead of overwriting the first download and being silently ignored.
-- Online subtitle rows show a per-result progress spinner and ignore repeat taps while that result is downloading.
-- Playback state persistence: writes are now application-scoped so activity destruction or force-stop cannot drop the final write; saves on pause, stop, track changes, task removal, and memory trim; and guards against overwriting good positions with 0.
-- Subtitle scope setting (Global or Per-title): remember subtitle position and scale per show or per movie instead of one global pair.
-- Reset actions: forget subtitle settings for the current title from the subtitle sheet, and a global "Clear all subtitle profiles" option in Settings → Subtitles.
-- Metadata overrides: manually edit title, release year, and cover art (via system photo picker) for movies and TV shows from their detail screens; overrides work offline and survive rescans, forced refreshes, and cache migrations.
-- Option to toggle video chapter markers in the seekbar (Settings → Appearance → Seekbar).
-- Settings search direct jump & highlight: tapping a search result from either the settings dashboard inline search or the standalone search screen now navigates directly to the exact option row or section card, smoothly scrolling it into view and momentarily highlighting it with an accent tint.
-- Media filename parsing: anime episodes with years in titles (e.g. `Jujutsu Kaisen (2020) - 05.mkv`, `Kaguya-sama 2019 - 11.mkv`) are now properly recognized as series episodes rather than movies.
-- Multi-episode media files (`S01E01E02`, `S01E01-E02`, `1x01-02`, `- 01-02`) now parse deterministically to the first episode without leaking trailing episode numbers into episode titles.
-- Series identity: fansub release tags (`[SubsPlease]`, `[1080p]`, CRC hashes, `【】`, underscores) collapse reliably to the same series key as clean titles.
-- Folder fallbacks: subfolder episode naming such as `Show/Season 2/01 - Title.mkv` and `Show/01x02.mkv` now correctly resolve show titles, seasons, and episode titles.
-- Mixed episode numbering: folders containing explicit `SxxExx` files now map bare anime dash-numbered (`- NN`) episodes into the same season, preventing show splitting and duplicate episode entries.
-- Title vs release year: movies with numbers in their title (`1917 (2019)`, `2012 (2009)`, `Blade Runner 2049 (2017)`) retain the number in the title and take the year from parentheses; bare years are never returned as titles.
-- Appearance: the Dark/Light/System selector now spans the card width and lines up with the theme preview cards instead of hugging the left edge.
-- Choice rows (Appearance theme selector, Home categories, Shows/Movies filters) now use the light segment-tick haptic instead of a long-press buzz, so a tap gives feedback on devices that suppress long-press haptics.
-- Fixed timestamp desync between the center overlay and seekbar when swiping past 15 seconds.
-- Ensured swipe gestures land on the exact target timestamp without snapping back to earlier keyframes.
-- Exact seeks now let hardware decoders drop intermediate frames while catching up (`hr-seek-framedrop`, `hr-seek-demuxer-offset`, `framedrop=vo`), so long jumps land without stalling on slower VPUs.
+## Audio arrives
 
-## V1.3.0
+mpvium now has a real audio library. **Audio** is its own tab, scanning local music through MediaStore into **Albums**, **Artists**, and **All tracks**, with grid or list layouts, an album detail view, and queue playback. It never pollutes your video folders, it hides itself when there's no audio on the device, and one switch in Settings brings it back when there is. Browsing, playing, and the player itself are all built for audio: album artwork, title, artist, and a queue sheet, with video gestures out of the way.
 
-### Added
+Playback keeps going when you leave. **Background audio** runs through a media notification and lock-screen controls, and says so politely when notification permission is denied.
 
-- Clean titles now apply to movies too, showing the movie name and release year in the player.
-- Default decoder setting with Auto, SW, HW, and HW+ options.
-- SubSource support in online subtitle search: add your SubSource API key in Settings → Subtitles to include SubSource results; downloaded subtitles are unzipped automatically.
-- "Full player colors" toggle (Player Layout > Appearance, off by default) that puts the app theme accent on player icon glyphs while keeping button, pill, and chip backgrounds neutral glass; the seekbar, volume, and brightness sliders also use the accent. With it off, icons stay neutral and only the seekbar, volume, and brightness sliders use the theme accent.
-- Vertical swipe sensitivity setting (Player → Gestures) to control how much volume and brightness change per swipe.
-- Horizontal swipe seeking now maps finger travel to playback time, with a 1–10 seconds-per-centimetre slider under Player → Gestures (7 s/cm by default: a 5 cm swipe covers ~35 seconds and 10 cm ~1:10) and a full-swipe choice of 3 minutes (default) or the whole video.
-- Manual "Mark as" watch status on Home Continue Watching / Up Next / Recently Added (long-press), series episodes (long-press) and whole shows, movie details, and Recently Played selection.
-- Discord community, linked next to Telegram in About and across the website and README.
+**Audiobooks** and **discourses** are grouped out of the box. Books group by folder and album with natural chapter ordering, resume from the exact saved part, and remember their own playback speed. Lectures group by speaker and collection, resume across parts, and show embedded or CUE chapters for each one. **Continue Listening** on Home picks up both, orderable and toggleable alongside your other home sections.
 
-### Changed
+Album covers are resolved properly instead of left blank: embedded art first, then a politely rate-limited, keyless MusicBrainz and Cover Art Archive lookup, cached on disk per album and artist so it works offline, kept for as long as the album exists, and pruned when it's gone. If nothing turns up, a generated tile with the album's initials keeps the grid from looking broken.
 
-- The clean-title setting now describes shows and movies, and the "Episode only" style is now "Episode/title only".
-- Auto check for updates on startup is now enabled by default.
-- Intro/recap skip lookups now use TheIntroDB API v4, ahead of the v2/v3 shutdown.
-- Updated the bundled mpv-android library to v0.0.3 (mpv `v0.41.0-1042-g7e4cb538a`).
-- Hardware decoding now defaults to HW instead of HW+.
-- Whitelist-only mode now filters only the Home, Shows, and Movies library. Folders and Files always show full storage (blacklist still applies).
-- A horizontal swipe can no longer land exactly on the end of the video, so overshooting a swipe can't close the player through "Close after the end of playback".
-- Updated Compose Material 3 to 1.5.0-beta01.
-- Settings dashboard now has a flexible, collapsing top app bar and tiles whose corners morph on press.
-- Settings now use Material 3 Expressive controls: connected toggle buttons for choices, plus morphing loading indicators for font loading and update checks.
-- Single-choice settings now open one shared expressive picker sheet with connected, animated selection rows instead of stock list dialogs.
-- Settings search now transitions between the dashboard and results, cross-fades empty states, and animates filtered rows, result counts, and the clear action.
-- Player zoom and playback-speed sheets now group their actions with Material 3 Expressive button groups that expand the pressed action and overflow when space is tight.
-- Home category filters and Shows/Movies watch-state filters now use connected expressive toggle groups that morph the selected filter into a pill.
-- The Appearance dark/light/system selector now uses the same connected expressive toggle group as the Home category filters.
-- Screen and tab navigation now uses expressive fade-through transitions driven by the Material motion scheme instead of fixed tween slides.
-- The ambient theme glow now uses a shorter, layered bloom over the resolved theme background; AMOLED setups fade into true black instead of grey.
-- The Folders tab now uses tonal, press-morphing folder cards with rounded containers and pill-shaped new-video badges.
-- Onboarding now has scroll-reactive pages, shape-changing icon tiles, spring-driven progress dots, a fading skip action, and an animated primary button with press feedback.
-- About now groups Libraries and GitHub into an expressive action group, confirms device-info copies with a tactile icon swap, and cross-fades the update-check indicator.
-- Movies now hides clips of five minutes or less, along with reels, trailers, social/download exports, and camera recordings; those files remain available in Folders.
-- Removed the library-sources hint banner from Home, Shows, and Movies; whitelist settings remain in Settings → Folders.
+## Your own TV shows
 
-### Fixed
+Not every series needs a scraper. **Custom series** let you build one from any videos: title, release year, poster, and drag-and-drop episode ordering with explicit season and episode numbers. Add one straight from selection mode in Folders and Files, where **Add to series…** sits next to Add to playlist, or from the **Create series** action in the Shows header — with real guidance when the screen is empty.
 
-- Movie and show posters now stay stored on device until that movie or show is deleted, so covers keep working offline instead of being evicted from a size-capped image cache or re-downloaded.
-- Cached poster/backdrop files are removed together with their library entry when media is deleted or pruned.
-- Metadata cache writes are now atomic, so a write interrupted while the app is closed can no longer corrupt the cache and force every cover to be fetched again.
-- Movies and shows now render their cached cover immediately on open instead of briefly falling back to a video thumbnail before metadata enrichment finishes.
-- Refreshing metadata while offline now keeps the last saved cover instead of clearing it.
-- Swipe seeking no longer jumps by an unpredictable number of minutes: it uses a configurable seconds-per-centimetre distance mapping (7 s/cm by default, so a 5 cm swipe covers ~35 seconds and 10 cm ~1:10), and a full swipe covers 3 minutes or the whole video.
-- Compose Material 3 1.5.0-beta01 compatibility for dropdown menus, the seekbar, and glass navigation item colors.
-- Clean show titles no longer include trailing release-group tags such as `-edge2020`.
-- Home sections can be reordered and toggled (featured banner, Continue Watching, Up Next, Recently Added, Shows, Movies, folders) in Appearance > Home.
-- Player: pinch on subtitles to resize them, with two-finger double-tap to reset to 100%; the gesture can be toggled in Settings → Player → Gestures.
-- Edit network connection no longer shows the saved password; leave blank to keep it, type a new one to change it. Password input is now masked in add/edit dialogs.
-- Manual "Mark as New" now always restores the red NEW badge, even for older videos.
-- WebDAV browsing on servers that mark video files as collections (e.g. Torbox): `.mkv` entries without a folder href now show as playable videos with size, listings filter self by href instead of dropping the first entry, and paths with spaces/unicode are percent-encoded for listing, playback, and seeking.
-- Shows and Movies sort choices now persist across app restarts.
-- The Shows and Movies sort button now has a visible tonal surface, so it no longer disappears on dark and AMOLED themes.
-- VOBSUB/DVD and other bitmap subtitles now scale correctly: they keep their aspect ratio on anamorphic video instead of being stretched, and always follow the Scale and Position sliders.
-- Vertical volume/brightness swipes no longer use a stale starting volume, so consecutive and fast swipes no longer feel stuck or need repeating.
-- Watched threshold setting (e.g. 90%) now honored in Continue Watching, Up Next, widget, and playlist instead of staying stuck at 95%.
-- Whitelisted library no longer hides folders such as DCIM in the Folders and Files browsers and their searches.
-- Movie and show posters now use a stricter TMDb match: title similarity, original title, and release year are scored, movie/show types are never mixed, and uncertain matches no longer attach a wrong cover.
-- Filenames with year-like title numbers (1917, 2012, Blade Runner 2049) keep the number in the title, and folders such as "Spider-Man" are no longer mistaken for season folders.
-- Bare episode names (`S01E01.mkv`, `Episode 1.mkv`, `01.mkv`) and generic movie files (`movie.mkv`) now take their title from the show/movie folder, so their covers resolve correctly.
-- Non-Latin movie and show titles no longer collapse into one library entry, metadata cache key, or shared poster.
-- Existing automatic poster matches are refreshed once after upgrading; user-picked matches are kept.
+Once built, a custom series looks and behaves like any detected show: same detail screen, same playback, same progress. **Edit** and **Delete** are right there, and Delete removes only the grouping, never the files. Videos claimed by a custom series drop out of automatic scanning, so nothing shows up twice in TV shows or movies.
+
+## One tab for everything you watch
+
+Shows and movies now share a single **Titles** tab. A segment control across the top switches between All, TV Shows, and Movies; watch-state and duration sit beside it as dropdown buttons; sorting covers Name, Recently added, Rating, Longest, and Shortest; and the grid/list toggle works as it does everywhere else.
+
+<img src="docs/screenshots/mpvium-dark-default-titles.jpg" width="220" alt="Titles tab" />
+
+Prefer them apart? **Settings → Appearance → Bottom navigation** still splits TV Shows and Movies into their own tabs, each with its own visibility toggle. Launcher shortcuts keep working either way — the historical Movies slot now opens Titles with the Movies filter already applied.
+
+## Aura
+
+**Aura** is a content-driven theme, third in the picker after Default and Dynamic. Its accents and ambient glow adapt to the poster of whatever you were last watching — previewing titles as you browse series and movie detail screens — and it quietly falls back to a neutral identity when contrast or chroma checks say a poster would make a bad theme. Your library colors the app, but never at the cost of readability.
+
+<img src="docs/screenshots/mpvium-theme-dark-aura.jpg" width="220" alt="Aura Theme" />
+
+## Faster everywhere else
+
+The library index now lives in a Room snapshot that refreshes incrementally, so changing tabs no longer means rescanning the device. Home, Shows, Movies, and Insights share one background scan instead of each starting their own.
+
+Seeking got adaptive precision: exact jumps for short skips, keyframe jumps for long ones, so heavy media doesn't stall the decoder when you drag far ahead. And for anyone who wants more, **Lean seek cache** under **Settings → Advanced** deepens the demuxer cache around the playhead, sizing byte budgets from your memory class and bitrate, capped at a conservative 96 MB forward and 128 MB backward, with the live cache ranges drawn behind the seekbar rail.
+
+## More features
+
+- **Playlists** are a first-class bottom-navigation tab, on by default, with a direct create action when empty.
+- **Grid or list per tab** across Shows, Movies, and Folders, remembered independently across restarts, with a tap-to-toggle icon in each top bar next to sort.
+- **List rows** for shows and movies, with poster, title, year, and inline progress.
+- **Movies length filter** is now a clock button with a dropdown next to sort — Any length, 30 min+, 1 h+, 1.5 h+ — and it fills while a threshold is active.
+- **Automatic or manual scanning** for the library, under **Settings → Folders**.
+- **Periodic playback checkpoint** saves progress while you watch, every 30 seconds by default (15 s, 30 s, 1 min, or 5 min under Settings → Player), and survives process kills, force stops, PiP, and background playback.
+- **Settings search** jumps straight to the row you picked and tints it so you can see where you landed.
+- **Metadata overrides**: edit title, release year, and cover art yourself for any movie or show through the system photo picker. Overrides work offline and survive rescans, refreshes, and cache migrations.
+- **Subtitle scope** remembers position and scale per show or per movie instead of one global pair, with per-title reset from the subtitle sheet and **Clear all subtitle profiles** under Settings → Subtitles.
+- **Chapter markers in the seekbar** are a toggle under **Settings → Appearance → Seekbar**.
+- **Online subtitle search** now reads like a release, not a filename: a clean title, quality, source, codec, audio, edition, and release-group pills, a language badge, and a provider line. Added tracks show the same friendly label in the track list.
+- **Bottom-navigation manager** lists all six tabs including Playlists, with individual toggles and protection against turning off the last one.
+
+<img src="docs/screenshots/mpvium-dark-default-library.png" width="220" alt="Library" />
+<img src="docs/screenshots/mpvium-dark-default-folders.png" width="220" alt="Folders" />
+<img src="docs/screenshots/mpvium-dark-default-insights.png" width="220" alt="Library insights" />
+<img src="docs/screenshots/mpvium-movie-showcase.jpg" width="220" alt="Movie details" />
+
+## New defaults
+
+- **Modern** is the default player layout. Anyone who already chose Classic keeps it, and Cinema or Minimal users land on Modern.
+- **Hold gesture** now defaults to Speed boost (2x) instead of Brightness / Volume.
+- **Subtitle scope** defaults to Per-title, so position and scale are remembered per show or movie from the first play.
+- **Volume slider style** defaults to Standard across gesture indicators and appearance settings.
+- **Clean title style** defaults to Two lines, which suits Modern's episode headers best.
+- **Decoder** now defaults to HW+ instead of HW.
+
+## Fixes
+
+- Seekbar and timer no longer dance or jump backwards on release in either player style: the target holds until playback confirms it, and Modern's section timers stay locked in step.
+- Modern clean titles now respect the master **Clean titles** toggle and title-style choice, and episodes format as `S01:E02 "Episode Title"` above the series name instead of losing their numbers.
+- Tracks play from the Audio tab again: opening an audio file now hands over the right permissions, and fallback paths no longer drop audio.
+- The audio player's top bar is padded for the status bar and display cutout, so the "Now playing" header is never hidden under a punch-hole camera.
+- Modern's seekbar no longer buzzes, releasing it while paused doesn't resume playback, and swiping up scrubs at 1x, 2x, 4x, or 8x with the same floating rate popup as Classic.
+- Volume and brightness swipes hide Modern's on-screen controls instead of letting them collide with titles and action buttons.
+- Hardware volume keys no longer draw a second slider over Modern's controls, and the top-right capsule shows the live percentage.
+- Skip Intro and Skip Recap sit below the volume and brightness capsule in landscape instead of on top of it.
+- The Audio tab appears in the bottom bar as soon as you enable it.
+- Horizontal swipes no longer stretch the seekbar track or flatten its wavy line, and the thumb and timers hold still while you drag.
+- Opening the player with **Lean seek cache** enabled no longer crashes.
+- A second subtitle in the same language downloads as its own file and shows as its own track instead of overwriting the first.
+- Online subtitle rows show per-result progress and ignore repeat taps while downloading.
+- Playback position is saved from anywhere in the app — on pause, stop, track change, task removal, and memory pressure — and a good position is never overwritten with zero.
+- Anime with years in the title (`Jujutsu Kaisen (2020) - 05.mkv`) is recognized as an episode instead of a movie.
+- Multi-episode files (`S01E01E02`, `S01E01-E02`, `1x01-02`, `- 01-02`) parse to the first episode without leaking numbers into the title.
+- Fansub release tags, CRC hashes, and decorative brackets no longer split one show into several entries.
+- Subfolder naming like `Show/Season 2/01 - Title.mkv` and `Show/01x02.mkv` resolves show, season, and episode correctly.
+- Shows mixing explicit `SxxExx` files with bare dash-numbered episodes stay one show instead of splitting in two.
+- Numbers in movie titles (`1917 (2019)`, `2012 (2009)`, `Blade Runner 2049 (2017)`) stay in the title, with the year taken from parentheses; a bare year is never returned as a title.
+- The Dark/Light/System selector spans its card and lines up with the theme previews.
+- Choice rows and filter groups use the light segment-tick haptic instead of a long-press buzz.
+- The center overlay and seekbar timestamps stay in sync past 15 seconds, and swipes land on the exact target instead of snapping back to an earlier keyframe.
+- Exact seeks let hardware decoders drop intermediate frames while catching up, so long jumps land instead of stalling on slower chips.

@@ -1,0 +1,23 @@
+---
+import type { InlinePart } from "../data/changelog";
+
+interface Props {
+  parts: InlinePart[];
+}
+
+const { parts } = Astro.props;
+---
+
+{
+  parts.map((part) =>
+    part.kind === "code" ? (
+      <code class="rounded bg-[var(--surface2)] px-1.5 py-0.5 font-mono text-[0.88em] text-[var(--primary)]">
+        {part.text}
+      </code>
+    ) : part.kind === "bold" ? (
+      <strong class="font-bold text-[var(--text)]">{part.text}</strong>
+    ) : (
+      <>{part.text}</>
+    ),
+  )
+}

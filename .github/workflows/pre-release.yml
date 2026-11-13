@@ -118,7 +118,7 @@ jobs:
             preview/mpvium-preview-armeabi-v7a-${{ env.VERSION_TAG }}.apk
             preview/mpvium-preview-x86-${{ env.VERSION_TAG }}.apk
             preview/mpvium-preview-x86_64-${{ env.VERSION_TAG }}.apk
-          draft: false
+          draft: true
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

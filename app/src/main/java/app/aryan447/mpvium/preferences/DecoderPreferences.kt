@@ -9,7 +9,7 @@ class DecoderPreferences(
   preferenceStore: PreferenceStore,
 ) {
   val profile = preferenceStore.getString("mpv_profile", "fast")
-  val defaultDecoder = preferenceStore.getEnum("default_decoder", Decoder.HW)
+  val defaultDecoder = preferenceStore.getEnum("default_decoder", Decoder.HWPlus)
   val gpuNext = preferenceStore.getBoolean("gpu_next")
   val useVulkan = preferenceStore.getBoolean("use_vulkan", false)
   val useYUV420P = preferenceStore.getBoolean("use_yuv420p", false)

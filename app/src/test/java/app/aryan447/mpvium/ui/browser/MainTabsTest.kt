@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.browser
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -75,25 +76,32 @@ class MainTabsTest {
 
   @Test
   fun defaultKeys_containsAllExpectedTabs() {
-    val expected = setOf("HOME", "TITLES", "FOLDERS", "LIBRARY", "PLAYLISTS", "AUDIO")
+    val expected = setOf("HOME", "TITLES", "FOLDERS", "LIBRARY", "PLAYLISTS")
     assertEquals(expected, MainTab.defaultKeys)
     assertTrue("PLAYLISTS must be in defaultKeys for default visibility on", MainTab.defaultKeys.contains("PLAYLISTS"))
     assertTrue("TITLES must be in defaultKeys", MainTab.defaultKeys.contains("TITLES"))
-    assertTrue("AUDIO must be in defaultKeys", MainTab.defaultKeys.contains("AUDIO"))
+    assertFalse("AUDIO must stay opt-in, not on by default", MainTab.defaultKeys.contains("AUDIO"))
   }
 
   @Test
-  fun visibleTabs_withAllDefaultKeysAndHasAudio_returnsSixTabsInCanonicalOrder() {
+  fun visibleTabs_withAllDefaultKeysAndHasAudio_keepsAudioOffByDefault() {
     val visible = MainTab.visibleTabs(MainTab.defaultKeys, hasAudio = true)
-    assertEquals(6, visible.size)
-    assertEquals(listOf(MainTab.HOME, MainTab.TITLES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS, MainTab.AUDIO), visible)
-  }
-
-  @Test
-  fun visibleTabs_withAllDefaultKeysWhenNoAudio_autoHidesAudioTab() {
-    val visible = MainTab.visibleTabs(MainTab.defaultKeys, hasAudio = false)
     assertEquals(5, visible.size)
     assertEquals(listOf(MainTab.HOME, MainTab.TITLES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS), visible)
+  }
+
+  @Test
+  fun visibleTabs_withAudioEnabledButNoAudioOnDevice_autoHidesAudioTab() {
+    val visible = MainTab.visibleTabs(MainTab.defaultKeys + MainTab.AUDIO.key, hasAudio = false)
+    assertEquals(5, visible.size)
+    assertEquals(listOf(MainTab.HOME, MainTab.TITLES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS), visible)
+  }
+
+  @Test
+  fun visibleTabs_withAudioEnabledAndAudioOnDevice_showsAudioTabLast() {
+    val visible = MainTab.visibleTabs(MainTab.defaultKeys + MainTab.AUDIO.key, hasAudio = true)
+    assertEquals(6, visible.size)
+    assertEquals(listOf(MainTab.HOME, MainTab.TITLES, MainTab.FOLDERS, MainTab.LIBRARY, MainTab.PLAYLISTS, MainTab.AUDIO), visible)
   }
 
   @Test

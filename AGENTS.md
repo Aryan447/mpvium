@@ -113,11 +113,11 @@ keystores, passwords, tokens, or other credentials to the repository.
    shapes, and string resources; verify alignment, insets (status,
    navigation, gesture areas), RTL mirroring, and light/dark themes
    before finishing any UI change.
-9. Update `CHANGELOG.md` after every feature addition, change, or fix.
-   Add user-facing entries under `Unreleased`, grouped by `Added`,
-   `Changed`, `Fixed`. When cutting a new stable version, rename
-   `Unreleased` to the version number and start a fresh empty
-   `Unreleased` (see `CHANGELOG.md` → How to update).
+9. Update `UNRELEASED.md` after every feature addition, change, or fix, as
+   one short user-facing line under `Added`, `Changed`, or `Fixed`. When
+   cutting a preview or stable release, rewrite those notes into
+   `CHANGELOG.md` in the release-announcement style below and clear
+   `UNRELEASED.md` again.
 
 ## Agent skills
 
@@ -146,14 +146,81 @@ workflow's **Artifacts** section.
 
 # What's New
 
-Source of truth for GitHub release notes.
+`CHANGELOG.md` holds the notes for the version being shipped, written as a
+release announcement rather than a diff. `UNRELEASED.md` is the scratch pad
+that feeds it.
 
-## How to update
+## The workflow
 
-1. Add new user-facing changes under `Unreleased` while you work.
-2. When tagging a preview (`v*-preview*`) or release (`v*`), rename
-   `Unreleased` to the new version and add a fresh empty `Unreleased`.
-3. Keep entries short and user-facing. Group by `Added`, `Changed`, `Fixed`.
-4. Paste the version section into the GitHub release body (checksums are
-   added automatically by the release workflows).
+1. While you work, add one short line per user-facing change to
+   `UNRELEASED.md` under `Added`, `Changed`, or `Fixed`. These are raw
+   material; do not polish them yet.
+2. When cutting a preview (`v*-preview*`) or stable release (`v*`), clean
+   `CHANGELOG.md` and rewrite the whole release in the style below. A clean
+   file starts with `# mpvium <version>` — no leftover sections from the
+   previous version.
+3. Remove the lines you consumed from `UNRELEASED.md`, leaving the empty
+   headings behind.
+4. Paste the `CHANGELOG.md` body into the GitHub release; the workflows
+   append checksums.
+
+Older releases live in GitHub releases and git history, not in the file.
+
+## The style
+
+Write it the way Omarchy announces a release: a person telling you what
+changed, most interesting first.
+
+- **Open with the headline.** `# mpvium 1.5.0`, then one paragraph on what
+  the release is about. Lead with the numbers when you have them ("two
+  players", "five new tabs"), and close the intro with how to update.
+- **One `##` section per headline feature**, in the order a user would care.
+  Plain-language title (`## Audio arrives`, `## A player with two faces`),
+  then one to three short paragraphs: what it is, where it lives, what it
+  replaces. Prose, not bullets, and only one section per big idea.
+- **Bold the name** of a feature the first time it appears, the way a product
+  announcement would: `**Modern**`, `**Audio**`, `**Aura**`.
+- **Name the path and the default.** Every feature says where to find it
+  (`Settings → Appearance → Player Layout`) and what it does out of the box.
+- **Say what it replaces.** "Cinema and Minimal move to Modern." Users need
+  to know where the thing they used to tap went.
+- **Screenshots are welcome.** Put one on its own line under the section it
+  illustrates, repo-relative so GitHub renders it:
+
+  ```html
+  <img src="docs/screenshots/mpvium-theme-dark-aura.jpg" width="220" alt="Aura theme" />
+  ```
+
+  Portrait phone shots take `width="220"` so several fit in a row. Leave the
+  width off landscape shots (players, wide screens) — they should span the
+  text column and sit flush with the prose above and below.
+
+  Always also copy the file to `website/public/screenshots/` — the site's
+  changelog page serves images from there. For a GitHub release body, swap
+  the relative path for the raw URL
+  (`https://raw.githubusercontent.com/Aryan447/mpvium/main/docs/screenshots/…`),
+  because release notes do not resolve repo-relative paths.
+- **`## More features`** takes the smaller items as one-line bullets, each
+  starting with a bold lead-in (`**Grid or list per tab**`,
+  `**Periodic playback checkpoint**`).
+- **`## New defaults`** collects everything that changed for existing users,
+  because that is what they will notice first.
+- **`## Fixes`** closes the post: dense, specific, one sentence each, naming
+  the symptom the user saw rather than the mechanism behind it.
+- **Voice**: second person, present tense, sentence case, American spelling,
+  full stop at the end. "You no longer have to", never "the implementation
+  was refactored".
+- **No internals**: no file names, class names, identifiers, PR numbers, or
+  commit hashes. Nobody should have to know what a `PlayerViewModel` is.
+
+## Rules that never change
+
+- User-facing only. CI, agent skills, dependencies, and invisible refactors
+  stay out of both files.
+- Every claim must be true and, where possible, measurable. Never say
+  "faster" without saying what got faster.
+- Keep sections in descending order of user interest; fixes go last even
+  when they were most of the work.
+- Short lines in `UNRELEASED.md`, full sentences in `CHANGELOG.md`.
+- Update both files in the same change that alters user-visible behavior.
 

@@ -22,10 +22,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
  *   - 3: FOLDERS
  *   - 4: LIBRARY
  *   - 5: PLAYLISTS
- *   - 6: AUDIO (auto-hidden when no audio exists on device)
+ *   - 6: AUDIO (off by default; auto-hidden when no audio exists on device)
  *
  * By default, unified TITLES is enabled (5 visible tabs). Users can switch
- * to separate SHOWS and MOVIES under Settings > Appearance > Bottom navigation.
+ * to separate SHOWS and MOVIES under Settings > Appearance > Bottom navigation,
+ * and opt into the AUDIO tab there as well.
  */
 enum class MainTab(
   val key: String,
@@ -51,7 +52,12 @@ enum class MainTab(
      */
     const val RESERVED_MOVIES_CANONICAL_INDEX = 2
 
-    val defaultKeys: Set<String> = setOf(HOME.key, TITLES.key, FOLDERS.key, LIBRARY.key, PLAYLISTS.key, AUDIO.key)
+    /**
+     * Tabs shown on a fresh install. AUDIO is intentionally not included:
+     * the tab stays available under Settings > Appearance > Bottom navigation
+     * for users who keep local audio on their device.
+     */
+    val defaultKeys: Set<String> = setOf(HOME.key, TITLES.key, FOLDERS.key, LIBRARY.key, PLAYLISTS.key)
 
     fun fromKey(key: String): MainTab? = entries.firstOrNull { it.key == key }
 

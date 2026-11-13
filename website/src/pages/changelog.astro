@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import InlineText from "../components/InlineText.astro";
 import { changelog } from "../data/changelog";
 import { links } from "../data/site";
 ---
@@ -31,25 +32,43 @@ import { links } from "../data/site";
           <section class="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
             <h2 class="text-xl font-extrabold text-[var(--primary)]">{entry.version}</h2>
             {entry.groups.map((group) => (
-              <div class="mt-4">
-                <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)]">
-                  {group.heading}
-                </h3>
-                <ul class="mt-2 list-disc space-y-1.5 break-words pl-5 text-[15px]">
-                  {group.items.map((parts) => (
-                    <li>
-                      {parts.map((part) =>
-                        part.code ? (
-                          <code class="rounded bg-[var(--surface2)] px-1.5 py-0.5 font-mono text-[0.88em] text-[var(--primary)]">
-                            {part.text}
-                          </code>
-                        ) : (
-                          <>{part.text}</>
-                        ),
-                      )}
-                    </li>
-                  ))}
-                </ul>
+              <div class="mt-5 first:mt-3">
+                {group.heading && (
+                  <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)]">
+                    {group.heading}
+                  </h3>
+                )}
+                {group.paragraphs.map((parts) => (
+                  <p class="mt-3 break-words text-[15px] leading-relaxed text-[var(--text)]">
+                    <InlineText parts={parts} />
+                  </p>
+                ))}
+                {group.items.length > 0 && (
+                  <ul class="mt-3 list-disc space-y-1.5 break-words pl-5 text-[15px]">
+                    {group.items.map((parts) => (
+                      <li>
+                        <InlineText parts={parts} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {group.images.length > 0 && (
+                  <div class="mt-4 flex flex-wrap gap-3">
+                    {group.images.map((image) => (
+                      <img
+                        src={image.src}
+                        alt={image.alt}
+                        width={image.width}
+                        loading="lazy"
+                        class={
+                          image.width
+                            ? "h-auto max-w-full rounded-xl border border-[var(--border)]"
+                            : "h-auto w-full rounded-xl border border-[var(--border)]"
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </section>

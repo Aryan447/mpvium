@@ -5,45 +5,41 @@ description: Prepare an mpvium release or preview — CHANGELOG entries, version
 
 # Release & changelog
 
-`CHANGELOG.md` is the single source of truth for release notes, and it is written for users,
-not for developers.
+`CHANGELOG.md` is the release announcement for the version being shipped.
+`UNRELEASED.md` is the raw scratch pad that feeds it. The full style guide
+lives in `AGENTS.md` → "What's New".
 
-## Changelog rules
+## While you work
 
 ```markdown
 ## Unreleased
 
 ### Added
 
-- …
-
 ### Changed
 
-- …
-
 ### Fixed
-
-- …
 ```
 
-- Start every user-visible change under `Unreleased`, grouped by `Added` / `Changed` /
-  `Fixed` (plus `Removed` when something is gone). Drop empty groups.
-- One line per change, in the user's words: what they now see or can do. No file names, class
-  names, "refactored", or commit hashes.
-- Keep the existing voice: sentence case, full stop at the end, feature prefix where it helps
-  (`Player:`, `Appearance:`, `Movies:`).
+- One short line per user-visible change under the group that fits (add `Removed` when
+  something is gone). Drop empty groups.
+- In the user's words: what they now see or can do. No file names, class names,
+  "refactored", or commit hashes.
 - Internal-only work (CI, agent skills, invisible refactors) does not belong here.
 - Do not bump `versionCode`/`versionName` for ordinary changes.
 
-Cutting a version:
+## Cutting a version
 
-1. Rename `## Unreleased` to `## V1.4.0` (existing style keeps the `V`) and add a fresh empty
-   `## Unreleased` above it.
-2. Bump `versionCode` and `versionName` together in `app/build.gradle.kts` `defaultConfig`.
-3. Tag `v1.4.0` only after CI on `main` is green. Preview tags are `v1.4.0-preview1` (or
+1. Clean `CHANGELOG.md` and rewrite the whole release as an announcement: `# mpvium 1.4.0`,
+   one intro paragraph on what the release is about, one `##` section per headline feature in
+   prose (each naming its path and its default), then `## More features`, `## New defaults`,
+   and `## Fixes` as one-line bullets. No leftover sections from the previous version.
+2. Clear the consumed lines from `UNRELEASED.md`, leaving the empty headings.
+3. Bump `versionCode` and `versionName` together in `app/build.gradle.kts` `defaultConfig`.
+4. Tag `v1.4.0` only after CI on `main` is green. Preview tags are `v1.4.0-preview1` (or
    `v1.4.0.preview1`); the workflows match `v*`, and `release.yml` skips any tag containing
    `preview`.
-4. Paste the version section into the GitHub release body; checksums are appended
+5. Paste the `CHANGELOG.md` body into the GitHub release body; checksums are appended
    automatically.
 
 ## Version state
@@ -83,7 +79,8 @@ Only `en-US` exists. Do not add locales without complete translations.
 
 ## Checklist
 
-- [ ] `Unreleased` entry in the right group and voice
+- [ ] `UNRELEASED.md` line added while working, in the right group and voice
+- [ ] `CHANGELOG.md` rewritten in announcement style, older sections cleared
 - [ ] Version bumped in `app/build.gradle.kts` (stable releases)
 - [ ] Fastlane changelog for the new `versionCode`
 - [ ] `git diff --check` clean

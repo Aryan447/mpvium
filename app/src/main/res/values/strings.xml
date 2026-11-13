@@ -159,7 +159,7 @@
   <string name="pref_layout_reset_title">Reset layout?</string>
   <string name="pref_layout_reset_summary">All customized player control layouts will be reset to default positions</string>
   <string name="pref_player_layout_style_title">Layout Style</string>
-  <string name="pref_player_layout_style_summary">Choose between the Classic glass-pill controls or the Modern layout</string>
+  <string name="pref_player_layout_style_summary">Choose between the Modern layout or the Classic glass-pill controls</string>
   <string name="pref_player_layout_classic">Classic</string>
   <string name="pref_player_layout_modern">Modern</string>
   <string name="pref_player_layout_cinema">Modern</string>

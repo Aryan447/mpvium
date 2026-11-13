@@ -16,7 +16,7 @@ class AppearancePreferences(
   val playerLayout =
     preferenceStore.getObject(
       "player_layout",
-      PlayerLayout.CLASSIC,
+      PlayerLayout.MODERN,
       serializer = { it.name },
       deserializer = { PlayerLayout.fromString(it) },
     )

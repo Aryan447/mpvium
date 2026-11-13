@@ -35,7 +35,7 @@ features or bugs.
 
 <p align="center">
   <img src="docs/screenshots/mpvium-dark-default-home.jpg" width="220" alt="Home library" />
-  <img src="docs/screenshots/mpvium-dark-default-movies.jpg" width="220" alt="Movies grid" />
+  <img src="docs/screenshots/mpvium-dark-default-titles.jpg" width="220" alt="Titles grid" />
   <img src="docs/screenshots/mpvium-movie-showcase.jpg" width="220" alt="Movie details" />
 </p>
 
