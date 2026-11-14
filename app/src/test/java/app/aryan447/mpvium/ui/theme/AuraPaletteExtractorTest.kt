@@ -192,4 +192,16 @@ class AuraPaletteExtractorTest {
     assertEquals("Third theme must be Aura", AppTheme.Aura, themes[2])
     assertEquals("Fourth theme must be Cinema", AppTheme.Cinema, themes[3])
   }
+
+  @Test
+  fun appThemeEnumOrder_crimsonIsLastAfterRosePine() {
+    val themes = AppTheme.entries
+    val rosePineIndex = themes.indexOf(AppTheme.RosePine)
+    val crimsonIndex = themes.indexOf(AppTheme.Crimson)
+    assertEquals("Crimson must follow RosePine", rosePineIndex + 1, crimsonIndex)
+    assertEquals("Crimson must be the last theme", themes.size - 1, crimsonIndex)
+    assertEquals(Color(0xFF990000), AppTheme.Crimson.primaryLight)
+    assertEquals(Color(0xFF990000), AppTheme.Crimson.primaryDark)
+    assertEquals(Color(0xFF000000), AppTheme.Crimson.backgroundDark)
+  }
 }

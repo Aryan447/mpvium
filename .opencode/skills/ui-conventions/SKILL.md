@@ -20,7 +20,7 @@ spacing, radii, or components. When in doubt, open the nearest existing screen a
   `SettingsTileShape` (24→32.dp pressed), `SettingsIconBoxCorner` (18.dp) from
   `ui/preferences/CardPreferences.kt`.
 - **Type**: stock `AppTypography`. Monospace only for timecodes and MediaInfo values.
-- **Theme state**: `LocalAppTheme.current` (15 themes), `LocalGlass.current` (Glass theme),
+- **Theme state**: `LocalAppTheme.current` (17 themes), `LocalGlass.current` (Glass theme),
   `LocalSpacing`. Never key app colors off `isSystemInDarkTheme()` — it disagrees with the
   user's Light/Dark/System and AMOLED choice.
 

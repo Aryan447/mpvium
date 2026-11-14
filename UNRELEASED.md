@@ -6,6 +6,8 @@
 
 ### Added
 
+- Crimson theme brings a deep crimson red and pure black look to Settings → Appearance.
+
 ### Changed
 
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.

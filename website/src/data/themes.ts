@@ -22,6 +22,7 @@ export const themes: Theme[] = [
   { id: "kanagawa", name: "Kanagawa", primary: "#7E9CD8", bg: "#1F1F28" },
   { id: "doom", name: "Doom", primary: "#C678DD", bg: "#282C34" },
   { id: "rosepine", name: "Rosé Pine", primary: "#EBBCBA", bg: "#191724" },
+  { id: "crimson", name: "Crimson", primary: "#990000", bg: "#000000" },
 ];
 
 export const defaultTheme = "cinema";
