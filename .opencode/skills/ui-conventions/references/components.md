@@ -61,7 +61,7 @@ Shows surfaces.
 | Symbol | File | Notes |
 | --- | --- | --- |
 | `MpviumTheme`, `DarkMode`, `LocalAppTheme` | `Theme.kt` | Single theme entry point; `MotionScheme.expressive()` is set here |
-| `AppTheme` | `AppTheme.kt` | 15 themes plus generated light/dark/AMOLED schemes |
+| `AppTheme` | `AppTheme.kt` | 17 themes plus generated light/dark/AMOLED schemes |
 | `Spacing`, `LocalSpacing`, `MaterialTheme.spacing` | `Spacing.kt` | The only spacing tokens |
 | `AppTypography` | `Type.kt` | Stock M3 typography |
 | Glass kit | `Glass.kt` | `LocalGlass`, `glassChrome`, `glassSheen`, `glassRimStroke`, `glassCardColors`, `glassSheetContainerColor`, `glassMenuContainerColor` |

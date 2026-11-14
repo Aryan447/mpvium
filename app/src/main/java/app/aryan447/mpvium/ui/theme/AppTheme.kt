@@ -202,6 +202,17 @@ enum class AppTheme(
     tertiaryDark = Color(0xFFC4A7E7),
     backgroundLight = Color(0xFFFAF4ED),
     backgroundDark = Color(0xFF191724),
+  ),
+  Crimson(
+    titleRes = R.string.theme_crimson,
+    primaryLight = Color(0xFF990000),
+    primaryDark = Color(0xFF990000),
+    secondaryLight = Color(0xFF7A1515),
+    secondaryDark = Color(0xFFCC3333),
+    tertiaryLight = Color(0xFF660000),
+    tertiaryDark = Color(0xFFFF4D4D),
+    backgroundLight = Color(0xFFFFF5F5),
+    backgroundDark = Color(0xFF000000),
   );
 
   /**
@@ -219,16 +230,29 @@ enum class AppTheme(
   /**
    * Get the dark color scheme for this theme
    */
-  fun getDarkColorScheme(): ColorScheme = buildDarkColorScheme(
-    primaryLight = primaryLight,
-    primaryDark = primaryDark,
-    secondaryLight = secondaryLight,
-    secondaryDark = secondaryDark,
-    tertiaryLight = tertiaryLight,
-    tertiaryDark = tertiaryDark,
-    backgroundLight = backgroundLight,
-    backgroundDark = backgroundDark,
-  )
+  fun getDarkColorScheme(): ColorScheme {
+    val base = buildDarkColorScheme(
+      primaryLight = primaryLight,
+      primaryDark = primaryDark,
+      secondaryLight = secondaryLight,
+      secondaryDark = secondaryDark,
+      tertiaryLight = tertiaryLight,
+      tertiaryDark = tertiaryDark,
+      backgroundLight = backgroundLight,
+      backgroundDark = backgroundDark,
+    )
+    return if (this == Crimson) {
+      base.copy(
+        onPrimary = Color.White,
+        onSecondary = Color.White,
+        onTertiary = Color.White,
+        primaryContainer = Color(0xFF400000),
+        onPrimaryContainer = Color(0xFFFFDAD6),
+      )
+    } else {
+      base
+    }
+  }
 
   /**
    * Get the AMOLED (pure black) color scheme for this theme.

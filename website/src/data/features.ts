@@ -32,7 +32,7 @@ export const features: Feature[] = [
   },
   {
     title: "Modern Material 3 UI",
-    description: "Expressive motion, morphing controls, and 16 themes with light & dark modes.",
+    description: "Expressive motion, morphing controls, and 17 themes with light & dark modes.",
     icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>',
   },
   {

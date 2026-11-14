@@ -118,6 +118,7 @@
   <string name="theme_kanagawa">Kanagawa</string>
   <string name="theme_doom">Doom</string>
   <string name="theme_rose_pine">Rosé Pine</string>
+  <string name="theme_crimson">Crimson</string>
   <!-- Settings Search -->
   <string name="settings_search_hint">Search settings…</string>
   <string name="settings_search_no_results">No settings found</string>
