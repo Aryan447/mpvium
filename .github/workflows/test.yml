@@ -35,6 +35,18 @@ jobs:
         with:
           cache-provider: basic
 
+      - name: Cache Robolectric Android jars
+        # Robolectric downloads its android-all jars to ~/.m2 on first run.
+        # setup-gradle does not cache that directory.
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.cache/robolectric
+          key: robolectric-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: |
+            robolectric-${{ runner.os }}-
+
       - name: Run unit tests
         run: nix develop --command ./gradlew testStandardDebugUnitTest
 
