@@ -1,5 +1,8 @@
 name: CI Build
 
+permissions:
+  contents: read
+
 on:
   pull_request:
   push:
@@ -21,17 +24,26 @@ jobs:
         id: set-short-sha
         run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
 
-      - name: Setup JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: 17
-          cache: 'gradle'
+      - name: Install Nix
+        uses: DeterminateSystems/determinate-nix-action@v3
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Restore Nix store
+        uses: nix-community/cache-nix-action@v7
+        with:
+          # flake.lock pins the JDK, Android SDK, and build tools. Rebuilding
+          # the SDK is the slowest part of a cold run, so cache it by lock hash.
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 6G
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
 
       - name: Build standard release APKs and bundle
+        # Everything below runs inside `nix develop`: JDK 17, Android SDK 37,
+        # build-tools 36.0.0, and git come from flake.lock, not the runner image.
         # Single Gradle invocation: one daemon + one configuration phase
         # instead of paying JVM startup/configure costs twice.
         # -PbundleBuild disables ABI splits for the bundle step
@@ -40,7 +52,7 @@ jobs:
         # CI artifacts are larger but installable; production releases
         # (release.yml) are unaffected and still build all ABIs minified.
         # lintVital is skipped for speed; re-add if release lint gate needed.
-        run: ./gradlew assembleStandardRelease bundleStandardRelease --parallel -x lintVitalStandardRelease -PciDebugSigning -PbundleBuild -PciFastBuild
+        run: nix develop --command ./gradlew assembleStandardRelease bundleStandardRelease --parallel -x lintVitalStandardRelease -PciDebugSigning -PbundleBuild -PciFastBuild
 
       - name: Upload release bundle
         uses: actions/upload-artifact@v7

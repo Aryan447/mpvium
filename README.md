@@ -85,20 +85,35 @@ project’s [preview releases](https://github.com/aryan447/mpvium/releases).
 
 ### Requirements
 
-- JDK 17
-- Android SDK with compile SDK 36
+- [Nix](https://nixos.org/download/) with flakes enabled
 - Git
 
-The project uses Kotlin, Jetpack Compose, Material 3, Room, Koin, and native
-components for media playback. Dependencies are resolved by Gradle and some
-are hosted on JitPack.
-
-Builds are normally performed by GitHub Actions. If you build locally, the
-Gradle wrapper may download the required Gradle distribution and dependencies.
+The flake pins JDK 17, Android SDK 37, build-tools 36.0.0, and the rest of the
+toolchain, so no Android Studio or SDK install is needed:
 
 ```bash
-bash ./gradlew assembleStandardDebug
+nix develop
+./gradlew assembleStandardDebug
 ```
+
+Or run a target directly:
+
+```bash
+nix run .#debug     # assembleStandardDebug
+nix run .#test      # testStandardDebugUnitTest
+nix run .#build     # assembleStandardRelease
+nix run .#ci        # the exact command CI runs
+```
+
+`nix run` targets run Gradle from the repository root. The APKs land in
+`app/build/outputs/apk/`. Gradle still downloads its own distribution and
+Maven dependencies on first use. `direnv allow` loads the dev shell
+automatically if you use direnv.
+
+A manual JDK 17 + Android SDK 37 setup still works, but CI and the documented
+path use Nix so that local and CI builds share one pinned toolchain. The
+project uses Kotlin, Jetpack Compose, Material 3, Room, Koin, and native
+components for media playback; some dependencies are hosted on JitPack.
 
 Useful build variants include:
 

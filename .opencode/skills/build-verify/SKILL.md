@@ -10,36 +10,40 @@ could not run.
 
 ## Hard rules
 
-1. **Do not download or install anything locally** (SDKs, JDKs, Gradle distributions,
-   dependencies, NDK) without explicit user approval — `AGENTS.md` requires this.
+1. **Do not install anything outside the flake.** JDK 17, Android SDK 37, build-tools 36.0.0,
+   and git come from `flake.nix` via `nix develop`. Do not install a separate JDK, SDK, NDK,
+   or Gradle distribution without explicit user approval. `nix develop`/`nix run` fetching
+   their pinned closure is the approved path.
 2. Check the environment before running Gradle:
 
    ```bash
-   java -version               # expect 17
-   echo "$ANDROID_HOME"        # expect a real SDK path
-   ls ~/.gradle/wrapper/dists  # expect the wrapper distribution cached
+   nix --version
+   nix develop --command java -version   # expect 17
+   nix develop --command bash -c 'echo "$ANDROID_HOME"'
    ```
 
-   If something is missing, do **not** run `./gradlew` "just to see". Push a branch and let CI
-   build it.
-
+   If Nix is missing, do **not** run `./gradlew` "just to see". Push a branch and let CI build
+   it, or ask the user to install Nix.
 3. `git diff --check` before every commit.
-4. Never commit `local.properties`, `app/build/`, `.gradle/`, `PLAN.md`, `TODO.md` (ignored on
-   purpose).
+4. Never commit `local.properties`, `app/build/`, `.gradle/`, `.direnv/`, `PLAN.md`, `TODO.md`
+   (ignored on purpose).
 
-## Toolchain (trust the build files, not prose)
+## Toolchain (trust the build files and flake, not prose)
 
 | Fact | Value | Source |
 | --- | --- | --- |
 | compileSdk / targetSdk / minSdk | 37 / 36 / 26 | `app/build.gradle.kts:16-21` |
 | Java + Kotlin target | 17 | `app/build.gradle.kts:109-112,173` |
-| CI JDK | temurin 17 | `.github/workflows/build.yml:24-28` |
-| AGP / Kotlin | 9.4.1 / 2.4.21 | `gradle/libs.versions.toml:1,5` |
+| CI JDK | 17 from nixpkgs | `flake.nix` |
+| Android SDK | platform 37.0, build-tools 36.0.0 | `flake.nix` |
+| AGP / Kotlin | 9.5.1 / 2.4.21 | `gradle/libs.versions.toml:1,5` |
 | Flavor | `standard` only (playstore commented out) | `app/build.gradle.kts:35-49` |
 | Build types | `debug`, `release`, `preview` | `app/build.gradle.kts:74-107` |
 | ABIs | armeabi-v7a, arm64-v8a, x86, x86_64 + universal | `app/build.gradle.kts:56-72` |
 
-`AGENTS.md` says compileSdk 36; the build says 37. Follow the build file.
+When `compileSdk` or AGP changes, bump `androidSdkFor` in `flake.nix` in the same change and
+commit `flake.lock`. A stale SDK shows up as "Failed to find target with hash string
+android-37" or a missing build-tools revision.
 
 `versionName` carries the git commit count, and `BuildConfig.GIT_SHA` / `GIT_COUNT` shell out
 to `git`, so builds need a real repo (shallow clones degrade to `0`).
@@ -48,12 +52,14 @@ to `git`, so builds need a real repo (shallow clones degrade to `0`).
 
 | Goal | Command |
 | --- | --- |
-| Fast debug build | `bash ./gradlew assembleStandardDebug` |
-| Unit tests | `bash ./gradlew testStandardDebugUnitTest` |
-| Release APKs, all ABIs, minified | `bash ./gradlew assembleStandardRelease` |
-| Preview APKs | `bash ./gradlew assembleStandardPreview` |
-| App bundle | `bash ./gradlew bundleStandardRelease -PbundleBuild` |
-| CI-equivalent | `bash ./gradlew assembleStandardRelease bundleStandardRelease --parallel -x lintVitalStandardRelease -PciDebugSigning -PbundleBuild -PciFastBuild` |
+| Enter toolchain | `nix develop` |
+| Fast debug build | `nix run .#debug` |
+| Unit tests | `nix run .#test` |
+| Release APKs, all ABIs, minified | `nix run .#build` |
+| Preview APKs | `nix run .#preview` |
+| App bundle | `nix run .#bundle` |
+| CI-equivalent | `nix run .#ci` |
+| Inside the shell | `bash ./gradlew assembleStandardDebug` |
 
 Flags that change what you get:
 
@@ -64,8 +70,9 @@ Flags that change what you get:
 
 ## CI
 
-`build.yml` runs on pull requests and pushes to `main` with the CI-equivalent command, then
-uploads `app-standard-release-apks-ci-signed-<sha>` and the AAB. Inspect it with:
+Every build workflow installs Nix, restores the Nix store, then runs Gradle through
+`nix develop`. `build.yml` runs on pull requests and pushes to `main` with the CI-equivalent
+command, then uploads `app-standard-release-apks-ci-signed-<sha>` and the AAB. Inspect it with:
 
 ```bash
 gh run list --workflow build.yml --limit 5
@@ -89,11 +96,14 @@ CI does **not** run `lint`, instrumented tests, or a device, and it skips
 - **Tests**: only `app/src/test/java/.../MovieLibraryClassifierTest.kt` exists (JUnit 4). Put
   new tests beside it, not in `androidTest`.
 - A local `assembleStandardRelease` produces unsigned APKs — expected, not a failure.
+- **Signing** uses `$ANDROID_BUILD_TOOLS/apksigner` from the dev shell. Do not hardcode
+  `build-tools/34.0.0` again.
 
 ## Definition of done
 
 - [ ] `git diff --check` clean
-- [ ] Relevant Gradle task run, or the CI run linked with its result
+- [ ] Relevant Gradle task run through Nix, or the CI run linked with its result
+- [ ] `nix flake check` passes when `flake.nix` changed
 - [ ] If the build could not run locally, say so and rely on CI
-- [ ] `CHANGELOG.md` → `Unreleased` entry for user-facing changes
+- [ ] `CHANGELOG.md` / `UNRELEASED.md` entry for user-facing changes
 - [ ] Device/emulator check when the change affects playback or UI

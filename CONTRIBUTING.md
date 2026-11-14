@@ -13,26 +13,31 @@ Please read this file, our [Code of Conduct](CODE_OF_CONDUCT.md), and
 
 1. Fork the repo and clone your fork.
 2. Create a focused branch: `feat/my-feature`, `fix/my-bug`, `docs/my-change`.
-3. Build and test, then open a pull request against `main`.
+3. Enter the pinned toolchain and build, then open a pull request against `main`.
 
 ```bash
-bash ./gradlew assembleStandardDebug
+nix develop
+./gradlew assembleStandardDebug
 ```
 
-Useful variants:
-
-```bash
-bash ./gradlew assembleStandardRelease
-bash ./gradlew assembleStandardPreview
-```
+`nix run .#debug`, `nix run .#test`, `nix run .#build`, and `nix run .#preview`
+work without entering a shell first. `nix run .#ci` runs the exact command the
+CI workflow uses.
 
 APKs are written to `app/build/outputs/apk/`. Do not commit build outputs.
 
 ### Requirements
 
-- JDK 17 (see `.github/workflows/build.yml` for the CI toolchain)
-- Android SDK with compile SDK 36, min SDK 26
+- [Nix](https://nixos.org/download/) with flakes enabled
 - Git
+
+`flake.nix` pins the JDK, Android SDK, and build tools. Bump the SDK there when
+`compileSdk` changes, and run `nix flake update` deliberately rather than as
+part of an unrelated change. `direnv allow` loads the shell automatically if
+you use direnv.
+
+A manual JDK 17 + Android SDK 37 setup still works, but the Nix shell is what CI
+uses, so it is the fastest way to reproduce a CI failure.
 
 Dependencies are resolved by Gradle. Some are hosted on JitPack
 (see `gradle/libs.versions.toml`). First build may download Gradle +

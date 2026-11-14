@@ -16,3 +16,6 @@ app/release
 PLAN.md
 TODO.md
 .kotlin/
+.direnv/
+result
+result-*

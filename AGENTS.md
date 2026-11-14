@@ -14,7 +14,8 @@ The application package and namespace are:
 - Application ID: `app.aryan447.mpvium`
 - Android namespace: `app.aryan447.mpvium`
 - Minimum SDK: 26
-- Target/compile SDK: 36
+- Target SDK: 36
+- Compile SDK: 37
 
 The project is still under development. Do not describe it as bug-free or
 production-perfect without running the relevant tests and build checks.
@@ -25,6 +26,7 @@ production-perfect without running the relevant tests and build checks.
 - `app/src/main/java/app/aryan447/mpvium/` — Kotlin application source.
 - `app/src/main/java/app/aryan447/mpvium/ui/mediainfo/` — MediaInfo UI/integration.
 - `gradle/libs.versions.toml` — dependency and plugin versions.
+- `flake.nix` / `flake.lock` — pinned JDK, Android SDK, build tools, and dev shell.
 - `.github/workflows/` — CI, preview, release, and deployment workflows.
 - `fastlane/metadata/` — store metadata and screenshots.
 - `CHANGELOG.md` — user-facing changelog; source of truth for release notes.
@@ -51,29 +53,46 @@ rename that package merely to change the GitHub owner or repository identity.
 
 ## Build and verification
 
+### Toolchain
+
+Nix is the source of truth. `flake.nix` pins JDK 17, Android SDK 37,
+build-tools 36.0.0, and git; `flake.lock` pins nixpkgs. CI runs every Gradle
+command through `nix develop`, so a local shell and CI share one toolchain.
+
+```bash
+nix develop                       # enter the shell
+nix run .#debug                   # assembleStandardDebug
+nix run .#test                    # testStandardDebugUnitTest
+nix run .#build                   # assembleStandardRelease
+nix run .#ci                      # the exact command build.yml runs
+```
+
+Inside the shell, use the Gradle wrapper; do not require a global Gradle:
+
+```bash
+bash ./gradlew assembleStandardDebug
+bash ./gradlew assembleStandardRelease
+bash ./gradlew assembleStandardPreview
+```
+
+The first `nix develop` downloads the pinned toolchain from cache.nixos.org,
+dl.google.com, and services.gradle.org. That is expected. When a change alters
+the toolchain, edit the version in `flake.nix` and commit
+`flake.lock`/`flake.nix` together; do not run `nix flake update` as part of an
+unrelated change.
+
 ### Local download and installation policy
 
 - Do not install or download software, dependencies, SDKs, JDKs, Gradle
   distributions, native toolchains, or other files on the local system unless
   the user explicitly authorizes it.
-- Before running a command that may download or install anything, inspect the
-  local environment and ask for explicit approval if the download is required.
+- `nix develop` and `nix run` are the approved way to fetch the build
+  toolchain; do not install a separate JDK or Android SDK alongside them.
+- Before running a command that may download or install anything outside the
+  flake, inspect the local environment and ask for explicit approval.
 - Prefer GitHub Actions for builds and verification that require downloads or
   unavailable Android tooling. Do not run the Gradle wrapper locally merely to
   test whether dependencies can be resolved without user approval.
-
-Use the Gradle wrapper; do not require a global Gradle installation:
-
-```bash
-bash ./gradlew assembleStandardDebug
-```
-
-Useful variants:
-
-```bash
-bash ./gradlew assembleStandardRelease
-bash ./gradlew assembleStandardPreview
-```
 
 The project documents JDK 17. The MediaInfo library currently targets Java/Kotlin
 21, so verify the actual CI toolchain if compilation fails locally.
@@ -87,6 +106,11 @@ git diff --check
 Build artifacts are written below `app/build/` and should not be committed.
 
 ## GitHub Actions
+
+All build workflows install Nix with `DeterminateSystems/determinate-nix-action`
+and run Gradle through `nix develop`. The Nix store is cached with
+`nix-community/cache-nix-action` and Gradle's wrapper/dependency caches with
+`gradle/actions/setup-gradle`.
 
 `.github/workflows/build.yml` builds the standard release APK on pull requests
 and pushes to `main`, then uploads unsigned ABI-specific and universal APKs as
@@ -138,10 +162,11 @@ subjects without a number and improvement claims without evidence.
 
 ## Development without local installation
 
-GitHub Actions is the preferred fallback when the local machine lacks Android
-SDK, NDK, CMake, or network access. Push the project and inspect the workflow
-under the repository's **Actions** tab. Download generated APKs from the
-workflow's **Artifacts** section.
+`nix develop` is the supported way to get the Android SDK, JDK, and build
+tools without installing them system-wide. If Nix cannot be installed on the
+machine, GitHub Actions is the fallback: push the project and inspect the
+workflow under the repository's **Actions** tab. Download generated APKs from
+the workflow's **Artifacts** section.
 
 
 # What's New
