@@ -43,7 +43,7 @@ import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
 
-private val transportShadow =
+internal val transportShadow =
   Brush.radialGradient(
     0.0f to Color.Black.copy(alpha = 0.45f),
     0.65f to Color.Black.copy(alpha = 0.15f),
@@ -97,18 +97,16 @@ fun PlayerTransportButton(
     shape = CircleShape,
     color =
       when {
-        isModern -> Color.Transparent
-        !hideBackground -> colors.controlFill
-        else -> Color.Transparent
+        hideBackground || isModern -> Color.Transparent
+        else -> colors.controlFill
       },
     contentColor = contentColor,
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
       when {
-        isModern -> null
-        !hideBackground -> BorderStroke(1.dp, colors.controlBorder)
-        else -> null
+        hideBackground || isModern -> null
+        else -> BorderStroke(1.dp, colors.controlBorder)
       },
   ) {
     Icon(
@@ -235,7 +233,7 @@ fun PlayerPlayPauseButton(
           },
         )
         .then(
-          if (hideBackground && !isModern) {
+          if (hideBackground) {
             Modifier.background(brush = transportShadow, shape = CircleShape)
           } else {
             Modifier
@@ -244,23 +242,23 @@ fun PlayerPlayPauseButton(
     shape = CircleShape,
     color =
       when {
+        hideBackground -> Color.Transparent
         isModern -> ModernChrome.heroFill
-        !hideBackground -> colors.playPauseFill
-        else -> Color.Transparent
+        else -> colors.playPauseFill
       },
     contentColor =
       when {
+        hideBackground -> if (isModern) ModernChrome.glyph else colors.onVideoIconContent
         isModern -> ModernChrome.heroContent
-        hideBackground -> colors.onVideoIconContent
         else -> colors.playPauseContent
       },
     tonalElevation = 0.dp,
     shadowElevation = 0.dp,
     border =
       when {
+        hideBackground -> null
         isModern -> BorderStroke(1.dp, Color.Black.copy(alpha = 0.10f))
-        !hideBackground -> BorderStroke(1.dp, colors.controlBorder)
-        else -> null
+        else -> BorderStroke(1.dp, colors.controlBorder)
       },
   ) {
     Image(
@@ -268,7 +266,7 @@ fun PlayerPlayPauseButton(
       modifier =
         Modifier
           .fillMaxSize()
-          .padding(MaterialTheme.spacing.medium),
+          .padding(if (hideBackground) MaterialTheme.spacing.small else MaterialTheme.spacing.medium),
       contentDescription = null,
       colorFilter = ColorFilter.tint(LocalContentColor.current),
     )

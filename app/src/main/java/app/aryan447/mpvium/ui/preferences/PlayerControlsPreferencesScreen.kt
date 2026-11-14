@@ -26,7 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -132,6 +132,7 @@ object PlayerControlsPreferencesScreen : Screen {
         "player.controls.bottom_left" to 3,
         "player.controls.portrait_bottom" to 5,
         "player.controls.colors" to 13,
+        "player.controls.buttons_background" to 13,
         "player.controls.hide_buttons_background" to 13,
         "player.controls.hide_control_time" to 13,
       ),
@@ -325,7 +326,7 @@ object PlayerControlsPreferencesScreen : Screen {
 
           item {
             val playerFullColors by appearancePrefs.playerFullColors.collectAsState()
-            val hidePlayerButtonsBackground by appearancePrefs.hidePlayerButtonsBackground.collectAsState()
+            val playerButtonsBackground by appearancePrefs.playerButtonsBackground.collectAsState()
             val playerTimeToDisappear by playerPrefs.playerTimeToDisappear.collectAsState()
             val predefinedTimeValues = listOf(500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000)
             val isCustomTimeValue = !predefinedTimeValues.contains(playerTimeToDisappear)
@@ -360,20 +361,20 @@ object PlayerControlsPreferencesScreen : Screen {
               PreferenceDivider()
 
               HapticSwitchPreference(
-                value = hidePlayerButtonsBackground,
-                onValueChange = { appearancePrefs.hidePlayerButtonsBackground.set(it) },
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.VisibilityOff) },
+                value = playerButtonsBackground,
+                onValueChange = { appearancePrefs.playerButtonsBackground.set(it) },
+                icon = { PreferenceRowIcon(icon = Icons.Outlined.Layers) },
                 title = {
                   Text(
-                    text = stringResource(id = R.string.pref_appearance_hide_player_buttons_background_title),
+                    text = stringResource(id = R.string.pref_appearance_player_buttons_background_title),
                   )
                 },
                 summary = {
                   Text(
-                    text = stringResource(id = R.string.pref_appearance_hide_player_buttons_background_summary),
+                    text = stringResource(id = R.string.pref_appearance_player_buttons_background_summary),
                   )
                 },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.hide_buttons_background"),
+                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.buttons_background"),
               )
 
               PreferenceDivider()
