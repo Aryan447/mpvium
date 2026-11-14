@@ -62,11 +62,11 @@ fun ControlsButton(
   val interactionSource = remember { MutableInteractionSource() }
   val isInspection = LocalInspectionMode.current
   val appearancePreferences = if (isInspection) null else koinInject<AppearancePreferences>()
-  val rawHideBackground by appearancePreferences?.hidePlayerButtonsBackground?.collectAsState()
+  val playerButtonsBackground by appearancePreferences?.playerButtonsBackground?.collectAsState()
     ?: remember { androidx.compose.runtime.mutableStateOf(false) }
   val playerLayout = LocalPlayerLayout.current
   val isModern = playerLayout == PlayerLayout.MODERN
-  val effectiveHideBackground = hideBackground ?: (rawHideBackground || isModern)
+  val effectiveHideBackground = hideBackground ?: (!playerButtonsBackground || isModern)
   val colors = LocalPlayerColors.current
 
   val clickEvent = LocalPlayerButtonsClickEvent.current
