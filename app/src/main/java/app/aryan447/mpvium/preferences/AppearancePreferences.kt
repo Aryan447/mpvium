@@ -30,6 +30,8 @@ class AppearancePreferences(
     )
   val onboardingCompleted = preferenceStore.getBoolean("onboarding_completed", false)
   val unlimitedNameLines = preferenceStore.getBoolean("unlimited_name_lines", false)
+  val playerButtonsBackground = preferenceStore.getBoolean("player_buttons_background", false)
+  @Deprecated("Use playerButtonsBackground instead")
   val hidePlayerButtonsBackground = preferenceStore.getBoolean("hide_player_buttons_background", false)
   val showUnplayedOldVideoLabel = preferenceStore.getBoolean("show_unplayed_old_video_label", true)
   val unplayedOldVideoDays = preferenceStore.getInt("unplayed_old_video_days", 7)

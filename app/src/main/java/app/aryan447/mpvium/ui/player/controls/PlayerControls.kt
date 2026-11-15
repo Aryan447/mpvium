@@ -171,8 +171,8 @@ fun PlayerControls(
   val appearancePreferences = koinInject<AppearancePreferences>()
   val playerLayout by appearancePreferences.playerLayout.collectAsState()
   val isModern = playerLayout == PlayerLayout.MODERN
-  val rawHideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
-  val hideBackground = rawHideBackground || isModern
+  val showButtonsBackground by appearancePreferences.playerButtonsBackground.collectAsState()
+  val hideBackground = !showButtonsBackground
   val amoledMode by appearancePreferences.amoledMode.collectAsState()
   val playerFullColors by appearancePreferences.playerFullColors.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
@@ -863,6 +863,7 @@ fun PlayerControls(
             bottomRightButtons = bottomRightButtons,
             actionButtons = modernActionButtons,
             amoledMode = amoledMode,
+            showButtonsBackground = showButtonsBackground,
             showSystemStatusBar = showSystemStatusBar,
             showSystemNavigationBar = showSystemNavigationBar,
             tabletBottomOffset = tabletBottomOffset,

@@ -115,6 +115,7 @@ import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.SeekCacheResolver
 import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.player.VideoAspect
+import app.aryan447.mpvium.ui.player.controls.components.transportShadow
 import app.aryan447.mpvium.utils.media.EpisodeTitleFormatter
 import app.aryan447.mpvium.utils.media.MediaInfoParser
 import dev.vivvvek.seeker.Segment
@@ -173,6 +174,7 @@ fun ModernPlayerControls(
   bottomRightButtons: List<PlayerButton> = emptyList(),
   actionButtons: List<PlayerButton> = emptyList(),
   amoledMode: Boolean = false,
+  showButtonsBackground: Boolean = false,
   showSystemStatusBar: Boolean = false,
   showSystemNavigationBar: Boolean = false,
   tabletBottomOffset: Dp = 0.dp,
@@ -321,6 +323,7 @@ fun ModernPlayerControls(
         },
         surfaceColor = surfaceColor,
         borderStroke = borderStroke,
+        showBackground = showButtonsBackground,
       )
     }
 
@@ -1016,6 +1019,7 @@ fun ModernCenterTransportControls(
   onForward: () -> Unit,
   surfaceColor: Color,
   borderStroke: BorderStroke,
+  showBackground: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
@@ -1037,17 +1041,24 @@ fun ModernCenterTransportControls(
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onRewind()
           },
+        )
+        .then(
+          if (!showBackground) {
+            Modifier.background(brush = transportShadow, shape = CircleShape)
+          } else {
+            Modifier
+          },
         ),
       shape = CircleShape,
-      color = surfaceColor,
-      border = borderStroke,
+      color = if (showBackground) surfaceColor else Color.Transparent,
+      border = if (showBackground) borderStroke else null,
     ) {
       Box(contentAlignment = Alignment.Center) {
         Icon(
           imageVector = Icons.Outlined.Replay10,
           contentDescription = "Rewind 10 seconds",
           tint = Color.White,
-          modifier = Modifier.size(25.dp),
+          modifier = Modifier.size(if (showBackground) 25.dp else 28.dp),
         )
       }
     }
@@ -1064,17 +1075,24 @@ fun ModernCenterTransportControls(
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onPlayPause()
           },
+        )
+        .then(
+          if (!showBackground) {
+            Modifier.background(brush = transportShadow, shape = CircleShape)
+          } else {
+            Modifier
+          },
         ),
       shape = CircleShape,
-      color = surfaceColor,
-      border = borderStroke,
+      color = if (showBackground) surfaceColor else Color.Transparent,
+      border = if (showBackground) borderStroke else null,
     ) {
       Box(contentAlignment = Alignment.Center) {
         Icon(
           imageVector = if (paused) Icons.Default.PlayArrow else Icons.Default.Pause,
           contentDescription = if (paused) "Play" else "Pause",
           tint = Color.White,
-          modifier = Modifier.size(36.dp),
+          modifier = Modifier.size(if (showBackground) 36.dp else 42.dp),
         )
       }
     }
@@ -1091,17 +1109,24 @@ fun ModernCenterTransportControls(
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onForward()
           },
+        )
+        .then(
+          if (!showBackground) {
+            Modifier.background(brush = transportShadow, shape = CircleShape)
+          } else {
+            Modifier
+          },
         ),
       shape = CircleShape,
-      color = surfaceColor,
-      border = borderStroke,
+      color = if (showBackground) surfaceColor else Color.Transparent,
+      border = if (showBackground) borderStroke else null,
     ) {
       Box(contentAlignment = Alignment.Center) {
         Icon(
           imageVector = Icons.Outlined.Forward10,
           contentDescription = "Forward 10 seconds",
           tint = Color.White,
-          modifier = Modifier.size(25.dp),
+          modifier = Modifier.size(if (showBackground) 25.dp else 28.dp),
         )
       }
     }

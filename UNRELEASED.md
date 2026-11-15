@@ -9,5 +9,6 @@
 ### Changed
 
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.
+- Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.
 
 ### Fixed
