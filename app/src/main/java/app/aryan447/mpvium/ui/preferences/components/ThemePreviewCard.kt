@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,7 +36,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.CustomTheme
+
+private val ThemeCardWidth = 90.dp
+private val ThemeCardHeight = 140.dp
+private val ThemeCardCorner = 12.dp
+private val ThemeCardColumnWidth = 100.dp
 
 /**
  * A theme preview card that displays a mini preview of the app UI with the theme's colors.
@@ -47,8 +58,53 @@ fun ThemePreviewCard(
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = if (isDarkMode) theme.getDarkColorScheme() else theme.getLightColorScheme()
-    val isGlass = theme == AppTheme.Glass
 
+    ThemePreviewCardContent(
+        colorScheme = colorScheme,
+        isGlass = theme == AppTheme.Glass,
+        title = stringResource(theme.titleRes),
+        isSelected = isSelected,
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
+
+/**
+ * A saved custom theme, rendered exactly like a built-in theme card but with
+ * the user-defined name and the palette they painted in My Canvas.
+ */
+@Composable
+fun CustomThemePreviewCard(
+    theme: CustomTheme,
+    isSelected: Boolean,
+    isDarkMode: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+) {
+    val colorScheme = if (isDarkMode) theme.getDarkColorScheme() else theme.getLightColorScheme()
+
+    ThemePreviewCardContent(
+        colorScheme = colorScheme,
+        isGlass = false,
+        title = theme.name,
+        isSelected = isSelected,
+        onClick = onClick,
+        onLongClick = onLongClick,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun ThemePreviewCardContent(
+    colorScheme: ColorScheme,
+    isGlass: Boolean,
+    title: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+) {
     // Use the current MaterialTheme primary for selection to ensure visibility
     val selectionColor = MaterialTheme.colorScheme.primary
 
@@ -58,25 +114,26 @@ fun ThemePreviewCard(
 
     Column(
         modifier = modifier
-            .width(100.dp)
-            .pointerInput(Unit) {
-                detectTapGestures {
-                    onClick()
-                }
+            .width(ThemeCardColumnWidth)
+            .pointerInput(onClick, onLongClick) {
+                detectTapGestures(
+                    onTap = { onClick() },
+                    onLongPress = if (onLongClick != null) { { onLongClick() } } else null,
+                )
             },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Theme preview card
         Box(
             modifier = Modifier
-                .size(width = 90.dp, height = 140.dp)
+                .size(width = ThemeCardWidth, height = ThemeCardHeight)
                 .shadow(
                     elevation = elevation,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(ThemeCardCorner),
                     ambientColor = if (isSelected) selectionColor.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.2f),
                     spotColor = if (isSelected) selectionColor.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.2f),
                 )
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(ThemeCardCorner))
                 .background(
                     if (isGlass) {
                         // Clear black glass preview: neutral translucent layers.
@@ -96,7 +153,7 @@ fun ThemePreviewCard(
                 .border(
                     width = borderWidth,
                     color = borderColor,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(ThemeCardCorner)
                 ),
         ) {
             // Inner content
@@ -176,21 +233,91 @@ fun ThemePreviewCard(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Theme name
-        Text(
-            text = stringResource(theme.titleRes),
-            style = MaterialTheme.typography.bodySmall,
-            fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
+        ThemeCardLabel(text = title, isSelected = isSelected)
+    }
+}
+
+/**
+ * The Theme Studio entry point: the same card shell as every built-in theme,
+ * with a single centered plus and no preview content inside.
+ */
+@Composable
+fun ThemeStudioCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val cardShape = RoundedCornerShape(ThemeCardCorner)
+
+    Column(
+        modifier = modifier
+            .width(ThemeCardColumnWidth)
+            .pointerInput(Unit) {
+                detectTapGestures {
+                    onClick()
+                }
             },
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth()
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = ThemeCardWidth, height = ThemeCardHeight)
+                .shadow(
+                    elevation = 2.dp,
+                    shape = cardShape,
+                    ambientColor = Color.Black.copy(alpha = 0.2f),
+                    spotColor = Color.Black.copy(alpha = 0.2f),
+                )
+                .clip(cardShape)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surface,
+                        )
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    color = Color.Transparent,
+                    shape = cardShape,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = stringResource(R.string.pref_appearance_theme_studio_create_description),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        ThemeCardLabel(
+            text = stringResource(R.string.pref_appearance_theme_studio),
+            isSelected = false,
         )
     }
+}
+
+@Composable
+private fun ThemeCardLabel(
+    text: String,
+    isSelected: Boolean,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        fontSize = 11.sp,
+        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        textAlign = TextAlign.Center,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
