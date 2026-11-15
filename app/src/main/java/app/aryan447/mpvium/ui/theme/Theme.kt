@@ -219,6 +219,11 @@ fun MpviumTheme(content: @Composable () -> Unit) {
     val darkMode by preferences.darkMode.collectAsState()
     val amoledMode by preferences.amoledMode.collectAsState()
     val appTheme by preferences.appTheme.collectAsState()
+    val customThemes by preferences.customThemes.collectAsState()
+    val selectedCustomThemeId by preferences.selectedCustomThemeId.collectAsState()
+    val customTheme = remember(customThemes, selectedCustomThemeId) {
+        customThemes.firstOrNull { it.id == selectedCustomThemeId }
+    }
     val darkTheme = isSystemInDarkTheme()
     val context = LocalContext.current
 
@@ -297,6 +302,13 @@ fun MpviumTheme(content: @Composable () -> Unit) {
     }
 
     val colorScheme = when {
+        customTheme != null -> {
+            when {
+                useDarkTheme && amoledMode -> customTheme.getAmoledColorScheme()
+                useDarkTheme -> customTheme.getDarkColorScheme()
+                else -> customTheme.getLightColorScheme()
+            }
+        }
         appTheme.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             when {
                 useDarkTheme && amoledMode -> {

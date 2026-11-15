@@ -6,6 +6,8 @@
 
 ### Added
 
+- Theme Studio card at the end of the App Theme carousel opens My Canvas, where a custom theme is named and saved beside the built-in themes.
+
 ### Changed
 
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.

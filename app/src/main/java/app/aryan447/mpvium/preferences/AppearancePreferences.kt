@@ -4,13 +4,24 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.preference.PreferenceStore
 import app.aryan447.mpvium.preferences.preference.getEnum
 import app.aryan447.mpvium.ui.theme.AppTheme
+import app.aryan447.mpvium.ui.theme.CustomTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
+import app.aryan447.mpvium.ui.theme.decodeCustomThemes
+import app.aryan447.mpvium.ui.theme.encodeCustomThemes
 
 class AppearancePreferences(
   preferenceStore: PreferenceStore,
 ) {
   val darkMode = preferenceStore.getEnum("dark_mode", DarkMode.System)
   val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Default)
+  val customThemes =
+    preferenceStore.getObject(
+      "custom_themes",
+      emptyList<CustomTheme>(),
+      serializer = { encodeCustomThemes(it) },
+      deserializer = { decodeCustomThemes(it) },
+    )
+  val selectedCustomThemeId = preferenceStore.getString("selected_custom_theme_id", "")
   val amoledMode = preferenceStore.getBoolean("amoled_mode", false)
   val playerFullColors = preferenceStore.getBoolean("full_player_colors", false)
   val playerLayout =
@@ -86,6 +97,20 @@ class AppearancePreferences(
       "modern_action_controls",
       "SUBTITLES,AUDIO_TRACK,EXPLAIN,MORE_OPTIONS",
     )
+
+  fun selectTheme(theme: AppTheme) {
+    selectedCustomThemeId.set("")
+    appTheme.set(theme)
+  }
+
+  fun selectCustomTheme(theme: CustomTheme) {
+    appTheme.set(AppTheme.Default)
+    selectedCustomThemeId.set(theme.id)
+  }
+
+  fun saveCustomTheme(theme: CustomTheme) {
+    customThemes.set(customThemes.get().filterNot { it.id == theme.id } + theme)
+  }
 
   fun setHomeSectionVisible(section: HomeSection, visible: Boolean) {
     when (section) {
