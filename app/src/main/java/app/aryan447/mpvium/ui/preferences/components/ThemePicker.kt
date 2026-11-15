@@ -157,7 +157,7 @@ fun ThemePicker(
         ModalBottomSheet(
             onDismissRequest = { themeForOptions = null },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = glassSheetContainerColor(),
+            containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
         ) {
             Column(
                 modifier = Modifier
