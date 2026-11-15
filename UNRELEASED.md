@@ -15,3 +15,6 @@
 - Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.
 
 ### Fixed
+
+- Modern player layout custom action buttons scale consistently with built-in controls.
+- Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.

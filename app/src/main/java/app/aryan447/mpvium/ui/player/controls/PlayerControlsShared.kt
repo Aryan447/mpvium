@@ -81,6 +81,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
@@ -115,6 +116,7 @@ fun RenderPlayerButton(
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val colors = LocalPlayerColors.current
+  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
   when (button) {
     PlayerButton.BACK_ARROW -> {
       ControlsButton(
@@ -220,22 +222,22 @@ fun RenderPlayerButton(
         ) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            horizontalArrangement = Arrangement.spacedBy(if (isModern) 2.dp else MaterialTheme.spacing.extraSmall),
             modifier = Modifier.padding(
-              horizontal = MaterialTheme.spacing.small,
-              vertical = MaterialTheme.spacing.small,
+              horizontal = if (isModern) MaterialTheme.spacing.smaller else MaterialTheme.spacing.small,
+              vertical = if (isModern) 2.dp else MaterialTheme.spacing.small,
             ),
           ) {
             Icon(
               imageVector = Icons.Default.Speed,
               contentDescription = "Playback Speed",
               tint = if (hideBackground) colors.onVideoContent else colors.accent,
-              modifier = Modifier.size(20.dp),
+              modifier = Modifier.size(if (isModern) 18.dp else 20.dp),
             )
             Text(
               text = String.format("%.2fx", playbackSpeed),
               maxLines = 1,
-              style = MaterialTheme.typography.bodyMedium,
+              style = if (isModern) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
               fontFamily = FontFamily.Monospace,
             )
           }
@@ -263,15 +265,15 @@ fun RenderPlayerButton(
           modifier =
             Modifier
               .padding(
-                horizontal = MaterialTheme.spacing.medium,
-                vertical = MaterialTheme.spacing.small,
+                horizontal = if (isModern) MaterialTheme.spacing.smaller else MaterialTheme.spacing.medium,
+                vertical = if (isModern) 2.dp else MaterialTheme.spacing.small,
               ),
         ) {
           Text(
             text = decoder.title,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
+            style = if (isModern) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
           )
         }
@@ -429,22 +431,22 @@ fun RenderPlayerButton(
         ) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            horizontalArrangement = Arrangement.spacedBy(if (isModern) 2.dp else MaterialTheme.spacing.extraSmall),
             modifier = Modifier.padding(
-              horizontal = MaterialTheme.spacing.small,
-              vertical = MaterialTheme.spacing.small,
+              horizontal = if (isModern) MaterialTheme.spacing.smaller else MaterialTheme.spacing.small,
+              vertical = if (isModern) 2.dp else MaterialTheme.spacing.small,
             ),
           ) {
             Icon(
               imageVector = Icons.Default.ZoomIn,
               contentDescription = "Video Zoom",
               tint = colors.accent,
-              modifier = Modifier.size(20.dp),
+              modifier = Modifier.size(if (isModern) 18.dp else 20.dp),
             )
             Text(
               text = String.format("%.0f%%", currentZoom * 100),
               maxLines = 1,
-              style = MaterialTheme.typography.bodyMedium,
+              style = if (isModern) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
               fontFamily = FontFamily.Monospace,
             )
           }
