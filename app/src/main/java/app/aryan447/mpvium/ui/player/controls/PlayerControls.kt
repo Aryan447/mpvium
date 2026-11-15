@@ -867,6 +867,11 @@ fun PlayerControls(
             showSystemStatusBar = showSystemStatusBar,
             showSystemNavigationBar = showSystemNavigationBar,
             tabletBottomOffset = tabletBottomOffset,
+            isSpeedNonOne = isSpeedNonOne,
+            playbackSpeed = playbackSpeed ?: 1f,
+            currentZoom = currentZoom,
+            aspect = aspect,
+            decoder = decoder,
             modifier = Modifier.fillMaxSize(),
           )
         }
@@ -1202,7 +1207,7 @@ fun PlayerControls(
           modifier =
             Modifier
               .then(
-                if (showSystemStatusBar) {
+                if (showSystemStatusBar && (isPortrait || isModern)) {
                   Modifier.windowInsetsPadding(WindowInsets.statusBars)
                 } else {
                   Modifier
@@ -1255,14 +1260,22 @@ fun PlayerControls(
           modifier =
             Modifier
               .then(
-                if (showSystemStatusBar) {
+                if (showSystemStatusBar && smartSkip == null && (isPortrait || isModern)) {
                   Modifier.windowInsetsPadding(WindowInsets.statusBars)
                 } else {
                   Modifier
                 }
               )
               .constrainAs(shaderPeekButton) {
-                top.linkTo(introSkipButton.bottom, 8.dp)
+                if (smartSkip != null) {
+                  top.linkTo(introSkipButton.bottom, 8.dp)
+                } else if (isPortrait) {
+                  top.linkTo(parent.top, 96.dp)
+                } else if (isModern) {
+                  top.linkTo(parent.top, if (showSystemStatusBar) 76.dp else 68.dp)
+                } else {
+                  top.linkTo(topRightControls.bottom, 12.dp)
+                }
                 end.linkTo(parent.end, spacing.large)
               },
         ) {

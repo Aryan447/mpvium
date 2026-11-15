@@ -178,6 +178,11 @@ fun ModernPlayerControls(
   showSystemStatusBar: Boolean = false,
   showSystemNavigationBar: Boolean = false,
   tabletBottomOffset: Dp = 0.dp,
+  isSpeedNonOne: Boolean = false,
+  playbackSpeed: Float = 1f,
+  currentZoom: Float = 1f,
+  aspect: VideoAspect = VideoAspect.Fit,
+  decoder: app.aryan447.mpvium.ui.player.Decoder = app.aryan447.mpvium.ui.player.Decoder.SW,
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
@@ -486,6 +491,11 @@ fun ModernPlayerControls(
             surfaceColor = surfaceColor,
             borderStroke = borderStroke,
             resetControlsTimestamp = resetControlsTimestamp,
+            isSpeedNonOne = isSpeedNonOne,
+            playbackSpeed = playbackSpeed,
+            currentZoom = currentZoom,
+            aspect = aspect,
+            decoder = decoder,
           )
         }
 
@@ -1154,6 +1164,11 @@ fun ModernBottomActionsPill(
   surfaceColor: Color,
   borderStroke: BorderStroke,
   resetControlsTimestamp: () -> Unit = {},
+  isSpeedNonOne: Boolean = false,
+  playbackSpeed: Float = 1f,
+  currentZoom: Float = 1f,
+  aspect: VideoAspect = VideoAspect.Fit,
+  decoder: app.aryan447.mpvium.ui.player.Decoder = app.aryan447.mpvium.ui.player.Decoder.SW,
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
@@ -1265,13 +1280,13 @@ fun ModernBottomActionsPill(
                 chapters = chapters,
                 currentChapter = currentChapter,
                 isPortrait = false,
-                isSpeedNonOne = false,
-                currentZoom = 1f,
-                aspect = VideoAspect.Fit,
+                isSpeedNonOne = isSpeedNonOne,
+                currentZoom = currentZoom,
+                aspect = aspect,
                 mediaTitle = null,
                 hideBackground = true,
-                decoder = app.aryan447.mpvium.ui.player.Decoder.SW,
-                playbackSpeed = 1f,
+                decoder = decoder,
+                playbackSpeed = playbackSpeed,
                 onBackPress = {},
                 onOpenSheet = { sheet ->
                   haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1285,7 +1300,7 @@ fun ModernBottomActionsPill(
                 },
                 viewModel = viewModel,
                 activity = activity,
-                buttonSize = 28.dp,
+                buttonSize = 30.dp,
               )
             } else {
               Icon(

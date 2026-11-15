@@ -8,8 +8,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CatchingPokemon
@@ -83,6 +85,7 @@ fun ControlsButton(
   Surface(
     modifier =
       modifier
+        .sizeIn(minWidth = if (isModern) 28.dp else 40.dp, minHeight = if (isModern) 28.dp else 40.dp)
         .clip(CircleShape)
         .combinedClickable(
           onClick = {
@@ -91,7 +94,7 @@ fun ControlsButton(
           },
           onLongClick = onLongClick,
           interactionSource = interactionSource,
-          indication = ripple(bounded = false, radius = 24.dp),
+          indication = ripple(bounded = isModern, radius = if (isModern) 18.dp else 24.dp),
         )
         .then(
           if (effectiveHideBackground || isModern) {
@@ -119,21 +122,21 @@ fun ControlsButton(
         else -> BorderStroke(1.dp, colors.controlBorder)
       },
   ) {
-    Box(contentAlignment = Alignment.Center) {
+    Box(
+      contentAlignment = Alignment.Center,
+      modifier = Modifier.fillMaxSize(),
+    ) {
       Icon(
         imageVector = icon,
         contentDescription = title,
         tint = contentColor,
-        modifier =
-          Modifier
-            .padding(MaterialTheme.spacing.small)
-            .size(if (isModern) 22.dp else 20.dp),
+        modifier = Modifier.size(20.dp),
       )
       if (active && effectiveHideBackground) {
         Box(
           modifier = Modifier
             .align(Alignment.BottomCenter)
-            .padding(bottom = 3.dp)
+            .padding(bottom = if (isModern) 2.dp else 3.dp)
             .size(if (isModern) 5.dp else 4.dp)
             .background(
               if (isModern) MaterialTheme.colorScheme.primary else contentColor,
