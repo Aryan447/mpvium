@@ -26,6 +26,9 @@ data class CustomTheme(
   val tertiaryDark: Int,
   val backgroundLight: Int,
   val backgroundDark: Int,
+  val primarySeed: Int = primaryDark,
+  val secondarySeed: Int = secondaryDark,
+  val tertiarySeed: Int = tertiaryDark,
 ) {
   fun getLightColorScheme(): ColorScheme =
     buildLightColorScheme(
@@ -52,70 +55,124 @@ data class CustomTheme(
   fun getAmoledColorScheme(): ColorScheme =
     buildAmoledColorScheme(getDarkColorScheme(), Color(primaryDark))
 
-  /** The color this theme was painted from, used to reopen it in My Canvas. */
+  val primaryColor: Color
+    get() = Color(primarySeed)
+
+  val secondaryColor: Color
+    get() = Color(secondarySeed)
+
+  val tertiaryColor: Color
+    get() = Color(tertiarySeed)
+
+  /** The primary color this theme was painted from, used for backwards compatibility. */
   val seedColor: Color
-    get() = Color(primaryLight)
+    get() = primaryColor
 
   companion object {
     /**
-     * Builds a complete light/dark palette from one accent color. Keeping the
-     * seed as the only input means a canvas cannot produce an unreadable
-     * combination of on-colors; the shared scheme builders own that.
+     * Builds a custom theme from distinct primary, secondary, and tertiary colors.
+     * Generates tonal variants for light, dark, and AMOLED modes with accessible contrast.
+     */
+    fun fromColors(
+      id: String,
+      name: String,
+      primary: Color,
+      secondary: Color,
+      tertiary: Color,
+    ): CustomTheme {
+      val primaryLight = toneForLight(primary)
+      val primaryDark = toneForDark(primary)
+      val secondaryLight = toneForLight(secondary)
+      val secondaryDark = toneForDark(secondary)
+      val tertiaryLight = toneForLight(tertiary)
+      val tertiaryDark = toneForDark(tertiary)
+
+      val bgLight = toneForBackgroundLight(primary)
+      val bgDark = toneForBackgroundDark(primary)
+
+      return CustomTheme(
+        id = id,
+        name = name,
+        primaryLight = primaryLight,
+        primaryDark = primaryDark,
+        secondaryLight = secondaryLight,
+        secondaryDark = secondaryDark,
+        tertiaryLight = tertiaryLight,
+        tertiaryDark = tertiaryDark,
+        backgroundLight = bgLight,
+        backgroundDark = bgDark,
+        primarySeed = primary.toArgb(),
+        secondarySeed = secondary.toArgb(),
+        tertiarySeed = tertiary.toArgb(),
+      )
+    }
+
+    /**
+     * Builds a complete light/dark palette from one accent color seed.
      */
     fun fromSeed(
       id: String,
       name: String,
       seed: Color,
     ): CustomTheme {
-      val palette = paletteFromSeed(seed)
-      return CustomTheme(
-        id = id,
-        name = name,
-        primaryLight = palette[0],
-        primaryDark = palette[1],
-        secondaryLight = palette[2],
-        secondaryDark = palette[3],
-        tertiaryLight = palette[4],
-        tertiaryDark = palette[5],
-        backgroundLight = palette[6],
-        backgroundDark = palette[7],
+      val hsv = FloatArray(3)
+      android.graphics.Color.colorToHSV(seed.toArgb(), hsv)
+      val sec = Color(
+        android.graphics.Color.HSVToColor(
+          floatArrayOf((hsv[0] + 32f) % 360f, (hsv[1] * 0.7f).coerceIn(0f, 1f), hsv[2])
+        )
       )
+      val tert = Color(
+        android.graphics.Color.HSVToColor(
+          floatArrayOf(((hsv[0] - 38f) % 360f + 360f) % 360f, (hsv[1] * 0.8f).coerceIn(0f, 1f), hsv[2])
+        )
+      )
+      return fromColors(id = id, name = name, primary = seed, secondary = sec, tertiary = tert)
     }
   }
 }
 
-private fun paletteFromSeed(seed: Color): IntArray {
+private fun toneForLight(color: Color): Int {
   val hsv = FloatArray(3)
-  android.graphics.Color.colorToHSV(seed.toArgb(), hsv)
-  val saturation = hsv[1].coerceAtLeast(0.22f)
-
-  fun tone(
-    hueOffset: Float,
-    toneSaturation: Float,
-    value: Float,
-  ): Int {
-    val hue = ((hsv[0] + hueOffset) % 360f + 360f) % 360f
-    return android.graphics.Color.HSVToColor(
-      floatArrayOf(
-        hue,
-        toneSaturation.coerceIn(0f, 1f),
-        value.coerceIn(0f, 1f),
-      ),
+  android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+  val sat = hsv[1].coerceAtLeast(0.30f)
+  // Light mode needs high contrast against light surfaces: value ~0.44
+  return android.graphics.Color.HSVToColor(
+    floatArrayOf(
+      hsv[0],
+      (sat * 0.95f).coerceIn(0.40f, 1f),
+      0.44f,
     )
-  }
-
-  return intArrayOf(
-    // Primary stays deep enough for white on-colors in light mode.
-    tone(hueOffset = 0f, toneSaturation = saturation * 0.9f, value = 0.42f),
-    tone(hueOffset = 0f, toneSaturation = saturation * 0.55f, value = 0.88f),
-    tone(hueOffset = 32f, toneSaturation = saturation * 0.45f, value = 0.40f),
-    tone(hueOffset = 32f, toneSaturation = saturation * 0.35f, value = 0.84f),
-    tone(hueOffset = -38f, toneSaturation = saturation * 0.55f, value = 0.44f),
-    tone(hueOffset = -38f, toneSaturation = saturation * 0.40f, value = 0.86f),
-    // Backgrounds keep a hint of the accent without staining content.
-    tone(hueOffset = 0f, toneSaturation = saturation * 0.16f, value = 0.98f),
-    tone(hueOffset = 0f, toneSaturation = saturation * 0.22f, value = 0.06f),
   )
+}
+
+private fun toneForDark(color: Color): Int {
+  val hsv = FloatArray(3)
+  android.graphics.Color.colorToHSV(color.toArgb(), hsv)
+  // Dark mode needs luminous, readable accent: value ~0.88
+  val sat = if (hsv[1] < 0.12f) hsv[1] else (hsv[1] * 0.80f).coerceIn(0.20f, 0.85f)
+  val darkVal = hsv[2].coerceAtLeast(0.85f)
+  return android.graphics.Color.HSVToColor(
+    floatArrayOf(
+      hsv[0],
+      sat,
+      darkVal,
+    )
+  )
+}
+
+private fun toneForBackgroundLight(primary: Color): Int {
+  val hsv = FloatArray(3)
+  android.graphics.Color.colorToHSV(primary.toArgb(), hsv)
+  val sat = (hsv[1] * 0.12f).coerceIn(0f, 0.08f)
+  return android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], sat, 0.98f))
+}
+
+private fun toneForBackgroundDark(primary: Color): Int {
+  val hsv = FloatArray(3)
+  android.graphics.Color.colorToHSV(primary.toArgb(), hsv)
+  val sat = (hsv[1] * 0.20f).coerceIn(0f, 0.12f)
+  return android.graphics.Color.HSVToColor(floatArrayOf(hsv[0], sat, 0.06f))
 }
 
 private val customThemeJson = Json { ignoreUnknownKeys = true }

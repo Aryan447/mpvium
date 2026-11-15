@@ -112,6 +112,14 @@ class AppearancePreferences(
     customThemes.set(customThemes.get().filterNot { it.id == theme.id } + theme)
   }
 
+  fun deleteCustomTheme(themeId: String) {
+    if (selectedCustomThemeId.get() == themeId) {
+      selectedCustomThemeId.set("")
+      appTheme.set(AppTheme.Default)
+    }
+    customThemes.set(customThemes.get().filterNot { it.id == themeId })
+  }
+
   fun setHomeSectionVisible(section: HomeSection, visible: Boolean) {
     when (section) {
       HomeSection.FEATURED -> showFeaturedHero.set(visible)

@@ -6,7 +6,8 @@
 
 ### Added
 
-- Theme Studio card at the end of the App Theme carousel opens My Canvas, where a custom theme is named and saved beside the built-in themes.
+- Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
+- Holding any custom theme in the theme picker allows editing its colors or deleting it.
 
 ### Changed
 

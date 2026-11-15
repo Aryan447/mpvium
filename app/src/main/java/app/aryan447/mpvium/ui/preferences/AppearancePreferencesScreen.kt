@@ -196,7 +196,9 @@ object AppearancePreferencesScreen : Screen {
                                 customThemes = customThemes,
                                 selectedCustomThemeId = selectedCustomThemeId,
                                 onCustomThemeSelected = { preferences.selectCustomTheme(it) },
-                                onCreateTheme = { backstack.add(MyCanvasScreen) },
+                                onCreateTheme = { backstack.add(MyCanvasScreen()) },
+                                onEditCustomTheme = { backstack.add(MyCanvasScreen(themeId = it.id)) },
+                                onDeleteCustomTheme = { preferences.deleteCustomTheme(it.id) },
                                 modifier = Modifier.padding(vertical = 8.dp),
                             )
 

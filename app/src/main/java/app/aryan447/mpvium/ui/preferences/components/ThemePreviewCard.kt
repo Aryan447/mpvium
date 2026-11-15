@@ -80,6 +80,7 @@ fun CustomThemePreviewCard(
     isDarkMode: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colorScheme = if (isDarkMode) theme.getDarkColorScheme() else theme.getLightColorScheme()
 
@@ -89,6 +90,7 @@ fun CustomThemePreviewCard(
         title = theme.name,
         isSelected = isSelected,
         onClick = onClick,
+        onLongClick = onLongClick,
         modifier = modifier,
     )
 }
@@ -101,6 +103,7 @@ private fun ThemePreviewCardContent(
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     // Use the current MaterialTheme primary for selection to ensure visibility
     val selectionColor = MaterialTheme.colorScheme.primary
@@ -112,10 +115,11 @@ private fun ThemePreviewCardContent(
     Column(
         modifier = modifier
             .width(ThemeCardColumnWidth)
-            .pointerInput(Unit) {
-                detectTapGestures {
-                    onClick()
-                }
+            .pointerInput(onClick, onLongClick) {
+                detectTapGestures(
+                    onTap = { onClick() },
+                    onLongPress = if (onLongClick != null) { { onLongClick() } } else null,
+                )
             },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
