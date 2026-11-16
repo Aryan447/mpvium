@@ -6,6 +6,7 @@
 
 ### Added
 
+- Custom Lua and mpv script buttons in player overlay with single tap and long-press actions, plus XML import and export.
 - Speed Binge grid dial on Home puts your last played show or movie first with instant resume, brings progress bars to every title, and replaces featured banners with a clean media grid.
 - mpv.conf ownership in Settings → Advanced lets you choose which mpv option groups your mpv.conf controls instead of the app.
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
