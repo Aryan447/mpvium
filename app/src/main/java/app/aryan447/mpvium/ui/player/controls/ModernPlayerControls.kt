@@ -359,6 +359,8 @@ fun ModernPlayerControls(
             buttons = customButtons,
             onExecute = { cmd -> viewModel.executeCustomCommand(cmd) },
             resetControlsTimestamp = resetControlsTimestamp,
+            surfaceColor = surfaceColor,
+            borderStroke = borderStroke,
           )
         }
 

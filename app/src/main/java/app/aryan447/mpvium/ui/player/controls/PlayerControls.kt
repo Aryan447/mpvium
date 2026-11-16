@@ -1467,6 +1467,8 @@ fun PlayerControls(
               buttons = customButtons,
               onExecute = { cmd -> viewModel.executeCustomCommand(cmd) },
               resetControlsTimestamp = { resetControlsTimestamp = System.currentTimeMillis() },
+              surfaceColor = if (amoledMode) Color(0xCC0A0B0E) else Color(0x9916181D),
+              borderStroke = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)),
             )
           }
         }
