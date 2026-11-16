@@ -105,6 +105,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.preferences.AppearancePreferences
+import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.PlayerButton
 import app.aryan447.mpvium.preferences.SeekbarStyle
 import app.aryan447.mpvium.preferences.preference.collectAsState
@@ -115,6 +116,7 @@ import app.aryan447.mpvium.ui.player.PlayerViewModel
 import app.aryan447.mpvium.ui.player.SeekCacheResolver
 import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.player.VideoAspect
+import app.aryan447.mpvium.ui.player.controls.components.CustomButtonsRow
 import app.aryan447.mpvium.ui.player.controls.components.transportShadow
 import app.aryan447.mpvium.utils.media.EpisodeTitleFormatter
 import app.aryan447.mpvium.utils.media.MediaInfoParser
@@ -183,6 +185,7 @@ fun ModernPlayerControls(
   currentZoom: Float = 1f,
   aspect: VideoAspect = VideoAspect.Fit,
   decoder: app.aryan447.mpvium.ui.player.Decoder = app.aryan447.mpvium.ui.player.Decoder.SW,
+  customButtons: List<CustomScriptButton> = emptyList(),
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
@@ -351,6 +354,14 @@ fun ModernPlayerControls(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
       ) {
+        if (customButtons.isNotEmpty()) {
+          CustomButtonsRow(
+            buttons = customButtons,
+            onExecute = { cmd -> viewModel.executeCustomCommand(cmd) },
+            resetControlsTimestamp = resetControlsTimestamp,
+          )
+        }
+
         // Row above seekbar: Title on left, Actions pill on right
         Row(
           modifier = Modifier.fillMaxWidth(),
@@ -1169,6 +1180,7 @@ fun ModernBottomActionsPill(
   currentZoom: Float = 1f,
   aspect: VideoAspect = VideoAspect.Fit,
   decoder: app.aryan447.mpvium.ui.player.Decoder = app.aryan447.mpvium.ui.player.Decoder.SW,
+  customButtons: List<CustomScriptButton> = emptyList(),
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current

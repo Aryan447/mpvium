@@ -849,6 +849,14 @@ object SearchablePreferences {
                 category = "Advanced",
                 screen = AdvancedPreferencesScreen,
             ))
+            add(SearchablePreference(
+                key = "advanced.custom_buttons",
+                titleRes = R.string.pref_custom_buttons_title,
+                summaryRes = R.string.pref_custom_buttons_summary,
+                keywords = listOf("custom", "lua", "buttons", "scripts", "commands", "mpv", "script-binding", "overlay"),
+                category = "Advanced",
+                screen = CustomButtonsScreen,
+            ))
 
             // About
             add(SearchablePreference(

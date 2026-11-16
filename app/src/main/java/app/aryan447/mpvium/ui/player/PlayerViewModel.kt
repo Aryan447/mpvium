@@ -2545,6 +2545,19 @@ class PlayerViewModel(
 
   // ==================== Utility ====================
 
+  fun executeCustomCommand(raw: String) {
+    if (raw.isBlank()) return
+    val commands = app.aryan447.mpvium.preferences.CustomCommandParser.parse(raw)
+    if (commands.isEmpty()) return
+    for (cmd in commands) {
+      runCatching {
+        MPVLib.command(*cmd.toTypedArray())
+      }.onFailure { e ->
+        Log.e("PlayerViewModel", "Failed to run custom command: ${cmd.joinToString(" ")}", e)
+      }
+    }
+  }
+
   fun showToast(message: String) {
     Toast.makeText(host.context, message, Toast.LENGTH_SHORT).show()
   }

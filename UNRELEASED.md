@@ -6,6 +6,7 @@
 
 ### Added
 
+- Custom Lua and mpv script buttons in player overlay with single tap and long-press actions, plus XML import and export.
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
 - Holding any custom theme in the theme picker allows editing its colors or deleting it.
 
