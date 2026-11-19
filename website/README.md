@@ -43,4 +43,7 @@ bun run preview  # preview the production build
 - `src/pages/changelog.astro` renders the root `CHANGELOG.md` at build time via
   `src/data/changelog.ts`. Add changes to `CHANGELOG.md` only; the site picks
   them up on the next deployment.
+- `src/pages/doctrine.astro` renders the root `DOCTRINE.md`, loaded through
+  `src/content.config.ts`. Edit the root file only; the Doctrine page follows it
+  on the next build.
 - Theme preference persists in `localStorage` (`mpvium-theme`).

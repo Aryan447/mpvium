@@ -6,9 +6,11 @@ export const links = {
   latestRelease: `https://github.com/${REPO}/releases/latest`,
   issues: `https://github.com/${REPO}/issues`,
   changelog: `https://github.com/${REPO}/blob/main/CHANGELOG.md`,
+  doctrineFile: `https://github.com/${REPO}/blob/main/DOCTRINE.md`,
   mpvRocks: "https://mpv.rocks/#image-comparison",
   discord: "https://discord.gg/g72fmqU7Sw",
   telegram: "https://t.me/mpvium",
+  reddit: "https://www.reddit.com/r/mpvium/",
   screenshotsDir: `https://github.com/${REPO}/tree/main/docs/screenshots`,
 };
 

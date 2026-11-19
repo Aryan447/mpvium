@@ -8,6 +8,8 @@
 
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
 - Holding any custom theme in the theme picker allows editing its colors or deleting it.
+- The new r/mpvium subreddit joins Discord and Telegram in About and on the website.
+- The doctrine — the rules mpvium is built against — lives in DOCTRINE.md and is published as a Doctrine page on the website.
 
 ### Changed
 

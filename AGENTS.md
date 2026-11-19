@@ -118,6 +118,10 @@ keystores, passwords, tokens, or other credentials to the repository.
    cutting a preview or stable release, rewrite those notes into
    `CHANGELOG.md` in the release-announcement style below and clear
    `UNRELEASED.md` again.
+10. Changes have to hold up against `DOCTRINE.md`. It states the product rules
+    the app is built to and is published on the website, so a change that
+    contradicts it either fixes the change or amends the doctrine in the same
+    pull request.
 
 ## Agent skills
 

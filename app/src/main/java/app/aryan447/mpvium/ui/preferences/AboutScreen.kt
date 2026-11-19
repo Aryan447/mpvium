@@ -353,6 +353,26 @@ object AboutScreen : Screen {
                     },
                     weight = 1f,
                   )
+
+                  clickableItem(
+                    onClick = {
+                      context.startActivity(
+                        Intent(
+                          Intent.ACTION_VIEW,
+                          context.getString(R.string.reddit_url).toUri(),
+                        ),
+                      )
+                    },
+                    label = "Reddit",
+                    icon = {
+                      Icon(
+                        painter = painterResource(id = R.drawable.ic_reddit_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                      )
+                    },
+                    weight = 1f,
+                  )
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))

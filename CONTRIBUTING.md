@@ -141,8 +141,9 @@ license (GPL-3.0-or-later) and that you have the right to contribute them
 
 ## Communication
 
-- Join our [Discord server](https://discord.gg/g72fmqU7Sw) or
-  [Telegram community](https://t.me/mpvium) for tester discussion, preview
+- Join our [Discord server](https://discord.gg/g72fmqU7Sw),
+  [Telegram community](https://t.me/mpvium), or
+  [subreddit](https://www.reddit.com/r/mpvium/) for tester discussion, preview
   builds, help, and feature ideas.
 - Formal bug reports and feature requests still belong on GitHub Issues
   (see [Issues](#issues)) so they stay tracked.

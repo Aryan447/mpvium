@@ -15,6 +15,7 @@ An Android video player powered by [mpv](https://mpv.io/) and
 [![Downloads](https://img.shields.io/github/downloads/aryan447/mpvium/total?logo=github)](https://github.com/aryan447/mpvium/releases)
 [![Discord](https://img.shields.io/badge/discord-join-blue.svg?logo=discord)](https://discord.gg/g72fmqU7Sw)
 [![Telegram](https://img.shields.io/badge/telegram-join-blue.svg?logo=telegram)](https://t.me/mpvium)
+[![Reddit](https://img.shields.io/badge/reddit-join-blue.svg?logo=reddit)](https://www.reddit.com/r/mpvium/)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 
 </div>
@@ -26,7 +27,8 @@ mpv’s flexible playback engine with a modern Material 3 interface, convenient
 media browsing, and support for local and network media.
 
 Philosophy: sane defaults, pro-level control — opinionated for everyday
-watching, fully customizable for pros.
+watching, fully customizable for pros. The rules behind those defaults are
+written down in [DOCTRINE.md](DOCTRINE.md).
 
 The project is actively developed. Preview builds may contain unfinished
 features or bugs.
@@ -117,8 +119,9 @@ The generated APKs are written to `app/build/outputs/apk/`.
 
 Bug reports, feature requests, and pull requests are welcome. Please read
 [CONTRIBUTING.md](CONTRIBUTING.md), our [Code of Conduct](CODE_OF_CONDUCT.md),
-and [SECURITY.md](SECURITY.md) first. Join our [Discord server](https://discord.gg/g72fmqU7Sw)
-or [Telegram community](https://t.me/mpvium) for tester discussion, preview builds, and help.
+and [SECURITY.md](SECURITY.md) first. Join our [Discord server](https://discord.gg/g72fmqU7Sw),
+[Telegram community](https://t.me/mpvium), or [subreddit](https://www.reddit.com/r/mpvium/)
+for tester discussion, preview builds, and help.
 
 - [Contributing guide](CONTRIBUTING.md)
 - [Report a bug](https://github.com/aryan447/mpvium/issues/new?template=bug_report.md)
