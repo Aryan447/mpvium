@@ -18,5 +18,6 @@
 
 ### Fixed
 
+- Audio files Android's media scanner skips, including `.opus` downloads, now appear in the Audio tab.
 - Modern player layout custom action buttons scale consistently with built-in controls.
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.

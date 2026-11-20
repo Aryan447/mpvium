@@ -207,8 +207,13 @@ object MainScreen : Screen {
     val glassStyle = glassHazeStyle(isDark = isDark, kind = GlassKind.Bar)
     val audioRepository = koinInject<AudioRepository>()
     val hasAudio by audioRepository.hasAudio.collectAsState()
-    LaunchedEffect(Unit) {
-      audioRepository.checkHasAudio()
+    // Only probe storage when the Audio tab is actually enabled. The probe can
+    // fall back to a filesystem walk, which users without audio never need.
+    val audioTabEnabled = MainTab.AUDIO.key in enabledBottomTabs
+    LaunchedEffect(audioTabEnabled) {
+      if (audioTabEnabled) {
+        audioRepository.checkHasAudio()
+      }
     }
     val navItems = remember(enabledBottomTabs, hasAudio) {
       MainTab.visibleTabs(enabledBottomTabs, hasAudio)
