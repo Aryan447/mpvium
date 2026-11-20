@@ -46,7 +46,7 @@ Navigation 3, native libmpv playback.
 Good first areas:
 
 - Bug fixes with a clear repro
-- Tablet / large-screen layout improvements (current focus)
+- Android TV / Google TV remote support and tablet / large-screen layout polish
 - Performance + battery efficiency improvements with measured before/after
 - Player UX polish (gestures, seekbar, subtitles, chapters)
 - File browser, SMB / FTP / WebDAV fixes
@@ -94,6 +94,10 @@ the PR — maintainers can help.
   and string resources — do not introduce near-duplicates.
 - Verify alignment, insets (status / navigation / gesture areas),
   RTL mirroring, and light/dark themes for UI changes.
+- Ensure 10-foot remote / D-Pad accessibility for UI changes: interactive
+  components must support keyboard and D-Pad focusability (`Modifier.focusable`),
+  provide prominent focus indication (focus rings / borders and subtle fills),
+  and handle DPAD/remote key events gracefully.
 - Kotlin + Compose conventions already in the tree win over personal style.
 - Run `git diff --check` before committing.
 

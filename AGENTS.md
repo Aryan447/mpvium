@@ -122,6 +122,10 @@ keystores, passwords, tokens, or other credentials to the repository.
     the app is built to and is published on the website, so a change that
     contradicts it either fixes the change or amends the doctrine in the same
     pull request.
+11. Keep the app fully navigable by remote control for Android TV and Google TV.
+    Ensure interactive elements maintain clear D-Pad focus rings, handle
+    DPAD/remote key events cleanly, and adapt layouts (e.g., width constraints
+    on settings and sheets) for wide 16:9 television viewing.
 
 ## Agent skills
 

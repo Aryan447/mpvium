@@ -37,7 +37,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.remember
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
 import app.aryan447.mpvium.ui.theme.AppTheme
@@ -45,6 +47,7 @@ import app.aryan447.mpvium.ui.theme.LocalAppTheme
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 import app.aryan447.mpvium.ui.theme.glassRimBrush
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 
 @Composable
 fun SeriesPosterCard(
@@ -82,15 +85,25 @@ private fun SeriesPosterCard(
 ) {
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
   val haptic = LocalHapticFeedback.current
+  val interactionSource = remember { MutableInteractionSource() }
 
   Column(
     modifier = modifier
       .width(cardWidth)
+      .tvFocusHighlight(
+        shape = RoundedCornerShape(14.dp),
+        interactionSource = interactionSource,
+        scale = 1.06f,
+      )
       .clip(RoundedCornerShape(14.dp))
-      .clickable(onClick = {
-        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        onClick()
-      }),
+      .clickable(
+        interactionSource = interactionSource,
+        indication = null,
+        onClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+          onClick()
+        },
+      ),
   ) {
     // Poster (2:3 Aspect Ratio)
     val isGlass = LocalGlass.current

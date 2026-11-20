@@ -1,8 +1,11 @@
 package app.aryan447.mpvium.ui.preferences
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -35,9 +39,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -58,6 +68,7 @@ import app.aryan447.mpvium.ui.theme.glassRimStroke
 import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 
 val SettingsCardShape = RoundedCornerShape(28.dp)
 val SettingsTileCorner = 24.dp
@@ -68,6 +79,8 @@ private val IconBoxShape = RoundedCornerShape(SettingsIconBoxCorner)
 
 /**
  * Premium card container for grouped preferences.
+ * Constrained on wide screens and TV displays so controls remain easy
+ * to navigate and comfortable to read.
  * Non-glass theme gets a hairline outline + soft tonal fill so groups
  * read as layered surfaces; glass theme keeps its specular treatment.
  */
@@ -78,26 +91,32 @@ fun PreferenceCard(
 ) {
   val isGlass = LocalGlass.current
   val dark = androidx.compose.foundation.isSystemInDarkTheme()
-  Card(
-    modifier = modifier
-      .fillMaxWidth()
-      .padding(horizontal = 16.dp, vertical = 8.dp)
-      .glassSheen(SettingsCardShape, isGlass),
-    shape = SettingsCardShape,
-    colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
-      containerColor = MaterialTheme.colorScheme.surfaceContainer,
-    ),
-    border = if (isGlass) glassRimStroke(dark) else BorderStroke(
-      1.dp,
-      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
-    ),
-    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+  Box(
+    modifier = Modifier.fillMaxWidth(),
+    contentAlignment = Alignment.Center,
   ) {
-    Column(
-      modifier = Modifier.padding(vertical = 6.dp),
-      verticalArrangement = Arrangement.spacedBy(0.dp),
+    Card(
+      modifier = modifier
+        .fillMaxWidth()
+        .widthIn(max = 880.dp)
+        .padding(horizontal = 16.dp, vertical = 8.dp)
+        .glassSheen(SettingsCardShape, isGlass),
+      shape = SettingsCardShape,
+      colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+      ),
+      border = if (isGlass) glassRimStroke(dark) else BorderStroke(
+        1.dp,
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+      ),
+      elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-      content()
+      Column(
+        modifier = Modifier.padding(vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
+      ) {
+        content()
+      }
     }
   }
 }
@@ -126,34 +145,41 @@ fun PreferenceSectionHeader(
   modifier: Modifier = Modifier,
   count: Int? = null,
 ) {
-  Row(
-    modifier = modifier
-      .padding(horizontal = 24.dp)
-      .padding(top = 20.dp, bottom = 8.dp),
-    verticalAlignment = Alignment.CenterVertically,
+  Box(
+    modifier = Modifier.fillMaxWidth(),
+    contentAlignment = Alignment.Center,
   ) {
-    Text(
-      text = title.uppercase(),
-      style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.4.sp),
-      fontWeight = FontWeight.Bold,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis,
-      modifier = Modifier.weight(1f, fill = false),
-    )
-    if (count != null && count > 0) {
-      Spacer(modifier = Modifier.width(8.dp))
-      Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.primaryContainer,
-      ) {
-        Text(
-          text = count.toString(),
-          style = MaterialTheme.typography.labelSmall,
-          fontWeight = FontWeight.Bold,
-          color = MaterialTheme.colorScheme.onPrimaryContainer,
-          modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
-        )
+    Row(
+      modifier = modifier
+        .fillMaxWidth()
+        .widthIn(max = 880.dp)
+        .padding(horizontal = 24.dp)
+        .padding(top = 20.dp, bottom = 8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.4.sp),
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.weight(1f, fill = false),
+      )
+      if (count != null && count > 0) {
+        Spacer(modifier = Modifier.width(8.dp))
+        Surface(
+          shape = CircleShape,
+          color = MaterialTheme.colorScheme.primaryContainer,
+        ) {
+          Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+          )
+        }
       }
     }
   }
@@ -165,12 +191,24 @@ fun PreferenceSectionHeader(
 @Composable
 private fun SettingsBackButton(onBack: (() -> Unit)?) {
   val backstack = LocalBackStack.current
-  IconButton(onClick = { onBack?.invoke() ?: backstack.removeLastOrNull() }) {
+  var isFocused by remember { mutableStateOf(false) }
+  val primary = MaterialTheme.colorScheme.primary
+  IconButton(
+    onClick = { onBack?.invoke() ?: backstack.removeLastOrNull() },
+    modifier = Modifier.onFocusChanged { isFocused = it.isFocused || it.hasFocus },
+  ) {
     Box(
       modifier = Modifier
         .size(40.dp)
         .clip(CircleShape)
         .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        .then(
+          if (isFocused) {
+            Modifier.border(BorderStroke(2.dp, primary), CircleShape)
+          } else {
+            Modifier
+          }
+        )
         .padding(8.dp),
       contentAlignment = Alignment.Center,
     ) {
@@ -353,6 +391,44 @@ fun PreferenceRowIcon(
 }
 
 /**
+ * Focus highlight for preference rows inside [PreferenceCard].
+ * Highlights the row with a rounded border and subtle primary tint when
+ * focused by D-pad or keyboard navigation on TV and desktop.
+ */
+@Composable
+fun Modifier.preferenceItemFocusHighlight(
+  shape: Shape = RoundedCornerShape(16.dp),
+): Modifier = composed {
+  var isFocused by remember { mutableStateOf(false) }
+  val focusBorderAlpha by animateFloatAsState(
+    targetValue = if (isFocused) 1f else 0f,
+    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+    label = "prefItemBorder",
+  )
+  val focusBgAlpha by animateFloatAsState(
+    targetValue = if (isFocused) 0.12f else 0f,
+    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+    label = "prefItemBg",
+  )
+  val primary = MaterialTheme.colorScheme.primary
+
+  this
+    .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
+    .clip(shape)
+    .background(primary.copy(alpha = focusBgAlpha))
+    .then(
+      if (focusBorderAlpha > 0f) {
+        Modifier.border(
+          BorderStroke(2.dp, primary.copy(alpha = focusBorderAlpha)),
+          shape = shape,
+        )
+      } else {
+        Modifier
+      }
+    )
+}
+
+/**
  * A switch preference row that plays a haptic tick on toggle.
  * Same API as the underlying library switch.
  */
@@ -374,7 +450,7 @@ fun HapticSwitchPreference(
       onValueChange(it)
     },
     title = title,
-    modifier = modifier,
+    modifier = modifier.preferenceItemFocusHighlight(),
     enabled = enabled,
     summary = summary,
     icon = icon,
@@ -396,14 +472,24 @@ fun SettingsPreferenceRow(
   onClick: () -> Unit,
 ) {
   val haptic = LocalHapticFeedback.current
+  val interactionSource = remember { MutableInteractionSource() }
   Row(
     modifier =
       modifier
         .fillMaxWidth()
-        .clickable(onClick = {
-          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-          onClick()
-        })
+        .tvFocusHighlight(
+          shape = SettingsTileShape,
+          interactionSource = interactionSource,
+          scale = 1.02f,
+        )
+        .clickable(
+          interactionSource = interactionSource,
+          indication = null,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+          },
+        )
         .padding(horizontal = 16.dp, vertical = 12.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
@@ -480,17 +566,24 @@ fun SettingsSearchResultRow(
   modifier: Modifier = Modifier,
 ) {
   val scheme = MaterialTheme.colorScheme
+  var isFocused by remember { mutableStateOf(false) }
   val titleText = preference.titleRes?.let { stringResource(it) } ?: preference.title.orEmpty()
   val summaryText = preference.summaryRes?.let { stringResource(it) } ?: preference.summary
   Surface(
     modifier = modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp, vertical = 4.dp)
+      .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
       .clip(SettingsCardShape)
       .clickable(onClick = onClick),
     shape = SettingsCardShape,
-    color = scheme.surfaceContainer,
-    border = BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.4f)),
+    color = if (isFocused) scheme.surfaceContainerHighest else scheme.surfaceContainer,
+    border = if (isFocused) {
+      BorderStroke(2.dp, scheme.primary)
+    } else {
+      BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.4f))
+    },
+    shadowElevation = if (isFocused) 6.dp else 0.dp,
   ) {
     Row(
       modifier = Modifier

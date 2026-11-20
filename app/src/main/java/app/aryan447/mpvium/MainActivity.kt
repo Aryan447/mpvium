@@ -27,6 +27,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -82,6 +83,10 @@ class MainActivity : ComponentActivity() {
     installSplashScreen().setOnExitAnimationListener { it.remove() }
 
     super.onCreate(savedInstanceState)
+
+    if (app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) {
+      requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+    }
 
     handleShortcutIntent(intent)
 
@@ -168,7 +173,11 @@ class MainActivity : ComponentActivity() {
             .setData(Uri.parse("package:$packageName")),
         )
       } catch (_: Exception) {
-        startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+        try {
+          startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+        } catch (_: Exception) {
+          requestRuntimePermission()
+        }
       }
     } else {
       requestRuntimePermission()
@@ -239,9 +248,11 @@ class MainActivity : ComponentActivity() {
     val updateState by (updateViewModel?.updateState ?: MutableStateFlow(UpdateViewModel.UpdateState.Idle)).collectAsState()
     val isDownloading by (updateViewModel?.isDownloading ?: MutableStateFlow(false)).collectAsState()
     val downloadProgress by (updateViewModel?.downloadProgress ?: MutableStateFlow(0f)).collectAsState()
+    val isTv = remember { app.aryan447.mpvium.utils.DeviceUtils.isTv(context) }
 
     // Provide both LocalBackStack and the LazyList/Grid states to all screens
     CompositionLocalProvider(
+      app.aryan447.mpvium.ui.utils.LocalIsTv provides isTv,
       LocalBackStack provides typedBackstack
     ) {
       NavDisplay(

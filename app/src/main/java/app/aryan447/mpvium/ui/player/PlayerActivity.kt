@@ -473,7 +473,9 @@ class PlayerActivity :
     // Only set orientation immediately if NOT in Video mode
     // For Video mode, wait for video-params/aspect to become available
     if (isAudioMode) {
-      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      if (!app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) {
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      }
       window.statusBarColor = android.graphics.Color.TRANSPARENT
       window.navigationBarColor = android.graphics.Color.TRANSPARENT
       try {
@@ -543,6 +545,12 @@ class PlayerActivity :
       return
     }
 
+    // When controls are visible on TV or phone, Back dismisses the controls first
+    if (viewModel.controlsShown.value) {
+      viewModel.hideControls()
+      return
+    }
+
     // Check if auto PIP is enabled - enter PIP mode instead of finishing
     if (playerPreferences.autoPiPOnNavigation.get() && isReady) {
       pipHelper.enterPipMode()
@@ -554,16 +562,21 @@ class PlayerActivity :
   }
 
   private fun setupPlayerControls() {
+    val isTv = app.aryan447.mpvium.utils.DeviceUtils.isTv(this)
     binding.controls.setContent {
-      MpviumTheme {
-        PlayerControls(
-          viewModel = viewModel,
-          onBackPress = {
-            isUserFinishing = true
-            finish()
-          },
-          modifier = Modifier,
-        )
+      androidx.compose.runtime.CompositionLocalProvider(
+        app.aryan447.mpvium.ui.utils.LocalIsTv provides isTv,
+      ) {
+        MpviumTheme {
+          PlayerControls(
+            viewModel = viewModel,
+            onBackPress = {
+              isUserFinishing = true
+              finish()
+            },
+            modifier = Modifier,
+          )
+        }
       }
     }
   }
@@ -2775,6 +2788,11 @@ class PlayerActivity :
    * to the correct orientation, starting with landscape as fallback.
    */
   private fun setOrientation() {
+    if (app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) {
+      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+      return
+    }
+
     if (viewModel.isAudioMode.value) {
       requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
       return
@@ -2834,45 +2852,95 @@ class PlayerActivity :
     keyCode: Int,
     event: KeyEvent?,
   ): Boolean {
-    val isTrackSheetOpen =
-      viewModel.sheetShown.value == Sheets.SubtitleTracks ||
-        viewModel.sheetShown.value == Sheets.AudioTracks
-    val isNoSheetOpen = viewModel.sheetShown.value == Sheets.None
+    val isNoSheetOpen = viewModel.sheetShown.value == Sheets.None && viewModel.panelShown.value == Panels.None
+    val areControlsVisible = viewModel.controlsShown.value
+
+    if (areControlsVisible) {
+      viewModel.keepControlsAlive()
+    }
 
     when (keyCode) {
-      KeyEvent.KEYCODE_DPAD_UP -> {
-        return super.onKeyDown(keyCode, event)
-      }
-
-      KeyEvent.KEYCODE_DPAD_DOWN,
-      KeyEvent.KEYCODE_DPAD_RIGHT,
-      KeyEvent.KEYCODE_DPAD_LEFT,
-        -> {
-        if (isTrackSheetOpen) {
-          return super.onKeyDown(keyCode, event)
-        }
-
-        if (isNoSheetOpen) {
-          when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-              viewModel.handleRightDoubleTap()
-              return true
-            }
-
-            KeyEvent.KEYCODE_DPAD_LEFT -> {
-              viewModel.handleLeftDoubleTap()
-              return true
-            }
-          }
+      KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> {
+        if (!areControlsVisible && isNoSheetOpen) {
+          viewModel.showControls()
+          return true
         }
         return super.onKeyDown(keyCode, event)
       }
 
-      KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-        if (isTrackSheetOpen) {
+      KeyEvent.KEYCODE_DPAD_RIGHT -> {
+        if (!isNoSheetOpen) {
           return super.onKeyDown(keyCode, event)
         }
+
+        if (!areControlsVisible) {
+          viewModel.handleRightDoubleTap()
+          return true
+        }
         return super.onKeyDown(keyCode, event)
+      }
+
+      KeyEvent.KEYCODE_DPAD_LEFT -> {
+        if (!isNoSheetOpen) {
+          return super.onKeyDown(keyCode, event)
+        }
+
+        if (!areControlsVisible) {
+          viewModel.handleLeftDoubleTap()
+          return true
+        }
+        return super.onKeyDown(keyCode, event)
+      }
+
+      KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+        if (!isNoSheetOpen) {
+          return super.onKeyDown(keyCode, event)
+        }
+        if (!areControlsVisible) {
+          viewModel.pauseUnpause()
+          viewModel.showControls()
+          return true
+        }
+        return super.onKeyDown(keyCode, event)
+      }
+
+      KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+        viewModel.pauseUnpause()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MEDIA_PLAY -> {
+        viewModel.unpause()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+        viewModel.pause()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MEDIA_NEXT, KeyEvent.KEYCODE_CHANNEL_UP -> {
+        playNext()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+        playPrevious()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_INFO -> {
+        if (areControlsVisible) {
+          viewModel.hideControls()
+        } else {
+          viewModel.showControls()
+        }
+        return true
+      }
+
+      KeyEvent.KEYCODE_VOLUME_MUTE -> {
+        MPVLib.command("cycle", "mute")
+        return true
       }
 
       KeyEvent.KEYCODE_SPACE -> {

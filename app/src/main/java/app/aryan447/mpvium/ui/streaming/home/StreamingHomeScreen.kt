@@ -7,9 +7,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -246,32 +248,66 @@ object StreamingHomeScreen : Screen {
             },
             actions = {
               val dark = isSystemInDarkTheme()
+              val primary = MaterialTheme.colorScheme.primary
               val iconGlass = Modifier
                 .clip(CircleShape)
                 .background(glassFrostColor(isDark = dark, kind = GlassKind.Chip))
                 .border(1.dp, glassRimColor(dark), CircleShape)
                 .glassSheen(CircleShape, true)
+
+              var refreshFocused by remember { mutableStateOf(false) }
               IconButton(
                 onClick = { viewModel.refreshMetadata() },
-                modifier = if (isGlass) iconGlass else Modifier,
+                modifier = (if (isGlass) iconGlass else Modifier)
+                  .onFocusChanged { refreshFocused = it.isFocused || it.hasFocus }
+                  .clip(CircleShape)
+                  .then(
+                    if (refreshFocused) {
+                      Modifier
+                        .background(primary.copy(alpha = 0.2f), CircleShape)
+                        .border(BorderStroke(2.dp, primary), CircleShape)
+                    } else Modifier
+                  ),
                 colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
                   contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSurface),
                 ),
               ) {
                 Icon(Icons.Filled.Refresh, contentDescription = "Refresh details")
               }
+
+              var searchFocused by remember { mutableStateOf(false) }
               IconButton(
                 onClick = { viewModel.setSearching(true) },
-                modifier = if (isGlass) iconGlass else Modifier,
+                modifier = (if (isGlass) iconGlass else Modifier)
+                  .onFocusChanged { searchFocused = it.isFocused || it.hasFocus }
+                  .clip(CircleShape)
+                  .then(
+                    if (searchFocused) {
+                      Modifier
+                        .background(primary.copy(alpha = 0.2f), CircleShape)
+                        .border(BorderStroke(2.dp, primary), CircleShape)
+                    } else Modifier
+                  ),
                 colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
                   contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSurface),
                 ),
               ) {
                 Icon(Icons.Filled.Search, contentDescription = "Search")
               }
+
+              var settingsFocused by remember { mutableStateOf(false) }
               IconButton(
                 onClick = { backstack.add(PreferencesScreen) },
-                modifier = if (isGlass) iconGlass else Modifier,
+                modifier = (if (isGlass) iconGlass else Modifier)
+                  .onFocusChanged { settingsFocused = it.isFocused || it.hasFocus }
+                  .clip(CircleShape)
+                  .then(
+                    if (settingsFocused) {
+                      Modifier
+                        .background(primary.copy(alpha = 0.2f), CircleShape)
+                        .border(BorderStroke(2.dp, primary), CircleShape)
+                    } else Modifier
+                  ),
                 colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
                   contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSurface),
                 ),

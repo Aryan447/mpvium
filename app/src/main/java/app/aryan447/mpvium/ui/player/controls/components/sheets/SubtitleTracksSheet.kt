@@ -1,13 +1,22 @@
 package app.aryan447.mpvium.ui.player.controls.components.sheets
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -16,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.player.TrackNode
 import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -59,23 +69,41 @@ fun SubtitlesSheet(
     list.toImmutableList()
   }
 
+  val isTv = LocalIsTv.current
+  val initialFocusRequester = remember { FocusRequester() }
+
+  LaunchedEffect(Unit) {
+    if (isTv) {
+      try {
+        initialFocusRequester.requestFocus()
+      } catch (_: Exception) {}
+    }
+  }
+
   GenericTracksSheet(
     tracks = items,
     onDismissRequest = onDismissRequest,
     header = {
       AddTrackRow(
-        stringResource(R.string.player_sheets_add_ext_sub),
-        onAddSubtitle,
+        title = stringResource(R.string.player_sheets_add_ext_sub),
+        onClick = onAddSubtitle,
+        focusRequester = initialFocusRequester,
         actions = {
-          IconButton(onClick = onOpenOnlineSearch) {
-            Icon(Icons.Default.Search, null)
-          }
-          IconButton(onClick = onOpenSubtitleSettings) {
-            Icon(Icons.Default.Palette, null)
-          }
-          IconButton(onClick = onOpenSubtitleDelay) {
-            Icon(Icons.Default.MoreTime, null)
-          }
+          SheetActionButton(
+            icon = Icons.Default.Search,
+            contentDescription = stringResource(R.string.search),
+            onClick = onOpenOnlineSearch,
+          )
+          SheetActionButton(
+            icon = Icons.Default.Palette,
+            contentDescription = "Subtitle Settings",
+            onClick = onOpenSubtitleSettings,
+          )
+          SheetActionButton(
+            icon = Icons.Default.MoreTime,
+            contentDescription = "Subtitle Delay",
+            onClick = onOpenSubtitleDelay,
+          )
         },
       )
     },
@@ -118,10 +146,22 @@ fun SubtitlesSheet(
     footer = {
       if (onForgetSubtitleSettings != null) {
         val haptic = LocalHapticFeedback.current
+        var isForgetFocused by remember { mutableStateOf(false) }
+        val errorColor = MaterialTheme.colorScheme.error
         Row(
           modifier =
             Modifier
               .fillMaxWidth()
+              .onFocusChanged { isForgetFocused = it.isFocused }
+              .clip(RoundedCornerShape(12.dp))
+              .background(if (isForgetFocused) errorColor.copy(alpha = 0.15f) else Color.Transparent)
+              .then(
+                if (isForgetFocused) {
+                  Modifier.border(BorderStroke(2.dp, errorColor), RoundedCornerShape(12.dp))
+                } else {
+                  Modifier
+                }
+              )
               .clickable(onClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onForgetSubtitleSettings()
@@ -135,12 +175,12 @@ fun SubtitlesSheet(
             Icons.Default.RestartAlt,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.error,
+            tint = errorColor,
           )
           Text(
             text = stringResource(R.string.player_sheets_forget_subtitle_settings),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error,
+            color = errorColor,
             modifier = Modifier.weight(1f),
           )
         }
@@ -161,12 +201,27 @@ fun SubtitleTrackRow(
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
+  var isFocused by remember { mutableStateOf(false) }
+  val primary = MaterialTheme.colorScheme.primary
   val tickToggle = {
     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
     onToggle()
   }
   Row(
-    modifier = modifier.fillMaxWidth().clickable(onClick = tickToggle).padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
+    modifier = modifier
+      .fillMaxWidth()
+      .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
+      .clip(RoundedCornerShape(12.dp))
+      .background(if (isFocused) primary.copy(alpha = 0.15f) else Color.Transparent)
+      .then(
+        if (isFocused) {
+          Modifier.border(BorderStroke(2.dp, primary), RoundedCornerShape(12.dp))
+        } else {
+          Modifier
+        }
+      )
+      .clickable(onClick = tickToggle)
+      .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
   ) {

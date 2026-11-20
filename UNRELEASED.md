@@ -6,6 +6,9 @@
 
 ### Added
 
+- Android TV and Google TV support with Leanback launcher banner, 10-foot D-Pad remote navigation, clear visual focus rings, landscape enforcement, and dedicated TV playback controls.
+- Comprehensive TV remote optimization for Modern player layout: auto-focused hero play/pause button, D-Pad Left/Right seekbar scrubbing, and interactive focus rings across transport controls, action pill buttons, and sheets.
+- TV settings layout with centered content, D-Pad focus indicators on preference rows and choice sheets, and remote-navigable theme preview cards.
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
 - Holding any custom theme in the theme picker allows editing its colors or deleting it.
 - The new r/mpvium subreddit joins Discord and Telegram in About and on the website.
@@ -18,5 +21,6 @@
 
 ### Fixed
 
+- Main navigation rail on TV uses clean native Material 3 indicator pills without distorted selection outlines.
 - Modern player layout custom action buttons scale consistently with built-in controls.
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.

@@ -1,6 +1,9 @@
 package app.aryan447.mpvium.ui.player.controls
 
 import androidx.activity.compose.LocalActivity
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -278,20 +281,34 @@ fun PlayerControls(
   }
 
   var isUnlockSliderDragging by remember { mutableStateOf(false) }
+  val isTv = LocalIsTv.current
+  val controlsInteractionTimestamp by viewModel.controlsInteractionTimestamp.collectAsState()
+  val playPauseFocusRequester = remember { FocusRequester() }
+
+  LaunchedEffect(controlsShown, isTv) {
+    if (controlsShown && isTv) {
+      try {
+        playPauseFocusRequester.requestFocus()
+      } catch (_: Exception) {}
+    }
+  }
 
   LaunchedEffect(
     controlsShown,
     paused,
     isSeeking,
     resetControlsTimestamp,
+    controlsInteractionTimestamp,
     areControlsLocked,
     isUnlockSliderDragging,
     playerLayout,
+    isTv,
   ) {
     if (controlsShown && paused == false && !isSeeking && !isUnlockSliderDragging) {
-      // Use 2.5 second delay in Modern mode, 2 second delay when controls are locked, otherwise user preference
+      // Use 5s on TV for remote accessibility, 2s when locked, 2.5s in Modern, otherwise user pref
       val delayTime = when {
         areControlsLocked -> 2000L
+        isTv -> 5000L
         isModern -> 2500L
         else -> playerTimeToDisappear.toLong()
       }
@@ -872,6 +889,7 @@ fun PlayerControls(
             currentZoom = currentZoom,
             aspect = aspect,
             decoder = decoder,
+            playPauseFocusRequester = playPauseFocusRequester,
             modifier = Modifier.fillMaxSize(),
           )
         }
@@ -925,6 +943,7 @@ fun PlayerControls(
                       resetControlsTimestamp = System.currentTimeMillis()
                       viewModel.pauseUnpause()
                     },
+                    modifier = Modifier.focusRequester(playPauseFocusRequester),
                     hideBackground = hideBackground,
                     size = if (isModern) 84.dp else 72.dp,
                   )
@@ -948,6 +967,7 @@ fun PlayerControls(
                     resetControlsTimestamp = System.currentTimeMillis()
                     viewModel.pauseUnpause()
                   },
+                  modifier = Modifier.focusRequester(playPauseFocusRequester),
                   hideBackground = hideBackground,
                   size = if (isModern) 84.dp else 72.dp,
                 )

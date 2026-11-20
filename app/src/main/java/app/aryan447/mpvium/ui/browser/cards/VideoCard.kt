@@ -51,6 +51,8 @@ import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
@@ -111,17 +113,23 @@ fun VideoCard(
   // Use override parameters if provided, otherwise use preferences
   val showSizeChip = overrideShowSizeChip ?: showSizeChipPref
   val showResolutionChip = overrideShowResolutionChip ?: showResolutionChipPref
+  val cardInteraction = remember { MutableInteractionSource() }
 
   Card(
     modifier = modifier
-      .then(
-        if (isGridMode) Modifier.fillMaxWidth() else Modifier.fillMaxWidth()
+      .fillMaxWidth()
+      .tvFocusHighlight(
+        shape = CardDefaults.shape,
+        interactionSource = cardInteraction,
+        scale = 1.03f,
       )
       .combinedClickable(
+        interactionSource = cardInteraction,
+        indication = null,
         onClick = onClick,
         onLongClick = onLongClick,
       ),
-    colors = CardDefaults. cardColors(containerColor = Color. Transparent),
+    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
   ) {
     if (isGridMode) {
       // GRID LAYOUT - Vertical arrangement

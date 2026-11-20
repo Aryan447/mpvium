@@ -37,13 +37,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.remember
 import app.aryan447.mpvium.domain.streaming.model.LocalMovie
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.LocalAppTheme
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.cinemaFilmStrip
 import app.aryan447.mpvium.ui.theme.glassRimBrush
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -56,12 +59,20 @@ fun MoviePosterCard(
 ) {
   val isCinema = LocalAppTheme.current == AppTheme.Cinema
   val haptic = LocalHapticFeedback.current
+  val interactionSource = remember { MutableInteractionSource() }
 
   Column(
     modifier = modifier
       .width(cardWidth)
+      .tvFocusHighlight(
+        shape = RoundedCornerShape(14.dp),
+        interactionSource = interactionSource,
+        scale = 1.06f,
+      )
       .clip(RoundedCornerShape(14.dp))
       .combinedClickable(
+        interactionSource = interactionSource,
+        indication = null,
         onClick = {
           haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           onClick()
