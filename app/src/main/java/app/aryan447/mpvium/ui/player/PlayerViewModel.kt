@@ -470,7 +470,7 @@ class PlayerViewModel(
       audioPreferences.volumeBoostCap.changes().collect { cap ->
         val maxVol = 100 + cap
         runCatching {
-          MPVLib.setPropertyString("volume-max", maxVol.toString())
+          MpvConfigWriter.setPropertyString("volume-max", maxVol.toString())
 
           // Clamp current volume if it exceeds the new limit
           val currentMpvVol = MPVLib.getPropertyInt("volume") ?: 100
@@ -501,10 +501,10 @@ class PlayerViewModel(
           val shouldUsePreciseSeeking = playerPreferences.usePreciseSeeking.get() || videoDuration < 120 || isLoopActive
 
           // Update hr-seek settings dynamically
-          MPVLib.setPropertyString("hr-seek", if (shouldUsePreciseSeeking) "yes" else "no")
-          MPVLib.setPropertyString("hr-seek-framedrop", "yes")
-          MPVLib.setPropertyString("hr-seek-demuxer-offset", "0")
-          MPVLib.setPropertyString("framedrop", "vo")
+          MpvConfigWriter.setPropertyString("hr-seek", if (shouldUsePreciseSeeking) "yes" else "no")
+          MpvConfigWriter.setPropertyString("hr-seek-framedrop", "yes")
+          MpvConfigWriter.setPropertyString("hr-seek-demuxer-offset", "0")
+          MpvConfigWriter.setPropertyString("framedrop", "vo")
         }
       }
     }
@@ -750,8 +750,8 @@ class PlayerViewModel(
         // Apply saved custom aspect ratio
         _currentAspectRatio.value = savedCustomRatio
         runCatching {
-          MPVLib.setPropertyDouble("panscan", 0.0)
-          MPVLib.setPropertyDouble("video-aspect-override", savedCustomRatio)
+          MpvConfigWriter.setPropertyDouble("panscan", 0.0)
+          MpvConfigWriter.setPropertyDouble("video-aspect-override", savedCustomRatio)
         }
       } else {
         // Apply saved standard aspect mode (Fit, Crop, or Stretch)
@@ -760,12 +760,12 @@ class PlayerViewModel(
         runCatching {
           when (savedAspect) {
             VideoAspect.Fit -> {
-              MPVLib.setPropertyDouble("panscan", 0.0)
-              MPVLib.setPropertyDouble("video-aspect-override", -1.0)
+              MpvConfigWriter.setPropertyDouble("panscan", 0.0)
+              MpvConfigWriter.setPropertyDouble("video-aspect-override", -1.0)
             }
             VideoAspect.Crop -> {
-              MPVLib.setPropertyDouble("video-aspect-override", -1.0)
-              MPVLib.setPropertyDouble("panscan", 1.0)
+              MpvConfigWriter.setPropertyDouble("video-aspect-override", -1.0)
+              MpvConfigWriter.setPropertyDouble("panscan", 1.0)
             }
             VideoAspect.Stretch -> {
               @Suppress("DEPRECATION")
@@ -779,8 +779,8 @@ class PlayerViewModel(
               } else {
                 dm.widthPixels.toDouble() / dm.heightPixels.toDouble()
               }
-              MPVLib.setPropertyDouble("video-aspect-override", screenRatio)
-              MPVLib.setPropertyDouble("panscan", 0.0)
+              MpvConfigWriter.setPropertyDouble("video-aspect-override", screenRatio)
+              MpvConfigWriter.setPropertyDouble("panscan", 0.0)
             }
           }
         }
@@ -789,7 +789,7 @@ class PlayerViewModel(
       // 2. Reset Video Zoom
       if (_videoZoom.value != 0f) {
           _videoZoom.value = 0f
-          runCatching { MPVLib.setPropertyDouble("video-zoom", 0.0) }
+          runCatching { MpvConfigWriter.setPropertyDouble("video-zoom", 0.0) }
       }
 
       // 3. Reset Video Pan
@@ -797,8 +797,8 @@ class PlayerViewModel(
           _videoPanX.value = 0f
           _videoPanY.value = 0f
           runCatching {
-              MPVLib.setPropertyDouble("video-pan-x", 0.0)
-              MPVLib.setPropertyDouble("video-pan-y", 0.0)
+              MpvConfigWriter.setPropertyDouble("video-pan-x", 0.0)
+              MpvConfigWriter.setPropertyDouble("video-pan-y", 0.0)
           }
       }
       // ---------------------------------------------------

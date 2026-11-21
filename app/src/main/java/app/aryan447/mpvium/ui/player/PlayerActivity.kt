@@ -48,6 +48,7 @@ import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.DecoderPreferences
+import app.aryan447.mpvium.preferences.MpvConfigOwnershipPolicy
 import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
@@ -465,9 +466,9 @@ class PlayerActivity :
       val key = subtitleProfileRepository.resolveKey(fileName, intent.data?.path ?: intent.data?.toString())
       val profile = subtitleProfileRepository.getProfile(key)
       if (profile != null) {
-        MPVLib.setPropertyFloat("sub-scale", profile.subScale)
-        MPVLib.setPropertyInt("sub-pos", profile.subPos)
-        MPVLib.setPropertyInt("secondary-sub-pos", (profile.subPos - 10).coerceIn(0, 110))
+        MpvConfigWriter.setPropertyFloat("sub-scale", profile.subScale)
+        MpvConfigWriter.setPropertyInt("sub-pos", profile.subPos)
+        MpvConfigWriter.setPropertyInt("secondary-sub-pos", (profile.subPos - 10).coerceIn(0, 110))
       }
     }
 
@@ -598,7 +599,7 @@ class PlayerActivity :
   private fun setupAudio() {
     audioPreferences.audioChannels.get().let {
       runCatching {
-        MPVLib.setPropertyString(it.property, it.value)
+        MpvConfigWriter.setPropertyString(it.property, it.value)
       }.onFailure { e ->
         Log.e(TAG, "Error setting audio channels: ${it.property}=${it.value}", e)
       }
@@ -1006,6 +1007,14 @@ class PlayerActivity :
 
     // Add observer after initialization
     MPVLib.addObserver(playerObserver)
+
+    // Track mpv.conf ownership changes so the next file starts with the
+    // options the user handed over to their configuration.
+    lifecycleScope.launch {
+      advancedPreferences.mpvConfOverrides.changes().collect { values ->
+        MpvConfigOwnershipPolicy.configure(values)
+      }
+    }
   }
 
   /**
@@ -1894,7 +1903,7 @@ class PlayerActivity :
       if (!hasState) {
         withContext(Dispatchers.Main) {
           val zoomPreference = playerPreferences.defaultVideoZoom.get()
-          MPVLib.setPropertyDouble("video-zoom", zoomPreference.toDouble())
+          MpvConfigWriter.setPropertyDouble("video-zoom", zoomPreference.toDouble())
           viewModel.setVideoZoom(zoomPreference)
         }
       }
@@ -2141,30 +2150,30 @@ class PlayerActivity :
    */
   private fun applySubtitlePreferences() {
     // Typography settings
-    MPVLib.setPropertyString("sub-font", subtitlesPreferences.font.get())
-    MPVLib.setPropertyString("secondary-sub-font", subtitlesPreferences.font.get())
-    MPVLib.setPropertyInt("sub-font-size", subtitlesPreferences.fontSize.get())
-    MPVLib.setPropertyBoolean("sub-bold", subtitlesPreferences.bold.get())
-    MPVLib.setPropertyBoolean("sub-italic", subtitlesPreferences.italic.get())
-    MPVLib.setPropertyString("sub-justify", subtitlesPreferences.justification.get().value)
-    MPVLib.setPropertyString("sub-border-style", subtitlesPreferences.borderStyle.get().value)
-    MPVLib.setPropertyInt("sub-outline-size", subtitlesPreferences.borderSize.get())
-    MPVLib.setPropertyInt("sub-shadow-offset", subtitlesPreferences.shadowOffset.get())
+    MpvConfigWriter.setPropertyString("sub-font", subtitlesPreferences.font.get())
+    MpvConfigWriter.setPropertyString("secondary-sub-font", subtitlesPreferences.font.get())
+    MpvConfigWriter.setPropertyInt("sub-font-size", subtitlesPreferences.fontSize.get())
+    MpvConfigWriter.setPropertyBoolean("sub-bold", subtitlesPreferences.bold.get())
+    MpvConfigWriter.setPropertyBoolean("sub-italic", subtitlesPreferences.italic.get())
+    MpvConfigWriter.setPropertyString("sub-justify", subtitlesPreferences.justification.get().value)
+    MpvConfigWriter.setPropertyString("sub-border-style", subtitlesPreferences.borderStyle.get().value)
+    MpvConfigWriter.setPropertyInt("sub-outline-size", subtitlesPreferences.borderSize.get())
+    MpvConfigWriter.setPropertyInt("sub-shadow-offset", subtitlesPreferences.shadowOffset.get())
 
     // Color settings
-    MPVLib.setPropertyString("sub-color", subtitlesPreferences.textColor.get().toColorHexString())
-    MPVLib.setPropertyString("sub-border-color", subtitlesPreferences.borderColor.get().toColorHexString())
-    MPVLib.setPropertyString("sub-back-color", subtitlesPreferences.backgroundColor.get().toColorHexString())
+    MpvConfigWriter.setPropertyString("sub-color", subtitlesPreferences.textColor.get().toColorHexString())
+    MpvConfigWriter.setPropertyString("sub-border-color", subtitlesPreferences.borderColor.get().toColorHexString())
+    MpvConfigWriter.setPropertyString("sub-back-color", subtitlesPreferences.backgroundColor.get().toColorHexString())
 
     // Miscellaneous settings
     val overrideAssSubs = subtitlesPreferences.overrideAssSubs.get()
-    MPVLib.setPropertyString("sub-ass-override", if (overrideAssSubs) "force" else "scale")
-    MPVLib.setPropertyString("secondary-sub-ass-override", if (overrideAssSubs) "force" else "scale")
+    MpvConfigWriter.setPropertyString("sub-ass-override", if (overrideAssSubs) "force" else "scale")
+    MpvConfigWriter.setPropertyString("secondary-sub-ass-override", if (overrideAssSubs) "force" else "scale")
 
     val scaleByWindow = subtitlesPreferences.scaleByWindow.get()
     val scaleValue = if (scaleByWindow) "yes" else "no"
-    MPVLib.setPropertyString("sub-scale-by-window", scaleValue)
-    MPVLib.setPropertyString("sub-use-margins", scaleValue)
+    MpvConfigWriter.setPropertyString("sub-scale-by-window", scaleValue)
+    MpvConfigWriter.setPropertyString("sub-use-margins", scaleValue)
 
     val effectiveScale: Float
     val effectivePos: Int
@@ -2184,9 +2193,9 @@ class PlayerActivity :
       effectivePos = subtitlesPreferences.subPos.get()
     }
 
-    MPVLib.setPropertyFloat("sub-scale", effectiveScale)
-    MPVLib.setPropertyInt("sub-pos", effectivePos)
-    MPVLib.setPropertyInt("secondary-sub-pos", (effectivePos - 10).coerceIn(0, 110))
+    MpvConfigWriter.setPropertyFloat("sub-scale", effectiveScale)
+    MpvConfigWriter.setPropertyInt("sub-pos", effectivePos)
+    MpvConfigWriter.setPropertyInt("secondary-sub-pos", (effectivePos - 10).coerceIn(0, 110))
 
     Log.d(TAG, "Applied subtitle preferences")
   }
@@ -2460,13 +2469,13 @@ class PlayerActivity :
       Log.d(TAG, "Restored audio track: ${state.aid} (user selection)")
     }
 
-    MPVLib.setPropertyDouble("sub-delay", subDelay)
-    MPVLib.setPropertyDouble("speed", state.playbackSpeed)
-    MPVLib.setPropertyDouble("audio-delay", audioDelay)
-    MPVLib.setPropertyDouble("sub-speed", state.subSpeed)
+    MpvConfigWriter.setPropertyDouble("sub-delay", subDelay)
+    MpvConfigWriter.setPropertyDouble("speed", state.playbackSpeed)
+    MpvConfigWriter.setPropertyDouble("audio-delay", audioDelay)
+    MpvConfigWriter.setPropertyDouble("sub-speed", state.subSpeed)
 
     // Restore video zoom from saved state
-    MPVLib.setPropertyDouble("video-zoom", state.videoZoom.toDouble())
+    MpvConfigWriter.setPropertyDouble("video-zoom", state.videoZoom.toDouble())
     viewModel.setVideoZoom(state.videoZoom)
 
     if (playerPreferences.savePositionOnQuit.get() && state.lastPosition != 0) {
@@ -2484,7 +2493,7 @@ class PlayerActivity :
   private fun applyDefaultSettings(state: PlaybackStateEntity?) {
     if (state == null) {
       val defaultSubSpeed = subtitlesPreferences.defaultSubSpeed.get().toDouble()
-      MPVLib.setPropertyDouble("sub-speed", defaultSubSpeed)
+      MpvConfigWriter.setPropertyDouble("sub-speed", defaultSubSpeed)
     }
   }
 
@@ -3579,9 +3588,9 @@ class PlayerActivity :
       val profile = subtitleProfileRepository.getProfile(key)
       val pos = profile?.subPos ?: subtitlesPreferences.subPos.get()
       val scale = profile?.subScale ?: subtitlesPreferences.subScale.get()
-      MPVLib.setPropertyFloat("sub-scale", scale)
-      MPVLib.setPropertyInt("sub-pos", pos)
-      MPVLib.setPropertyInt("secondary-sub-pos", (pos - 10).coerceIn(0, 110))
+      MpvConfigWriter.setPropertyFloat("sub-scale", scale)
+      MpvConfigWriter.setPropertyInt("sub-pos", pos)
+      MpvConfigWriter.setPropertyInt("secondary-sub-pos", (pos - 10).coerceIn(0, 110))
     }
 
     // Load the new video
@@ -3880,17 +3889,17 @@ class PlayerActivity :
       ),
     )
 
-    MPVLib.setOptionString("demuxer-max-bytes", "${profile.demuxerMaxBytes}")
-    MPVLib.setOptionString("demuxer-max-back-bytes", "${profile.demuxerMaxBackBytes}")
-    MPVLib.setOptionString("demuxer-readahead-secs", "${profile.demuxerReadaheadSecs.roundToInt()}")
-    MPVLib.setOptionString("cache-secs", "${profile.cacheSecs.roundToInt()}")
-    MPVLib.setOptionString("stream-buffer-size", "${profile.streamBufferSize}")
+    MpvConfigWriter.setOptionString("demuxer-max-bytes", "${profile.demuxerMaxBytes}")
+    MpvConfigWriter.setOptionString("demuxer-max-back-bytes", "${profile.demuxerMaxBackBytes}")
+    MpvConfigWriter.setOptionString("demuxer-readahead-secs", "${profile.demuxerReadaheadSecs.roundToInt()}")
+    MpvConfigWriter.setOptionString("cache-secs", "${profile.cacheSecs.roundToInt()}")
+    MpvConfigWriter.setOptionString("stream-buffer-size", "${profile.streamBufferSize}")
 
     runCatching {
-      MPVLib.setPropertyLong("demuxer-max-bytes", profile.demuxerMaxBytes)
-      MPVLib.setPropertyLong("demuxer-max-back-bytes", profile.demuxerMaxBackBytes)
-      MPVLib.setPropertyDouble("demuxer-readahead-secs", profile.demuxerReadaheadSecs)
-      MPVLib.setPropertyDouble("cache-secs", profile.cacheSecs)
+      MpvConfigWriter.setPropertyLong("demuxer-max-bytes", profile.demuxerMaxBytes)
+      MpvConfigWriter.setPropertyLong("demuxer-max-back-bytes", profile.demuxerMaxBackBytes)
+      MpvConfigWriter.setPropertyDouble("demuxer-readahead-secs", profile.demuxerReadaheadSecs)
+      MpvConfigWriter.setPropertyDouble("cache-secs", profile.cacheSecs)
     }
 
     if (advancedPreferences.verboseLogging.get()) {

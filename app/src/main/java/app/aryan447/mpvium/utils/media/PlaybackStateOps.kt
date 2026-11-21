@@ -2,6 +2,7 @@ package app.aryan447.mpvium.utils.media
 
 import android.util.Log
 import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.repository.subtitle.SubtitleProfileRepository
 import org.koin.java.KoinJavaComponent.inject
 import java.io.File
 
@@ -11,6 +12,7 @@ import java.io.File
 object PlaybackStateOps {
   private const val TAG = "PlaybackStateOps"
   private val repository: PlaybackStateRepository by inject(PlaybackStateRepository::class.java)
+  private val subtitleProfileRepository: SubtitleProfileRepository by inject(SubtitleProfileRepository::class.java)
 
   /**
    * Called when a video file is renamed
@@ -37,6 +39,17 @@ object PlaybackStateOps {
     } catch (e: Exception) {
       Log.w(TAG, "Failed to update playback state: ${e.message}")
     }
+
+    try {
+      val oldFileName = File(oldPath).name
+      val newFileName = File(newPath).name
+      if (oldFileName != newFileName) {
+        subtitleProfileRepository.onVideoRenamed(oldFileName, oldPath, newFileName, newPath)
+        Log.d(TAG, "✓ Migrated subtitle profile: $oldFileName -> $newFileName")
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to update subtitle profile for rename: ${e.message}")
+    }
   }
 
   /**
@@ -54,6 +67,14 @@ object PlaybackStateOps {
       Log.d(TAG, "✓ Deleted playback state for: $fileName")
     } catch (e: Exception) {
       Log.w(TAG, "Failed to delete playback state: ${e.message}")
+    }
+
+    try {
+      val fileName = File(filePath).name
+      subtitleProfileRepository.deleteProfileForVideo(fileName, filePath)
+      Log.d(TAG, "✓ Deleted subtitle profile for: $fileName")
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to delete subtitle profile: ${e.message}")
     }
   }
 }
