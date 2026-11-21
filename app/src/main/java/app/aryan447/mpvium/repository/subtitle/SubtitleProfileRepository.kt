@@ -86,16 +86,20 @@ class SubtitleProfileRepository(
       return "$SERIES_KEY_PREFIX${normalizeKey(stripped)}"
     }
 
-    fun movieKeyFor(movieTitle: String? = null, year: String? = null): String = SHARED_MOVIE_KEY
+    fun movieKeyFor(movieTitle: String, year: String? = null): String {
+      val base = "$MOVIE_KEY_PREFIX${normalizeKey(movieTitle)}"
+      val normalizedYear = year?.filter { it.isDigit() }?.take(4)?.takeIf { it.length == 4 }
+      return if (normalizedYear != null) "$base@$normalizedYear" else base
+    }
 
     fun canonicalKey(key: String): String = when {
-      key == SHARED_MOVIE_KEY || key.startsWith(MOVIE_KEY_PREFIX) -> SHARED_MOVIE_KEY
-      key.startsWith(SERIES_KEY_PREFIX) -> key
+      key.startsWith(SERIES_KEY_PREFIX) || key.startsWith(MOVIE_KEY_PREFIX) -> key
       else -> seriesKeyFor(key)
     }
 
     fun resolveKey(mediaTitle: String, filePath: String? = null): String {
-      val cleanTitle = mediaTitle.trim()
+      val fallbackName = filePath?.let { runCatching { File(it).name }.getOrNull() } ?: ""
+      val cleanTitle = mediaTitle.ifBlank { fallbackName }.trim()
       val parsed = MediaInfoParser.parse(cleanTitle)
 
       val parentFile = filePath?.let { runCatching { File(it).parentFile }.getOrNull() }
@@ -139,7 +143,19 @@ class SubtitleProfileRepository(
         }
         return seriesKeyFor(seriesId)
       } else {
-        return SHARED_MOVIE_KEY
+        var movieTitle = parsed.title.ifBlank { cleanTitle.substringBeforeLast('.') }
+        var movieYear = parsed.year
+        if (isGenericVideoTitle(movieTitle)) {
+          val movieFolderName = if (parentSeasonNum != null) grandParentName else parentName
+          resolveFolderMedia(movieFolderName)?.let { (fTitle, fYear) ->
+            movieTitle = fTitle
+            movieYear = movieYear ?: fYear
+          }
+        }
+        val finalTitle = movieTitle.ifBlank {
+          filePath?.let { runCatching { File(it).nameWithoutExtension }.getOrNull() } ?: cleanTitle
+        }
+        return movieKeyFor(finalTitle, movieYear)
       }
     }
 
@@ -288,6 +304,32 @@ class SubtitleProfileRepository(
     }
   }
 
+  suspend fun deleteProfileForVideo(mediaTitle: String, filePath: String? = null) {
+    val key = resolveKey(mediaTitle, filePath)
+    if (key.startsWith(MOVIE_KEY_PREFIX)) {
+      deleteProfile(key)
+    }
+  }
+
+  suspend fun onVideoRenamed(
+    oldTitle: String,
+    oldPath: String?,
+    newTitle: String,
+    newPath: String?,
+  ) {
+    val oldKey = resolveKey(oldTitle, oldPath)
+    val newKey = resolveKey(newTitle, newPath)
+    if (oldKey != newKey) {
+      val profile = getProfile(oldKey)
+      if (profile != null) {
+        saveProfile(newKey, profile.subPos, profile.subScale)
+        if (oldKey.startsWith(MOVIE_KEY_PREFIX)) {
+          deleteProfile(oldKey)
+        }
+      }
+    }
+  }
+
   suspend fun clearAllProfiles() {
     ensureCacheLoaded()
     memoryCache.clear()
@@ -334,8 +376,11 @@ class SubtitleProfileRepository(
     val detector = seriesDetector ?: return@withContext
     val detected = runCatching { detector.detectLibrary() }.getOrNull() ?: return@withContext
     val presentSeriesIds = detected.series.map { it.id }.toSet()
-    val presentMovieKeys = detected.movies.map {
-      movieKeyFor(it.title, it.year)
+    val presentMovieKeys = detected.movies.flatMap { movie ->
+      val resolvedByDisplay = resolveKey(movie.video.displayName, movie.video.path)
+      val resolvedByTitle = resolveKey(movie.title, movie.video.path)
+      val keyFromTitleYear = movieKeyFor(movie.title, movie.year)
+      listOf(resolvedByDisplay, resolvedByTitle, keyFromTitleYear)
     }.toSet()
     pruneStale(presentSeriesIds, presentMovieKeys)
   }
@@ -358,15 +403,15 @@ class SubtitleProfileRepository(
       }
     }
     if (presentMovieKeys != null) {
-      if (presentMovieKeys.isEmpty()) {
-        if (memoryCache.remove(SHARED_MOVIE_KEY) != null) {
-          changed = true
-        }
+      val keepMovies = HashSet<String>()
+      presentMovieKeys.forEach {
+        keepMovies.add(it)
+        keepMovies.add(it.substringBefore('@'))
       }
       val iterator = memoryCache.keys.iterator()
       while (iterator.hasNext()) {
         val key = iterator.next()
-        if (key.startsWith(MOVIE_KEY_PREFIX) && key != SHARED_MOVIE_KEY) {
+        if (key.startsWith(MOVIE_KEY_PREFIX) && !keepMovies.contains(key)) {
           iterator.remove()
           changed = true
         }

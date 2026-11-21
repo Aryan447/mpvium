@@ -19,6 +19,8 @@
 
 ### Fixed
 
+- Standalone movies now retain their own subtitle position and scale under per-title scope instead of sharing and overwriting a single profile.
+- Deleting or renaming a movie automatically removes or migrates its saved subtitle profile entry.
 - Modern player layout custom action buttons scale consistently with built-in controls.
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.
 - Anime releases without dash episode separators are properly detected as TV series episodes instead of standalone movies.
