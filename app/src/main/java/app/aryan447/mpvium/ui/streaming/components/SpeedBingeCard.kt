@@ -95,7 +95,7 @@ sealed interface SpeedBingeItem {
   ) : SpeedBingeItem {
     override val key: String get() = "speed_movie_${movie.video.id}"
     override val title: String get() = movie.title
-    override val subtitle: String get() = movie.video.durationFormatted.takeIf { it != "0s" } ?: movie.year
+    override val subtitle: String? get() = movie.video.durationFormatted.takeIf { it != "0s" } ?: movie.year
     override val posterUrl: String? get() = movie.posterUrl ?: movie.backdropUrl
     override val fallbackVideo: Video get() = movie.video
     override val isSeries: Boolean get() = false

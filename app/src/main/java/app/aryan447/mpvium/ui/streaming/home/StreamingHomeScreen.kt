@@ -413,6 +413,20 @@ object StreamingHomeScreen : Screen {
             val recentlyAdded = remember(state.series, state.movies) {
               buildRecentlyAdded(state.series, state.movies)
             }
+            val speedBingeItems = remember(
+              state.continueWatching,
+              state.series,
+              state.movies,
+              state.selectedCategory,
+            ) {
+              buildSpeedBingeItems(
+                continueWatching = state.continueWatching,
+                seriesList = state.series,
+                movieList = state.movies,
+                category = state.selectedCategory,
+              )
+            }
+            val speedBingeChunks = remember(speedBingeItems) { speedBingeItems.chunked(3) }
             LazyColumn(
               state = listState,
               modifier = Modifier.fillMaxSize(),
@@ -432,112 +446,95 @@ object StreamingHomeScreen : Screen {
               homeSections.forEach { section ->
                 when (section) {
                   HomeSection.SPEED_BINGE -> {
-                    if (showSpeedBinge) {
-                      val speedBingeItems = remember(
-                        state.continueWatching,
-                        state.series,
-                        state.movies,
-                        state.selectedCategory,
-                      ) {
-                        buildSpeedBingeItems(
-                          continueWatching = state.continueWatching,
-                          seriesList = state.series,
-                          movieList = state.movies,
-                          category = state.selectedCategory,
-                        )
+                    if (showSpeedBinge && speedBingeItems.isNotEmpty()) {
+                      item(key = "speed_binge_header") {
+                        Row(
+                          modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                          verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                          Icon(
+                            imageVector = Icons.Filled.GridView,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp),
+                          )
+                          Spacer(modifier = Modifier.width(8.dp))
+                          Text(
+                            text = "Speed Binge",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                              fontWeight = FontWeight.Bold,
+                              letterSpacing = (-0.3).sp,
+                            ),
+                            color = MaterialTheme.colorScheme.onBackground,
+                          )
+                          Spacer(modifier = Modifier.width(6.dp))
+                          Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp),
+                          ) {
+                            Text(
+                              text = "${speedBingeItems.size}",
+                              style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                              ),
+                              color = MaterialTheme.colorScheme.primary,
+                              modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                            )
+                          }
+                        }
                       }
 
-                      if (speedBingeItems.isNotEmpty()) {
-                        item(key = "speed_binge_header") {
-                          Row(
-                            modifier = Modifier
-                              .fillMaxWidth()
-                              .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                          ) {
-                            Icon(
-                              imageVector = Icons.Filled.GridView,
-                              contentDescription = null,
-                              tint = MaterialTheme.colorScheme.primary,
-                              modifier = Modifier.size(20.dp),
+                      val rowChunkSize = 3
+                      items(speedBingeChunks, key = { row -> "speed_row_${row.first().key}" }) { rowItems ->
+                        Row(
+                          modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 5.dp),
+                          horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                          rowItems.forEach { bingeItem ->
+                            SpeedBingeCard(
+                              item = bingeItem,
+                              onClick = {
+                                when (bingeItem) {
+                                  is SpeedBingeItem.LastPlayed -> {
+                                    MediaUtils.playFile(bingeItem.continueItem.video, context, "speed_binge_resume")
+                                  }
+                                  is SpeedBingeItem.SeriesItem -> {
+                                    backstack.add(SeriesDetailScreen(bingeItem.series.id))
+                                  }
+                                  is SpeedBingeItem.MovieItem -> {
+                                    MediaUtils.playFile(bingeItem.movie.video, context, "speed_binge_movie")
+                                  }
+                                }
+                              },
+                              onLongClick = {
+                                when (bingeItem) {
+                                  is SpeedBingeItem.LastPlayed -> {
+                                    markAsTarget = bingeItem.continueItem
+                                  }
+                                  is SpeedBingeItem.SeriesItem -> {
+                                    backstack.add(SeriesDetailScreen(bingeItem.series.id))
+                                  }
+                                  is SpeedBingeItem.MovieItem -> {
+                                    backstack.add(MovieDetailScreen(bingeItem.movie.video.id, bingeItem.movie.title))
+                                  }
+                                }
+                              },
+                              modifier = Modifier.weight(1f),
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                              text = "Speed Binge",
-                              style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = (-0.3).sp,
-                              ),
-                              color = MaterialTheme.colorScheme.onBackground,
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                              color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                              shape = RoundedCornerShape(6.dp),
-                            ) {
-                              Text(
-                                text = "${speedBingeItems.size}",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                  fontWeight = FontWeight.Bold,
-                                  fontSize = 10.sp,
-                                ),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                              )
-                            }
+                          }
+                          repeat(rowChunkSize - rowItems.size) {
+                            Spacer(modifier = Modifier.weight(1f))
                           }
                         }
+                      }
 
-                        val rowChunkSize = 3
-                        val chunks = remember(speedBingeItems) { speedBingeItems.chunked(rowChunkSize) }
-                        items(chunks, key = { row -> "speed_row_${row.first().key}" }) { rowItems ->
-                          Row(
-                            modifier = Modifier
-                              .fillMaxWidth()
-                              .padding(horizontal = 16.dp, vertical = 5.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                          ) {
-                            rowItems.forEach { bingeItem ->
-                              SpeedBingeCard(
-                                item = bingeItem,
-                                onClick = {
-                                  when (bingeItem) {
-                                    is SpeedBingeItem.LastPlayed -> {
-                                      MediaUtils.playFile(bingeItem.continueItem.video, context, "speed_binge_resume")
-                                    }
-                                    is SpeedBingeItem.SeriesItem -> {
-                                      backstack.add(SeriesDetailScreen(bingeItem.series.id))
-                                    }
-                                    is SpeedBingeItem.MovieItem -> {
-                                      MediaUtils.playFile(bingeItem.movie.video, context, "speed_binge_movie")
-                                    }
-                                  }
-                                },
-                                onLongClick = {
-                                  when (bingeItem) {
-                                    is SpeedBingeItem.LastPlayed -> {
-                                      markAsTarget = bingeItem.continueItem
-                                    }
-                                    is SpeedBingeItem.SeriesItem -> {
-                                      backstack.add(SeriesDetailScreen(bingeItem.series.id))
-                                    }
-                                    is SpeedBingeItem.MovieItem -> {
-                                      backstack.add(MovieDetailScreen(bingeItem.movie.video.id, bingeItem.movie.title))
-                                    }
-                                  }
-                                },
-                                modifier = Modifier.weight(1f),
-                              )
-                            }
-                            repeat(rowChunkSize - rowItems.size) {
-                              Spacer(modifier = Modifier.weight(1f))
-                            }
-                          }
-                        }
-
-                        item(key = "speed_binge_spacer") {
-                          Spacer(modifier = Modifier.height(16.dp))
-                        }
+                      item(key = "speed_binge_spacer") {
+                        Spacer(modifier = Modifier.height(16.dp))
                       }
                     }
                   }
