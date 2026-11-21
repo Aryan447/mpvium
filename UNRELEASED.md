@@ -6,6 +6,9 @@
 
 ### Added
 
+- Android TV and Google TV support with Leanback launcher banner, 10-foot D-Pad remote navigation, clear visual focus rings, landscape enforcement, and dedicated TV playback controls.
+- Comprehensive TV remote optimization for Modern player layout: auto-focused hero play/pause button, D-Pad Left/Right seekbar scrubbing, and interactive focus rings across transport controls, action pill buttons, and sheets.
+- TV settings layout with centered content, D-Pad focus indicators on preference rows and choice sheets, and remote-navigable theme preview cards.
 - mpv.conf ownership in Settings → Advanced lets you choose which mpv option groups your mpv.conf controls instead of the app.
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
 - Holding any custom theme in the theme picker allows editing its colors or deleting it.
@@ -16,9 +19,15 @@
 
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.
 - Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.
+- Phone-specific settings including touch gestures, system status bar, portrait controls, and mobile navigation pill are hidden on Android TV.
 
 ### Fixed
 
+- Subtitles and audio track player sheets are fully remote-navigable on Android TV, with auto-focused actions, clear D-Pad focus rings, and no background key leaks.
+- Text fields on Android TV no longer summon the on-screen keyboard automatically when D-Pad focus moves over them; pressing Enter or Select explicitly opens input.
+- Downloaded and sideloaded media on Android TV is no longer suppressed from the Titles library by mobile transient folder thresholds.
+- Software decoder selection strictly disables hardware decoding across playback reloads, playlist items, and singleTask session switches.
+- Main navigation rail on TV uses clean native Material 3 indicator pills without distorted selection outlines.
 - Standalone movies now retain their own subtitle position and scale under per-title scope instead of sharing and overwriting a single profile.
 - Deleting or renaming a movie automatically removes or migrates its saved subtitle profile entry.
 - Modern player layout custom action buttons scale consistently with built-in controls.

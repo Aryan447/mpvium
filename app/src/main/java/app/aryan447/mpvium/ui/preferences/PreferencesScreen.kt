@@ -19,6 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +35,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -45,6 +48,9 @@ import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Folder
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 import androidx.compose.material.icons.outlined.Gesture
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Memory
@@ -148,17 +154,24 @@ object PreferencesScreen : Screen {
       },
     ) { padding ->
       ProvidePreferenceLocals {
-        Column(
+        Box(
           modifier = Modifier
             .fillMaxSize()
             .padding(padding)
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+          contentAlignment = Alignment.TopCenter,
         ) {
-          DashboardSearchField(
-            query = query,
-            onQueryChange = { query = it },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-          )
+          Column(
+            modifier = Modifier
+              .fillMaxHeight()
+              .widthIn(max = 1100.dp)
+              .fillMaxWidth(),
+          ) {
+            DashboardSearchField(
+              query = query,
+              onQueryChange = { query = it },
+              modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
 
           AnimatedContent(
             targetState = isSearching,
@@ -214,11 +227,12 @@ object PreferencesScreen : Screen {
     }
   }
 }
+}
 
 @Composable
-private fun rememberDashboardSections(): List<DashboardSection> {
+private fun rememberDashboardSections(isTv: Boolean = LocalIsTv.current): List<DashboardSection> {
   val scheme = MaterialTheme.colorScheme
-  return remember(scheme) {
+  return remember(scheme, isTv) {
     listOf(
       DashboardSection(
         title = "Personalize",
@@ -243,24 +257,30 @@ private fun rememberDashboardSections(): List<DashboardSection> {
       ),
       DashboardSection(
         title = "Playback",
-        entries = listOf(
-          DashboardEntry(
-            icon = Icons.Outlined.PlayCircle,
-            titleRes = R.string.pref_player,
-            summaryRes = R.string.pref_player_summary,
-            screen = PlayerPreferencesScreen,
-            container = { scheme.tertiaryContainer },
-            content = { scheme.onTertiaryContainer },
-          ),
-          DashboardEntry(
-            icon = Icons.Outlined.Gesture,
-            titleRes = R.string.pref_gesture,
-            summaryRes = R.string.pref_gesture_summary,
-            screen = GesturePreferencesScreen,
-            container = { scheme.primaryContainer },
-            content = { scheme.onPrimaryContainer },
-          ),
-        ),
+        entries = buildList {
+          add(
+            DashboardEntry(
+              icon = Icons.Outlined.PlayCircle,
+              titleRes = R.string.pref_player,
+              summaryRes = R.string.pref_player_summary,
+              screen = PlayerPreferencesScreen,
+              container = { scheme.tertiaryContainer },
+              content = { scheme.onTertiaryContainer },
+            ),
+          )
+          if (!isTv) {
+            add(
+              DashboardEntry(
+                icon = Icons.Outlined.Gesture,
+                titleRes = R.string.pref_gesture,
+                summaryRes = R.string.pref_gesture_summary,
+                screen = GesturePreferencesScreen,
+                container = { scheme.primaryContainer },
+                content = { scheme.onPrimaryContainer },
+              ),
+            )
+          }
+        },
       ),
       DashboardSection(
         title = "Library & Media",
@@ -344,12 +364,16 @@ private fun DashboardSearchField(
     animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
     label = "searchLeadingIcon",
   )
+  val isTv = LocalIsTv.current
+  val tvState = rememberTvTextFieldState(isTv)
   TextField(
     value = query,
     onValueChange = onQueryChange,
+    readOnly = tvState.readOnly,
     modifier = modifier
       .fillMaxWidth()
       .onFocusChanged { focused = it.isFocused }
+      .tvTextFieldControl(tvState)
       .border(
         width = 1.5.dp,
         color = borderColor,
@@ -451,18 +475,23 @@ private fun DashboardTile(
   val dark = androidx.compose.foundation.isSystemInDarkTheme()
   val interaction = remember { MutableInteractionSource() }
   val pressed by interaction.collectIsPressedAsState()
+  val isFocused by interaction.collectIsFocusedAsState()
   val scale by animateFloatAsState(
-    targetValue = if (pressed) 0.965f else 1f,
+    targetValue = when {
+      pressed -> 0.965f
+      isFocused -> 1.05f
+      else -> 1f
+    },
     animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
     label = "tilePress",
   )
   val tileCorner by animateDpAsState(
-    targetValue = if (pressed) SettingsTilePressedCorner else SettingsTileCorner,
+    targetValue = if (pressed || isFocused) SettingsTilePressedCorner else SettingsTileCorner,
     animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
     label = "tileCorner",
   )
   val iconCorner by animateDpAsState(
-    targetValue = if (pressed) 52.dp / 2 else SettingsIconBoxCorner,
+    targetValue = if (pressed || isFocused) 52.dp / 2 else SettingsIconBoxCorner,
     animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
     label = "tileIconCorner",
   )
@@ -482,14 +511,22 @@ private fun DashboardTile(
         },
       ),
     shape = tileShape,
-    colors = if (isGlass) glassCardColors() else CardDefaults.cardColors(
-      containerColor = scheme.surfaceContainer,
-    ),
-    border = if (isGlass) glassRimStroke(dark) else BorderStroke(
-      1.dp,
-      scheme.outlineVariant.copy(alpha = 0.45f),
-    ),
-    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    colors = if (isGlass) {
+      glassCardColors()
+    } else {
+      CardDefaults.cardColors(
+        containerColor = if (isFocused) scheme.surfaceContainerHighest else scheme.surfaceContainer,
+      )
+    },
+    border = when {
+      isFocused -> BorderStroke(2.5.dp, scheme.primary)
+      isGlass -> glassRimStroke(dark)
+      else -> BorderStroke(
+        1.dp,
+        scheme.outlineVariant.copy(alpha = 0.45f),
+      )
+    },
+    elevation = CardDefaults.cardElevation(defaultElevation = if (isFocused) 8.dp else 0.dp),
   ) {
     Column(
       modifier = Modifier.padding(18.dp),
@@ -508,13 +545,13 @@ private fun DashboardTile(
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)
-            .background(scheme.surfaceContainerHighest),
+            .background(if (isFocused) scheme.primary else scheme.surfaceContainerHighest),
           contentAlignment = Alignment.Center,
         ) {
           Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = null,
-            tint = scheme.onSurfaceVariant,
+            tint = if (isFocused) scheme.onPrimary else scheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
           )
         }

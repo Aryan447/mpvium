@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -76,6 +77,7 @@ object AppearancePreferencesScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        val isTv = LocalIsTv.current
         val preferences = koinInject<AppearancePreferences>()
         val browserPreferences = koinInject<BrowserPreferences>()
         val gesturePreferences = koinInject<GesturePreferences>()
@@ -226,45 +228,47 @@ object AppearancePreferencesScreen : Screen {
                                 enabled = darkMode != DarkMode.Light && appTheme != AppTheme.Glass
                             )
 
-                            PreferenceDivider()
+                            if (!isTv) {
+                                PreferenceDivider()
 
-                            // Floating pill navigation bar toggle
-                            val pillNavigationBar by preferences.pillNavigationBar.collectAsState()
-                            HapticSwitchPreference(
-                                value = pillNavigationBar,
-                                onValueChange = { newValue ->
-                                    preferences.pillNavigationBar.set(newValue)
-                                },
-                                icon = { PreferenceRowIcon(icon = Icons.Outlined.Smartphone) },
-                                title = { Text(text = stringResource(id = R.string.pref_appearance_pill_nav_title)) },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_pill_nav_summary),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                },
-                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.pill_nav"),
-                            )
+                                // Floating pill navigation bar toggle
+                                val pillNavigationBar by preferences.pillNavigationBar.collectAsState()
+                                HapticSwitchPreference(
+                                    value = pillNavigationBar,
+                                    onValueChange = { newValue ->
+                                        preferences.pillNavigationBar.set(newValue)
+                                    },
+                                    icon = { PreferenceRowIcon(icon = Icons.Outlined.Smartphone) },
+                                    title = { Text(text = stringResource(id = R.string.pref_appearance_pill_nav_title)) },
+                                    summary = {
+                                        Text(
+                                            text = stringResource(id = R.string.pref_appearance_pill_nav_summary),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    },
+                                    modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.pill_nav"),
+                                )
 
-                            PreferenceDivider()
+                                PreferenceDivider()
 
-                            // Bottom navigation tab labels toggle (issue #17)
-                            val showBottomNavLabels by preferences.showBottomNavLabels.collectAsState()
-                            HapticSwitchPreference(
-                                value = showBottomNavLabels,
-                                onValueChange = { newValue ->
-                                    preferences.showBottomNavLabels.set(newValue)
-                                },
-                                icon = { PreferenceRowIcon(icon = Icons.Outlined.TextFields) },
-                                title = { Text(text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_title)) },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_summary),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                },
-                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.bottom_nav_labels"),
-                            )
+                                // Bottom navigation tab labels toggle (issue #17)
+                                val showBottomNavLabels by preferences.showBottomNavLabels.collectAsState()
+                                HapticSwitchPreference(
+                                    value = showBottomNavLabels,
+                                    onValueChange = { newValue ->
+                                        preferences.showBottomNavLabels.set(newValue)
+                                    },
+                                    icon = { PreferenceRowIcon(icon = Icons.Outlined.TextFields) },
+                                    title = { Text(text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_title)) },
+                                    summary = {
+                                        Text(
+                                            text = stringResource(id = R.string.pref_appearance_show_bottom_nav_labels_summary),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    },
+                                    modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.bottom_nav_labels"),
+                                )
+                            }
                         }
                     }
 
@@ -477,26 +481,28 @@ object AppearancePreferencesScreen : Screen {
                                 },
                             )
 
-                            PreferenceDivider()
+                            if (!isTv) {
+                                PreferenceDivider()
 
-                            val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
-                            HapticSwitchPreference(
-                                value = tapThumbnailToSelect,
-                                onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
-                                icon = { PreferenceRowIcon(icon = Icons.Outlined.TouchApp) },
-                                title = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title),
-                                    )
-                                },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                },
-                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.tap_thumbnail_to_select"),
-                            )
+                                val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
+                                HapticSwitchPreference(
+                                    value = tapThumbnailToSelect,
+                                    onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
+                                    icon = { PreferenceRowIcon(icon = Icons.Outlined.TouchApp) },
+                                    title = {
+                                        Text(
+                                            text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title),
+                                        )
+                                    },
+                                    summary = {
+                                        Text(
+                                            text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    },
+                                    modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.tap_thumbnail_to_select"),
+                                )
+                            }
 
                             PreferenceDivider()
 

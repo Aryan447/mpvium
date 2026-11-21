@@ -344,6 +344,13 @@ class PlayerViewModel(
   private val _controlsShown = MutableStateFlow(false)
   val controlsShown: StateFlow<Boolean> = _controlsShown.asStateFlow()
 
+  private val _controlsInteractionTimestamp = MutableStateFlow(0L)
+  val controlsInteractionTimestamp: StateFlow<Long> = _controlsInteractionTimestamp.asStateFlow()
+
+  fun keepControlsAlive() {
+    _controlsInteractionTimestamp.value = android.os.SystemClock.uptimeMillis()
+  }
+
   private val _seekBarShown = MutableStateFlow(false)
   val seekBarShown: StateFlow<Boolean> = _seekBarShown.asStateFlow()
 

@@ -42,6 +42,7 @@ import app.aryan447.mpvium.ui.player.controls.ModernChrome
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 
 internal val transportShadow =
   Brush.radialGradient(
@@ -67,6 +68,7 @@ fun PlayerTransportButton(
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
   val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
+  val interactionSource = remember { MutableInteractionSource() }
   val contentColor =
     when {
       isModern -> ModernChrome.glyph
@@ -77,10 +79,16 @@ fun PlayerTransportButton(
     modifier =
       modifier
         .size(size)
+        .tvFocusHighlight(
+          shape = CircleShape,
+          interactionSource = interactionSource,
+          scale = 1.12f,
+          borderWidth = 2.dp,
+        )
         .clip(CircleShape)
         .clickable(
           enabled = enabled,
-          interactionSource = remember { MutableInteractionSource() },
+          interactionSource = interactionSource,
           indication = ripple(bounded = false, radius = size / 2),
           onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -144,6 +152,7 @@ fun PlayerPillButton(
   val haptic = LocalHapticFeedback.current
   val colors = LocalPlayerColors.current
   val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
+  val interactionSource = remember { MutableInteractionSource() }
   Surface(
     shape = RoundedCornerShape(50),
     color =
@@ -169,9 +178,16 @@ fun PlayerPillButton(
     modifier =
       modifier
         .height(height)
+        .tvFocusHighlight(
+          shape = RoundedCornerShape(50),
+          interactionSource = interactionSource,
+          scale = 1.05f,
+          borderWidth = 2.dp,
+        )
         .clip(RoundedCornerShape(50))
         .combinedClickable(
           enabled = enabled,
+          interactionSource = interactionSource,
           onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onClick()
@@ -223,6 +239,12 @@ fun PlayerPlayPauseButton(
     modifier =
       modifier
         .size(size)
+        .tvFocusHighlight(
+          shape = CircleShape,
+          interactionSource = interaction,
+          scale = 1.12f,
+          borderWidth = 2.5.dp,
+        )
         .clip(CircleShape)
         .clickable(
           interaction,

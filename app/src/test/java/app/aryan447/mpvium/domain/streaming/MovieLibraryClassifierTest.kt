@@ -344,4 +344,34 @@ class MovieLibraryClassifierTest {
       ),
     )
   }
+
+  @Test
+  fun landscapeDownloadUnderTwentyMinutes_onTv_staysMovie() {
+    assertEquals(
+      MOVIE,
+      MovieLibraryClassifier.classify(
+        fileName = "Big Buck Bunny.mp4",
+        folderPath = DOWNLOAD_FOLDER,
+        durationMs = 9 * MINUTE_MS + 56_000L,
+        width = 1920,
+        height = 1080,
+        isTv = true,
+      ),
+    )
+  }
+
+  @Test
+  fun veryShortDownloadUnderFiveMinutes_onTv_isShortVideo() {
+    assertEquals(
+      SHORT_VIDEO,
+      MovieLibraryClassifier.classify(
+        fileName = "Clip.mp4",
+        folderPath = DOWNLOAD_FOLDER,
+        durationMs = 3 * MINUTE_MS,
+        width = 1920,
+        height = 1080,
+        isTv = true,
+      ),
+    )
+  }
 }

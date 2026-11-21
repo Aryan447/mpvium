@@ -43,6 +43,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -70,6 +73,8 @@ object SettingsSearchScreen : Screen {
 
         var searchQuery by rememberSaveable { mutableStateOf("") }
         var focused by remember { mutableStateOf(false) }
+        val isTv = LocalIsTv.current
+        val tvState = rememberTvTextFieldState(isTv)
 
         val searchResults by remember(searchQuery) {
             derivedStateOf {
@@ -98,11 +103,13 @@ object SettingsSearchScreen : Screen {
                 TextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
+                    readOnly = tvState.readOnly,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                         .focusRequester(focusRequester)
                         .onFocusChanged { focused = it.isFocused }
+                        .tvTextFieldControl(tvState)
                         .border(
                             width = 1.5.dp,
                             color = if (focused || searchQuery.isNotEmpty()) {

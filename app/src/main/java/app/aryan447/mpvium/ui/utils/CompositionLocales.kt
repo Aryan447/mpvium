@@ -15,3 +15,9 @@ val LocalBackStack: ProvidableCompositionLocal<NavBackStack<Screen>> =
  */
 val LocalDetailPaneBack: ProvidableCompositionLocal<(() -> Unit)?> =
   compositionLocalOf { null }
+
+/**
+ * Indicates whether the app is currently running on an Android TV device.
+ */
+val LocalIsTv: ProvidableCompositionLocal<Boolean> =
+  compositionLocalOf { false }

@@ -1,15 +1,19 @@
 package app.aryan447.mpvium.ui.preferences
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,12 +29,14 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -65,7 +71,7 @@ fun <T> ExpressiveListPreference(
 
   Preference(
     title = title,
-    modifier = modifier,
+    modifier = modifier.preferenceItemFocusHighlight(),
     enabled = enabled,
     icon = icon,
     summary = summary,
@@ -87,7 +93,7 @@ fun <T> ExpressiveListPreference(
 /**
  * The picker sheet. Rows are grouped into one rounded surface so the list
  * reads as a connected choice group; tapping a row updates the preference and
- * dismisses the sheet.
+ * dismisses the sheet. Constrained on TV and tablets so choices don't stretch.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,50 +115,56 @@ private fun <T> ExpressiveChoiceSheet(
     dragHandle = { BottomSheetDefaults.DragHandle() },
     containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surfaceContainerLow),
   ) {
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp)
-        .verticalScroll(rememberScrollState()),
+    Box(
+      modifier = Modifier.fillMaxWidth(),
+      contentAlignment = Alignment.Center,
     ) {
-      ProvideTextStyle(
-        value = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
-      ) {
-        Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        ) {
-          title()
-        }
-      }
-
       Column(
         modifier = Modifier
           .fillMaxWidth()
-          .clip(SettingsCardShape)
-          .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-          .selectableGroup(),
+          .widthIn(max = 640.dp)
+          .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp)
+          .verticalScroll(rememberScrollState()),
       ) {
-        values.forEachIndexed { index, option ->
-          ExpressiveChoiceRow(
-            selected = option == value,
-            text = valueToText(option),
-            onClick = {
-              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-              onValueChange(option)
-              scope.launch {
-                sheetState.hide()
-                onDismiss()
-              }
-            },
-          )
-          if (index < values.lastIndex) {
-            HorizontalDivider(
-              modifier = Modifier.padding(start = 20.dp),
-              thickness = 0.75.dp,
-              color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+        ProvideTextStyle(
+          value = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+        ) {
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 4.dp, vertical = 8.dp),
+          ) {
+            title()
+          }
+        }
+
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(SettingsCardShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .selectableGroup(),
+        ) {
+          values.forEachIndexed { index, option ->
+            ExpressiveChoiceRow(
+              selected = option == value,
+              text = valueToText(option),
+              onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onValueChange(option)
+                scope.launch {
+                  sheetState.hide()
+                  onDismiss()
+                }
+              },
             )
+            if (index < values.lastIndex) {
+              HorizontalDivider(
+                modifier = Modifier.padding(start = 20.dp),
+                thickness = 0.75.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+              )
+            }
           }
         }
       }
@@ -168,13 +180,22 @@ private fun ExpressiveChoiceRow(
   onClick: () -> Unit,
 ) {
   val scheme = MaterialTheme.colorScheme
+  var isFocused by remember { mutableStateOf(false) }
   val containerColor by animateColorAsState(
-    targetValue = if (selected) scheme.secondaryContainer else Color.Transparent,
+    targetValue = when {
+      isFocused -> scheme.primaryContainer
+      selected -> scheme.secondaryContainer
+      else -> Color.Transparent
+    },
     animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
     label = "choiceRowContainer",
   )
   val contentColor by animateColorAsState(
-    targetValue = if (selected) scheme.onSecondaryContainer else scheme.onSurface,
+    targetValue = when {
+      isFocused -> scheme.onPrimaryContainer
+      selected -> scheme.onSecondaryContainer
+      else -> scheme.onSurface
+    },
     animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
     label = "choiceRowContent",
   )
@@ -182,7 +203,15 @@ private fun ExpressiveChoiceRow(
   Row(
     modifier = Modifier
       .fillMaxWidth()
+      .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
       .background(containerColor)
+      .then(
+        if (isFocused) {
+          Modifier.border(BorderStroke(2.dp, scheme.primary), RoundedCornerShape(12.dp))
+        } else {
+          Modifier
+        }
+      )
       .selectable(
         selected = selected,
         onClick = onClick,

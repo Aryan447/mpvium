@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -37,6 +38,7 @@ import app.aryan447.mpvium.ui.theme.glassFrostColor
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.theme.glassRimBrush
 import app.aryan447.mpvium.ui.theme.glassSheen
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -129,13 +131,21 @@ fun ContinueWatchingCard(
   val haptic = LocalHapticFeedback.current
   var showMenu by remember { mutableStateOf(false) }
   val hasMenu = onRemove != null || onMarkAs != null
+  val interactionSource = remember { MutableInteractionSource() }
 
   Box(modifier = modifier.width(cardWidth)) {
     Column(
       modifier = Modifier
         .fillMaxWidth()
+        .tvFocusHighlight(
+          shape = RoundedCornerShape(14.dp),
+          interactionSource = interactionSource,
+          scale = 1.05f,
+        )
         .clip(RoundedCornerShape(14.dp))
         .combinedClickable(
+          interactionSource = interactionSource,
+          indication = null,
           onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onClick()

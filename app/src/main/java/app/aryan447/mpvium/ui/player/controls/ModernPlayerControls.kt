@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.player.controls
 
+import android.view.KeyEvent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
@@ -7,6 +8,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,9 +21,20 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -183,6 +196,7 @@ fun ModernPlayerControls(
   currentZoom: Float = 1f,
   aspect: VideoAspect = VideoAspect.Fit,
   decoder: app.aryan447.mpvium.ui.player.Decoder = app.aryan447.mpvium.ui.player.Decoder.SW,
+  playPauseFocusRequester: FocusRequester? = null,
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
@@ -253,39 +267,23 @@ fun ModernPlayerControls(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
           ) {
             // Close Button (✕)
-            Icon(
-              imageVector = Icons.Default.Close,
+            ModernActionIconButton(
+              icon = Icons.Default.Close,
               contentDescription = "Close",
-              tint = Color.White,
-              modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .clickable(
-                  interactionSource = remember { MutableInteractionSource() },
-                  indication = ripple(bounded = true, radius = 18.dp),
-                ) {
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  onBackPress()
-                },
+              onClick = {
+                resetControlsTimestamp()
+                onBackPress()
+              },
             )
 
             // PiP Button
-            Icon(
-              imageVector = Icons.Default.PictureInPictureAlt,
+            ModernActionIconButton(
+              icon = Icons.Default.PictureInPictureAlt,
               contentDescription = "Picture in Picture",
-              tint = Color.White,
-              modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .clickable(
-                  interactionSource = remember { MutableInteractionSource() },
-                  indication = ripple(bounded = true, radius = 18.dp),
-                ) {
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  activity.enterPipModeHidingOverlay()
-                },
+              onClick = {
+                resetControlsTimestamp()
+                activity.enterPipModeHidingOverlay()
+              },
             )
           }
         }
@@ -329,6 +327,7 @@ fun ModernPlayerControls(
         surfaceColor = surfaceColor,
         borderStroke = borderStroke,
         showBackground = showButtonsBackground,
+        playPauseFocusRequester = playPauseFocusRequester,
       )
     }
 
@@ -1030,9 +1029,35 @@ fun ModernCenterTransportControls(
   surfaceColor: Color,
   borderStroke: BorderStroke,
   showBackground: Boolean = false,
+  playPauseFocusRequester: FocusRequester? = null,
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
+  val primary = MaterialTheme.colorScheme.primary
+
+  val rewindInteraction = remember { MutableInteractionSource() }
+  val isRewindFocused by rewindInteraction.collectIsFocusedAsState()
+  val rewindScale by animateFloatAsState(
+    targetValue = if (isRewindFocused) 1.12f else 1f,
+    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+    label = "rewindFocusScale",
+  )
+
+  val playPauseInteraction = remember { MutableInteractionSource() }
+  val isPlayPauseFocused by playPauseInteraction.collectIsFocusedAsState()
+  val playPauseScale by animateFloatAsState(
+    targetValue = if (isPlayPauseFocused) 1.12f else 1f,
+    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+    label = "playPauseFocusScale",
+  )
+
+  val forwardInteraction = remember { MutableInteractionSource() }
+  val isForwardFocused by forwardInteraction.collectIsFocusedAsState()
+  val forwardScale by animateFloatAsState(
+    targetValue = if (isForwardFocused) 1.12f else 1f,
+    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+    label = "forwardFocusScale",
+  )
 
   Row(
     modifier = modifier,
@@ -1043,9 +1068,14 @@ fun ModernCenterTransportControls(
     Surface(
       modifier = Modifier
         .size(52.dp)
+        .graphicsLayer {
+          scaleX = rewindScale
+          scaleY = rewindScale
+        }
         .clip(CircleShape)
+        .focusable(interactionSource = rewindInteraction)
         .clickable(
-          interactionSource = remember { MutableInteractionSource() },
+          interactionSource = rewindInteraction,
           indication = ripple(bounded = true, radius = 26.dp),
           onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1053,15 +1083,16 @@ fun ModernCenterTransportControls(
           },
         )
         .then(
-          if (!showBackground) {
-            Modifier.background(brush = transportShadow, shape = CircleShape)
+          if (isRewindFocused) {
+            Modifier.border(BorderStroke(2.5.dp, primary), CircleShape)
+          } else if (showBackground) {
+            Modifier.border(borderStroke, CircleShape)
           } else {
-            Modifier
-          },
+            Modifier.background(brush = transportShadow, shape = CircleShape)
+          }
         ),
       shape = CircleShape,
-      color = if (showBackground) surfaceColor else Color.Transparent,
-      border = if (showBackground) borderStroke else null,
+      color = if (isRewindFocused) primary.copy(alpha = 0.25f) else if (showBackground) surfaceColor else Color.Transparent,
     ) {
       Box(contentAlignment = Alignment.Center) {
         Icon(
@@ -1077,9 +1108,15 @@ fun ModernCenterTransportControls(
     Surface(
       modifier = Modifier
         .size(68.dp)
+        .graphicsLayer {
+          scaleX = playPauseScale
+          scaleY = playPauseScale
+        }
+        .then(if (playPauseFocusRequester != null) Modifier.focusRequester(playPauseFocusRequester) else Modifier)
         .clip(CircleShape)
+        .focusable(interactionSource = playPauseInteraction)
         .clickable(
-          interactionSource = remember { MutableInteractionSource() },
+          interactionSource = playPauseInteraction,
           indication = ripple(bounded = true, radius = 34.dp),
           onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1087,15 +1124,16 @@ fun ModernCenterTransportControls(
           },
         )
         .then(
-          if (!showBackground) {
-            Modifier.background(brush = transportShadow, shape = CircleShape)
+          if (isPlayPauseFocused) {
+            Modifier.border(BorderStroke(2.5.dp, primary), CircleShape)
+          } else if (showBackground) {
+            Modifier.border(borderStroke, CircleShape)
           } else {
-            Modifier
-          },
+            Modifier.background(brush = transportShadow, shape = CircleShape)
+          }
         ),
       shape = CircleShape,
-      color = if (showBackground) surfaceColor else Color.Transparent,
-      border = if (showBackground) borderStroke else null,
+      color = if (isPlayPauseFocused) primary.copy(alpha = 0.25f) else if (showBackground) surfaceColor else Color.Transparent,
     ) {
       Box(contentAlignment = Alignment.Center) {
         Icon(
@@ -1111,9 +1149,14 @@ fun ModernCenterTransportControls(
     Surface(
       modifier = Modifier
         .size(52.dp)
+        .graphicsLayer {
+          scaleX = forwardScale
+          scaleY = forwardScale
+        }
         .clip(CircleShape)
+        .focusable(interactionSource = forwardInteraction)
         .clickable(
-          interactionSource = remember { MutableInteractionSource() },
+          interactionSource = forwardInteraction,
           indication = ripple(bounded = true, radius = 26.dp),
           onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1121,15 +1164,16 @@ fun ModernCenterTransportControls(
           },
         )
         .then(
-          if (!showBackground) {
-            Modifier.background(brush = transportShadow, shape = CircleShape)
+          if (isForwardFocused) {
+            Modifier.border(BorderStroke(2.5.dp, primary), CircleShape)
+          } else if (showBackground) {
+            Modifier.border(borderStroke, CircleShape)
           } else {
-            Modifier
-          },
+            Modifier.background(brush = transportShadow, shape = CircleShape)
+          }
         ),
       shape = CircleShape,
-      color = if (showBackground) surfaceColor else Color.Transparent,
-      border = if (showBackground) borderStroke else null,
+      color = if (isForwardFocused) primary.copy(alpha = 0.25f) else if (showBackground) surfaceColor else Color.Transparent,
     ) {
       Box(contentAlignment = Alignment.Center) {
         Icon(
@@ -1140,6 +1184,64 @@ fun ModernCenterTransportControls(
         )
       }
     }
+  }
+}
+
+/**
+ * Action icon button with focus ring and scale animation for remote D-Pad navigation.
+ */
+@Composable
+fun ModernActionIconButton(
+  icon: ImageVector,
+  contentDescription: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  iconSize: androidx.compose.ui.unit.Dp = 20.dp,
+  buttonSize: androidx.compose.ui.unit.Dp = 30.dp,
+) {
+  val haptic = LocalHapticFeedback.current
+  val interaction = remember { MutableInteractionSource() }
+  val isFocused by interaction.collectIsFocusedAsState()
+  val primary = MaterialTheme.colorScheme.primary
+  val scale by animateFloatAsState(
+    targetValue = if (isFocused) 1.18f else 1f,
+    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+    label = "actionBtnScale",
+  )
+  Box(
+    modifier = modifier
+      .size(buttonSize)
+      .graphicsLayer {
+        scaleX = scale
+        scaleY = scale
+      }
+      .clip(CircleShape)
+      .focusable(interactionSource = interaction)
+      .clickable(
+        interactionSource = interaction,
+        indication = ripple(bounded = true, radius = buttonSize / 2),
+        onClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+          onClick()
+        },
+      )
+      .then(
+        if (isFocused) {
+          Modifier
+            .background(primary.copy(alpha = 0.35f), CircleShape)
+            .border(BorderStroke(2.dp, primary), CircleShape)
+        } else {
+          Modifier
+        }
+      ),
+    contentAlignment = Alignment.Center,
+  ) {
+    Icon(
+      imageVector = icon,
+      contentDescription = contentDescription,
+      tint = Color.White,
+      modifier = Modifier.size(iconSize),
+    )
   }
 }
 
@@ -1191,85 +1293,41 @@ fun ModernBottomActionsPill(
     border = borderStroke,
   ) {
     Row(
-      modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+      modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
       verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(14.dp),
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
       displayButtons.forEach { button ->
         when (button) {
           PlayerButton.SUBTITLES -> {
-            Icon(
-              imageVector = Icons.Default.Subtitles,
+            ModernActionIconButton(
+              icon = Icons.Default.Subtitles,
               contentDescription = "Subtitles",
-              tint = Color.White,
-              modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .clickable(
-                  interactionSource = remember { MutableInteractionSource() },
-                  indication = ripple(bounded = true, radius = 18.dp),
-                  onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onOpenSubtitles()
-                  },
-                ),
+              onClick = onOpenSubtitles,
             )
           }
 
           PlayerButton.AUDIO_TRACK -> {
-            Icon(
-              imageVector = Icons.Outlined.GraphicEq,
+            ModernActionIconButton(
+              icon = Icons.Outlined.GraphicEq,
               contentDescription = "Audio Tracks",
-              tint = Color.White,
-              modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .clickable(
-                  interactionSource = remember { MutableInteractionSource() },
-                  indication = ripple(bounded = true, radius = 18.dp),
-                  onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onOpenAudio()
-                  },
-                ),
+              onClick = onOpenAudio,
             )
           }
 
           PlayerButton.EXPLAIN -> {
-            Icon(
-              imageVector = Icons.Outlined.Translate,
+            ModernActionIconButton(
+              icon = Icons.Outlined.Translate,
               contentDescription = "Explain",
-              tint = Color.White,
-              modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .clickable(
-                  interactionSource = remember { MutableInteractionSource() },
-                  indication = ripple(bounded = true, radius = 18.dp),
-                  onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onOpenExplain()
-                  },
-                ),
+              onClick = onOpenExplain,
             )
           }
 
           PlayerButton.MORE_OPTIONS -> {
-            Icon(
-              imageVector = Icons.Outlined.MoreVert,
+            ModernActionIconButton(
+              icon = Icons.Outlined.MoreVert,
               contentDescription = "Menu and More Options",
-              tint = Color.White,
-              modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .clickable(
-                  interactionSource = remember { MutableInteractionSource() },
-                  indication = ripple(bounded = true, radius = 18.dp),
-                  onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onOpenMore()
-                  },
-                ),
+              onClick = onOpenMore,
             )
           }
 
@@ -1303,21 +1361,10 @@ fun ModernBottomActionsPill(
                 buttonSize = 30.dp,
               )
             } else {
-              Icon(
-                imageVector = button.icon,
+              ModernActionIconButton(
+                icon = button.icon,
                 contentDescription = button.name,
-                tint = Color.White,
-                modifier = Modifier
-                  .size(20.dp)
-                  .clip(CircleShape)
-                  .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(bounded = true, radius = 18.dp),
-                    onClick = {
-                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                      onOpenMore()
-                    },
-                  ),
+                onClick = onOpenMore,
               )
             }
           }
@@ -1515,12 +1562,48 @@ fun ModernSeekbarTrack(
   }
 
   val themePrimary = MaterialTheme.colorScheme.primary
+  val seekbarInteraction = remember { MutableInteractionSource() }
+  val isSeekbarFocused by seekbarInteraction.collectIsFocusedAsState()
 
   Box(
     modifier = modifier
       .fillMaxWidth()
       .height(if (isWavy) 30.dp else 24.dp)
       .onSizeChanged { trackWidthPx = it.width }
+      .clip(RoundedCornerShape(12.dp))
+      .focusable(interactionSource = seekbarInteraction)
+      .then(
+        if (isSeekbarFocused) {
+          Modifier.border(BorderStroke(2.dp, themePrimary.copy(alpha = 0.85f)), RoundedCornerShape(12.dp))
+        } else {
+          Modifier
+        }
+      )
+      .onKeyEvent { keyEvent ->
+        if (keyEvent.type == KeyEventType.KeyDown) {
+          val currDuration = latestDuration
+          val currPosition = latestPosition
+          when (keyEvent.key) {
+            Key.DirectionLeft -> {
+              if (currDuration > 0f) {
+                val step = maxOf(5f, currDuration * 0.01f).coerceAtMost(10f)
+                val newPos = (currPosition - step).coerceAtLeast(0f)
+                latestOnSeekTo(newPos, false)
+                true
+              } else false
+            }
+            Key.DirectionRight -> {
+              if (currDuration > 0f) {
+                val step = maxOf(5f, currDuration * 0.01f).coerceAtMost(10f)
+                val newPos = (currPosition + step).coerceAtMost(currDuration)
+                latestOnSeekTo(newPos, false)
+                true
+              } else false
+            }
+            else -> false
+          }
+        } else false
+      }
       .pointerInput(Unit) {
         detectTapGestures(
           onTap = { offset ->
@@ -1712,7 +1795,7 @@ fun ModernSeekbarTrack(
         )
 
         // 5. Thumb indicator
-        if (isDragging && playedWidth > 0.5f) {
+        if ((isDragging || isSeekbarFocused) && playedWidth > 0.5f) {
           drawCircle(
             color = Color.White,
             radius = (strokeWidth / 2f) + 3.dp.toPx(),
@@ -1785,8 +1868,8 @@ fun ModernSeekbarTrack(
           }
         }
 
-        // 5. Thumb indicator when dragging
-        if (isDragging && playedWidth > 0.5f) {
+        // 5. Thumb indicator when dragging or focused
+        if ((isDragging || isSeekbarFocused) && playedWidth > 0.5f) {
           drawCircle(
             color = Color.White,
             radius = (h / 2f) + 2.5.dp.toPx(),
