@@ -6,6 +6,7 @@
 
 ### Added
 
+- mpv.conf ownership in Settings → Advanced lets you choose which mpv option groups your mpv.conf controls instead of the app.
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
 - Holding any custom theme in the theme picker allows editing its colors or deleting it.
 - The new r/mpvium subreddit joins Discord and Telegram in About and on the website.
