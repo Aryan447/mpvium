@@ -110,8 +110,18 @@ class MPVView(
     }
 
     // Initial decoder from settings. HW falls back to SW; HW+ also tries direct output first.
-    MPVLib.setOptionString("hwdec", decoderPreferences.defaultDecoder.get().defaultHwdec)
-    MPVLib.setOptionString("hwdec-codecs", "all")
+    if (app.aryan447.mpvium.utils.DeviceUtils.isTv(context)) {
+      val initialDecoder = decoderPreferences.defaultDecoder.get()
+      if (initialDecoder == Decoder.SW) {
+        MPVLib.setOptionString("hwdec", "no")
+      } else {
+        MPVLib.setOptionString("hwdec", initialDecoder.defaultHwdec)
+        MPVLib.setOptionString("hwdec-codecs", "all")
+      }
+    } else {
+      MPVLib.setOptionString("hwdec", decoderPreferences.defaultDecoder.get().defaultHwdec)
+      MPVLib.setOptionString("hwdec-codecs", "all")
+    }
 
     if (decoderPreferences.useYUV420P.get()) {
       MPVLib.setOptionString("vf", "format=yuv420p")

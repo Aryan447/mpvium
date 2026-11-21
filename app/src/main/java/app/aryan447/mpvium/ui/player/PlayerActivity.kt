@@ -47,6 +47,7 @@ import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.DecoderPreferences
 import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
@@ -164,6 +165,11 @@ class PlayerActivity :
    * Preferences for appearance settings.
    */
   private val appearancePreferences: AppearancePreferences by inject()
+
+  /**
+   * Preferences for decoder settings (hardware/software).
+   */
+  private val decoderPreferences: DecoderPreferences by inject()
 
   /**
    * Manager for file operations.
@@ -466,6 +472,7 @@ class PlayerActivity :
     }
 
     getPlayableUri(intent)?.let { uri ->
+      applyDecoderOptionsBeforeLoadfile()
       applySeekCacheOptionsBeforeLoadfile(uri)
       player.playFile(uri)
     }
@@ -1245,6 +1252,7 @@ class PlayerActivity :
   override fun onResume() {
     super.onResume()
     updateVolume()
+    syncDecoderPreferenceIfChanged()
   }
 
   /**
@@ -1863,6 +1871,12 @@ class PlayerActivity :
 
     // Start media notification service (like YouTube - always show notification)
     startBackgroundPlayback()
+
+    val configuredDecoder = decoderPreferences.defaultDecoder.get()
+    val activeHwdec = MPVLib.getPropertyString("hwdec")
+    val hwdecCurrent = MPVLib.getPropertyString("hwdec-current")
+    val videoCodec = MPVLib.getPropertyString("video-codec")
+    Log.i(TAG, "Playback started - Decoder Diagnostics: configured=${configuredDecoder.name}, hwdec=$activeHwdec, hwdec-current=$hwdecCurrent, video-codec=$videoCodec")
 
     // Reset AB loop values when video changes
     viewModel.clearABLoop()
@@ -2696,6 +2710,7 @@ class PlayerActivity :
 
     // Load the new file
     getPlayableUri(intent)?.let { uri ->
+      applyDecoderOptionsBeforeLoadfile()
       applySeekCacheOptionsBeforeLoadfile(uri)
       // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
       lifecycleScope.launch(Dispatchers.Default) {
@@ -3556,6 +3571,7 @@ class PlayerActivity :
 
     // Load the new video
     // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
+    applyDecoderOptionsBeforeLoadfile()
     applySeekCacheOptionsBeforeLoadfile(playableUri)
     lifecycleScope.launch(Dispatchers.Default) {
       MPVLib.command("loadfile", playableUri)
@@ -3765,6 +3781,60 @@ class PlayerActivity :
       "${fileName}_${uri.toString().hashCode()}"
     } else {
       fileName
+    }
+  }
+
+  /**
+   * Applies decoder preferences (HW/SW) to MPV before loading a video file on TV devices.
+   * This guarantees that any changes made in Settings or previously are
+   * strictly applied to the player instance, even when PlayerActivity is reused
+   * via singleTask / onNewIntent. Non-TV devices preserve their standard behavior.
+   */
+  internal fun applyDecoderOptionsBeforeLoadfile() {
+    if (!app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) return
+    val configuredDecoder = decoderPreferences.defaultDecoder.get()
+    if (configuredDecoder == Decoder.SW) {
+      MPVLib.setOptionString("hwdec", "no")
+      MPVLib.setPropertyString("hwdec", "no")
+      MPVLib.setPropertyString("hwdec-codecs", "")
+    } else {
+      MPVLib.setOptionString("hwdec", configuredDecoder.defaultHwdec)
+      MPVLib.setPropertyString("hwdec", configuredDecoder.defaultHwdec)
+      MPVLib.setPropertyString("hwdec-codecs", "all")
+    }
+    Log.i(TAG, "Applied TV decoder options before loadfile: ${configuredDecoder.name} (hwdec=${configuredDecoder.defaultHwdec})")
+  }
+
+  internal fun applyDecoder(decoder: Decoder) {
+    if (app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) {
+      decoderPreferences.defaultDecoder.set(decoder)
+      if (decoder == Decoder.SW) {
+        MPVLib.setPropertyString("hwdec", "no")
+        MPVLib.setPropertyString("hwdec-codecs", "")
+      } else {
+        MPVLib.setPropertyString("hwdec", decoder.value)
+        MPVLib.setPropertyString("hwdec-codecs", "all")
+      }
+      // Re-initialize video track to drop MediaCodec and immediately bind FFmpeg software decoder (or vice-versa)
+      val currentVid = MPVLib.getPropertyInt("vid") ?: 1
+      if (currentVid > 0) {
+        MPVLib.setPropertyString("vid", "no")
+        MPVLib.setPropertyInt("vid", currentVid)
+      }
+      Log.i(TAG, "Switched TV decoder to ${decoder.name} (hwdec=${decoder.value}) and reloaded video track $currentVid")
+    } else {
+      MPVLib.setPropertyString("hwdec", decoder.value)
+    }
+  }
+
+  private fun syncDecoderPreferenceIfChanged() {
+    if (!app.aryan447.mpvium.utils.DeviceUtils.isTv(this) || !mpvInitialized || !isReady) return
+    val configured = decoderPreferences.defaultDecoder.get()
+    val currentHwdec = MPVLib.getPropertyString("hwdec")
+    val targetHwdec = if (configured == Decoder.SW) "no" else configured.defaultHwdec
+    if (currentHwdec != targetHwdec) {
+      Log.i(TAG, "Syncing TV decoder preference onResume: current=$currentHwdec -> target=$targetHwdec")
+      applyDecoder(configured)
     }
   }
 

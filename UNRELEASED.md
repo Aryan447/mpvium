@@ -22,6 +22,7 @@
 ### Fixed
 
 - Downloaded and sideloaded media on Android TV is no longer suppressed from the Titles library by mobile transient folder thresholds.
+- Software decoder selection strictly disables hardware decoding across playback reloads, playlist items, and singleTask session switches.
 - Main navigation rail on TV uses clean native Material 3 indicator pills without distorted selection outlines.
 - Modern player layout custom action buttons scale consistently with built-in controls.
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.
