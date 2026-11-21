@@ -18,9 +18,12 @@
 
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.
 - Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.
+- Phone-specific settings including touch gestures, system status bar, portrait controls, and mobile navigation pill are hidden on Android TV.
 
 ### Fixed
 
+- Subtitles and audio track player sheets are fully remote-navigable on Android TV, with auto-focused actions, clear D-Pad focus rings, and no background key leaks.
+- Text fields on Android TV no longer summon the on-screen keyboard automatically when D-Pad focus moves over them; pressing Enter or Select explicitly opens input.
 - Downloaded and sideloaded media on Android TV is no longer suppressed from the Titles library by mobile transient folder thresholds.
 - Software decoder selection strictly disables hardware decoding across playback reloads, playlist items, and singleTask session switches.
 - Main navigation rail on TV uses clean native Material 3 indicator pills without distorted selection outlines.

@@ -47,6 +47,9 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.database.entities.PlaylistEntity
 import app.aryan447.mpvium.database.repository.PlaylistRepository
 import app.aryan447.mpvium.domain.media.model.Video
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import java.text.SimpleDateFormat
@@ -304,6 +307,8 @@ private fun CreatePlaylistDialog(
   onConfirm: (String) -> Unit,
 ) {
   var playlistName by remember { mutableStateOf("") }
+  val isTv = LocalIsTv.current
+  val tvState = rememberTvTextFieldState(isTv)
 
   AlertDialog(
     onDismissRequest = onDismiss,
@@ -318,9 +323,10 @@ private fun CreatePlaylistDialog(
       OutlinedTextField(
         value = playlistName,
         onValueChange = { playlistName = it },
+        readOnly = tvState.readOnly,
         label = { Text("Playlist Name") },
         singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().tvTextFieldControl(tvState),
         shape = MaterialTheme.shapes.medium,
       )
     },

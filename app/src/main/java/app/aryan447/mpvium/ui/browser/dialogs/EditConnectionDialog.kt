@@ -40,6 +40,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkProtocol
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +67,13 @@ fun EditConnectionSheet(
   var isAnonymous by remember(connection.id) { mutableStateOf(connection.isAnonymous) }
   var useHttps by remember(connection.id) { mutableStateOf(connection.useHttps) }
   var protocolMenuExpanded by remember { mutableStateOf(false) }
+  val isTv = LocalIsTv.current
+  val nameTvState = rememberTvTextFieldState(isTv)
+  val hostTvState = rememberTvTextFieldState(isTv)
+  val portTvState = rememberTvTextFieldState(isTv)
+  val pathTvState = rememberTvTextFieldState(isTv)
+  val usernameTvState = rememberTvTextFieldState(isTv)
+  val passwordTvState = rememberTvTextFieldState(isTv)
 
   val hasSavedPassword = connection.password.isNotEmpty() && !connection.isAnonymous
 
@@ -114,8 +124,9 @@ fun EditConnectionSheet(
               OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
+                readOnly = nameTvState.readOnly,
                 label = { Text("Name", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.weight(0.60f),
+                modifier = Modifier.weight(0.60f).tvTextFieldControl(nameTvState),
                 singleLine = true,
               )
 
@@ -158,8 +169,9 @@ fun EditConnectionSheet(
             OutlinedTextField(
               value = host,
               onValueChange = { host = it },
+              readOnly = hostTvState.readOnly,
               label = { Text("Host/IP Address", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-              modifier = Modifier.fillMaxWidth(),
+              modifier = Modifier.fillMaxWidth().tvTextFieldControl(hostTvState),
               singleLine = true,
               placeholder = { Text("192.168.1.100", maxLines = 1, overflow = TextOverflow.Ellipsis) },
             )
@@ -173,8 +185,9 @@ fun EditConnectionSheet(
               OutlinedTextField(
                 value = port,
                 onValueChange = { port = it },
+                readOnly = portTvState.readOnly,
                 label = { Text("Port", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.weight(0.3f),
+                modifier = Modifier.weight(0.3f).tvTextFieldControl(portTvState),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
               )
@@ -183,8 +196,9 @@ fun EditConnectionSheet(
               OutlinedTextField(
                 value = path,
                 onValueChange = { path = it },
+                readOnly = pathTvState.readOnly,
                 label = { Text("Path", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.weight(0.7f),
+                modifier = Modifier.weight(0.7f).tvTextFieldControl(pathTvState),
                 singleLine = true,
                 placeholder = { Text("/", maxLines = 1, overflow = TextOverflow.Ellipsis) },
               )
@@ -235,8 +249,9 @@ fun EditConnectionSheet(
           OutlinedTextField(
             value = username,
             onValueChange = { username = it },
+            readOnly = usernameTvState.readOnly,
             label = { Text("Username", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            modifier = Modifier.weight(0.50f),
+            modifier = Modifier.weight(0.50f).tvTextFieldControl(usernameTvState),
             singleLine = true,
             enabled = !isAnonymous,
           )
@@ -245,8 +260,9 @@ fun EditConnectionSheet(
           OutlinedTextField(
             value = password,
             onValueChange = { password = it },
+            readOnly = passwordTvState.readOnly,
             label = { Text(if (hasSavedPassword) "New Password" else "Password", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            modifier = Modifier.weight(0.50f),
+            modifier = Modifier.weight(0.50f).tvTextFieldControl(passwordTvState),
             singleLine = true,
             enabled = !isAnonymous,
             visualTransformation = PasswordVisualTransformation(),

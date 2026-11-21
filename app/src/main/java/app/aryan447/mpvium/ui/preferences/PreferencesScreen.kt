@@ -48,6 +48,9 @@ import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Folder
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 import androidx.compose.material.icons.outlined.Gesture
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Memory
@@ -227,9 +230,9 @@ object PreferencesScreen : Screen {
 }
 
 @Composable
-private fun rememberDashboardSections(): List<DashboardSection> {
+private fun rememberDashboardSections(isTv: Boolean = LocalIsTv.current): List<DashboardSection> {
   val scheme = MaterialTheme.colorScheme
-  return remember(scheme) {
+  return remember(scheme, isTv) {
     listOf(
       DashboardSection(
         title = "Personalize",
@@ -254,24 +257,30 @@ private fun rememberDashboardSections(): List<DashboardSection> {
       ),
       DashboardSection(
         title = "Playback",
-        entries = listOf(
-          DashboardEntry(
-            icon = Icons.Outlined.PlayCircle,
-            titleRes = R.string.pref_player,
-            summaryRes = R.string.pref_player_summary,
-            screen = PlayerPreferencesScreen,
-            container = { scheme.tertiaryContainer },
-            content = { scheme.onTertiaryContainer },
-          ),
-          DashboardEntry(
-            icon = Icons.Outlined.Gesture,
-            titleRes = R.string.pref_gesture,
-            summaryRes = R.string.pref_gesture_summary,
-            screen = GesturePreferencesScreen,
-            container = { scheme.primaryContainer },
-            content = { scheme.onPrimaryContainer },
-          ),
-        ),
+        entries = buildList {
+          add(
+            DashboardEntry(
+              icon = Icons.Outlined.PlayCircle,
+              titleRes = R.string.pref_player,
+              summaryRes = R.string.pref_player_summary,
+              screen = PlayerPreferencesScreen,
+              container = { scheme.tertiaryContainer },
+              content = { scheme.onTertiaryContainer },
+            ),
+          )
+          if (!isTv) {
+            add(
+              DashboardEntry(
+                icon = Icons.Outlined.Gesture,
+                titleRes = R.string.pref_gesture,
+                summaryRes = R.string.pref_gesture_summary,
+                screen = GesturePreferencesScreen,
+                container = { scheme.primaryContainer },
+                content = { scheme.onPrimaryContainer },
+              ),
+            )
+          }
+        },
       ),
       DashboardSection(
         title = "Library & Media",
@@ -355,12 +364,16 @@ private fun DashboardSearchField(
     animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
     label = "searchLeadingIcon",
   )
+  val isTv = LocalIsTv.current
+  val tvState = rememberTvTextFieldState(isTv)
   TextField(
     value = query,
     onValueChange = onQueryChange,
+    readOnly = tvState.readOnly,
     modifier = modifier
       .fillMaxWidth()
       .onFocusChanged { focused = it.isFocused }
+      .tvTextFieldControl(tvState)
       .border(
         width = 1.5.dp,
         color = borderColor,

@@ -2991,7 +2991,9 @@ class PlayerActivity :
       }
 
       else -> {
-        event?.let { player.onKey(it) }
+        if (isNoSheetOpen) {
+          event?.let { player.onKey(it) }
+        }
         return super.onKeyDown(keyCode, event)
       }
     }
@@ -3008,6 +3010,19 @@ class PlayerActivity :
     keyCode: Int,
     event: KeyEvent?,
   ): Boolean {
+    val isNoSheetOpen = viewModel.sheetShown.value == Sheets.None && viewModel.panelShown.value == Panels.None
+    val areControlsVisible = viewModel.controlsShown.value
+    val isDpadKey = when (keyCode) {
+      KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+      KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+      KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER,
+      KeyEvent.KEYCODE_NUMPAD_ENTER -> true
+      else -> false
+    }
+    // Prevent key release from triggering mpv bindings (like seek 10 on RIGHT) while navigating sheets or controls
+    if (!isNoSheetOpen || (areControlsVisible && isDpadKey)) {
+      return super.onKeyUp(keyCode, event)
+    }
     event?.let {
       if (player.onKey(it)) return true
     }

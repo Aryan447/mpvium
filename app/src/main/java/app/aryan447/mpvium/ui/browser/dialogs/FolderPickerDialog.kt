@@ -44,6 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.utils.storage.StorageVolumeUtils
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 import java.io.File
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -391,6 +394,8 @@ private fun CreateFolderDialog(
 ) {
   var folderName by remember { mutableStateOf("") }
   var error by remember { mutableStateOf<String?>(null) }
+  val isTv = LocalIsTv.current
+  val tvState = rememberTvTextFieldState(isTv)
 
   AlertDialog(
     onDismissRequest = onDismiss,
@@ -409,10 +414,11 @@ private fun CreateFolderDialog(
             folderName = it
             error = null
           },
+          readOnly = tvState.readOnly,
           label = { Text("Folder name", fontWeight = FontWeight.Medium) },
           singleLine = true,
           isError = error != null,
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier.fillMaxWidth().tvTextFieldControl(tvState),
           colors =
             OutlinedTextFieldDefaults.colors(
               focusedBorderColor = MaterialTheme.colorScheme.primary,

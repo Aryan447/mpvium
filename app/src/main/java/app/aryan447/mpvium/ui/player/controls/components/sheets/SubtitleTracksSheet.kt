@@ -72,8 +72,9 @@ fun SubtitlesSheet(
   val isTv = LocalIsTv.current
   val initialFocusRequester = remember { FocusRequester() }
 
-  LaunchedEffect(Unit) {
+  LaunchedEffect(isTv) {
     if (isTv) {
+      kotlinx.coroutines.delay(100)
       try {
         initialFocusRequester.requestFocus()
       } catch (_: Exception) {}
@@ -225,10 +226,31 @@ fun SubtitleTrackRow(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
   ) {
-    Checkbox(checked = isSelected, onCheckedChange = { tickToggle() })
+    Checkbox(checked = isSelected, onCheckedChange = null)
     Text(title, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.weight(1f))
     if (isExternal) {
-      IconButton(onClick = onRemove) { Icon(Icons.Default.Delete, contentDescription = null) }
+      var isDeleteFocused by remember { mutableStateOf(false) }
+      val errorColor = MaterialTheme.colorScheme.error
+      IconButton(
+        onClick = onRemove,
+        modifier = Modifier
+          .onFocusChanged { isDeleteFocused = it.isFocused }
+          .clip(RoundedCornerShape(8.dp))
+          .background(if (isDeleteFocused) errorColor.copy(alpha = 0.25f) else Color.Transparent)
+          .then(
+            if (isDeleteFocused) {
+              Modifier.border(BorderStroke(2.dp, errorColor), RoundedCornerShape(8.dp))
+            } else {
+              Modifier
+            }
+          ),
+      ) {
+        Icon(
+          Icons.Default.Delete,
+          contentDescription = null,
+          tint = if (isDeleteFocused) errorColor else LocalContentColor.current,
+        )
+      }
     }
   }
 }

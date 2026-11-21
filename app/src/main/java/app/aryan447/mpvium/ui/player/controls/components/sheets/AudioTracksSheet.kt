@@ -67,8 +67,9 @@ fun AudioTracksSheet(
   val isTv = LocalIsTv.current
   val initialFocusRequester = remember { FocusRequester() }
 
-  LaunchedEffect(Unit) {
+  LaunchedEffect(isTv) {
     if (isTv) {
+      kotlinx.coroutines.delay(100)
       try {
         initialFocusRequester.requestFocus()
       } catch (_: Exception) {}
