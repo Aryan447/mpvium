@@ -87,6 +87,9 @@
   <string name="pref_appearance_show_network_thumbnails_title">Show network thumbnails (Experimental)</string>
   <string name="pref_appearance_show_network_thumbnails_summary">Generate thumbnails for network streams (May increase data usage on mobile networks)</string>
   <string name="pref_appearance_category_home">Home</string>
+  <string name="pref_appearance_show_speed_binge_title">Speed Binge</string>
+  <string name="pref_appearance_show_speed_binge_summary">Show the Speed Binge grid dial on Home</string>
+  <string name="speed_binge_title">Speed Binge</string>
   <string name="pref_appearance_show_featured_hero_title">Featured banner</string>
   <string name="pref_appearance_show_featured_hero_summary">Show the featured TV show banner at the top of Home</string>
   <string name="pref_appearance_home_sections_summary">Choose which sections appear on Home and change their order</string>
