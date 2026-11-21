@@ -7,7 +7,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -57,7 +56,6 @@ import app.aryan447.mpvium.ui.theme.glassRimBrush
 sealed interface SpeedBingeItem {
   val key: String
   val title: String
-  val subtitle: String?
   val posterUrl: String?
   val fallbackVideo: Video?
   val isSeries: Boolean
@@ -69,8 +67,7 @@ sealed interface SpeedBingeItem {
   ) : SpeedBingeItem {
     override val key: String get() = "speed_last_${continueItem.video.id}_${continueItem.lastPlayedTimestamp}"
     override val title: String get() = continueItem.title
-    override val subtitle: String get() = continueItem.subtitle
-    override val posterUrl: String? get() = continueItem.backdropUrl ?: continueItem.posterUrl
+    override val posterUrl: String? get() = continueItem.posterUrl ?: continueItem.backdropUrl
     override val fallbackVideo: Video get() = continueItem.video
     override val isSeries: Boolean get() = continueItem.isSeries
     override val progressPercentage: Float get() = continueItem.progressPercentage
@@ -82,7 +79,6 @@ sealed interface SpeedBingeItem {
   ) : SpeedBingeItem {
     override val key: String get() = "speed_series_${series.id}"
     override val title: String get() = series.title
-    override val subtitle: String get() = "${series.seasonCount}S • ${series.totalEpisodes}Ep"
     override val posterUrl: String? get() = series.posterUrl ?: series.backdropUrl
     override val fallbackVideo: Video? get() = series.seasons.values.firstOrNull()?.firstOrNull()?.video
     override val isSeries: Boolean get() = true
@@ -95,7 +91,6 @@ sealed interface SpeedBingeItem {
   ) : SpeedBingeItem {
     override val key: String get() = "speed_movie_${movie.video.id}"
     override val title: String get() = movie.title
-    override val subtitle: String? get() = movie.video.durationFormatted.takeIf { it != "0s" } ?: movie.year
     override val posterUrl: String? get() = movie.posterUrl ?: movie.backdropUrl
     override val fallbackVideo: Video get() = movie.video
     override val isSeries: Boolean get() = false
@@ -104,8 +99,8 @@ sealed interface SpeedBingeItem {
 }
 
 /**
- * Square rounded card component for the Speed Binge grid dial on Home.
- * Displays artwork, dark gradient scrim, title, metadata badge, and progress bar.
+ * Rectangular poster card component for the Speed Binge horizontal grid dial on Home.
+ * Displays vertical poster artwork, smooth dark gradient, clean title, and bottom progress bar.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -123,15 +118,15 @@ fun SpeedBingeCard(
 
   Box(
     modifier = modifier
-      .aspectRatio(1f)
-      .clip(RoundedCornerShape(16.dp))
+      .aspectRatio(2f / 3f)
+      .clip(RoundedCornerShape(12.dp))
       .background(MaterialTheme.colorScheme.surfaceContainerHigh)
       .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier)
       .then(
         when {
-          isGlass -> Modifier.border(1.dp, glassRimBrush(dark), RoundedCornerShape(16.dp))
-          isLastPlayed -> Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), RoundedCornerShape(16.dp))
-          else -> Modifier.border(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+          isGlass -> Modifier.border(1.dp, glassRimBrush(dark), RoundedCornerShape(12.dp))
+          isLastPlayed -> Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), RoundedCornerShape(12.dp))
+          else -> Modifier.border(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
         }
       )
       .combinedClickable(
@@ -147,7 +142,7 @@ fun SpeedBingeCard(
         },
       ),
   ) {
-    // Backdrop / Poster Image
+    // Poster Artwork Image
     StreamingImage(
       url = item.posterUrl,
       fallbackVideo = item.fallbackVideo,
@@ -156,16 +151,16 @@ fun SpeedBingeCard(
       modifier = Modifier.fillMaxSize(),
     )
 
-    // Gradient overlay for clean, readable typography
+    // Gradient overlay for clean, readable title typography
     if (!isGlass) {
       Box(
         modifier = Modifier
           .fillMaxSize()
           .background(
             Brush.verticalGradient(
-              0.35f to Color.Transparent,
-              0.65f to Color.Black.copy(alpha = 0.55f),
-              1.0f to Color.Black.copy(alpha = 0.88f),
+              0.4f to Color.Transparent,
+              0.7f to Color.Black.copy(alpha = 0.6f),
+              1.0f to Color.Black.copy(alpha = 0.9f),
             )
           )
       )
@@ -178,26 +173,26 @@ fun SpeedBingeCard(
         shape = RoundedCornerShape(6.dp),
         modifier = Modifier
           .align(Alignment.TopStart)
-          .padding(7.dp),
-        shadowElevation = 3.dp,
+          .padding(6.dp),
+        shadowElevation = 2.dp,
       ) {
         Row(
-          modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+          modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
           verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(3.dp),
+          horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
           Icon(
             imageVector = Icons.Filled.PlayArrow,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(10.dp),
+            modifier = Modifier.size(9.dp),
           )
           Text(
             text = "RESUME",
             style = MaterialTheme.typography.labelSmall.copy(
               fontWeight = FontWeight.Black,
-              fontSize = 9.sp,
-              letterSpacing = 0.4.sp,
+              fontSize = 8.5.sp,
+              letterSpacing = 0.3.sp,
             ),
             color = MaterialTheme.colorScheme.onPrimary,
           )
@@ -208,11 +203,11 @@ fun SpeedBingeCard(
       Box(
         modifier = Modifier
           .align(Alignment.Center)
-          .size(38.dp)
+          .size(34.dp)
           .clip(CircleShape)
           .background(
             if (isGlass) glassFrostColor(isDark = dark, kind = GlassKind.Chip)
-            else Color.Black.copy(alpha = 0.6f)
+            else Color.Black.copy(alpha = 0.55f)
           )
           .border(
             1.dp,
@@ -225,63 +220,29 @@ fun SpeedBingeCard(
           imageVector = Icons.Filled.PlayArrow,
           contentDescription = "Resume",
           tint = Color.White,
-          modifier = Modifier.size(22.dp),
-        )
-      }
-    } else {
-      // Small type indicator badge (Top-End)
-      val typeLabel = if (item.isSeries) "SHOW" else "MOVIE"
-      Surface(
-        color = Color.Black.copy(alpha = 0.6f),
-        shape = RoundedCornerShape(4.dp),
-        modifier = Modifier
-          .align(Alignment.TopEnd)
-          .padding(6.dp),
-      ) {
-        Text(
-          text = typeLabel,
-          style = MaterialTheme.typography.labelSmall.copy(
-            fontWeight = FontWeight.Bold,
-            fontSize = 8.sp,
-            letterSpacing = 0.5.sp,
-          ),
-          color = Color.White.copy(alpha = 0.85f),
-          modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+          modifier = Modifier.size(20.dp),
         )
       }
     }
 
-    // Title & Subtitle at bottom
-    Column(
+    // Show or movie title at bottom (no length, no duration)
+    Box(
       modifier = Modifier
         .align(Alignment.BottomStart)
         .fillMaxWidth()
-        .padding(horizontal = 8.dp, vertical = 7.dp),
+        .padding(start = 7.dp, end = 7.dp, bottom = 6.dp),
     ) {
       Text(
         text = item.title,
         style = MaterialTheme.typography.bodySmall.copy(
           fontWeight = FontWeight.Bold,
-          fontSize = 11.5.sp,
-          lineHeight = 14.sp,
+          fontSize = 11.sp,
+          lineHeight = 13.5.sp,
         ),
         color = Color.White,
-        maxLines = 1,
+        maxLines = 2,
         overflow = TextOverflow.Ellipsis,
       )
-      if (!item.subtitle.isNullOrBlank()) {
-        Text(
-          text = item.subtitle!!,
-          style = MaterialTheme.typography.labelSmall.copy(
-            fontWeight = FontWeight.Normal,
-            fontSize = 9.5.sp,
-            lineHeight = 12.sp,
-          ),
-          color = Color.White.copy(alpha = 0.75f),
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-        )
-      }
     }
 
     // Progress Bar along bottom edge
@@ -289,7 +250,7 @@ fun SpeedBingeCard(
       modifier = Modifier
         .align(Alignment.BottomCenter)
         .fillMaxWidth()
-        .height(3.5.dp)
+        .height(3.dp)
         .background(Color.White.copy(alpha = 0.25f)),
     ) {
       if (item.progressPercentage > 0f) {

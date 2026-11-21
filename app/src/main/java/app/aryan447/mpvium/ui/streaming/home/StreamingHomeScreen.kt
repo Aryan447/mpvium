@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.streaming.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,6 +29,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -117,6 +120,8 @@ import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.SpeedBingeCard
 import app.aryan447.mpvium.ui.streaming.components.SpeedBingeItem
 import app.aryan447.mpvium.ui.streaming.components.StreamingHeroBanner
+import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
+import app.aryan447.mpvium.domain.streaming.MovieLibraryKind
 import app.aryan447.mpvium.ui.streaming.movies.MovieDetailScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesDetailScreen
@@ -426,7 +431,10 @@ object StreamingHomeScreen : Screen {
                 category = state.selectedCategory,
               )
             }
-            val speedBingeChunks = remember(speedBingeItems) { speedBingeItems.chunked(3) }
+            val speedBingePageCount = remember(speedBingeItems) {
+              if (speedBingeItems.isEmpty()) 0 else (speedBingeItems.size + 5) / 6
+            }
+            val speedBingePagerState = rememberPagerState(pageCount = { speedBingePageCount })
             LazyColumn(
               state = listState,
               modifier = Modifier.fillMaxSize(),
@@ -451,16 +459,16 @@ object StreamingHomeScreen : Screen {
                         Row(
                           modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
                           verticalAlignment = Alignment.CenterVertically,
                         ) {
                           Icon(
                             imageVector = Icons.Filled.GridView,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(18.dp),
                           )
-                          Spacer(modifier = Modifier.width(8.dp))
+                          Spacer(modifier = Modifier.width(6.dp))
                           Text(
                             text = "Speed Binge",
                             style = MaterialTheme.typography.titleMedium.copy(
@@ -487,54 +495,101 @@ object StreamingHomeScreen : Screen {
                         }
                       }
 
-                      val rowChunkSize = 3
-                      items(speedBingeChunks, key = { row -> "speed_row_${row.first().key}" }) { rowItems ->
-                        Row(
-                          modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 5.dp),
-                          horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                          rowItems.forEach { bingeItem ->
-                            SpeedBingeCard(
-                              item = bingeItem,
-                              onClick = {
-                                when (bingeItem) {
-                                  is SpeedBingeItem.LastPlayed -> {
-                                    MediaUtils.playFile(bingeItem.continueItem.video, context, "speed_binge_resume")
-                                  }
-                                  is SpeedBingeItem.SeriesItem -> {
-                                    backstack.add(SeriesDetailScreen(bingeItem.series.id))
-                                  }
-                                  is SpeedBingeItem.MovieItem -> {
-                                    MediaUtils.playFile(bingeItem.movie.video, context, "speed_binge_movie")
-                                  }
+                      item(key = "speed_binge_pager") {
+                        HorizontalPager(
+                          state = speedBingePagerState,
+                          modifier = Modifier.fillMaxWidth(),
+                        ) { pageIndex ->
+                          val startIndex = pageIndex * 6
+                          val pageItems = speedBingeItems.subList(startIndex, minOf(startIndex + 6, speedBingeItems.size))
+                          val rows = pageItems.chunked(3)
+                          Column(
+                            modifier = Modifier
+                              .fillMaxWidth()
+                              .padding(horizontal = 14.dp),
+                            verticalArrangement = Arrangement.spacedBy(7.dp),
+                          ) {
+                            rows.forEach { rowItems ->
+                              Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                              ) {
+                                rowItems.forEach { bingeItem ->
+                                  SpeedBingeCard(
+                                    item = bingeItem,
+                                    onClick = {
+                                      when (bingeItem) {
+                                        is SpeedBingeItem.LastPlayed -> {
+                                          MediaUtils.playFile(bingeItem.continueItem.video, context, "speed_binge_resume")
+                                        }
+                                        is SpeedBingeItem.SeriesItem -> {
+                                          backstack.add(SeriesDetailScreen(bingeItem.series.id))
+                                        }
+                                        is SpeedBingeItem.MovieItem -> {
+                                          MediaUtils.playFile(bingeItem.movie.video, context, "speed_binge_movie")
+                                        }
+                                      }
+                                    },
+                                    onLongClick = {
+                                      when (bingeItem) {
+                                        is SpeedBingeItem.LastPlayed -> {
+                                          markAsTarget = bingeItem.continueItem
+                                        }
+                                        is SpeedBingeItem.SeriesItem -> {
+                                          backstack.add(SeriesDetailScreen(bingeItem.series.id))
+                                        }
+                                        is SpeedBingeItem.MovieItem -> {
+                                          backstack.add(MovieDetailScreen(bingeItem.movie.video.id, bingeItem.movie.title))
+                                        }
+                                      }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                  )
                                 }
-                              },
-                              onLongClick = {
-                                when (bingeItem) {
-                                  is SpeedBingeItem.LastPlayed -> {
-                                    markAsTarget = bingeItem.continueItem
-                                  }
-                                  is SpeedBingeItem.SeriesItem -> {
-                                    backstack.add(SeriesDetailScreen(bingeItem.series.id))
-                                  }
-                                  is SpeedBingeItem.MovieItem -> {
-                                    backstack.add(MovieDetailScreen(bingeItem.movie.video.id, bingeItem.movie.title))
-                                  }
+                                repeat(3 - rowItems.size) {
+                                  Spacer(modifier = Modifier.weight(1f))
                                 }
-                              },
-                              modifier = Modifier.weight(1f),
-                            )
+                              }
+                            }
                           }
-                          repeat(rowChunkSize - rowItems.size) {
-                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                      }
+
+                      if (speedBingePageCount > 1) {
+                        item(key = "speed_binge_dots") {
+                          Row(
+                            modifier = Modifier
+                              .fillMaxWidth()
+                              .padding(top = 10.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                          ) {
+                            repeat(minOf(speedBingePageCount, 7)) { index ->
+                              val selected = index == speedBingePagerState.currentPage
+                              val dotWidth by animateDpAsState(
+                                targetValue = if (selected) 16.dp else 6.dp,
+                                label = "speed_dot_w",
+                              )
+                              val dotColor = if (selected) {
+                                MaterialTheme.colorScheme.primary
+                              } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                              }
+                              Box(
+                                modifier = Modifier
+                                  .padding(horizontal = 3.dp)
+                                  .height(6.dp)
+                                  .width(dotWidth)
+                                  .clip(CircleShape)
+                                  .background(dotColor),
+                              )
+                            }
                           }
                         }
                       }
 
                       item(key = "speed_binge_spacer") {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                       }
                     }
                   }
@@ -1038,6 +1093,7 @@ private fun buildRecentlyAdded(
  * Slot 1: The most recently played item (Last Played) with direct resume.
  * Remaining slots: All available shows and movies, each with its progress bar,
  * sorted with in-progress titles first.
+ * Only actual movies and TV shows are included (matching Titles tab classifier).
  */
 private fun buildSpeedBingeItems(
   continueWatching: List<ContinueWatchingItem>,
@@ -1045,8 +1101,22 @@ private fun buildSpeedBingeItems(
   movieList: List<LocalMovie>,
   category: StreamingCategory,
 ): List<SpeedBingeItem> {
+  // Only actual movies (matching Titles tab filter, excludes short clips/recordings)
+  val libraryMovies = movieList.filter { MovieLibraryClassifier.isMovieLibraryItem(it) }
+
+  // Only valid continue watching (series or actual movie)
+  val validContinueWatching = continueWatching.filter { item ->
+    item.isSeries || MovieLibraryClassifier.classify(
+      fileName = item.video.displayName,
+      folderPath = item.video.path.substringBeforeLast('/', ""),
+      durationMs = item.video.duration,
+      width = item.video.width,
+      height = item.video.height,
+    ) == MovieLibraryKind.MOVIE
+  }
+  val lastPlayed = validContinueWatching.firstOrNull()
+
   val result = mutableListOf<SpeedBingeItem>()
-  val lastPlayed = continueWatching.firstOrNull()
 
   when (category) {
     StreamingCategory.ALL -> {
@@ -1057,7 +1127,7 @@ private fun buildSpeedBingeItems(
         .filterNot { lastPlayed != null && lastPlayed.isSeries && it.id == lastPlayed.seriesId }
         .map { SpeedBingeItem.SeriesItem(it) }
 
-      val remainingMovies = movieList
+      val remainingMovies = libraryMovies
         .filterNot { lastPlayed != null && !lastPlayed.isSeries && it.video.path == lastPlayed.video.path }
         .map { SpeedBingeItem.MovieItem(it) }
 
@@ -1086,7 +1156,7 @@ private fun buildSpeedBingeItems(
       if (lastPlayed != null && !lastPlayed.isSeries) {
         result.add(SpeedBingeItem.LastPlayed(lastPlayed))
       }
-      val remainingMovies = movieList
+      val remainingMovies = libraryMovies
         .filterNot { lastPlayed != null && !lastPlayed.isSeries && it.video.path == lastPlayed.video.path }
         .map { SpeedBingeItem.MovieItem(it) }
         .sortedWith(
@@ -1097,7 +1167,7 @@ private fun buildSpeedBingeItems(
     }
 
     StreamingCategory.CONTINUE_WATCHING -> {
-      continueWatching.forEach { item ->
+      validContinueWatching.forEach { item ->
         result.add(SpeedBingeItem.LastPlayed(item))
       }
     }
