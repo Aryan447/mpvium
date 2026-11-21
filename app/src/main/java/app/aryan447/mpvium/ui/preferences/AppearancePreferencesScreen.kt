@@ -544,6 +544,7 @@ object AppearancePreferencesScreen : Screen {
                             )
                             val orderRaw by preferences.homeSectionOrder.collectAsState()
                             val order = remember(orderRaw) { HomeSection.parseOrder(orderRaw) }
+                            val showSpeedBinge by preferences.showSpeedBinge.collectAsState()
                             val showFeaturedHero by preferences.showFeaturedHero.collectAsState()
                             val showContinueWatching by preferences.showContinueWatching.collectAsState()
                             val showContinueListening by preferences.showContinueListening.collectAsState()
@@ -553,6 +554,7 @@ object AppearancePreferencesScreen : Screen {
                             val showMoviesSection by preferences.showMoviesSection.collectAsState()
                             val showFoldersSection by preferences.showFoldersSection.collectAsState()
                             fun isVisible(section: HomeSection): Boolean = when (section) {
+                                HomeSection.SPEED_BINGE -> showSpeedBinge
                                 HomeSection.FEATURED -> showFeaturedHero
                                 HomeSection.CONTINUE_WATCHING -> showContinueWatching
                                 HomeSection.CONTINUE_LISTENING -> showContinueListening
@@ -579,10 +581,10 @@ object AppearancePreferencesScreen : Screen {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         preferences.moveHomeSection(section, 1)
                                     },
-                                    modifier = if (section == HomeSection.FEATURED) {
-                                        Modifier.settingsHighlightTarget(highlightState, "appearance.show_featured_hero")
-                                    } else {
-                                        Modifier
+                                    modifier = when (section) {
+                                        HomeSection.SPEED_BINGE -> Modifier.settingsHighlightTarget(highlightState, "appearance.show_speed_binge")
+                                        HomeSection.FEATURED -> Modifier.settingsHighlightTarget(highlightState, "appearance.show_featured_hero")
+                                        else -> Modifier
                                     },
                                 )
                             }
@@ -607,6 +609,7 @@ object AppearancePreferencesScreen : Screen {
 
 private fun homeSectionIcon(section: HomeSection): ImageVector =
     when (section) {
+        HomeSection.SPEED_BINGE -> Icons.Filled.GridView
         HomeSection.FEATURED -> Icons.Outlined.Movie
         HomeSection.CONTINUE_WATCHING -> Icons.Outlined.History
         HomeSection.CONTINUE_LISTENING -> Icons.Outlined.Audiotrack

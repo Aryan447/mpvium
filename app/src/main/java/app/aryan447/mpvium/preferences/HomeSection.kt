@@ -8,6 +8,7 @@ enum class HomeSection(
   val key: String,
   val title: String,
 ) {
+  SPEED_BINGE("SPEED_BINGE", "Speed Binge"),
   FEATURED("FEATURED", "Featured banner"),
   CONTINUE_WATCHING("CONTINUE_WATCHING", "Continue Watching"),
   CONTINUE_LISTENING("CONTINUE_LISTENING", "Continue Listening"),
