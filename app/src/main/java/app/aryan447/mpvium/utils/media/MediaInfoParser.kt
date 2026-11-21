@@ -50,7 +50,8 @@ object MediaInfoParser {
         "GalaxyRG", "MkvCage", "Joy", "BonsaiHD", "TrollHD",
         "NOGRP", "Pahe", "Tigole", "PHOCiS", "RUSTED", "DSNP",
         "PECULATE", "SuccessfulCrab", "PLAY", "HONE", "KOGI",
-        "DEMAND", "RARBG", "SPARKS", "AMIABLE", "FGT", "ROVERS"
+        "DEMAND", "RARBG", "SPARKS", "AMIABLE", "FGT", "ROVERS",
+        "Raizel", "Commie", "Coalgirls", "Dame-Desu", "GJM", "MTBB", "Beatrice-Raws", "VCB-Studio"
     )
 
     // ── Metadata keywords (noise) ────────────────────────────────────────────────
@@ -95,7 +96,7 @@ object MediaInfoParser {
         "10bit", "8bit", "hdr", "hdr10", "dolby",
         "vision", "sdr", "bt709", "bt2020", "hlg", "pq",
         "batch", "dvd", "uncensored", "censored",
-        "horriblesubs", "subsplease"
+        "horriblesubs", "subsplease", "audio", "dualaudio", "dual-audio"
     )
 
     private val FILE_EXTENSIONS = setOf(
@@ -314,7 +315,27 @@ object MediaInfoParser {
             }
         }
 
-        // Step 7b: Leading episode pattern (e.g. "01 - Title.mkv" or "01.mkv")
+        // Step 7b: Detect anime episode numbering without dash separator
+        // Examples: [Raizel]Blue_Exorcist_11(1080p_Dual_Audio_FLAC)_(C4329D88), [SubsPlease] Bleach 366 (1080p), Title_01.mkv
+        if (episode == null) {
+            val animeEpResult = detectAnimeEpisode(fileName, yearMatch)
+            if (animeEpResult != null) {
+                episode = animeEpResult.first
+                if (season == null) season = 1
+                if (animeEpResult.second != null) {
+                    val candidate = cleanRawTitle(animeEpResult.second!!, yearToRemove = year)
+                    if (candidate.isNotBlank() && candidate != cleanTitle) {
+                        episodeTitle = candidate
+                    }
+                }
+                val candidateTitle = cleanRawTitle(animeEpResult.third, yearToRemove = year)
+                if (candidateTitle.isNotBlank()) {
+                    cleanTitle = candidateTitle
+                }
+            }
+        }
+
+        // Step 7c: Leading episode pattern (e.g. "01 - Title.mkv" or "01.mkv")
         if (episode == null) {
             val stripped = stripBracketsAndExtension(fileName).trim()
             val leadingMatch = Regex("""^(\d{1,4})\s*[-._]\s*(.+)$""").find(stripped)
@@ -486,6 +507,55 @@ object MediaInfoParser {
     private fun detectDashTitleBoundary(fileName: String): String? {
         val match = Regex("""[\s_]+-[\s_]+\d{1,4}""").find(fileName) ?: return null
         return if (match.range.first > 0) fileName.substring(0, match.range.first) else null
+    }
+
+    // ── Helper: Detect anime episode numbering without a dash separator ─────────
+
+    private val LEADING_BRACKET_GROUP_REGEX = Regex("""^\s*(?:\[[^]]+]|【[^】]+】|\([^)]+\))\s*""")
+    private val ANIME_EPISODE_TRAILING_METADATA_REGEX = Regex(
+        """^[\s_]*(?:[\[\(\{【（]|(?:\d{3,4}[pPiI]|[48][kK]|bluray|bdrip|webrip|web-dl|x264|x265|hevc|flac|aac|dual|multi)\b)""",
+        RegexOption.IGNORE_CASE
+    )
+    private val ANIME_EPISODE_REGEX by lazy {
+        Regex(
+            """[\s_]+(\d{1,4})(?:[vV]\d+)?(?:\s*-\s*\d{1,4})?(?:[\s_]*-(?:[\s_]*(.+?))?)?(?=[\s_]*[\[\(\{【（]|[\s_]+(?:\d{3,4}[pPiI]|[48][kK]|bluray|bdrip|webrip|web-dl|x264|x265|hevc|flac|aac|dual|multi)\b|[\s_]*(?:\.(?:${FILE_EXTENSIONS.joinToString("|")})|$))""",
+            RegexOption.IGNORE_CASE
+        )
+    }
+
+    private fun detectAnimeEpisode(fileName: String, yearMatch: MatchResult? = null): Triple<Int, String?, String>? {
+        val matches = ANIME_EPISODE_REGEX.findAll(fileName).toList()
+        if (matches.isEmpty()) return null
+
+        for (match in matches.reversed()) {
+            val rawEp = match.groupValues[1]
+            val ep = rawEp.toIntOrNull() ?: continue
+
+            // Guard: don't match resolution or release year-like numbers
+            if (ep in setOf(360, 480, 576, 720, 1080, 2160)) continue
+            if (ep in 1900..2100 || ep > 1999) continue
+
+            val hasLeadingGroup = LEADING_BRACKET_GROUP_REGEX.containsMatchIn(fileName)
+            val hasLeadingZero = rawEp.length > 1 && rawEp.startsWith("0")
+            val epTitle = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() }
+
+            if (yearMatch != null) {
+                if (ep.toString() == yearMatch.value) continue
+                if (match.range.first < yearMatch.range.first) {
+                    if (!hasLeadingZero && !hasLeadingGroup && epTitle == null) continue
+                }
+            } else {
+                val afterEp = fileName.substring(match.range.last + 1)
+                val hasMetadataAfter = ANIME_EPISODE_TRAILING_METADATA_REGEX.containsMatchIn(afterEp)
+                if (!hasLeadingGroup && !hasLeadingZero && !hasMetadataAfter && epTitle == null) {
+                    continue
+                }
+            }
+
+            val titlePrefix = fileName.substring(0, match.range.first)
+            return Triple(ep, epTitle, titlePrefix)
+        }
+        return null
     }
 
     // ── Helper: Japanese season extraction ───────────────────────────────────────

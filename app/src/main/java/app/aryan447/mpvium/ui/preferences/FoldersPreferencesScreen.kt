@@ -80,6 +80,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
+import java.io.File
+import java.util.Locale
 
 @Serializable
 object FoldersPreferencesScreen : Screen {
@@ -810,13 +812,45 @@ private fun AddFolderDialog(
 }
 
 /**
- * Scans all storage volumes for folders containing videos
- * Uses optimized fast scanning for better performance
+ * Scans all storage volumes for folders containing videos, including ancestor directories
+ * so users can whitelist or blacklist parent directories (e.g. FDM or Downloads).
  */
 private suspend fun scanAllVideoFolders(context: Application): List<VideoFolder> {
-  // Use fast optimized scanning - 5-10x faster for large libraries
-  return app.aryan447.mpvium.repository.MediaFileRepository
+  val leafFolders = app.aryan447.mpvium.repository.MediaFileRepository
     .getAllVideoFoldersFast(
       context = context
     )
+  val folderMap = leafFolders.associateBy { it.path }.toMutableMap()
+  val invalidRoots = setOf("", "/", "/storage", "/storage/emulated")
+
+  for (folder in leafFolders) {
+    var parent = File(folder.path).parentFile
+    while (parent != null) {
+      val parentPath = parent.absolutePath
+      if (parentPath in invalidRoots || parent.name.isBlank()) break
+
+      val existing = folderMap[parentPath]
+      if (existing != null) {
+        folderMap[parentPath] = existing.copy(
+          videoCount = existing.videoCount + folder.videoCount,
+          totalSize = existing.totalSize + folder.totalSize,
+          totalDuration = existing.totalDuration + folder.totalDuration,
+          lastModified = maxOf(existing.lastModified, folder.lastModified),
+        )
+      } else {
+        folderMap[parentPath] = VideoFolder(
+          bucketId = parentPath,
+          name = parent.name,
+          path = parentPath,
+          videoCount = folder.videoCount,
+          totalSize = folder.totalSize,
+          totalDuration = folder.totalDuration,
+          lastModified = folder.lastModified,
+        )
+      }
+      parent = parent.parentFile
+    }
+  }
+
+  return folderMap.values.sortedBy { it.name.lowercase(Locale.getDefault()) }
 }
