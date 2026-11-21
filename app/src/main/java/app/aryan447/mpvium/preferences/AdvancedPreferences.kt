@@ -9,6 +9,7 @@ class AdvancedPreferences(
   val mpvConfStorageUri = preferenceStore.getString("mpv_conf_storage_location_uri")
   val mpvConf = preferenceStore.getString("mpv.conf")
   val inputConf = preferenceStore.getString("input.conf")
+  val mpvConfOverrides = preferenceStore.getStringSet("mpv_conf_overrides", emptySet())
 
   val leanSeekCache = preferenceStore.getBoolean("lean_seek_cache", false)
 

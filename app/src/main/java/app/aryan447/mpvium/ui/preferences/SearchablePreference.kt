@@ -788,6 +788,13 @@ object SearchablePreferences {
                 screen = AdvancedPreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "advanced.mpv_conf_ownership",
+                titleRes = R.string.pref_advanced_mpv_conf_ownership,
+                keywords = listOf("mpv", "conf", "ownership", "override", "own", "options", "renderer", "decoder", "shaders", "filters", "subtitles", "audio"),
+                category = "Advanced",
+                screen = AdvancedPreferencesScreen,
+            ))
+            add(SearchablePreference(
                 key = "advanced.enable_recently_played",
                 titleRes = R.string.pref_advanced_enable_recently_played_title,
                 summaryRes = R.string.pref_advanced_enable_recently_played_summary,

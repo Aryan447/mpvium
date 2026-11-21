@@ -10,6 +10,7 @@ import android.view.KeyEvent
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.DecoderPreferences
+import app.aryan447.mpvium.preferences.MpvConfigOwnershipPolicy
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
 import app.aryan447.mpvium.domain.anime4k.Anime4KManager
@@ -97,24 +98,28 @@ class MPVView(
   var aid: Int by TrackDelegate("aid")
 
   override fun initOptions() {
+    MpvConfigOwnershipPolicy.configure(advancedPreferences.mpvConfOverrides.get())
+
     val profile = decoderPreferences.profile.get()
-    MPVLib.setOptionString("profile", profile)
+    MpvConfigWriter.setOptionString("profile", profile)
+    // The video output is always app-owned: the Android surface is attached to
+    // this view, so mpv.conf cannot choose a vo that would bypass it.
     setVo(if (decoderPreferences.gpuNext.get()) "gpu-next" else "gpu")
 
     // Set GPU API context (Vulkan or OpenGL)
     if (decoderPreferences.useVulkan.get()) {
-      MPVLib.setOptionString("gpu-context", "androidvk")
+      MpvConfigWriter.setOptionString("gpu-context", "androidvk")
     } else {
-      MPVLib.setOptionString("gpu-context", "android")
-      MPVLib.setOptionString("opengl-es", "yes")
+      MpvConfigWriter.setOptionString("gpu-context", "android")
+      MpvConfigWriter.setOptionString("opengl-es", "yes")
     }
 
     // Initial decoder from settings. HW falls back to SW; HW+ also tries direct output first.
-    MPVLib.setOptionString("hwdec", decoderPreferences.defaultDecoder.get().defaultHwdec)
-    MPVLib.setOptionString("hwdec-codecs", "all")
+    MpvConfigWriter.setOptionString("hwdec", decoderPreferences.defaultDecoder.get().defaultHwdec)
+    MpvConfigWriter.setOptionString("hwdec-codecs", "all")
 
     if (decoderPreferences.useYUV420P.get()) {
-      MPVLib.setOptionString("vf", "format=yuv420p")
+      MpvConfigWriter.setOptionString("vf", "format=yuv420p")
     }
 
     // Demuxer cache configuration.
@@ -131,55 +136,55 @@ class MPVView(
           sourceType = SeekCacheResolver.SourceType.Local,
         )
       )
-      MPVLib.setOptionString("demuxer-max-bytes", "${profile.demuxerMaxBytes}")
-      MPVLib.setOptionString("demuxer-max-back-bytes", "${profile.demuxerMaxBackBytes}")
-      MPVLib.setOptionString("demuxer-readahead-secs", "${profile.demuxerReadaheadSecs.roundToInt()}")
-      MPVLib.setOptionString("cache-secs", "${profile.cacheSecs.roundToInt()}")
-      MPVLib.setOptionString("stream-buffer-size", "${profile.streamBufferSize}")
+      MpvConfigWriter.setOptionString("demuxer-max-bytes", "${profile.demuxerMaxBytes}")
+      MpvConfigWriter.setOptionString("demuxer-max-back-bytes", "${profile.demuxerMaxBackBytes}")
+      MpvConfigWriter.setOptionString("demuxer-readahead-secs", "${profile.demuxerReadaheadSecs.roundToInt()}")
+      MpvConfigWriter.setOptionString("cache-secs", "${profile.cacheSecs.roundToInt()}")
+      MpvConfigWriter.setOptionString("stream-buffer-size", "${profile.streamBufferSize}")
     } else {
       val cacheMegs = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) 64 else 32
       val backCacheMegs = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) 128 else 32
-      MPVLib.setOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
-      MPVLib.setOptionString("demuxer-max-back-bytes", "${backCacheMegs * 1024 * 1024}")
-      MPVLib.setOptionString("demuxer-readahead-secs", "10")
-      MPVLib.setOptionString("cache-secs", "20")
-      MPVLib.setOptionString("stream-buffer-size", "${1024 * 1024}")
+      MpvConfigWriter.setOptionString("demuxer-max-bytes", "${cacheMegs * 1024 * 1024}")
+      MpvConfigWriter.setOptionString("demuxer-max-back-bytes", "${backCacheMegs * 1024 * 1024}")
+      MpvConfigWriter.setOptionString("demuxer-readahead-secs", "10")
+      MpvConfigWriter.setOptionString("cache-secs", "20")
+      MpvConfigWriter.setOptionString("stream-buffer-size", "${1024 * 1024}")
     }
 
     val logLevel = if (advancedPreferences.verboseLogging.get()) "v" else "warn"
-    MPVLib.setOptionString("msg-level", "all=$logLevel")
+    MpvConfigWriter.setOptionString("msg-level", "all=$logLevel")
 
-    MPVLib.setPropertyBoolean("keep-open", true)
-    MPVLib.setPropertyBoolean("input-default-bindings", true)
-    MPVLib.setOptionString(
+    MpvConfigWriter.setPropertyBoolean("keep-open", true)
+    MpvConfigWriter.setPropertyBoolean("input-default-bindings", true)
+    MpvConfigWriter.setOptionString(
       "load-scripts",
       if (advancedPreferences.enableScripts.get()) "yes" else "no",
     )
 
-    MPVLib.setOptionString("tls-verify", "yes")
-    MPVLib.setOptionString("tls-ca-file", "${context.filesDir.path}/cacert.pem")
+    MpvConfigWriter.setOptionString("tls-verify", "yes")
+    MpvConfigWriter.setOptionString("tls-ca-file", "${context.filesDir.path}/cacert.pem")
 
     val screenshotDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
     screenshotDir.mkdirs()
-    MPVLib.setOptionString("screenshot-directory", screenshotDir.path)
+    MpvConfigWriter.setOptionString("screenshot-directory", screenshotDir.path)
 
     VideoFilters.entries.forEach {
-      MPVLib.setOptionString(it.mpvProperty, it.preference(decoderPreferences).get().toString())
+      MpvConfigWriter.setOptionString(it.mpvProperty, it.preference(decoderPreferences).get().toString())
     }
 
-    MPVLib.setOptionString("speed", playerPreferences.defaultSpeed.get().toString())
-    MPVLib.setOptionString("vd-lavc-film-grain", "cpu")
+    MpvConfigWriter.setOptionString("speed", playerPreferences.defaultSpeed.get().toString())
+    MpvConfigWriter.setOptionString("vd-lavc-film-grain", "cpu")
 
     val preciseSeek = playerPreferences.usePreciseSeeking.get()
-    MPVLib.setOptionString("hr-seek", if (preciseSeek) "yes" else "no")
+    MpvConfigWriter.setOptionString("hr-seek", if (preciseSeek) "yes" else "no")
     // Exact (hr-)seeks must never stall on intermediate frames: let the vo
     // drop late frames while catching up and keep the demuxer offset at zero
     // so the target timestamp is decoded, not approximated around. These are
     // also re-asserted once duration is known (see PlayerViewModel), but
     // setting them at init covers streams whose duration never arrives.
-    MPVLib.setOptionString("hr-seek-framedrop", "yes")
-    MPVLib.setOptionString("hr-seek-demuxer-offset", "0")
-    MPVLib.setOptionString("framedrop", "vo")
+    MpvConfigWriter.setOptionString("hr-seek-framedrop", "yes")
+    MpvConfigWriter.setOptionString("hr-seek-demuxer-offset", "0")
+    MpvConfigWriter.setOptionString("framedrop", "vo")
 
     // Anime4K shader initialization (MUST be in initOptions, not after file load!)
     applyAnime4KShaders()
@@ -195,14 +200,14 @@ class MPVView(
   override fun postInitOptions() {
     when (decoderPreferences.debanding.get()) {
       Debanding.None -> {}
-      Debanding.CPU -> MPVLib.command("vf", "add", "@deband:gradfun=radius=12")
-      Debanding.GPU -> MPVLib.setOptionString("deband", "yes")
+      Debanding.CPU -> MpvConfigWriter.command("vf", "add", "@deband:gradfun=radius=12")
+      Debanding.GPU -> MpvConfigWriter.setOptionString("deband", "yes")
     }
 
     advancedPreferences.enabledStatisticsPage.get().let {
       if (it != 0) {
-        MPVLib.command("script-binding", "stats/display-stats-toggle")
-        MPVLib.command("script-binding", "stats/display-page-$it")
+        MpvConfigWriter.command("script-binding", "stats/display-stats-toggle")
+        MpvConfigWriter.command("script-binding", "stats/display-page-$it")
       }
     }
   }
@@ -268,14 +273,14 @@ class MPVView(
   private fun setupAudioOptions() {
     // Disable MPV's automatic audio selection
     // App will handle track selection manually via TrackSelector to respect user choices
-    MPVLib.setOptionString("alang", "")
-    MPVLib.setOptionString("audio-delay", (audioPreferences.defaultAudioDelay.get() / 1000.0).toString())
-    MPVLib.setOptionString("audio-pitch-correction", audioPreferences.audioPitchCorrection.get().toString())
-    MPVLib.setOptionString("volume-max", (audioPreferences.volumeBoostCap.get() + 100).toString())
+    MpvConfigWriter.setOptionString("alang", "")
+    MpvConfigWriter.setOptionString("audio-delay", (audioPreferences.defaultAudioDelay.get() / 1000.0).toString())
+    MpvConfigWriter.setOptionString("audio-pitch-correction", audioPreferences.audioPitchCorrection.get().toString())
+    MpvConfigWriter.setOptionString("volume-max", (audioPreferences.volumeBoostCap.get() + 100).toString())
 
     // Volume normalization using dynamic audio normalization filter
     if (audioPreferences.volumeNormalization.get()) {
-      MPVLib.setOptionString("af", "dynaudnorm")
+      MpvConfigWriter.setOptionString("af", "dynaudnorm")
     }
   }
 
@@ -283,26 +288,26 @@ class MPVView(
   private fun setupSubtitlesOptions() {
     // Disable MPV's automatic subtitle selection
     // App will handle track selection manually via TrackSelector to respect user choices
-    MPVLib.setOptionString("slang", "")
-    MPVLib.setOptionString("sub-auto", "no")
-    MPVLib.setOptionString("sub-file-paths", "")
-    MPVLib.setOptionString("subs-fallback", "no")
+    MpvConfigWriter.setOptionString("slang", "")
+    MpvConfigWriter.setOptionString("sub-auto", "no")
+    MpvConfigWriter.setOptionString("sub-file-paths", "")
+    MpvConfigWriter.setOptionString("subs-fallback", "no")
 
     val fontsDirPath = "${context.filesDir.path}/fonts/"
-    MPVLib.setOptionString("sub-fonts-dir", fontsDirPath)
+    MpvConfigWriter.setOptionString("sub-fonts-dir", fontsDirPath)
 
     // Delay and speed for both primary and secondary
     val subDelay = (subtitlesPreferences.defaultSubDelay.get() / 1000.0).toString()
     val subSpeed = subtitlesPreferences.defaultSubSpeed.get().toString()
-    MPVLib.setOptionString("sub-delay", subDelay)
-    MPVLib.setOptionString("sub-speed", subSpeed)
-    MPVLib.setOptionString("secondary-sub-delay", subDelay)
-    MPVLib.setOptionString("secondary-sub-speed", subSpeed)
+    MpvConfigWriter.setOptionString("sub-delay", subDelay)
+    MpvConfigWriter.setOptionString("sub-speed", subSpeed)
+    MpvConfigWriter.setOptionString("secondary-sub-delay", subDelay)
+    MpvConfigWriter.setOptionString("secondary-sub-speed", subSpeed)
 
     val preferredFont = subtitlesPreferences.font.get()
     if (preferredFont.isNotBlank()) {
-      MPVLib.setOptionString("sub-font", preferredFont)
-      MPVLib.setOptionString("secondary-sub-font", preferredFont)
+      MpvConfigWriter.setOptionString("sub-font", preferredFont)
+      MpvConfigWriter.setOptionString("secondary-sub-font", preferredFont)
     }
     // If blank, MPV uses its default font
 
@@ -311,12 +316,12 @@ class MPVView(
     // Position sliders. "scale" keeps them responsive, same as
     // PlayerActivity.applySubtitlePreferences() does at playback start.
     if (subtitlesPreferences.overrideAssSubs.get()) {
-      MPVLib.setOptionString("sub-ass-override", "force")
-      MPVLib.setOptionString("sub-ass-justify", "yes")
-      MPVLib.setOptionString("secondary-sub-ass-override", "force")
+      MpvConfigWriter.setOptionString("sub-ass-override", "force")
+      MpvConfigWriter.setOptionString("sub-ass-justify", "yes")
+      MpvConfigWriter.setOptionString("secondary-sub-ass-override", "force")
     } else {
-      MPVLib.setOptionString("sub-ass-override", "scale")
-      MPVLib.setOptionString("secondary-sub-ass-override", "scale")
+      MpvConfigWriter.setOptionString("sub-ass-override", "scale")
+      MpvConfigWriter.setOptionString("secondary-sub-ass-override", "scale")
     }
 
     // Typography and styling for both primary and secondary
@@ -333,46 +338,46 @@ class MPVView(
     val subPos = subtitlesPreferences.subPos.get().toString()
     val subScale = subtitlesPreferences.subScale.get().toString()
 
-    MPVLib.setOptionString("sub-font-size", fontSize)
-    MPVLib.setOptionString("sub-bold", bold)
-    MPVLib.setOptionString("sub-italic", italic)
-    MPVLib.setOptionString("sub-justify", justify)
-    MPVLib.setOptionString("sub-color", textColor)
-    MPVLib.setOptionString("sub-back-color", backgroundColor)
-    MPVLib.setOptionString("sub-border-color", borderColor)
-    MPVLib.setOptionString("sub-border-size", borderSize)
-    MPVLib.setOptionString("sub-border-style", borderStyle)
-    MPVLib.setOptionString("sub-shadow-offset", shadowOffset)
-    MPVLib.setOptionString("sub-scale", subScale)
-    MPVLib.setOptionString("sub-pos", subPos)
+    MpvConfigWriter.setOptionString("sub-font-size", fontSize)
+    MpvConfigWriter.setOptionString("sub-bold", bold)
+    MpvConfigWriter.setOptionString("sub-italic", italic)
+    MpvConfigWriter.setOptionString("sub-justify", justify)
+    MpvConfigWriter.setOptionString("sub-color", textColor)
+    MpvConfigWriter.setOptionString("sub-back-color", backgroundColor)
+    MpvConfigWriter.setOptionString("sub-border-color", borderColor)
+    MpvConfigWriter.setOptionString("sub-border-size", borderSize)
+    MpvConfigWriter.setOptionString("sub-border-style", borderStyle)
+    MpvConfigWriter.setOptionString("sub-shadow-offset", shadowOffset)
+    MpvConfigWriter.setOptionString("sub-scale", subScale)
+    MpvConfigWriter.setOptionString("sub-pos", subPos)
 
-    MPVLib.setOptionString("secondary-sub-font-size", fontSize)
-    MPVLib.setOptionString("secondary-sub-bold", bold)
-    MPVLib.setOptionString("secondary-sub-italic", italic)
-    MPVLib.setOptionString("secondary-sub-justify", justify)
-    MPVLib.setOptionString("secondary-sub-color", textColor)
-    MPVLib.setOptionString("secondary-sub-back-color", backgroundColor)
-    MPVLib.setOptionString("secondary-sub-border-color", borderColor)
-    MPVLib.setOptionString("secondary-sub-border-size", borderSize)
-    MPVLib.setOptionString("secondary-sub-border-style", borderStyle)
-    MPVLib.setOptionString("secondary-sub-shadow-offset", shadowOffset)
-    MPVLib.setOptionString("secondary-sub-scale", subScale)
+    MpvConfigWriter.setOptionString("secondary-sub-font-size", fontSize)
+    MpvConfigWriter.setOptionString("secondary-sub-bold", bold)
+    MpvConfigWriter.setOptionString("secondary-sub-italic", italic)
+    MpvConfigWriter.setOptionString("secondary-sub-justify", justify)
+    MpvConfigWriter.setOptionString("secondary-sub-color", textColor)
+    MpvConfigWriter.setOptionString("secondary-sub-back-color", backgroundColor)
+    MpvConfigWriter.setOptionString("secondary-sub-border-color", borderColor)
+    MpvConfigWriter.setOptionString("secondary-sub-border-size", borderSize)
+    MpvConfigWriter.setOptionString("secondary-sub-border-style", borderStyle)
+    MpvConfigWriter.setOptionString("secondary-sub-shadow-offset", shadowOffset)
+    MpvConfigWriter.setOptionString("secondary-sub-scale", subScale)
     // Position secondary subtitle at bottom (just above primary) to keep all non-ASS subs at bottom
     // Primary is at subPos (default 100). Secondary is placed slightly above to avoid exact overlap
     // For ASS subtitles with override disabled, mpv respects the ASS file's native positioning
     val secondaryPos = (subPos.toIntOrNull() ?: 100).let { (it - 10).coerceIn(0, 100) }.toString()
-    MPVLib.setOptionString("secondary-sub-pos", secondaryPos)
+    MpvConfigWriter.setOptionString("secondary-sub-pos", secondaryPos)
 
     val scaleByWindow = if (subtitlesPreferences.scaleByWindow.get()) "yes" else "no"
-    MPVLib.setOptionString("sub-scale-by-window", scaleByWindow)
-    MPVLib.setOptionString("sub-use-margins", scaleByWindow)
-    MPVLib.setOptionString("secondary-sub-scale-by-window", scaleByWindow)
-    MPVLib.setOptionString("secondary-sub-use-margins", scaleByWindow)
+    MpvConfigWriter.setOptionString("sub-scale-by-window", scaleByWindow)
+    MpvConfigWriter.setOptionString("sub-use-margins", scaleByWindow)
+    MpvConfigWriter.setOptionString("secondary-sub-scale-by-window", scaleByWindow)
+    MpvConfigWriter.setOptionString("secondary-sub-use-margins", scaleByWindow)
 
     // DVD subtitles (VOBSUB) are authored for anamorphic storage, so mpv would
     // otherwise stretch the bitmap canvas onto the video area and distort the
     // text. No effect on square-pixel video or on PGS/text subtitles.
-    MPVLib.setOptionString("stretch-dvd-subs", "yes")
+    MpvConfigWriter.setOptionString("stretch-dvd-subs", "yes")
   }
 
 
@@ -423,13 +428,13 @@ class MPVView(
       if (shaderChain.isNotEmpty()) {
         // OpenGL-only tuning should not be pushed onto the Vulkan backend.
         if (!useVulkan) {
-          MPVLib.setOptionString("opengl-pbo", "yes")
-          MPVLib.setOptionString("opengl-early-flush", "no")
+          MpvConfigWriter.setOptionString("opengl-pbo", "yes")
+          MpvConfigWriter.setOptionString("opengl-early-flush", "no")
         }
-        MPVLib.setOptionString("vd-lavc-dr", "yes")
+        MpvConfigWriter.setOptionString("vd-lavc-dr", "yes")
 
         // Apply shaders (MUST use setOptionString in initOptions!)
-        MPVLib.setOptionString("glsl-shaders", shaderChain)
+        MpvConfigWriter.setOptionString("glsl-shaders", shaderChain)
       }
     }.onFailure {
       // Don't crash - just continue without shaders
