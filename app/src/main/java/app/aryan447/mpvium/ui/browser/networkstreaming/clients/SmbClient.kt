@@ -3,6 +3,7 @@ package app.aryan447.mpvium.ui.browser.networkstreaming.clients
 import android.net.Uri
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkMediaTypes
 import com.hierynomus.msdtyp.AccessMask
 import com.hierynomus.msfscc.fileinformation.FileIdBothDirectoryInformation
 import com.hierynomus.mssmb2.SMB2CreateDisposition
@@ -315,7 +316,7 @@ class SmbClient(private val connection: NetworkConnection) : NetworkClient {
                 isDirectory = isDirectory,
                 size = fileSize,
                 lastModified = fileInfo.lastWriteTime.toEpochMillis(),
-                mimeType = if (!isDirectory) getMimeType(fileName) else null,
+                mimeType = if (!isDirectory) NetworkMediaTypes.getMimeType(fileName) else null,
               )
             } catch (e: Exception) {
               null // Skip files that can't be accessed
@@ -431,21 +432,4 @@ class SmbClient(private val connection: NetworkConnection) : NetworkClient {
         Result.failure(e)
       }
     }
-
-  private fun getMimeType(fileName: String): String? {
-    val extension = fileName.substringAfterLast('.', "").lowercase()
-    return when (extension) {
-      "mp4", "m4v" -> "video/mp4"
-      "mkv" -> "video/x-matroska"
-      "avi" -> "video/x-msvideo"
-      "mov" -> "video/quicktime"
-      "wmv" -> "video/x-ms-wmv"
-      "flv" -> "video/x-flv"
-      "webm" -> "video/webm"
-      "mpeg", "mpg" -> "video/mpeg"
-      "3gp" -> "video/3gpp"
-      "ts" -> "video/mp2t"
-      else -> null
-    }
-  }
 }

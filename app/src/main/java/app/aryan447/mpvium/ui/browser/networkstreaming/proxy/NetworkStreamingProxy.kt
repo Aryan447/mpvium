@@ -1,7 +1,10 @@
 package app.aryan447.mpvium.ui.browser.networkstreaming.proxy
 
 import android.util.Log
+import app.aryan447.mpvium.domain.network.HlsPlaylistRewriter
 import app.aryan447.mpvium.domain.network.NetworkConnection
+import app.aryan447.mpvium.domain.network.NetworkMediaTypes
+import app.aryan447.mpvium.domain.network.PlaylistPathResolver
 import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClient
 import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClientFactory
 import com.hierynomus.msdtyp.AccessMask
@@ -55,12 +58,18 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
   // Store active connections and their clients
   private val activeStreams = ConcurrentHashMap<String, StreamInfo>()
 
+  // Playlist children (segments, keys, nested playlists) keyed by
+  // "rootStreamId\0remotePath" so repeated requests reuse the same URL.
+  private val playlistChildren = ConcurrentHashMap<String, String>()
+  private val nextPlaylistChildId = java.util.concurrent.atomic.AtomicLong()
+
   data class StreamInfo(
     val connection: NetworkConnection,
     val filePath: String,
     val client: NetworkClient,
     var fileSize: Long = -1L,
     var mimeType: String = "video/mp4",
+    val rootStreamId: String? = null,
   )
 
   /**
@@ -90,10 +99,19 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
   }
 
   /**
-   * Unregister a stream
+   * Unregister a stream and any playlist children it created
    */
   fun unregisterStream(streamId: String) {
-    activeStreams.remove(streamId)?.let { streamInfo ->
+    val streamInfo = activeStreams.remove(streamId) ?: return
+
+    // Playlist children share the root client, so remove them without
+    // disconnecting it.
+    activeStreams.keys
+      .filter { it.startsWith("$streamId-") }
+      .forEach { activeStreams.remove(it) }
+    playlistChildren.entries.removeIf { it.key.startsWith("$streamId\u0000") }
+
+    if (streamInfo.rootStreamId == null) {
       runBlocking {
         try {
           streamInfo.client.disconnect()
@@ -130,10 +148,12 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
     val rangeHeader = session.headers["range"]
 
     return try {
-      if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
-        handleRangeRequest(session, streamInfo, rangeHeader)
-      } else {
-        handleFullRequest(session, streamInfo)
+      when {
+        isPlaylist(streamInfo) -> servePlaylist(streamId, streamInfo)
+        rangeHeader != null && rangeHeader.startsWith("bytes=") -> {
+          handleRangeRequest(session, streamInfo, rangeHeader)
+        }
+        else -> handleFullRequest(session, streamInfo)
       }
     } catch (e: Exception) {
       Log.e(TAG, "Error serving request for stream $streamId: ${streamInfo.filePath}", e)
@@ -148,6 +168,75 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
       )
     }
   }
+
+  /**
+   * Serve an HLS playlist with every relative URI pointed back at the proxy.
+   * The playlist is never range-served: mpv needs the whole manifest before
+   * it can request segments.
+   */
+  private fun servePlaylist(
+    streamId: String,
+    streamInfo: StreamInfo,
+  ): Response {
+    val inputStream = getStream(streamInfo)
+      ?: return newFixedLengthResponse(
+        Response.Status.INTERNAL_ERROR,
+        MIME_PLAINTEXT,
+        "Failed to open playlist",
+      )
+
+    val content = inputStream.bufferedReader().use { it.readText() }
+    val rootStreamId = streamInfo.rootStreamId ?: streamId
+    val rewritten = HlsPlaylistRewriter.rewrite(content) { relativeUri ->
+      val remotePath = PlaylistPathResolver.resolve(streamInfo.filePath, relativeUri)
+      val childId = registerPlaylistChild(rootStreamId, streamInfo, remotePath)
+      "http://127.0.0.1:$listeningPort/$childId"
+    }
+
+    val response = newFixedLengthResponse(
+      Response.Status.OK,
+      streamInfo.mimeType,
+      rewritten,
+    )
+    response.addHeader("Cache-Control", "no-cache")
+    return response
+  }
+
+  /**
+   * Register a segment, key, or nested playlist referenced by a playlist.
+   * Children share the root client so credentials and protocol handling are
+   * reused, and they are removed when the root stream is unregistered.
+   */
+  private fun registerPlaylistChild(
+    rootStreamId: String,
+    parent: StreamInfo,
+    remotePath: String,
+  ): String {
+    val key = "$rootStreamId\u0000$remotePath"
+    return playlistChildren.computeIfAbsent(key) {
+      val childId = "$rootStreamId-sub${nextPlaylistChildId.incrementAndGet()}"
+      activeStreams[childId] = StreamInfo(
+        connection = parent.connection,
+        filePath = remotePath,
+        client = parent.client,
+        mimeType = mimeTypeFor(remotePath),
+        rootStreamId = rootStreamId,
+      )
+      childId
+    }
+  }
+
+  private fun isPlaylist(streamInfo: StreamInfo): Boolean =
+    NetworkMediaTypes.isPlaylistMimeType(streamInfo.mimeType) ||
+      NetworkMediaTypes.isPlaylistFileName(streamInfo.filePath)
+
+  private fun mimeTypeFor(path: String): String =
+    NetworkMediaTypes.getMimeType(path) ?: when (NetworkMediaTypes.extensionOf(path)) {
+      "m4s" -> "video/iso.segment"
+      "aac" -> "audio/aac"
+      "vtt" -> "text/vtt"
+      else -> "application/octet-stream"
+    }
 
   private fun handleRangeRequest(
     session: IHTTPSession,

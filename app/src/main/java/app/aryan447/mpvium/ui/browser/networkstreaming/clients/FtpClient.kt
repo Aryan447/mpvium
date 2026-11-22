@@ -3,6 +3,7 @@ package app.aryan447.mpvium.ui.browser.networkstreaming.clients
 import android.net.Uri
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkMediaTypes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.commons.net.ftp.FTP
@@ -136,7 +137,7 @@ class FtpClient(private val connection: NetworkConnection) : NetworkClient {
                 isDirectory = file.isDirectory,
                 size = file.size,
                 lastModified = file.timestamp?.timeInMillis ?: 0,
-                mimeType = if (!file.isDirectory) getMimeType(file.name) else null,
+                mimeType = if (!file.isDirectory) NetworkMediaTypes.getMimeType(file.name) else null,
               )
             } catch (_: Exception) {
               null
@@ -326,21 +327,4 @@ class FtpClient(private val connection: NetworkConnection) : NetworkClient {
         Result.failure(e)
       }
     }
-
-  private fun getMimeType(fileName: String): String? {
-    val extension = fileName.substringAfterLast('.', "").lowercase()
-    return when (extension) {
-      "mp4", "m4v" -> "video/mp4"
-      "mkv" -> "video/x-matroska"
-      "avi" -> "video/x-msvideo"
-      "mov" -> "video/quicktime"
-      "wmv" -> "video/x-ms-wmv"
-      "flv" -> "video/x-flv"
-      "webm" -> "video/webm"
-      "mpeg", "mpg" -> "video/mpeg"
-      "3gp" -> "video/3gpp"
-      "ts" -> "video/mp2t"
-      else -> null
-    }
-  }
 }
