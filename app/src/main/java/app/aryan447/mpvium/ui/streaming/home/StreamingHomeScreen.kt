@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.streaming.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -30,6 +31,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,6 +42,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.CircularProgressIndicator
@@ -81,6 +85,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -115,7 +120,11 @@ import app.aryan447.mpvium.ui.streaming.components.ContinueListeningRow
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
 import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
+import app.aryan447.mpvium.ui.streaming.components.SpeedBingeCard
+import app.aryan447.mpvium.ui.streaming.components.SpeedBingeItem
 import app.aryan447.mpvium.ui.streaming.components.StreamingHeroBanner
+import app.aryan447.mpvium.domain.streaming.MovieLibraryClassifier
+import app.aryan447.mpvium.domain.streaming.MovieLibraryKind
 import app.aryan447.mpvium.ui.streaming.movies.MovieDetailScreen
 import app.aryan447.mpvium.ui.streaming.movies.MoviesGridScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesDetailScreen
@@ -149,6 +158,7 @@ object StreamingHomeScreen : Screen {
     val state by viewModel.uiState.collectAsState()
     val appearancePreferences = koinInject<AppearancePreferences>()
     val foldersPreferences = koinInject<FoldersPreferences>()
+    val showSpeedBinge by appearancePreferences.showSpeedBinge.collectAsState()
     val showFeaturedHero by appearancePreferences.showFeaturedHero.collectAsState()
     val homeSectionOrder by appearancePreferences.homeSectionOrder.collectAsState()
     val showContinueWatching by appearancePreferences.showContinueWatching.collectAsState()
@@ -445,6 +455,40 @@ object StreamingHomeScreen : Screen {
             val recentlyAdded = remember(state.series, state.movies) {
               buildRecentlyAdded(state.series, state.movies)
             }
+            val speedBingeItems = remember(
+              state.continueWatching,
+              state.series,
+              state.movies,
+              state.selectedCategory,
+            ) {
+              buildSpeedBingeItems(
+                continueWatching = state.continueWatching,
+                seriesList = state.series,
+                movieList = state.movies,
+                category = state.selectedCategory,
+              )
+            }
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            val isTablet = configuration.smallestScreenWidthDp >= 600
+            val screenWidthDp = configuration.screenWidthDp
+
+            val speedBingeColumns = when {
+              isTablet && isLandscape -> if (screenWidthDp >= 900) 6 else 5
+              isTablet && !isLandscape -> if (screenWidthDp >= 720) 5 else 4
+              isLandscape -> 5
+              else -> 3
+            }
+            val speedBingeRows = when {
+              !isTablet && isLandscape -> 1
+              else -> 2
+            }
+            val speedBingeItemsPerPage = speedBingeColumns * speedBingeRows
+
+            val speedBingePageCount = remember(speedBingeItems, speedBingeItemsPerPage) {
+              if (speedBingeItems.isEmpty()) 0 else (speedBingeItems.size + speedBingeItemsPerPage - 1) / speedBingeItemsPerPage
+            }
+            val speedBingePagerState = rememberPagerState(pageCount = { speedBingePageCount })
             LazyColumn(
               state = listState,
               modifier = Modifier.fillMaxSize(),
@@ -463,6 +507,150 @@ object StreamingHomeScreen : Screen {
               // section stays hidden everywhere, including category filters.
               homeSections.forEach { section ->
                 when (section) {
+                  HomeSection.SPEED_BINGE -> {
+                    if (showSpeedBinge && speedBingeItems.isNotEmpty()) {
+                      item(key = "speed_binge_header") {
+                        Row(
+                          modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                          verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                          Icon(
+                            imageVector = Icons.Filled.GridView,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                          )
+                          Spacer(modifier = Modifier.width(6.dp))
+                          Text(
+                            text = "Speed Binge",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                              fontWeight = FontWeight.Bold,
+                              letterSpacing = (-0.3).sp,
+                            ),
+                            color = MaterialTheme.colorScheme.onBackground,
+                          )
+                          Spacer(modifier = Modifier.width(6.dp))
+                          Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp),
+                          ) {
+                            Text(
+                              text = "${speedBingeItems.size}",
+                              style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                              ),
+                              color = MaterialTheme.colorScheme.primary,
+                              modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                            )
+                          }
+                        }
+                      }
+
+                      item(key = "speed_binge_pager") {
+                        HorizontalPager(
+                          state = speedBingePagerState,
+                          modifier = Modifier.fillMaxWidth(),
+                        ) { pageIndex ->
+                          val startIndex = pageIndex * speedBingeItemsPerPage
+                          val pageItems = speedBingeItems.subList(
+                            startIndex,
+                            minOf(startIndex + speedBingeItemsPerPage, speedBingeItems.size),
+                          )
+                          val rows = pageItems.chunked(speedBingeColumns)
+                          Column(
+                            modifier = Modifier
+                              .fillMaxWidth()
+                              .padding(horizontal = 14.dp),
+                            verticalArrangement = Arrangement.spacedBy(7.dp),
+                          ) {
+                            rows.forEach { rowItems ->
+                              Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                              ) {
+                                rowItems.forEach { bingeItem ->
+                                  SpeedBingeCard(
+                                    item = bingeItem,
+                                    onClick = {
+                                      when (bingeItem) {
+                                        is SpeedBingeItem.LastPlayed -> {
+                                          MediaUtils.playFile(bingeItem.continueItem.video, context, "speed_binge_resume")
+                                        }
+                                        is SpeedBingeItem.SeriesItem -> {
+                                          backstack.add(SeriesDetailScreen(bingeItem.series.id))
+                                        }
+                                        is SpeedBingeItem.MovieItem -> {
+                                          MediaUtils.playFile(bingeItem.movie.video, context, "speed_binge_movie")
+                                        }
+                                      }
+                                    },
+                                    onLongClick = {
+                                      when (bingeItem) {
+                                        is SpeedBingeItem.LastPlayed -> {
+                                          markAsTarget = bingeItem.continueItem
+                                        }
+                                        is SpeedBingeItem.SeriesItem -> {
+                                          backstack.add(SeriesDetailScreen(bingeItem.series.id))
+                                        }
+                                        is SpeedBingeItem.MovieItem -> {
+                                          backstack.add(MovieDetailScreen(bingeItem.movie.video.id, bingeItem.movie.title))
+                                        }
+                                      }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                  )
+                                }
+                                repeat(speedBingeColumns - rowItems.size) {
+                                  Spacer(modifier = Modifier.weight(1f))
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      if (speedBingePageCount > 1) {
+                        item(key = "speed_binge_dots") {
+                          Row(
+                            modifier = Modifier
+                              .fillMaxWidth()
+                              .padding(top = 10.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                          ) {
+                            repeat(minOf(speedBingePageCount, 7)) { index ->
+                              val selected = index == speedBingePagerState.currentPage
+                              val dotWidth by animateDpAsState(
+                                targetValue = if (selected) 16.dp else 6.dp,
+                                label = "speed_dot_w",
+                              )
+                              val dotColor = if (selected) {
+                                MaterialTheme.colorScheme.primary
+                              } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                              }
+                              Box(
+                                modifier = Modifier
+                                  .padding(horizontal = 3.dp)
+                                  .height(6.dp)
+                                  .width(dotWidth)
+                                  .clip(CircleShape)
+                                  .background(dotColor),
+                              )
+                            }
+                          }
+                        }
+                      }
+
+                      item(key = "speed_binge_spacer") {
+                        Spacer(modifier = Modifier.height(14.dp))
+                      }
+                    }
+                  }
+
                   HomeSection.FEATURED -> {
                     // Featured Hero Spotlight Banner (shown in ALL or SERIES mode)
                     if (showFeaturedHero && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)) {
@@ -570,8 +758,9 @@ object StreamingHomeScreen : Screen {
                   }
 
                   HomeSection.SHOWS -> {
-                    // TV Series Section
-                    if (showShowsSection && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)
+                    // TV Series Section (shown when enabled and Speed Binge is off in ALL mode, or in SERIES tab)
+                    if (showShowsSection && (!showSpeedBinge || state.selectedCategory == StreamingCategory.SERIES)
+                      && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.SERIES)
                       && state.series.isNotEmpty()
                     ) {
                       item(key = "home_shows") {
@@ -597,8 +786,9 @@ object StreamingHomeScreen : Screen {
                   }
 
                   HomeSection.MOVIES -> {
-                    // Movies Section
-                    if (showMoviesSection && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.MOVIES)
+                    // Movies Section (shown when enabled and Speed Binge is off in ALL mode, or in MOVIES tab)
+                    if (showMoviesSection && (!showSpeedBinge || state.selectedCategory == StreamingCategory.MOVIES)
+                      && (state.selectedCategory == StreamingCategory.ALL || state.selectedCategory == StreamingCategory.MOVIES)
                       && state.movies.isNotEmpty()
                     ) {
                       item(key = "home_movies") {
@@ -646,6 +836,45 @@ object StreamingHomeScreen : Screen {
                           }
                         }
                       }
+                    }
+                  }
+                }
+              }
+
+              val anySectionVisible = showSpeedBinge || showFeaturedHero || showContinueWatching ||
+                showContinueListening || showUpNext || showRecentlyAdded || showShowsSection ||
+                showMoviesSection || showFoldersSection
+
+              if (!anySectionVisible) {
+                item(key = "home_all_sections_hidden") {
+                  Column(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(horizontal = 24.dp, vertical = 48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                  ) {
+                    Icon(
+                      imageVector = Icons.Filled.GridView,
+                      contentDescription = null,
+                      tint = MaterialTheme.colorScheme.primary,
+                      modifier = Modifier.size(48.dp),
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                      text = "All Home sections are hidden",
+                      style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                      color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                      text = "Turn on Speed Binge or customize sections in Appearance settings",
+                      style = MaterialTheme.typography.bodyMedium,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                      textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = { backstack.add(app.aryan447.mpvium.ui.preferences.AppearancePreferencesScreen) }) {
+                      Text("Customize Home")
                     }
                   }
                 }
@@ -914,6 +1143,94 @@ private fun buildRecentlyAdded(
   return (episodes + movieItems)
     .sortedByDescending { it.lastPlayedTimestamp }
     .take(12)
+}
+
+/**
+ * Builds items for the Speed Binge grid dial:
+ * Slot 1: The most recently played item (Last Played) with direct resume.
+ * Remaining slots: All available shows and movies, each with its progress bar,
+ * sorted with in-progress titles first.
+ * Only actual movies and TV shows are included (matching Titles tab classifier).
+ */
+private fun buildSpeedBingeItems(
+  continueWatching: List<ContinueWatchingItem>,
+  seriesList: List<LocalSeries>,
+  movieList: List<LocalMovie>,
+  category: StreamingCategory,
+): List<SpeedBingeItem> {
+  // Only actual movies (matching Titles tab filter, excludes short clips/recordings)
+  val libraryMovies = movieList.filter { MovieLibraryClassifier.isMovieLibraryItem(it) }
+
+  // Only valid continue watching (series or actual movie)
+  val validContinueWatching = continueWatching.filter { item ->
+    item.isSeries || MovieLibraryClassifier.classify(
+      fileName = item.video.displayName,
+      folderPath = item.video.path.substringBeforeLast('/', ""),
+      durationMs = item.video.duration,
+      width = item.video.width,
+      height = item.video.height,
+    ) == MovieLibraryKind.MOVIE
+  }
+  val lastPlayed = validContinueWatching.firstOrNull()
+
+  val result = mutableListOf<SpeedBingeItem>()
+
+  when (category) {
+    StreamingCategory.ALL -> {
+      if (lastPlayed != null) {
+        result.add(SpeedBingeItem.LastPlayed(lastPlayed))
+      }
+      val remainingSeries = seriesList
+        .filterNot { lastPlayed != null && lastPlayed.isSeries && it.id == lastPlayed.seriesId }
+        .map { SpeedBingeItem.SeriesItem(it) }
+
+      val remainingMovies = libraryMovies
+        .filterNot { lastPlayed != null && !lastPlayed.isSeries && it.video.path == lastPlayed.video.path }
+        .map { SpeedBingeItem.MovieItem(it) }
+
+      val combinedRemaining = (remainingSeries + remainingMovies).sortedWith(
+        compareByDescending<SpeedBingeItem> { it.progressPercentage > 0f && it.progressPercentage < 1f }
+          .thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
+      )
+      result.addAll(combinedRemaining)
+    }
+
+    StreamingCategory.SERIES -> {
+      if (lastPlayed != null && lastPlayed.isSeries) {
+        result.add(SpeedBingeItem.LastPlayed(lastPlayed))
+      }
+      val remainingSeries = seriesList
+        .filterNot { lastPlayed != null && lastPlayed.isSeries && it.id == lastPlayed.seriesId }
+        .map { SpeedBingeItem.SeriesItem(it) }
+        .sortedWith(
+          compareByDescending<SpeedBingeItem> { it.progressPercentage > 0f && it.progressPercentage < 1f }
+            .thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
+        )
+      result.addAll(remainingSeries)
+    }
+
+    StreamingCategory.MOVIES -> {
+      if (lastPlayed != null && !lastPlayed.isSeries) {
+        result.add(SpeedBingeItem.LastPlayed(lastPlayed))
+      }
+      val remainingMovies = libraryMovies
+        .filterNot { lastPlayed != null && !lastPlayed.isSeries && it.video.path == lastPlayed.video.path }
+        .map { SpeedBingeItem.MovieItem(it) }
+        .sortedWith(
+          compareByDescending<SpeedBingeItem> { it.progressPercentage > 0f && it.progressPercentage < 1f }
+            .thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
+        )
+      result.addAll(remainingMovies)
+    }
+
+    StreamingCategory.CONTINUE_WATCHING -> {
+      validContinueWatching.forEach { item ->
+        result.add(SpeedBingeItem.LastPlayed(item))
+      }
+    }
+  }
+
+  return result
 }
 
 @Composable

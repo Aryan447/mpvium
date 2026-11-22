@@ -7,6 +7,14 @@ import org.junit.Test
 class HomeSectionCollectionsTest {
 
   @Test
+  fun homeSection_containsSpeedBinge() {
+    val section = HomeSection.fromKey("SPEED_BINGE")
+    assertEquals(HomeSection.SPEED_BINGE, section)
+    assertEquals("Speed Binge", HomeSection.SPEED_BINGE.title)
+    assertEquals(HomeSection.SPEED_BINGE, HomeSection.defaultOrder.first())
+  }
+
+  @Test
   fun homeSection_containsContinueListening() {
     val section = HomeSection.fromKey("CONTINUE_LISTENING")
     assertEquals(HomeSection.CONTINUE_LISTENING, section)
@@ -26,5 +34,6 @@ class HomeSectionCollectionsTest {
   @Test
   fun defaultOrderCsv_includesContinueListening() {
     assertTrue(HomeSection.defaultOrderCsv.contains("CONTINUE_LISTENING"))
+    assertTrue(HomeSection.defaultOrderCsv.startsWith("SPEED_BINGE"))
   }
 }

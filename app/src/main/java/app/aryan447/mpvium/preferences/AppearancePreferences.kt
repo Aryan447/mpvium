@@ -47,12 +47,13 @@ class AppearancePreferences(
   val showUnplayedOldVideoLabel = preferenceStore.getBoolean("show_unplayed_old_video_label", true)
   val unplayedOldVideoDays = preferenceStore.getInt("unplayed_old_video_days", 7)
   val showNetworkThumbnails = preferenceStore.getBoolean("show_network_thumbnails", false)
-  val showFeaturedHero = preferenceStore.getBoolean("show_featured_hero", true)
+  val showSpeedBinge = preferenceStore.getBoolean("show_speed_binge", true)
+  val showFeaturedHero = preferenceStore.getBoolean("show_featured_hero", false)
   val homeSectionOrder = preferenceStore.getString("home_section_order", HomeSection.defaultOrderCsv)
-  val showContinueWatching = preferenceStore.getBoolean("show_continue_watching", true)
-  val showContinueListening = preferenceStore.getBoolean("show_continue_listening", true)
-  val showUpNext = preferenceStore.getBoolean("show_up_next", true)
-  val showRecentlyAdded = preferenceStore.getBoolean("show_recently_added", true)
+  val showContinueWatching = preferenceStore.getBoolean("show_continue_watching", false)
+  val showContinueListening = preferenceStore.getBoolean("show_continue_listening", false)
+  val showUpNext = preferenceStore.getBoolean("show_up_next", false)
+  val showRecentlyAdded = preferenceStore.getBoolean("show_recently_added", false)
   val showShowsSection = preferenceStore.getBoolean("show_shows_section", true)
   val showMoviesSection = preferenceStore.getBoolean("show_movies_section", true)
   val showFoldersSection = preferenceStore.getBoolean("show_folders_section", true)
@@ -124,6 +125,7 @@ class AppearancePreferences(
 
   fun setHomeSectionVisible(section: HomeSection, visible: Boolean) {
     when (section) {
+      HomeSection.SPEED_BINGE -> showSpeedBinge.set(visible)
       HomeSection.FEATURED -> showFeaturedHero.set(visible)
       HomeSection.CONTINUE_WATCHING -> showContinueWatching.set(visible)
       HomeSection.CONTINUE_LISTENING -> showContinueListening.set(visible)
@@ -147,6 +149,7 @@ class AppearancePreferences(
 
   fun resetHomeSections() {
     homeSectionOrder.delete()
+    showSpeedBinge.delete()
     showFeaturedHero.delete()
     showContinueWatching.delete()
     showContinueListening.delete()

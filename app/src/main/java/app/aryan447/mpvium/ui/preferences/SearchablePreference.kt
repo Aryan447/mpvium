@@ -114,6 +114,14 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.show_speed_binge",
+                titleRes = R.string.pref_appearance_show_speed_binge_title,
+                summaryRes = R.string.pref_appearance_show_speed_binge_summary,
+                keywords = listOf("speed", "binge", "dial", "grid", "home", "last played", "resume", "shows", "movies"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
+            add(SearchablePreference(
                 key = "appearance.show_featured_hero",
                 titleRes = R.string.pref_appearance_show_featured_hero_title,
                 summaryRes = R.string.pref_appearance_show_featured_hero_summary,
