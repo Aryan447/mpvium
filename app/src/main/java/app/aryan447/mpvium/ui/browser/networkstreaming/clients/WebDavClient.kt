@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkMediaTypes
 import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import com.thegrizzlylabs.sardineandroid.DavResource
@@ -14,16 +15,6 @@ import java.io.InputStream
 class WebDavClient(private val connection: NetworkConnection) : NetworkClient {
   companion object {
     private const val TAG = "WebDavClient"
-
-    /**
-     * Video extensions treated as playable files. Must stay in sync with
-     * FileTypeUtils.VIDEO_EXTENSIONS (utils/storage/VideoScanUtils.kt).
-     */
-    private val VIDEO_EXTENSIONS = setOf(
-      "mp4", "m4v", "mkv", "mk3d", "avi", "mov", "wmv", "flv", "webm",
-      "mpeg", "mpg", "m2v", "ogv", "ogm", "ts", "mts", "m2ts", "vob",
-      "divx", "xvid", "f4v", "rm", "rmvb", "asf", "3gp", "3g2",
-    )
   }
 
   // Note: Sardine-Android uses OkHttp which properly handles UTF-8 encoding by default
@@ -109,7 +100,7 @@ class WebDavClient(private val connection: NetworkConnection) : NetworkClient {
 
     // A "Movie.mkv" href without trailing slash is a playable file, not a
     // folder — even when the server claims collection (Torbox issue #84).
-    if (ext in VIDEO_EXTENSIONS) return false
+    if (NetworkMediaTypes.isVideoFileName(decodedName)) return false
 
     // Any other entry with a concrete size and file-like content type is a file.
     if (contentLength > 0 && contentType.isNotEmpty() &&
@@ -257,7 +248,7 @@ class WebDavClient(private val connection: NetworkConnection) : NetworkClient {
                 isDirectory = isDir,
                 size = try { resource.contentLength ?: 0L } catch (_: Exception) { 0L },
                 lastModified = try { resource.modified?.time ?: 0L } catch (_: Exception) { 0L },
-                mimeType = if (!isDir) getMimeType(decodedName) else null,
+                mimeType = if (!isDir) NetworkMediaTypes.getMimeType(decodedName) else null,
               )
             } catch (e: Exception) {
               Log.w(TAG, "Skipping unreadable WebDAV entry", e)
@@ -375,23 +366,4 @@ class WebDavClient(private val connection: NetworkConnection) : NetworkClient {
         Result.failure(e)
       }
     }
-
-  private fun getMimeType(fileName: String): String? {
-    val extension = fileName.substringBefore('?').substringBefore('#').substringAfterLast('.', "").lowercase()
-    return when (extension) {
-      "mp4", "m4v" -> "video/mp4"
-      "mkv", "mk3d" -> "video/x-matroska"
-      "avi", "divx", "xvid" -> "video/x-msvideo"
-      "mov" -> "video/quicktime"
-      "wmv", "asf" -> "video/x-ms-wmv"
-      "flv", "f4v" -> "video/x-flv"
-      "webm" -> "video/webm"
-      "mpeg", "mpg", "m2v", "vob" -> "video/mpeg"
-      "3gp", "3g2" -> "video/3gpp"
-      "ts", "mts", "m2ts" -> "video/mp2t"
-      "ogv", "ogm" -> "video/ogg"
-      "rm", "rmvb" -> "video/vnd.rn-realvideo"
-      else -> if (extension in VIDEO_EXTENSIONS) "video/*" else null
-    }
-  }
 }

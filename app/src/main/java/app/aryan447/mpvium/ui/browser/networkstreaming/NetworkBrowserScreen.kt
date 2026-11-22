@@ -35,6 +35,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.aryan447.mpvium.database.dao.NetworkConnectionDao
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkMediaTypes
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.pullrefresh.PullRefreshBox
@@ -209,9 +210,15 @@ private fun NetworkBrowserContent(
       val folders = files.filter { it.isDirectory }
       // Fall back to extension when the server omits getcontenttype: some
       // WebDAV servers (e.g. Torbox) report no MIME type, and filtering on
-      // mimeType alone hides playable files (issue #84).
+      // mimeType alone hides playable files (issue #84). Playlist MIME types
+      // are accepted too because HLS servers often report
+      // application/vnd.apple.mpegurl instead of video/* (issue #198).
       val videos = files.filter {
-        !it.isDirectory && (it.mimeType?.startsWith("video/") == true || isVideoExtension(it.name))
+        !it.isDirectory && (
+          it.mimeType?.startsWith("video/") == true ||
+            NetworkMediaTypes.isPlaylistMimeType(it.mimeType) ||
+            NetworkMediaTypes.isVideoFileName(it.name)
+          )
       }
       val networkListState = LazyListState()
 
@@ -314,15 +321,4 @@ private fun NetworkBrowserContent(
     }
   }
 }
-}
-
-private val NETWORK_VIDEO_EXTENSIONS = setOf(
-  "mp4", "m4v", "mkv", "mk3d", "avi", "mov", "wmv", "flv", "webm",
-  "mpeg", "mpg", "m2v", "ogv", "ogm", "ts", "mts", "m2ts", "vob",
-  "divx", "xvid", "f4v", "rm", "rmvb", "asf", "3gp", "3g2",
-)
-
-private fun isVideoExtension(fileName: String): Boolean {
-  val ext = fileName.substringBefore('?').substringBefore('#').substringAfterLast('.', "").lowercase()
-  return ext in NETWORK_VIDEO_EXTENSIONS
 }

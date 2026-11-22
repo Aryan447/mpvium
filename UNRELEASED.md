@@ -18,5 +18,6 @@
 
 ### Fixed
 
+- HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
 - Modern player layout custom action buttons scale consistently with built-in controls.
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.
