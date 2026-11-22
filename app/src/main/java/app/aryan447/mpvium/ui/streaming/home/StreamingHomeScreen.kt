@@ -83,6 +83,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -431,8 +432,25 @@ object StreamingHomeScreen : Screen {
                 category = state.selectedCategory,
               )
             }
-            val speedBingePageCount = remember(speedBingeItems) {
-              if (speedBingeItems.isEmpty()) 0 else (speedBingeItems.size + 5) / 6
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            val isTablet = configuration.smallestScreenWidthDp >= 600
+            val screenWidthDp = configuration.screenWidthDp
+
+            val speedBingeColumns = when {
+              isTablet && isLandscape -> if (screenWidthDp >= 900) 6 else 5
+              isTablet && !isLandscape -> if (screenWidthDp >= 720) 5 else 4
+              isLandscape -> 5
+              else -> 3
+            }
+            val speedBingeRows = when {
+              !isTablet && isLandscape -> 1
+              else -> 2
+            }
+            val speedBingeItemsPerPage = speedBingeColumns * speedBingeRows
+
+            val speedBingePageCount = remember(speedBingeItems, speedBingeItemsPerPage) {
+              if (speedBingeItems.isEmpty()) 0 else (speedBingeItems.size + speedBingeItemsPerPage - 1) / speedBingeItemsPerPage
             }
             val speedBingePagerState = rememberPagerState(pageCount = { speedBingePageCount })
             LazyColumn(
@@ -500,9 +518,12 @@ object StreamingHomeScreen : Screen {
                           state = speedBingePagerState,
                           modifier = Modifier.fillMaxWidth(),
                         ) { pageIndex ->
-                          val startIndex = pageIndex * 6
-                          val pageItems = speedBingeItems.subList(startIndex, minOf(startIndex + 6, speedBingeItems.size))
-                          val rows = pageItems.chunked(3)
+                          val startIndex = pageIndex * speedBingeItemsPerPage
+                          val pageItems = speedBingeItems.subList(
+                            startIndex,
+                            minOf(startIndex + speedBingeItemsPerPage, speedBingeItems.size),
+                          )
+                          val rows = pageItems.chunked(speedBingeColumns)
                           Column(
                             modifier = Modifier
                               .fillMaxWidth()
@@ -546,7 +567,7 @@ object StreamingHomeScreen : Screen {
                                     modifier = Modifier.weight(1f),
                                   )
                                 }
-                                repeat(3 - rowItems.size) {
+                                repeat(speedBingeColumns - rowItems.size) {
                                   Spacer(modifier = Modifier.weight(1f))
                                 }
                               }
