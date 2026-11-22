@@ -50,6 +50,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +62,7 @@ import app.aryan447.mpvium.database.MpviumDatabase
 import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.CustomScriptButton
+import app.aryan447.mpvium.preferences.MpvConfigOwnership
 import app.aryan447.mpvium.preferences.ScriptFileHelper
 import app.aryan447.mpvium.preferences.SettingsManager
 import app.aryan447.mpvium.preferences.preference.collectAsState
@@ -253,6 +255,7 @@ object AdvancedPreferencesScreen : Screen {
             "advanced.mpv_conf_storage_location" to 3,
             "advanced.mpv_conf" to 3,
             "advanced.input_conf" to 3,
+            "advanced.mpv_conf_ownership" to 3,
             "advanced.enable_recently_played" to 7,
             "advanced.clear_playback_history" to 7,
             "advanced.clear_config_cache" to 9,
@@ -477,6 +480,39 @@ object AdvancedPreferencesScreen : Screen {
                 onClick = {
                   backStack.add(ConfigEditorScreen(ConfigEditorScreen.ConfigType.INPUT_CONF))
                 },
+              )
+
+              PreferenceDivider()
+
+              val mpvConfOverrides by preferences.mpvConfOverrides.collectAsState()
+              val ownedOptions =
+                remember(mpvConfOverrides) {
+                  MpvConfigOwnership.resolveOptionNames(mpvConfOverrides)
+                }
+              Preference(
+                modifier = Modifier.settingsHighlightTarget(
+                  state = highlightState,
+                  key = "advanced.mpv_conf_ownership",
+                ),
+                title = { Text(stringResource(R.string.pref_advanced_mpv_conf_ownership)) },
+                summary = {
+                  Text(
+                    if (ownedOptions.isEmpty()) {
+                      stringResource(R.string.pref_advanced_mpv_conf_ownership_summary_app_owned)
+                    } else {
+                      pluralStringResource(
+                        R.plurals.pref_advanced_mpv_conf_ownership_summary_config_owned,
+                        ownedOptions.size,
+                        ownedOptions.size,
+                      )
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Tune)
+                },
+                onClick = { backStack.add(MpvConfOwnershipScreen) },
               )
             }
           }

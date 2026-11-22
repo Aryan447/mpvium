@@ -110,6 +110,7 @@ class SeriesDetector(
       cleaned = cleaned.replace(Regex("""\b[Ee][Pp]\d{1,4}\b"""), " ")
       cleaned = cleaned.replace(Regex("""\b[Ee]pisode\s*\d{1,4}\b""", RegexOption.IGNORE_CASE), " ")
       cleaned = cleaned.replace(Regex("""[\s_]+-\s*\d{1,4}(?:[vV]\d+)?(?:\s*-\s*\d{1,4})?(?:[\s_]*-(?:[\s_]*.+)?)?"""), " ")
+      cleaned = cleaned.replace(Regex("""[\s_]+\d{1,4}(?:[vV]\d+)?(?:\s*-\s*\d{1,4})?\s*$"""), " ")
 
       // Replace delimiters (dots, underscores) with space
       cleaned = cleaned.replace(Regex("""[._]"""), " ")

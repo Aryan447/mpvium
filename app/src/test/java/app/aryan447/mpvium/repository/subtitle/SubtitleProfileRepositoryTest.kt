@@ -59,18 +59,18 @@ class SubtitleProfileRepositoryTest {
     val movieKey = SubtitleProfileRepository.resolveKey("Fargo.1996.1080p.mkv")
 
     assertEquals("series_fargo", showKey)
-    assertEquals(SubtitleProfileRepository.SHARED_MOVIE_KEY, movieKey)
+    assertEquals("movie_fargo@1996", movieKey)
     assertNotEquals(showKey, movieKey)
   }
 
   @Test
-  fun allStandaloneMovies_shareCommonMovieProfileKey() {
-    val movie1Key = SubtitleProfileRepository.resolveKey("The.Dark.Knight.2008.BluRay.mkv")
-    val movie2Key = SubtitleProfileRepository.resolveKey("Inception.mkv")
+  fun standaloneMovie_resolvesNormalizedTitleAndYear() {
+    val keyWithYear = SubtitleProfileRepository.resolveKey("The.Dark.Knight.2008.BluRay.mkv")
+    val keyWithoutYear = SubtitleProfileRepository.resolveKey("Inception.mkv")
 
-    assertEquals(SubtitleProfileRepository.SHARED_MOVIE_KEY, movie1Key)
-    assertEquals(SubtitleProfileRepository.SHARED_MOVIE_KEY, movie2Key)
-    assertEquals(movie1Key, movie2Key)
+    assertEquals("movie_thedarkknight@2008", keyWithYear)
+    assertEquals("movie_inception", keyWithoutYear)
+    assertNotEquals(keyWithYear, keyWithoutYear)
   }
 
   @Test
@@ -106,7 +106,7 @@ class SubtitleProfileRepositoryTest {
   }
 
   @Test
-  fun movieProfile_sharedAcrossDifferentMovies() = runBlocking {
+  fun movieProfiles_areIndependentPerMovie() = runBlocking {
     val cacheFile = File(tempFolder.root, "test_profiles_movies.json")
     val repo = createRepository(cacheFile)
 
@@ -114,12 +114,39 @@ class SubtitleProfileRepositoryTest {
     val movie2Key = SubtitleProfileRepository.resolveKey("Inception.2010.mkv")
 
     repo.saveProfile(movie1Key, subPos = 92, subScale = 1.15f)
+    repo.saveProfile(movie2Key, subPos = 85, subScale = 1.0f)
 
-    // Movie 2 should see the profile saved in Movie 1
-    val profileForMovie2 = repo.getProfile(movie2Key)
-    assertNotNull(profileForMovie2)
-    assertEquals(92, profileForMovie2!!.subPos)
-    assertEquals(1.15f, profileForMovie2.subScale, 0.001f)
+    val profile1 = repo.getProfile(movie1Key)
+    val profile2 = repo.getProfile(movie2Key)
+    assertNotNull(profile1)
+    assertNotNull(profile2)
+    assertEquals(92, profile1!!.subPos)
+    assertEquals(85, profile2!!.subPos)
+  }
+
+  @Test
+  fun multipleMovies_retainSeparatePositionsWithoutResetting() = runBlocking {
+    val cacheFile = File(tempFolder.root, "test_profiles_multiple_movies.json")
+    val repo = createRepository(cacheFile)
+
+    val movie1Key = SubtitleProfileRepository.resolveKey("Movie.One.2021.mkv")
+    val movie2Key = SubtitleProfileRepository.resolveKey("Movie.Two.2022.mkv")
+    val movie3Key = SubtitleProfileRepository.resolveKey("Movie.Three.2023.mkv")
+    val movie4Key = SubtitleProfileRepository.resolveKey("Movie.Four.2024.mkv")
+    val movie5Key = SubtitleProfileRepository.resolveKey("Movie.Five.2025.mkv")
+
+    repo.saveProfile(movie1Key, subPos = 70, subScale = 1.0f)
+    repo.saveProfile(movie2Key, subPos = 75, subScale = 1.1f)
+    repo.saveProfile(movie3Key, subPos = 80, subScale = 1.2f)
+    repo.saveProfile(movie4Key, subPos = 85, subScale = 1.3f)
+    repo.saveProfile(movie5Key, subPos = 90, subScale = 1.4f)
+
+    // Reopen movie 1: its position should still be 70
+    assertEquals(70, repo.getProfile(movie1Key)?.subPos)
+    assertEquals(75, repo.getProfile(movie2Key)?.subPos)
+    assertEquals(80, repo.getProfile(movie3Key)?.subPos)
+    assertEquals(85, repo.getProfile(movie4Key)?.subPos)
+    assertEquals(90, repo.getProfile(movie5Key)?.subPos)
   }
 
   @Test
@@ -148,7 +175,7 @@ class SubtitleProfileRepositoryTest {
     val repo = createRepository(cacheFile)
 
     repo.saveProfile("series_show1", subPos = 80, subScale = 1.2f)
-    repo.saveProfile(SubtitleProfileRepository.SHARED_MOVIE_KEY, subPos = 90, subScale = 1.0f)
+    repo.saveProfile("movie_film1", subPos = 90, subScale = 1.0f)
 
     assertEquals(2, repo.getAllProfiles().size)
 
@@ -156,7 +183,7 @@ class SubtitleProfileRepositoryTest {
 
     assertEquals(0, repo.getAllProfiles().size)
     assertNull(repo.getProfile("series_show1"))
-    assertNull(repo.getProfile(SubtitleProfileRepository.SHARED_MOVIE_KEY))
+    assertNull(repo.getProfile("movie_film1"))
   }
 
   @Test
@@ -166,34 +193,90 @@ class SubtitleProfileRepositoryTest {
 
     val showKeepKey = SubtitleProfileRepository.seriesKeyFor("showkeep")
     val showDeleteKey = SubtitleProfileRepository.seriesKeyFor("showdelete")
-    val movieKey = SubtitleProfileRepository.SHARED_MOVIE_KEY
+    val movieKeepKey = SubtitleProfileRepository.movieKeyFor("Movie Keep", "2021")
+    val movieDeleteKey = SubtitleProfileRepository.movieKeyFor("Movie Delete", "2019")
 
     repo.saveProfile(showKeepKey, subPos = 88, subScale = 1.1f)
     repo.saveProfile(showDeleteKey, subPos = 80, subScale = 0.9f)
-    repo.saveProfile(movieKey, subPos = 92, subScale = 1.0f)
+    repo.saveProfile(movieKeepKey, subPos = 92, subScale = 1.0f)
+    repo.saveProfile(movieDeleteKey, subPos = 94, subScale = 1.0f)
 
-    assertEquals(3, repo.getAllProfiles().size)
+    assertEquals(4, repo.getAllProfiles().size)
 
-    // Run prune where only showkeep and at least one movie are present in library
+    // Run prune where only showkeep and movieKeep are present in library
     repo.pruneStale(
       presentSeriesIds = setOf("showkeep"),
-      presentMovieKeys = setOf("movie_key_1"),
+      presentMovieKeys = setOf(movieKeepKey),
     )
 
     val remaining = repo.getAllProfiles()
     assertEquals(2, remaining.size)
     assertNotNull(repo.getProfile(showKeepKey))
-    assertNotNull(repo.getProfile(movieKey))
+    assertNotNull(repo.getProfile(movieKeepKey))
     assertNull(repo.getProfile(showDeleteKey))
+    assertNull(repo.getProfile(movieDeleteKey))
 
-    // Prune when all movies are deleted
-    repo.pruneStale(
-      presentSeriesIds = setOf("showkeep"),
-      presentMovieKeys = emptySet(),
-    )
-    val afterMoviesDeleted = repo.getAllProfiles()
-    assertEquals(1, afterMoviesDeleted.size)
-    assertNotNull(repo.getProfile(showKeepKey))
-    assertNull(repo.getProfile(movieKey))
+    // Verify pruned state persists to disk
+    val repoRestarted = createRepository(cacheFile)
+    assertEquals(2, repoRestarted.getAllProfiles().size)
+    assertNotNull(repoRestarted.getProfile(showKeepKey))
+    assertNull(repoRestarted.getProfile(showDeleteKey))
+  }
+
+  @Test
+  fun deleteProfileForVideo_deletesMovieProfileImmediately() = runBlocking {
+    val cacheFile = File(tempFolder.root, "test_profiles_delete_video.json")
+    val repo = createRepository(cacheFile)
+
+    val movieFile = "Gladiator.2000.mkv"
+    val moviePath = "/storage/emulated/0/Movies/Gladiator.2000.mkv"
+    val key = SubtitleProfileRepository.resolveKey(movieFile, moviePath)
+
+    repo.saveProfile(key, subPos = 82, subScale = 1.1f)
+    assertNotNull(repo.getProfile(key))
+
+    repo.deleteProfileForVideo(movieFile, moviePath)
+    assertNull(repo.getProfile(key))
+  }
+
+  @Test
+  fun deleteProfileForVideo_preservesSeriesProfileWhenSingleEpisodeDeleted() = runBlocking {
+    val cacheFile = File(tempFolder.root, "test_profiles_preserve_series.json")
+    val repo = createRepository(cacheFile)
+
+    val epFile = "Breaking.Bad.S01E01.mkv"
+    val epPath = "/storage/emulated/0/TV/Breaking Bad/Season 1/01.mkv"
+    val seriesKey = SubtitleProfileRepository.resolveKey(epFile, epPath)
+
+    repo.saveProfile(seriesKey, subPos = 85, subScale = 1.2f)
+    assertNotNull(repo.getProfile(seriesKey))
+
+    // Deleting a single episode file should NOT delete the series profile
+    repo.deleteProfileForVideo(epFile, epPath)
+    assertNotNull(repo.getProfile(seriesKey))
+  }
+
+  @Test
+  fun onVideoRenamed_migratesMovieProfile() = runBlocking {
+    val cacheFile = File(tempFolder.root, "test_profiles_rename.json")
+    val repo = createRepository(cacheFile)
+
+    val oldTitle = "Interstellar.mkv"
+    val oldPath = "/storage/emulated/0/Movies/Interstellar.mkv"
+    val newTitle = "Interstellar.2014.1080p.mkv"
+    val newPath = "/storage/emulated/0/Movies/Interstellar.2014.1080p.mkv"
+
+    val oldKey = SubtitleProfileRepository.resolveKey(oldTitle, oldPath)
+    val newKey = SubtitleProfileRepository.resolveKey(newTitle, newPath)
+
+    repo.saveProfile(oldKey, subPos = 78, subScale = 1.25f)
+    assertEquals(78, repo.getProfile(oldKey)?.subPos)
+
+    repo.onVideoRenamed(oldTitle, oldPath, newTitle, newPath)
+
+    assertNull(repo.getProfile(oldKey))
+    val migrated = repo.getProfile(newKey)
+    assertNotNull(migrated)
+    assertEquals(78, migrated?.subPos)
   }
 }

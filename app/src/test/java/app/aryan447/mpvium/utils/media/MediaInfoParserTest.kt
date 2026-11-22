@@ -255,6 +255,71 @@ class MediaInfoParserTest {
         expectedSeason = null,
         expectedEpisode = null,
       ),
+
+      // 12. Anime naming without dash episode separator (issue #195)
+      ParseTestCase(
+        fileName = "[Raizel]Blue_Exorcist_11(1080p_Dual_Audio_FLAC)_(C4329D88)",
+        expectedTitle = "Blue Exorcist",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 11,
+      ),
+      ParseTestCase(
+        fileName = "[Raizel]Blue_Exorcist_11(1080p_Dual_Audio_FLAC)_(C4329D88).mkv",
+        expectedTitle = "Blue Exorcist",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 11,
+      ),
+      ParseTestCase(
+        fileName = "[Raizel]Blue_Exorcist_01(1080p_Dual_Audio_FLAC)_(C4329D88)",
+        expectedTitle = "Blue Exorcist",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 1,
+      ),
+      ParseTestCase(
+        fileName = "Blue_Exorcist_11(1080p_Dual_Audio_FLAC)_(C4329D88)",
+        expectedTitle = "Blue Exorcist",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 11,
+      ),
+      ParseTestCase(
+        fileName = "[SubsPlease] Bleach 366 (1080p) [12345678].mkv",
+        expectedTitle = "Bleach",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 366,
+      ),
+      ParseTestCase(
+        fileName = "[Erai-raws] Kimetsu no Yaiba 26 [1080p].mkv",
+        expectedTitle = "Kimetsu no Yaiba",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 26,
+      ),
+      ParseTestCase(
+        fileName = "[HorribleSubs] Fairy Tail 175 [720p].mkv",
+        expectedTitle = "Fairy Tail",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 175,
+      ),
+      ParseTestCase(
+        fileName = "[Group] Title_01.mkv",
+        expectedTitle = "Title",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 1,
+      ),
+      ParseTestCase(
+        fileName = "Title_01.mkv",
+        expectedTitle = "Title",
+        expectedYear = null,
+        expectedSeason = 1,
+        expectedEpisode = 1,
+      ),
     )
 
     for (testCase in testTable) {
@@ -337,6 +402,24 @@ class MediaInfoParserTest {
       assertEquals(
         "Normalized key mismatch for Japanese title: $filename",
         expectedNonLatinKey,
+        key,
+      )
+    }
+
+    val blueExorcistFilenames = listOf(
+      "Blue Exorcist",
+      "[Raizel]Blue_Exorcist_11(1080p_Dual_Audio_FLAC)_(C4329D88)",
+      "[Raizel]Blue_Exorcist_11(1080p_Dual_Audio_FLAC)_(C4329D88).mkv",
+      "Blue_Exorcist_11(1080p_Dual_Audio_FLAC)_(C4329D88)",
+      MediaInfoParser.parse("[Raizel]Blue_Exorcist_11(1080p_Dual_Audio_FLAC)_(C4329D88)").title,
+    )
+
+    val expectedBlueExorcistKey = "blueexorcist"
+    for (filename in blueExorcistFilenames) {
+      val key = SeriesDetector.normalizeKey(MediaInfoParser.parse(filename).title)
+      assertEquals(
+        "Normalized key mismatch for Blue Exorcist filename: $filename",
+        expectedBlueExorcistKey,
         key,
       )
     }

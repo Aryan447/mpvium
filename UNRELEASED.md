@@ -6,6 +6,8 @@
 
 ### Added
 
+- Speed Binge grid dial on Home puts your last played show or movie first with instant resume, brings progress bars to every title, and replaces featured banners with a clean media grid.
+- mpv.conf ownership in Settings → Advanced lets you choose which mpv option groups your mpv.conf controls instead of the app.
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
 - Holding any custom theme in the theme picker allows editing its colors or deleting it.
 - The new r/mpvium subreddit joins Discord and Telegram in About and on the website.
@@ -19,5 +21,9 @@
 ### Fixed
 
 - HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
+- Standalone movies now retain their own subtitle position and scale under per-title scope instead of sharing and overwriting a single profile.
+- Deleting or renaming a movie automatically removes or migrates its saved subtitle profile entry.
 - Modern player layout custom action buttons scale consistently with built-in controls.
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.
+- Anime releases without dash episode separators are properly detected as TV series episodes instead of standalone movies.
+- Folders preferences whitelist and blacklist dialogs now list parent directories containing videos.
