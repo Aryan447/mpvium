@@ -41,7 +41,7 @@ class StreamingArtworkStore(
     private const val LEGACY_DISK_FILE_EXTENSION = "jpg"
 
     /** Default decode cap (long edge, px) for cards, rows and episode stills. */
-    const val DEFAULT_MAX_DIMENSION = 1080
+    const val DEFAULT_MAX_DIMENSION = 2048
   }
 
   private val appContext = context.applicationContext ?: context
@@ -226,7 +226,44 @@ class StreamingArtworkStore(
       runCatching { file.delete() }
     }
 
+    val fallback = findFallbackVariantOnDisk(url, maxDimension)
+    if (fallback != null) return fallback
+
     return migrateLegacyFile(url, maxDimension)
+  }
+
+  private val tmdbPattern = Regex("""^https?://image\.tmdb\.org/t/p/[^/]+/(.+)$""", RegexOption.IGNORE_CASE)
+  private val metahubPattern = Regex("""^https?://images\.metahub\.space/(poster|background)/[^/]+/(.+)$""", RegexOption.IGNORE_CASE)
+
+  private fun findFallbackVariantOnDisk(url: String, maxDimension: Int): Bitmap? {
+    val tmdbMatch = tmdbPattern.matchEntire(url)
+    if (tmdbMatch != null) {
+      val path = tmdbMatch.groupValues[1].removePrefix("/")
+      val variants = listOf("original", "w1280", "w780", "w500", "w342", "w185")
+      for (variant in variants) {
+        val candidate = diskFile("https://image.tmdb.org/t/p/$variant/$path")
+        if (candidate.isFile && candidate.length() > 0L) {
+          val bitmap = decodeSampledFile(candidate.absolutePath, maxDimension)
+          if (bitmap != null) return bitmap
+        }
+      }
+    }
+
+    val metahubMatch = metahubPattern.matchEntire(url)
+    if (metahubMatch != null) {
+      val type = metahubMatch.groupValues[1]
+      val rest = metahubMatch.groupValues[2].removePrefix("/")
+      val variants = listOf("original", "large", "medium", "small")
+      for (variant in variants) {
+        val candidate = diskFile("https://images.metahub.space/$type/$variant/$rest")
+        if (candidate.isFile && candidate.length() > 0L) {
+          val bitmap = decodeSampledFile(candidate.absolutePath, maxDimension)
+          if (bitmap != null) return bitmap
+        }
+      }
+    }
+
+    return null
   }
 
   private fun migrateLegacyFile(url: String, maxDimension: Int): Bitmap? {
@@ -282,11 +319,13 @@ class StreamingArtworkStore(
     }
   }
 
-  private fun calculateInSampleSize(options: BitmapFactory.Options, maxDimension: Int): Int {
+  internal fun calculateInSampleSize(options: BitmapFactory.Options, maxDimension: Int): Int {
     val longEdge = maxOf(options.outWidth, options.outHeight)
     if (longEdge <= 0) return 1
     var sampleSize = 1
-    while (longEdge / sampleSize > maxDimension) sampleSize *= 2
+    while ((longEdge / 2) / sampleSize >= maxDimension) {
+      sampleSize *= 2
+    }
     return sampleSize
   }
 
