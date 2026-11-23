@@ -2906,6 +2906,24 @@ class PlayerActivity :
         return true
       }
 
+      KeyEvent.KEYCODE_HEADSETHOOK,
+      KeyEvent.KEYCODE_MEDIA_PLAY,
+      KeyEvent.KEYCODE_MEDIA_PAUSE,
+      KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+        viewModel.handleMediaPlay()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+        viewModel.handleMediaPrevious()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MEDIA_NEXT -> {
+        viewModel.handleMediaNext()
+        return true
+      }
+
       KeyEvent.KEYCODE_MEDIA_REWIND -> {
         viewModel.handleLeftDoubleTap()
         return true
@@ -2934,10 +2952,23 @@ class PlayerActivity :
     keyCode: Int,
     event: KeyEvent?,
   ): Boolean {
-    event?.let {
-      if (player.onKey(it)) return true
+    when (keyCode) {
+      KeyEvent.KEYCODE_HEADSETHOOK,
+      KeyEvent.KEYCODE_MEDIA_PLAY,
+      KeyEvent.KEYCODE_MEDIA_PAUSE,
+      KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+      KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+      KeyEvent.KEYCODE_MEDIA_NEXT,
+      KeyEvent.KEYCODE_MEDIA_REWIND,
+      KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+      KeyEvent.KEYCODE_MEDIA_STOP -> return true
+      else -> {
+        event?.let {
+          if (player.onKey(it)) return true
+        }
+        return super.onKeyUp(keyCode, event)
+      }
     }
-    return super.onKeyUp(keyCode, event)
   }
 
   // ==================== System UI Management ====================
