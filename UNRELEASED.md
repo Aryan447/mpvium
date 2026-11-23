@@ -20,6 +20,8 @@
 
 ### Fixed
 
+- Bottom navigation bar now respects 3-button navigation insets without overlapping system navigation buttons.
+
 - HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
 - Standalone movies now retain their own subtitle position and scale under per-title scope instead of sharing and overwriting a single profile.
 - Deleting or renaming a movie automatically removes or migrates its saved subtitle profile entry.
