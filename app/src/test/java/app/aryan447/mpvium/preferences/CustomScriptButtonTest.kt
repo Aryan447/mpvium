@@ -55,6 +55,7 @@ class CustomScriptButtonTest {
     assertEquals("run", decoded[0].code)
     assertEquals("", decoded[0].longPressCode)
     assertTrue(decoded[0].enabled)
+    assertEquals("bottom", decoded[0].position)
   }
 
   @Test
@@ -211,5 +212,24 @@ class CustomScriptButtonTest {
     assertEquals("D-Crop", parsed[1].title)
     assertEquals("""mp.command("script-binding Script/toggle_crop")""", parsed[1].code)
     assertEquals("", parsed[1].longPressCode)
+    assertEquals("bottom", parsed[0].position)
+    assertEquals("bottom", parsed[1].position)
+  }
+
+  @Test
+  fun customScriptButton_fromXml_parsesPositionTag() {
+    val xml = """
+      <customButtons>
+        <button slot="0">
+          <title>Stats</title>
+          <content>script-binding stats/display-stats-toggle</content>
+          <position>top</position>
+        </button>
+      </customButtons>
+    """.trimIndent()
+
+    val parsed = CustomScriptButton.fromXml(xml)
+    assertEquals(1, parsed.size)
+    assertEquals("top", parsed[0].position)
   }
 }

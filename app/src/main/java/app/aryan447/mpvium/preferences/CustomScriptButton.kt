@@ -20,6 +20,7 @@ data class CustomScriptButton(
   val code: String,
   val longPressCode: String = "",
   val enabled: Boolean = true,
+  val position: String = "bottom",
 ) {
   companion object {
     private val json = Json { ignoreUnknownKeys = true }
@@ -48,6 +49,8 @@ data class CustomScriptButton(
           val enabledStr = getTagText(btnElem, "enabled")
           val enabled = if (enabledStr.isBlank()) true else enabledStr.lowercase() != "false"
           val id = getTagText(btnElem, "id").ifBlank { UUID.randomUUID().toString() }
+          val posText = getTagText(btnElem, "position").ifBlank { getTagText(btnElem, "location") }
+          val position = if (posText.equals("top", ignoreCase = true)) "top" else "bottom"
           if (title.isNotBlank() || content.isNotBlank()) {
             buttons.add(
               CustomScriptButton(
@@ -56,6 +59,7 @@ data class CustomScriptButton(
                 code = content,
                 longPressCode = longPressContent,
                 enabled = enabled,
+                position = position,
               )
             )
           }
@@ -96,6 +100,10 @@ data class CustomScriptButton(
           val onStartup = doc.createElement("onStartup")
           onStartup.appendChild(doc.createCDATASection(""))
           btn.appendChild(onStartup)
+
+          val pos = doc.createElement("position")
+          pos.appendChild(doc.createTextNode(button.position))
+          btn.appendChild(pos)
 
           root.appendChild(btn)
         }

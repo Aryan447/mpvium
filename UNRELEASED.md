@@ -18,6 +18,7 @@
 
 ### Changed
 
+- Modern player layout places custom buttons directly between the title and bottom-right controls or between Close/PiP and volume controls without extra rows.
 - Custom script buttons render as individual floating glass pill chips matching the Modern Player aesthetic.
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.
 - Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.

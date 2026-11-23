@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -87,6 +88,7 @@ object CustomButtonsScreen : Screen {
     var draftTitle by remember { mutableStateOf("") }
     var draftCode by remember { mutableStateOf("") }
     var draftLongPressCode by remember { mutableStateOf("") }
+    var draftPosition by remember { mutableStateOf("bottom") }
 
     fun saveButtons(next: List<CustomScriptButton>) {
       preferences.customScriptButtons.set(CustomScriptButton.encode(next))
@@ -173,6 +175,7 @@ object CustomButtonsScreen : Screen {
       draftTitle = ""
       draftCode = ""
       draftLongPressCode = ""
+      draftPosition = "bottom"
       showEditor = true
     }
 
@@ -181,6 +184,7 @@ object CustomButtonsScreen : Screen {
       draftTitle = button.title
       draftCode = button.code
       draftLongPressCode = button.longPressCode
+      draftPosition = button.position
       showEditor = true
     }
 
@@ -225,6 +229,25 @@ object CustomButtonsScreen : Screen {
               textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
               modifier = Modifier.fillMaxWidth(),
             )
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text("Placement", style = MaterialTheme.typography.bodyMedium)
+              Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                  selected = draftPosition == "bottom",
+                  onClick = { draftPosition = "bottom" },
+                  label = { Text("Bottom bar") },
+                )
+                FilterChip(
+                  selected = draftPosition == "top",
+                  onClick = { draftPosition = "top" },
+                  label = { Text("Top bar") },
+                )
+              }
+            }
             Text(
               stringResource(R.string.pref_custom_buttons_field_help),
               style = MaterialTheme.typography.bodySmall,
@@ -251,6 +274,7 @@ object CustomButtonsScreen : Screen {
                     code = draftCode.trim(),
                     longPressCode = draftLongPressCode.trim(),
                     enabled = true,
+                    position = draftPosition,
                   )
                 } else {
                   buttons.map {
@@ -259,6 +283,7 @@ object CustomButtonsScreen : Screen {
                         title = draftTitle.trim(),
                         code = draftCode.trim(),
                         longPressCode = draftLongPressCode.trim(),
+                        position = draftPosition,
                       )
                     } else {
                       it
@@ -299,6 +324,7 @@ object CustomButtonsScreen : Screen {
                       code = preset.code,
                       longPressCode = preset.longPressCode,
                       enabled = true,
+                      position = preset.position,
                     )
                     saveButtons(buttons + newBtn)
                     if (preset.requiredScript != null) {
@@ -482,12 +508,23 @@ object CustomButtonsScreen : Screen {
                     PreferenceIconBox(icon = Icons.Outlined.PlayArrow)
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                      Text(
-                        button.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                      )
+                      Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                      ) {
+                        Text(
+                          button.title,
+                          style = MaterialTheme.typography.titleMedium,
+                          maxLines = 1,
+                          overflow = TextOverflow.Ellipsis,
+                          modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Text(
+                          text = if (button.position == "top") "Top bar" else "Bottom bar",
+                          style = MaterialTheme.typography.labelSmall,
+                          color = MaterialTheme.colorScheme.primary,
+                        )
+                      }
                       Text(
                         text = "Tap: ${button.code}" +
                           if (button.longPressCode.isNotBlank()) "\nHold: ${button.longPressCode}" else "",
