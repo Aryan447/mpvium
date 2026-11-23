@@ -38,6 +38,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.databinding.PlayerLayoutBinding
 import app.aryan447.mpvium.domain.playbackstate.PlaybackCheckpointDecider
