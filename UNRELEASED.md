@@ -7,6 +7,7 @@
 ### Added
 
 - Videos in WebDAV, SMB, and FTP folders are automatically queued into the playlist when playlist mode is enabled, advancing to the next file when playback ends or fails.
+- Custom Lua and mpv script buttons in player overlay with single tap and long-press actions, plus XML import and export.
 - Speed Binge grid dial on Home puts your last played show or movie first with instant resume, brings progress bars to every title, and replaces featured banners with a clean media grid.
 - mpv.conf ownership in Settings → Advanced lets you choose which mpv option groups your mpv.conf controls instead of the app.
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.
@@ -21,6 +22,8 @@
 
 ### Fixed
 
+- Bottom navigation bar now respects 3-button navigation insets without overlapping system navigation buttons.
+
 - HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
 - Standalone movies now retain their own subtitle position and scale under per-title scope instead of sharing and overwriting a single profile.
 - Deleting or renaming a movie automatically removes or migrates its saved subtitle profile entry.
@@ -28,3 +31,4 @@
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.
 - Anime releases without dash episode separators are properly detected as TV series episodes instead of standalone movies.
 - Folders preferences whitelist and blacklist dialogs now list parent directories containing videos.
+- Media control buttons and keys now follow their configured action in Preferences → Gestures.

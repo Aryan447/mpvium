@@ -516,7 +516,8 @@ class PlayerViewModel(
   }
 
   // Cached values
-  private val doubleTapToSeekDuration by lazy { gesturePreferences.doubleTapToSeekDuration.get() }
+  private val doubleTapToSeekDuration: Int
+    get() = gesturePreferences.doubleTapToSeekDuration.get()
   private val inputMethodManager by lazy {
     host.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
   }
@@ -1791,6 +1792,38 @@ class PlayerViewModel(
     }
   }
 
+  fun handleMediaPrevious() {
+    when (gesturePreferences.mediaPreviousGesture.get()) {
+      SingleActionGesture.Seek -> seekBy(-doubleTapToSeekDuration)
+      SingleActionGesture.PlayPause -> pauseUnpause()
+      SingleActionGesture.Custom -> viewModelScope.launch(Dispatchers.IO) {
+        MPVLib.command("keypress", CustomKeyCodes.MediaPrevious.keyCode)
+      }
+      SingleActionGesture.None -> {}
+    }
+  }
+
+  fun handleMediaPlay() {
+    when (gesturePreferences.mediaPlayGesture.get()) {
+      SingleActionGesture.PlayPause -> pauseUnpause()
+      SingleActionGesture.Custom -> viewModelScope.launch(Dispatchers.IO) {
+        MPVLib.command("keypress", CustomKeyCodes.MediaPlay.keyCode)
+      }
+      SingleActionGesture.Seek, SingleActionGesture.None -> {}
+    }
+  }
+
+  fun handleMediaNext() {
+    when (gesturePreferences.mediaNextGesture.get()) {
+      SingleActionGesture.Seek -> seekBy(doubleTapToSeekDuration)
+      SingleActionGesture.PlayPause -> pauseUnpause()
+      SingleActionGesture.Custom -> viewModelScope.launch(Dispatchers.IO) {
+        MPVLib.command("keypress", CustomKeyCodes.MediaNext.keyCode)
+      }
+      SingleActionGesture.None -> {}
+    }
+  }
+
   // ==================== Video Zoom ====================
 
   fun setVideoZoom(zoom: Float) {
@@ -2546,6 +2579,19 @@ class PlayerViewModel(
   }
 
   // ==================== Utility ====================
+
+  fun executeCustomCommand(raw: String) {
+    if (raw.isBlank()) return
+    val commands = app.aryan447.mpvium.preferences.CustomCommandParser.parse(raw)
+    if (commands.isEmpty()) return
+    for (cmd in commands) {
+      runCatching {
+        MPVLib.command(*cmd.toTypedArray())
+      }.onFailure { e ->
+        Log.e("PlayerViewModel", "Failed to run custom command: ${cmd.joinToString(" ")}", e)
+      }
+    }
+  }
 
   fun showToast(message: String) {
     Toast.makeText(host.context, message, Toast.LENGTH_SHORT).show()
