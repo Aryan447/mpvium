@@ -516,7 +516,8 @@ class PlayerViewModel(
   }
 
   // Cached values
-  private val doubleTapToSeekDuration by lazy { gesturePreferences.doubleTapToSeekDuration.get() }
+  private val doubleTapToSeekDuration: Int
+    get() = gesturePreferences.doubleTapToSeekDuration.get()
   private val inputMethodManager by lazy {
     host.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
   }
@@ -1786,6 +1787,38 @@ class PlayerViewModel(
       SingleActionGesture.PlayPause -> pauseUnpause()
       SingleActionGesture.Custom -> viewModelScope.launch(Dispatchers.IO) {
         MPVLib.command("keypress", CustomKeyCodes.DoubleTapRight.keyCode)
+      }
+      SingleActionGesture.None -> {}
+    }
+  }
+
+  fun handleMediaPrevious() {
+    when (gesturePreferences.mediaPreviousGesture.get()) {
+      SingleActionGesture.Seek -> seekBy(-doubleTapToSeekDuration)
+      SingleActionGesture.PlayPause -> pauseUnpause()
+      SingleActionGesture.Custom -> viewModelScope.launch(Dispatchers.IO) {
+        MPVLib.command("keypress", CustomKeyCodes.MediaPrevious.keyCode)
+      }
+      SingleActionGesture.None -> {}
+    }
+  }
+
+  fun handleMediaPlay() {
+    when (gesturePreferences.mediaPlayGesture.get()) {
+      SingleActionGesture.PlayPause -> pauseUnpause()
+      SingleActionGesture.Custom -> viewModelScope.launch(Dispatchers.IO) {
+        MPVLib.command("keypress", CustomKeyCodes.MediaPlay.keyCode)
+      }
+      SingleActionGesture.Seek, SingleActionGesture.None -> {}
+    }
+  }
+
+  fun handleMediaNext() {
+    when (gesturePreferences.mediaNextGesture.get()) {
+      SingleActionGesture.Seek -> seekBy(doubleTapToSeekDuration)
+      SingleActionGesture.PlayPause -> pauseUnpause()
+      SingleActionGesture.Custom -> viewModelScope.launch(Dispatchers.IO) {
+        MPVLib.command("keypress", CustomKeyCodes.MediaNext.keyCode)
       }
       SingleActionGesture.None -> {}
     }

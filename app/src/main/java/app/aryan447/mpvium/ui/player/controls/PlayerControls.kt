@@ -923,7 +923,7 @@ fun PlayerControls(
                     paused = paused == true,
                     onClick = {
                       resetControlsTimestamp = System.currentTimeMillis()
-                      viewModel.pauseUnpause()
+                      viewModel.handleMediaPlay()
                     },
                     hideBackground = hideBackground,
                     size = if (isModern) 84.dp else 72.dp,
@@ -946,7 +946,7 @@ fun PlayerControls(
                   paused = paused == true,
                   onClick = {
                     resetControlsTimestamp = System.currentTimeMillis()
-                    viewModel.pauseUnpause()
+                    viewModel.handleMediaPlay()
                   },
                   hideBackground = hideBackground,
                   size = if (isModern) 84.dp else 72.dp,

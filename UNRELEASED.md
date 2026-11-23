@@ -27,3 +27,4 @@
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.
 - Anime releases without dash episode separators are properly detected as TV series episodes instead of standalone movies.
 - Folders preferences whitelist and blacklist dialogs now list parent directories containing videos.
+- Media control buttons and keys now follow their configured action in Preferences → Gestures.
