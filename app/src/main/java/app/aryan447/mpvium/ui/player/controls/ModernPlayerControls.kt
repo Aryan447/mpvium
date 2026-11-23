@@ -238,6 +238,9 @@ fun ModernPlayerControls(
         .fillMaxWidth()
         .padding(top = topSafeInset, start = startSafeInset, end = endSafeInset),
     ) {
+      val topCustomButtons = remember(customButtons) {
+        customButtons.filter { it.position.equals("top", ignoreCase = true) }
+      }
       Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -291,6 +294,20 @@ fun ModernPlayerControls(
                 },
             )
           }
+        }
+
+        // Top custom controls between [ ✕ | PiP ] and Volume
+        if (topCustomButtons.isNotEmpty()) {
+          Spacer(modifier = Modifier.width(12.dp))
+          CustomButtonsRow(
+            buttons = topCustomButtons,
+            onExecute = { cmd -> viewModel.executeCustomCommand(cmd) },
+            resetControlsTimestamp = resetControlsTimestamp,
+            surfaceColor = surfaceColor,
+            borderStroke = borderStroke,
+            modifier = Modifier.weight(1f, fill = false),
+          )
+          Spacer(modifier = Modifier.width(12.dp))
         }
 
         // Top-right Expandable Volume & Brightness Controls
@@ -350,25 +367,18 @@ fun ModernPlayerControls(
           bottom = gestureSafeBottom + tabletBottomOffset,
         ),
     ) {
+      val bottomCustomButtons = remember(customButtons) {
+        customButtons.filter { !it.position.equals("top", ignoreCase = true) }
+      }
       Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
       ) {
-        if (customButtons.isNotEmpty()) {
-          CustomButtonsRow(
-            buttons = customButtons,
-            onExecute = { cmd -> viewModel.executeCustomCommand(cmd) },
-            resetControlsTimestamp = resetControlsTimestamp,
-            surfaceColor = surfaceColor,
-            borderStroke = borderStroke,
-          )
-        }
-
-        // Row above seekbar: Title on left, Actions pill on right
+        // Row above seekbar: Title on left, Custom Buttons in center, Actions pill on right
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.Bottom,
+          verticalAlignment = Alignment.CenterVertically,
         ) {
           // Title Block (Two-line for TV show / subtitle, or single-line for movie / single-line mode / raw title)
           val hasSubtitle = cleanTitle?.subtitle != null
@@ -470,7 +480,19 @@ fun ModernPlayerControls(
             }
           }
 
-          Spacer(modifier = Modifier.width(16.dp))
+          // Controls between Title and Bottom-Right actions pill
+          if (bottomCustomButtons.isNotEmpty()) {
+            Spacer(modifier = Modifier.width(12.dp))
+            CustomButtonsRow(
+              buttons = bottomCustomButtons,
+              onExecute = { cmd -> viewModel.executeCustomCommand(cmd) },
+              resetControlsTimestamp = resetControlsTimestamp,
+              surfaceColor = surfaceColor,
+              borderStroke = borderStroke,
+              modifier = Modifier.weight(1f, fill = false),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+          }
 
           // Bottom-Right Actions Pill: [ Subtitles | Audio | Explain | Menu ]
           ModernBottomActionsPill(

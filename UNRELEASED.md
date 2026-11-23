@@ -6,6 +6,7 @@
 
 ### Added
 
+- Built-in custom button presets and installable example scripts in Settings → Player controls → Custom buttons and Manage scripts.
 - Create custom series action in the unified Titles tab top bar and empty states.
 - Videos in WebDAV, SMB, and FTP folders are automatically queued into the playlist when playlist mode is enabled, advancing to the next file when playback ends or fails.
 - Custom Lua and mpv script buttons in player overlay with single tap and long-press actions, plus XML import and export.
@@ -18,12 +19,15 @@
 
 ### Changed
 
+- Modern player layout places custom buttons directly between the title and bottom-right controls or between Close/PiP and volume controls without extra rows.
+- Custom script buttons render as individual floating glass pill chips matching the Modern Player aesthetic.
 - Movie and TV series detail screens redesigned with Material 3 styling, removing the dark poster gradient overlay for pure artwork clarity.
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.
 - Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.
 
 ### Fixed
 
+- Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
 - Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
 - Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.
 - Bottom navigation bar now respects 3-button navigation insets without overlapping system navigation buttons.

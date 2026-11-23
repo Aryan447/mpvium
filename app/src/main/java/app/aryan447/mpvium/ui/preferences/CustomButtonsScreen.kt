@@ -13,27 +13,33 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,10 +58,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.CustomButtonPresets
 import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import java.io.File
 import java.util.UUID
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.Preference
@@ -68,15 +77,18 @@ object CustomButtonsScreen : Screen {
   @Composable
   override fun Content() {
     val context = LocalContext.current
+    val backStack = LocalBackStack.current
     val preferences = koinInject<AdvancedPreferences>()
     val rawButtons by preferences.customScriptButtons.collectAsState()
     val buttons = remember(rawButtons) { CustomScriptButton.decode(rawButtons) }
 
     var showEditor by remember { mutableStateOf(false) }
+    var showPresetsDialog by remember { mutableStateOf(false) }
     var editingId by remember { mutableStateOf<String?>(null) }
     var draftTitle by remember { mutableStateOf("") }
     var draftCode by remember { mutableStateOf("") }
     var draftLongPressCode by remember { mutableStateOf("") }
+    var draftPosition by remember { mutableStateOf("bottom") }
 
     fun saveButtons(next: List<CustomScriptButton>) {
       preferences.customScriptButtons.set(CustomScriptButton.encode(next))
@@ -93,11 +105,29 @@ object CustomButtonsScreen : Screen {
             if (imported.isNotEmpty()) {
               val next = buttons + imported.map { b -> b.copy(id = UUID.randomUUID().toString()) }
               saveButtons(next)
-              Toast.makeText(
-                context,
-                context.getString(R.string.pref_custom_buttons_import_toast, imported.size),
-                Toast.LENGTH_SHORT,
-              ).show()
+              val scriptsDir = File(context.filesDir, "scripts")
+              val missingScripts = imported.mapNotNull { btn ->
+                val combined = btn.code + " " + btn.longPressCode
+                Regex("""script-binding\s+([A-Za-z0-9_-]+)/""").find(combined)?.groupValues?.get(1)
+              }.distinct().filter { scriptName ->
+                !scriptsDir.exists() || scriptsDir.listFiles()?.none { f ->
+                  f.isFile && f.name.substringBeforeLast('.').equals(scriptName, ignoreCase = true)
+                } == true
+              }
+              if (missingScripts.isNotEmpty()) {
+                val scriptList = missingScripts.joinToString(", ") { "$it.lua" }
+                Toast.makeText(
+                  context,
+                  "Imported ${imported.size} buttons. Remember to add $scriptList in Manage scripts.",
+                  Toast.LENGTH_LONG,
+                ).show()
+              } else {
+                Toast.makeText(
+                  context,
+                  context.getString(R.string.pref_custom_buttons_import_toast, imported.size),
+                  Toast.LENGTH_SHORT,
+                ).show()
+              }
             } else {
               Toast.makeText(
                 context,
@@ -145,6 +175,7 @@ object CustomButtonsScreen : Screen {
       draftTitle = ""
       draftCode = ""
       draftLongPressCode = ""
+      draftPosition = "bottom"
       showEditor = true
     }
 
@@ -153,6 +184,7 @@ object CustomButtonsScreen : Screen {
       draftTitle = button.title
       draftCode = button.code
       draftLongPressCode = button.longPressCode
+      draftPosition = button.position
       showEditor = true
     }
 
@@ -197,6 +229,25 @@ object CustomButtonsScreen : Screen {
               textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
               modifier = Modifier.fillMaxWidth(),
             )
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text("Placement", style = MaterialTheme.typography.bodyMedium)
+              Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                  selected = draftPosition == "bottom",
+                  onClick = { draftPosition = "bottom" },
+                  label = { Text("Bottom bar") },
+                )
+                FilterChip(
+                  selected = draftPosition == "top",
+                  onClick = { draftPosition = "top" },
+                  label = { Text("Top bar") },
+                )
+              }
+            }
             Text(
               stringResource(R.string.pref_custom_buttons_field_help),
               style = MaterialTheme.typography.bodySmall,
@@ -223,6 +274,7 @@ object CustomButtonsScreen : Screen {
                     code = draftCode.trim(),
                     longPressCode = draftLongPressCode.trim(),
                     enabled = true,
+                    position = draftPosition,
                   )
                 } else {
                   buttons.map {
@@ -231,6 +283,7 @@ object CustomButtonsScreen : Screen {
                         title = draftTitle.trim(),
                         code = draftCode.trim(),
                         longPressCode = draftLongPressCode.trim(),
+                        position = draftPosition,
                       )
                     } else {
                       it
@@ -248,11 +301,112 @@ object CustomButtonsScreen : Screen {
       )
     }
 
+    if (showPresetsDialog) {
+      AlertDialog(
+        onDismissRequest = { showPresetsDialog = false },
+        title = { Text("Preset Buttons") },
+        text = {
+          LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            items(CustomButtonPresets.PRESETS.size) { index ->
+              val preset = CustomButtonPresets.PRESETS[index]
+              val alreadyAdded = buttons.any { it.title.equals(preset.title, ignoreCase = true) }
+              Surface(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .clip(RoundedCornerShape(12.dp))
+                  .clickable {
+                    val newBtn = CustomScriptButton(
+                      id = UUID.randomUUID().toString(),
+                      title = preset.title,
+                      code = preset.code,
+                      longPressCode = preset.longPressCode,
+                      enabled = true,
+                      position = preset.position,
+                    )
+                    saveButtons(buttons + newBtn)
+                    if (preset.requiredScript != null) {
+                      val scriptsDir = File(context.filesDir, "scripts")
+                      val exists = scriptsDir.exists() && scriptsDir.listFiles()?.any {
+                        it.isFile && it.name.substringBeforeLast('.').equals(
+                          preset.requiredScript.substringBeforeLast('.'),
+                          ignoreCase = true,
+                        )
+                      } == true
+                      if (!exists) {
+                        Toast.makeText(
+                          context,
+                          "Added ${preset.title}. Remember to install ${preset.requiredScript} in Manage scripts.",
+                          Toast.LENGTH_LONG,
+                        ).show()
+                      } else {
+                        Toast.makeText(context, "Added ${preset.title}", Toast.LENGTH_SHORT).show()
+                      }
+                    } else {
+                      Toast.makeText(context, "Added ${preset.title}", Toast.LENGTH_SHORT).show()
+                    }
+                    showPresetsDialog = false
+                  },
+                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(12.dp),
+              ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                  ) {
+                    Text(
+                      text = preset.title,
+                      style = MaterialTheme.typography.titleMedium,
+                      color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (alreadyAdded) {
+                      Text(
+                        text = "Added",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                      )
+                    }
+                  }
+                  Spacer(modifier = Modifier.height(4.dp))
+                  Text(
+                    text = preset.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                  if (preset.requiredScript != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                      text = "Requires ${preset.requiredScript}",
+                      style = MaterialTheme.typography.labelSmall,
+                      color = MaterialTheme.colorScheme.secondary,
+                    )
+                  }
+                }
+              }
+            }
+          }
+        },
+        confirmButton = {
+          TextButton(onClick = { showPresetsDialog = false }) { Text("Close") }
+        },
+      )
+    }
+
     Scaffold(
       topBar = {
         SettingsTopBar(
           title = stringResource(R.string.pref_custom_buttons_title),
           actions = {
+            IconButton(onClick = { showPresetsDialog = true }) {
+              Icon(
+                Icons.Outlined.AutoAwesome,
+                contentDescription = "Suggested presets",
+              )
+            }
             IconButton(
               onClick = {
                 importLauncher.launch(arrayOf("text/xml", "application/xml", "text/plain", "*/*"))
@@ -311,6 +465,20 @@ object CustomButtonsScreen : Screen {
                 )
                 PreferenceDivider()
                 Preference(
+                  title = { Text("Choose from presets") },
+                  summary = {
+                    Text(
+                      "Add suggested buttons for Sub/Audio delay, Speed, Stats, Snapshot, Night Mode, etc.",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  },
+                  icon = {
+                    PreferenceRowIcon(icon = Icons.Outlined.AutoAwesome)
+                  },
+                  onClick = { showPresetsDialog = true },
+                )
+                PreferenceDivider()
+                Preference(
                   title = { Text(stringResource(R.string.pref_custom_buttons_import)) },
                   summary = {
                     Text(
@@ -340,12 +508,23 @@ object CustomButtonsScreen : Screen {
                     PreferenceIconBox(icon = Icons.Outlined.PlayArrow)
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                      Text(
-                        button.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                      )
+                      Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                      ) {
+                        Text(
+                          button.title,
+                          style = MaterialTheme.typography.titleMedium,
+                          maxLines = 1,
+                          overflow = TextOverflow.Ellipsis,
+                          modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Text(
+                          text = if (button.position == "top") "Top bar" else "Bottom bar",
+                          style = MaterialTheme.typography.labelSmall,
+                          color = MaterialTheme.colorScheme.primary,
+                        )
+                      }
                       Text(
                         text = "Tap: ${button.code}" +
                           if (button.longPressCode.isNotBlank()) "\nHold: ${button.longPressCode}" else "",
@@ -398,6 +577,45 @@ object CustomButtonsScreen : Screen {
                   if (index < buttons.lastIndex) PreferenceDivider()
                 }
               }
+            }
+
+            item {
+              PreferenceCard {
+                Preference(
+                  title = { Text("Choose from presets") },
+                  summary = {
+                    Text(
+                      "Explore suggested buttons (Sub/Audio delay, Speed, Stats, Snapshot, etc.)",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  },
+                  icon = {
+                    PreferenceRowIcon(icon = Icons.Outlined.AutoAwesome)
+                  },
+                  onClick = { showPresetsDialog = true },
+                )
+              }
+            }
+          }
+
+          item {
+            PreferenceSectionHeader(title = "Scripts")
+          }
+          item {
+            PreferenceCard {
+              Preference(
+                title = { Text("Manage scripts") },
+                summary = {
+                  Text(
+                    "Import and manage Lua or JS scripts used by custom buttons",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Code)
+                },
+                onClick = { backStack.add(ManageScriptsScreen) },
+              )
             }
           }
         }
