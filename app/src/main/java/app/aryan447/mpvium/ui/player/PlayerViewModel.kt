@@ -2404,10 +2404,12 @@ class PlayerViewModel(
   fun hasPrevious(): Boolean = (host as? PlayerActivity)?.hasPrevious() ?: false
 
   fun playNext() {
+    (host as? PlayerActivity)?.resetConsecutivePlaybackErrors()
     (host as? PlayerActivity)?.playNext()
   }
 
   fun playPrevious() {
+    (host as? PlayerActivity)?.resetConsecutivePlaybackErrors()
     (host as? PlayerActivity)?.playPrevious()
   }
 
