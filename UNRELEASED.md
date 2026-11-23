@@ -30,6 +30,7 @@
 - Downloaded and sideloaded media on Android TV is no longer suppressed from the Titles library by mobile transient folder thresholds.
 - Software decoder selection strictly disables hardware decoding across playback reloads, playlist items, and singleTask session switches.
 - Main navigation rail on TV uses clean native Material 3 indicator pills without distorted selection outlines.
+- HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
 - Standalone movies now retain their own subtitle position and scale under per-title scope instead of sharing and overwriting a single profile.
 - Deleting or renaming a movie automatically removes or migrates its saved subtitle profile entry.
 - Modern player layout custom action buttons scale consistently with built-in controls.
