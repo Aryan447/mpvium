@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +71,19 @@ object ManageScriptsScreen : Screen {
     LaunchedEffect(refreshTick) {
       withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, "scripts")
+        if (dir.exists()) {
+          dir.listFiles()?.forEach { file ->
+            if (file.isFile && file.name.endsWith(".txt", ignoreCase = true)) {
+              val normalized = ScriptFileHelper.normalizeScriptName(file.name)
+              if (normalized != null && normalized != file.name) {
+                val dest = File(dir, normalized)
+                if (!dest.exists()) {
+                  file.renameTo(dest)
+                }
+              }
+            }
+          }
+        }
         val files =
           if (dir.exists()) {
             dir.listFiles()
@@ -98,10 +112,10 @@ object ManageScriptsScreen : Screen {
                   if (cursor.moveToFirst() && idx >= 0) cursor.getString(idx) else null
                 }
               }.getOrNull() ?: uri.lastPathSegment?.substringAfterLast('/') ?: continue
-            if (!ScriptFileHelper.isScriptFile(name)) continue
+            val targetName = ScriptFileHelper.normalizeScriptName(name) ?: continue
             runCatching {
               context.contentResolver.openInputStream(uri)?.use { input ->
-                File(dir, name).outputStream().use { output -> input.copyTo(output) }
+                File(dir, targetName).outputStream().use { output -> input.copyTo(output) }
               }
               imported++
             }
@@ -242,6 +256,57 @@ object ManageScriptsScreen : Screen {
                   style = MaterialTheme.typography.bodySmall,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+              }
+            }
+          }
+
+          item {
+            PreferenceSectionHeader(title = "Example scripts")
+          }
+          item {
+            PreferenceCard {
+              val scriptInstalled = File(context.filesDir, "scripts/Script.lua").exists()
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+              ) {
+                PreferenceRowIcon(icon = Icons.Outlined.Code)
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                  Text("Script.lua", style = MaterialTheme.typography.titleMedium)
+                  Text(
+                    "Combined script for Delete File, Dynamic Crop, and Subtitle Delay memory",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                FilledTonalButton(
+                  onClick = {
+                    scope.launch(Dispatchers.IO) {
+                      runCatching {
+                        val scriptsDir = File(context.filesDir, "scripts").apply { mkdirs() }
+                        context.assets.open("example_scripts/Script.lua").use { input ->
+                          File(scriptsDir, "Script.lua").outputStream().use { output ->
+                            input.copyTo(output)
+                          }
+                        }
+                        withContext(Dispatchers.Main) {
+                          Toast.makeText(context, "Installed Script.lua", Toast.LENGTH_SHORT).show()
+                          refreshTick++
+                        }
+                      }.onFailure { e ->
+                        withContext(Dispatchers.Main) {
+                          Toast.makeText(context, "Failed to install: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                      }
+                    }
+                  },
+                ) {
+                  Text(if (scriptInstalled) "Reinstall" else "Install")
+                }
               }
             }
           }

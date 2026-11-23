@@ -2591,12 +2591,43 @@ class PlayerViewModel(
     if (raw.isBlank()) return
     val commands = app.aryan447.mpvium.preferences.CustomCommandParser.parse(raw)
     if (commands.isEmpty()) return
+    val scriptsDir = File(host.context.filesDir, "scripts")
     for (cmd in commands) {
+      val resolvedCmd = resolveCustomCommand(cmd, scriptsDir)
       runCatching {
-        MPVLib.command(*cmd.toTypedArray())
+        MPVLib.command(*resolvedCmd.toTypedArray())
       }.onFailure { e ->
-        Log.e("PlayerViewModel", "Failed to run custom command: ${cmd.joinToString(" ")}", e)
+        Log.e("PlayerViewModel", "Failed to run custom command: ${resolvedCmd.joinToString(" ")}", e)
       }
+    }
+  }
+
+  private fun resolveCustomCommand(cmd: List<String>, scriptsDir: File): List<String> {
+    if (cmd.isEmpty() || cmd[0] != "script-binding" || cmd.size < 2) return cmd
+
+    val target = cmd[1]
+    if (!target.contains('/')) return cmd
+
+    val scriptName = target.substringBefore('/')
+    val bindingName = target.substringAfter('/')
+
+    if (!scriptsDir.exists()) {
+      showToast("Script '$scriptName' not found in scripts")
+      return cmd
+    }
+
+    val scriptFiles = scriptsDir.listFiles() ?: return cmd
+    val matched = scriptFiles.firstOrNull { file ->
+      file.isFile && file.name.substringBeforeLast('.').equals(scriptName, ignoreCase = true)
+    }
+
+    return if (matched != null) {
+      val matchedStem = matched.name.substringBeforeLast('.')
+      listOf(cmd[0], "$matchedStem/$bindingName") + cmd.drop(2)
+    } else {
+      Log.w("PlayerViewModel", "Script '$scriptName' not found in ${scriptsDir.path}")
+      showToast("Script '$scriptName' not found in Manage scripts")
+      cmd
     }
   }
 

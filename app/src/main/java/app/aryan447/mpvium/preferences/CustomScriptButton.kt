@@ -20,6 +20,7 @@ data class CustomScriptButton(
   val code: String,
   val longPressCode: String = "",
   val enabled: Boolean = true,
+  val position: String = "bottom",
 ) {
   companion object {
     private val json = Json { ignoreUnknownKeys = true }
@@ -48,6 +49,8 @@ data class CustomScriptButton(
           val enabledStr = getTagText(btnElem, "enabled")
           val enabled = if (enabledStr.isBlank()) true else enabledStr.lowercase() != "false"
           val id = getTagText(btnElem, "id").ifBlank { UUID.randomUUID().toString() }
+          val posText = getTagText(btnElem, "position").ifBlank { getTagText(btnElem, "location") }
+          val position = if (posText.equals("top", ignoreCase = true)) "top" else "bottom"
           if (title.isNotBlank() || content.isNotBlank()) {
             buttons.add(
               CustomScriptButton(
@@ -56,6 +59,7 @@ data class CustomScriptButton(
                 code = content,
                 longPressCode = longPressContent,
                 enabled = enabled,
+                position = position,
               )
             )
           }
@@ -97,6 +101,10 @@ data class CustomScriptButton(
           onStartup.appendChild(doc.createCDATASection(""))
           btn.appendChild(onStartup)
 
+          val pos = doc.createElement("position")
+          pos.appendChild(doc.createTextNode(button.position))
+          btn.appendChild(pos)
+
           root.appendChild(btn)
         }
 
@@ -127,5 +135,24 @@ object ScriptFileHelper {
     if (name.isNullOrBlank()) return false
     val ext = name.substringAfterLast('.', "").lowercase()
     return ext in SUPPORTED_EXTENSIONS
+  }
+
+  fun normalizeScriptName(name: String?): String? {
+    if (name.isNullOrBlank()) return null
+    val trimmed = name.trim()
+    val ext = trimmed.substringAfterLast('.', "").lowercase()
+    return when {
+      ext in SUPPORTED_EXTENSIONS -> trimmed
+      ext == "txt" -> {
+        val base = trimmed.substringBeforeLast('.')
+        val innerExt = base.substringAfterLast('.', "").lowercase()
+        if (innerExt in SUPPORTED_EXTENSIONS) {
+          base
+        } else {
+          "$base.lua"
+        }
+      }
+      else -> null
+    }
   }
 }

@@ -51,6 +51,7 @@ import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.DecoderPreferences
 import app.aryan447.mpvium.preferences.MpvConfigOwnershipPolicy
+import app.aryan447.mpvium.preferences.ScriptFileHelper
 import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SubtitlesPreferences
@@ -1054,6 +1055,25 @@ class PlayerActivity :
       copyMPVConfigFromPreferences()
       pruneDisabledScripts()
     }
+
+    // Normalize any existing .txt files in internal scripts directory to .lua/.js
+    runCatching {
+      val internalScriptsDir = File(filesDir, "scripts")
+      if (internalScriptsDir.exists()) {
+        internalScriptsDir.listFiles()?.forEach { file ->
+          if (file.isFile && file.name.endsWith(".txt", ignoreCase = true)) {
+            val normalized = ScriptFileHelper.normalizeScriptName(file.name)
+            if (normalized != null && normalized != file.name) {
+              val dest = File(internalScriptsDir, normalized)
+              if (!dest.exists()) {
+                file.renameTo(dest)
+                Log.d(TAG, "Normalized script filename: ${file.name} -> $normalized")
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   // ==================== Config Files Sync ====================
@@ -1180,14 +1200,15 @@ class PlayerActivity :
     sourceDir.listFiles().forEach { file ->
       if (!file.isFile) return@forEach
       val name = file.name ?: return@forEach
-      if (!isScriptFileName(name) || name in disabled) return@forEach
+      val normalizedName = ScriptFileHelper.normalizeScriptName(name) ?: return@forEach
+      if (normalizedName in disabled || name in disabled) return@forEach
       runCatching {
         contentResolver.openInputStream(file.uri)?.use { input ->
-          File(internalScriptsDir, name).outputStream().use { output ->
+          File(internalScriptsDir, normalizedName).outputStream().use { output ->
             input.copyTo(output)
           }
           count++
-          Log.d(TAG, "Synced script: $name")
+          Log.d(TAG, "Synced script: $normalizedName")
         }
       }.onFailure { e ->
         Log.e(TAG, "Error syncing script: $name", e)
