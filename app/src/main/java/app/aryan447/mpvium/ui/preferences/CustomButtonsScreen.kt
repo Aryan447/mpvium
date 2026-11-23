@@ -62,7 +62,7 @@ import app.aryan447.mpvium.preferences.CustomButtonPresets
 import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
-import app.aryan447.mpvium.ui.LocalBackStack
+import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import java.io.File
 import java.util.UUID
