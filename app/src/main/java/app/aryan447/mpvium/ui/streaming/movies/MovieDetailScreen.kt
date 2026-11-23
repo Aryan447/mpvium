@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.streaming.movies
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,8 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,8 +36,15 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
@@ -50,6 +60,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -254,10 +265,14 @@ data class MovieDetailScreen(
         ) {
           // Backdrop Header
           item {
+            val configuration = LocalConfiguration.current
+            val isTablet = configuration.smallestScreenWidthDp >= 600
+            val headerHeight = if (isTablet) 420.dp else 340.dp
+
             Box(
               modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp),
+                .height(headerHeight),
             ) {
               StreamingImage(
                 url = backdropUrl,
@@ -268,7 +283,7 @@ data class MovieDetailScreen(
                 modifier = Modifier.fillMaxSize(),
               )
 
-              // Gradient Scrim: in Glass theme, vignettes are replaced with clear liquid glass
+              // Natural edge blend at the very bottom edge only: 0-75% is 100% transparent so the poster stays vibrant
               val isGlass = LocalGlass.current
               Box(
                 modifier = Modifier
@@ -277,90 +292,96 @@ data class MovieDetailScreen(
                     if (isGlass) {
                       Brush.verticalGradient(
                         0.0f to Color.Transparent,
-                        0.65f to Color.Transparent,
-                        0.90f to MaterialTheme.colorScheme.background.copy(alpha = 0.50f),
-                        1.0f to MaterialTheme.colorScheme.background,
+                        0.80f to Color.Transparent,
+                        1.0f to MaterialTheme.colorScheme.background.copy(alpha = 0.40f),
                       )
                     } else {
                       Brush.verticalGradient(
-                        0.0f to Color.Black.copy(alpha = 0.35f),
-                        0.5f to Color.Black.copy(alpha = 0.40f),
-                        0.85f to MaterialTheme.colorScheme.background.copy(alpha = 0.90f),
+                        0.0f to Color.Transparent,
+                        0.75f to Color.Transparent,
+                        0.92f to MaterialTheme.colorScheme.background.copy(alpha = 0.70f),
                         1.0f to MaterialTheme.colorScheme.background,
                       )
                     }
                   )
               )
 
-              // Back Button
-              IconButton(
-                onClick = {
-                  if (paneBack != null) {
-                    paneBack()
-                  } else if (backstack.size > 1) {
-                    backstack.removeLastOrNull()
-                  } else {
-                    (context as? android.app.Activity)?.finish()
-                  }
-                },
-                modifier = Modifier
-                  .padding(top = 40.dp, start = 12.dp)
-                  .size(40.dp)
-                  .clip(CircleShape)
-                  .background(Color.Black.copy(alpha = 0.5f)),
-              ) {
-                Icon(
-                  Icons.AutoMirrored.Filled.ArrowBack,
-                  contentDescription = "Back",
-                  tint = Color.White,
-                )
-              }
-
+              // Material 3 Inset-Aware Floating Navigation Header
               Row(
                 modifier = Modifier
-                  .align(Alignment.TopEnd)
-                  .padding(top = 40.dp, end = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  .align(Alignment.TopCenter)
+                  .statusBarsPadding()
+                  .fillMaxWidth()
+                  .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
               ) {
-                IconButton(
-                  onClick = { showMatchPicker = true },
-                  modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f)),
-                ) {
-                  Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search", tint = Color.White)
-                }
-                IconButton(
-                  onClick = { showEditMetadataSheet = true },
-                  modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f)),
+                FilledTonalIconButton(
+                  onClick = {
+                    if (paneBack != null) {
+                      paneBack()
+                    } else if (backstack.size > 1) {
+                      backstack.removeLastOrNull()
+                    } else {
+                      (context as? android.app.Activity)?.finish()
+                    }
+                  },
+                  colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                  ),
+                  modifier = Modifier.size(42.dp),
                 ) {
                   Icon(
-                    Icons.Filled.Edit,
-                    contentDescription = stringResource(R.string.metadata_edit_title),
-                    tint = Color.White,
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
                   )
                 }
-                IconButton(
-                  onClick = { markAsOpen = true },
-                  modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f)),
-                ) {
-                  Icon(Icons.Filled.CheckCircle, contentDescription = "Mark as", tint = Color.White)
-                }
-                IconButton(
-                  onClick = { pendingDeletion = currentMovie.video },
-                  modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f)),
-                ) {
-                  Icon(Icons.Filled.Delete, contentDescription = "Delete movie", tint = Color.White)
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                  FilledTonalIconButton(
+                    onClick = { showMatchPicker = true },
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                      containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
+                      contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    modifier = Modifier.size(42.dp),
+                  ) {
+                    Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search")
+                  }
+                  FilledTonalIconButton(
+                    onClick = { showEditMetadataSheet = true },
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                      containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
+                      contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    modifier = Modifier.size(42.dp),
+                  ) {
+                    Icon(
+                      Icons.Filled.Edit,
+                      contentDescription = stringResource(R.string.metadata_edit_title),
+                    )
+                  }
+                  FilledTonalIconButton(
+                    onClick = { markAsOpen = true },
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                      containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
+                      contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    modifier = Modifier.size(42.dp),
+                  ) {
+                    Icon(Icons.Filled.CheckCircle, contentDescription = "Mark as")
+                  }
+                  FilledTonalIconButton(
+                    onClick = { pendingDeletion = currentMovie.video },
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                      containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
+                      contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    modifier = Modifier.size(42.dp),
+                  ) {
+                    Icon(Icons.Filled.Delete, contentDescription = "Delete movie")
+                  }
                 }
               }
             }
@@ -371,7 +392,7 @@ data class MovieDetailScreen(
             Column(
               modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 20.dp, vertical = 8.dp),
             ) {
               // Badges Row
               Row(
@@ -380,24 +401,25 @@ data class MovieDetailScreen(
               ) {
                 if (currentMovie.rating != null && currentMovie.rating > 0f) {
                   Surface(
-                    color = Color(0xFFE5A00D).copy(alpha = 0.95f),
-                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFFF5A623).copy(alpha = 0.18f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color(0xFFF5A623).copy(alpha = 0.40f)),
                   ) {
                     Row(
-                      modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                       verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                       Icon(
                         Icons.Filled.Star,
                         contentDescription = null,
-                        tint = Color.Black,
-                        modifier = Modifier.size(12.dp),
+                        tint = Color(0xFFF5A623),
+                        modifier = Modifier.size(13.dp),
                       )
-                      Spacer(modifier = Modifier.width(3.dp))
                       Text(
                         text = String.format(java.util.Locale.US, "%.1f", currentMovie.rating),
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Color.Black,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFFF5A623),
                       )
                     }
                   }
@@ -405,26 +427,28 @@ data class MovieDetailScreen(
 
                 if (!currentMovie.year.isNullOrBlank()) {
                   Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(8.dp),
                   ) {
                     Text(
                       text = currentMovie.year,
-                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                      modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                      style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                      color = MaterialTheme.colorScheme.onSurface,
+                      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                   }
                 }
 
                 if (currentMovie.video.durationFormatted.isNotBlank() && currentMovie.video.durationFormatted != "0s") {
                   Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(8.dp),
                   ) {
                     Text(
                       text = currentMovie.video.durationFormatted,
-                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                      modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                      style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                      color = MaterialTheme.colorScheme.onSurface,
+                      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                   }
                 }
@@ -433,38 +457,78 @@ data class MovieDetailScreen(
                   val displayRes = resolution.substringBefore("@")
                   Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(8.dp),
                   ) {
                     Text(
                       text = displayRes,
-                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                      style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                       color = MaterialTheme.colorScheme.onPrimaryContainer,
-                      modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                   }
                 }
               }
 
-              Spacer(modifier = Modifier.height(10.dp))
-
               // Title
               Text(
                 text = currentMovie.title,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                  fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                  fontWeight = FontWeight.Bold,
                   letterSpacing = (-0.5).sp,
                 ),
                 color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(top = 12.dp),
               )
 
-              // Synopsis / Overview
-              currentMovie.overview?.let { overview ->
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                  text = overview,
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+              // Genres Row
+              if (currentMovie.genres.isNotEmpty()) {
+                LazyRow(
+                  horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  modifier = Modifier.padding(top = 8.dp),
+                ) {
+                  items(currentMovie.genres) { genre ->
+                    SuggestionChip(
+                      onClick = {},
+                      label = {
+                        Text(
+                          text = genre,
+                          style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        )
+                      },
+                      shape = RoundedCornerShape(8.dp),
+                      colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                      ),
+                      border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                    )
+                  }
+                }
+              }
+
+              // Synopsis / Overview with Expandable Text
+              currentMovie.overview?.takeIf { it.isNotBlank() }?.let { overview ->
+                var isExpanded by remember { mutableStateOf(false) }
+                Column(modifier = Modifier.padding(top = 10.dp)) {
+                  Text(
+                    text = overview,
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.animateContentSize(),
+                  )
+                  if (overview.length > 140) {
+                    Text(
+                      text = if (isExpanded) "Show less" else "Read more",
+                      style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                      color = MaterialTheme.colorScheme.primary,
+                      modifier = Modifier
+                        .clickable { isExpanded = !isExpanded }
+                        .padding(top = 4.dp),
+                    )
+                  }
+                }
               }
 
               Spacer(modifier = Modifier.height(20.dp))
@@ -474,24 +538,25 @@ data class MovieDetailScreen(
                 onClick = { MediaUtils.playFile(currentMovie.video, context, "movie_detail_play") },
                 modifier = Modifier
                   .fillMaxWidth()
-                  .height(48.dp)
-                  .glassSheen(RoundedCornerShape(12.dp), LocalGlass.current),
+                  .height(52.dp)
+                  .glassSheen(RoundedCornerShape(16.dp), LocalGlass.current),
                 colors = ButtonDefaults.buttonColors(
                   containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.primary),
                   contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onPrimary),
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 6.dp),
                 border = if (LocalGlass.current) {
                   BorderStroke(1.dp, glassRimColor(isSystemInDarkTheme()))
                 } else {
                   null
                 },
               ) {
-                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
+                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                   text = "Play Movie",
-                  style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 )
               }
             }

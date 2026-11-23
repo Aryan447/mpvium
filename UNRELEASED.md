@@ -9,6 +9,7 @@
 - Android TV and Google TV support with Leanback launcher banner, 10-foot D-Pad remote navigation, clear visual focus rings, landscape enforcement, and dedicated TV playback controls.
 - Comprehensive TV remote optimization for Modern player layout: auto-focused hero play/pause button, D-Pad Left/Right seekbar scrubbing, and interactive focus rings across transport controls, action pill buttons, and sheets.
 - TV settings layout with centered content, D-Pad focus indicators on preference rows and choice sheets, and remote-navigable theme preview cards.
+- Create custom series action in the unified Titles tab top bar and empty states.
 - Videos in WebDAV, SMB, and FTP folders are automatically queued into the playlist when playlist mode is enabled, advancing to the next file when playback ends or fails.
 - Custom Lua and mpv script buttons in player overlay with single tap and long-press actions, plus XML import and export.
 - Speed Binge grid dial on Home puts your last played show or movie first with instant resume, brings progress bars to every title, and replaces featured banners with a clean media grid.
@@ -20,6 +21,7 @@
 
 ### Changed
 
+- Movie and TV series detail screens redesigned with Material 3 styling, removing the dark poster gradient overlay for pure artwork clarity.
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.
 - Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.
 - Phone-specific settings including touch gestures, system status bar, portrait controls, and mobile navigation pill are hidden on Android TV.
@@ -32,6 +34,7 @@
 - Downloaded and sideloaded media on Android TV is no longer suppressed from the Titles library by mobile transient folder thresholds.
 - Software decoder selection strictly disables hardware decoding across playback reloads, playlist items, and singleTask session switches.
 - Main navigation rail on TV uses clean native Material 3 indicator pills without distorted selection outlines.
+- Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
 - Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.
 - Bottom navigation bar now respects 3-button navigation insets without overlapping system navigation buttons.
 - HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
