@@ -41,6 +41,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -77,6 +79,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import app.aryan447.mpvium.preferences.preference.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -103,6 +106,7 @@ import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.streaming.StreamingArtworkStore
 import app.aryan447.mpvium.domain.streaming.StreamingMetadataRepository
+import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.repository.intro.IntroSkipRepository
 import app.aryan447.mpvium.domain.streaming.model.LocalEpisode
 import app.aryan447.mpvium.domain.streaming.model.LocalSeries
@@ -143,6 +147,8 @@ data class SeriesDetailScreen(
     val customSeriesRepository = koinInject<app.aryan447.mpvium.database.repository.CustomSeriesRepository>()
     val artworkStore = koinInject<StreamingArtworkStore>()
     val introSkipRepository = koinInject<IntroSkipRepository>()
+    val appearancePreferences = koinInject<AppearancePreferences>()
+    val showDetailPoster by appearancePreferences.showDetailPoster.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     val isCustomSeries = remember(seriesId) { seriesId.startsWith("custom:") }
@@ -168,7 +174,7 @@ data class SeriesDetailScreen(
     var menuExpanded by remember { mutableStateOf(false) }
 
     val currentTheme = LocalAppTheme.current
-    val auraArtwork = series?.posterUrl ?: series?.backdropUrl
+    val auraArtwork = if (showDetailPoster) (series?.posterUrl ?: series?.backdropUrl) else null
     DisposableEffect(auraArtwork, currentTheme) {
       if (currentTheme == AppTheme.Aura && !auraArtwork.isNullOrBlank()) {
         AuraThemeManager.setPreviewArtwork(auraArtwork)
@@ -297,172 +303,193 @@ data class SeriesDetailScreen(
         val backdropUrl = currentSeries.backdropUrl ?: currentSeries.posterUrl
         val fallbackVideo = currentSeries.seasons.values.firstOrNull()?.firstOrNull()?.video
 
+        val detailTopBar: @Composable (Modifier) -> Unit = { modifier ->
+          Row(
+            modifier = modifier
+              .statusBarsPadding()
+              .fillMaxWidth()
+              .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+          ) {
+            FilledTonalIconButton(
+              onClick = {
+                if (paneBack != null) {
+                  paneBack()
+                } else if (backstack.size > 1) {
+                  backstack.removeLastOrNull()
+                } else {
+                  (context as? android.app.Activity)?.finish()
+                }
+              },
+              colors = IconButtonDefaults.filledTonalIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+              ),
+              modifier = Modifier.size(42.dp),
+            ) {
+              Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+              )
+            }
+
+            Box {
+              FilledTonalIconButton(
+                onClick = { menuExpanded = true },
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                  containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
+                  contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                modifier = Modifier.size(42.dp),
+              ) {
+                Icon(
+                  Icons.Filled.MoreVert,
+                  contentDescription = stringResource(R.string.more_options),
+                )
+              }
+
+              DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+                containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
+              ) {
+                DropdownMenuItem(
+                  text = { Text(stringResource(if (showDetailPoster) R.string.hide_poster else R.string.show_poster)) },
+                  trailingIcon = {
+                    Icon(
+                      if (showDetailPoster) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                      contentDescription = null,
+                    )
+                  },
+                  onClick = {
+                    menuExpanded = false
+                    appearancePreferences.showDetailPoster.set(!showDetailPoster)
+                  },
+                )
+                if (!isCustomSeries) {
+                  DropdownMenuItem(
+                    text = { Text(stringResource(R.string.fix_match)) },
+                    trailingIcon = {
+                      Icon(Icons.Filled.Refresh, contentDescription = null)
+                    },
+                    onClick = {
+                      menuExpanded = false
+                      showMatchPicker = true
+                    },
+                  )
+                }
+                DropdownMenuItem(
+                  text = {
+                    Text(
+                      stringResource(if (isCustomSeries) R.string.edit_series else R.string.metadata_edit_title)
+                    )
+                  },
+                  trailingIcon = {
+                    Icon(Icons.Filled.Edit, contentDescription = null)
+                  },
+                  onClick = {
+                    menuExpanded = false
+                    if (isCustomSeries && customSeriesId != null) {
+                      backstack.add(CustomSeriesBuilderScreen(seriesId = customSeriesId))
+                    } else {
+                      showEditMetadataSheet = true
+                    }
+                  },
+                )
+                DropdownMenuItem(
+                  text = { Text(stringResource(R.string.mark_as_action)) },
+                  trailingIcon = {
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null)
+                  },
+                  onClick = {
+                    menuExpanded = false
+                    markShowAsOpen = true
+                  },
+                )
+                DropdownMenuItem(
+                  text = {
+                    Text(
+                      stringResource(if (isCustomSeries) R.string.delete_series_action else R.string.delete),
+                      color = MaterialTheme.colorScheme.error,
+                    )
+                  },
+                  trailingIcon = {
+                    Icon(
+                      Icons.Filled.Delete,
+                      contentDescription = null,
+                      tint = MaterialTheme.colorScheme.error,
+                    )
+                  },
+                  onClick = {
+                    menuExpanded = false
+                    if (isCustomSeries) {
+                      showDeleteCustomSeriesDialog = true
+                    } else {
+                      pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
+                    }
+                  },
+                )
+              }
+            }
+          }
+        }
+
         LazyColumn(
           modifier = Modifier
             .fillMaxSize()
             .padding(bottom = 24.dp),
         ) {
-          // Backdrop Header
-          item {
-            val configuration = LocalConfiguration.current
-            val isTablet = configuration.smallestScreenWidthDp >= 600
-            val headerHeight = if (isTablet) 420.dp else 340.dp
+          if (showDetailPoster) {
+            // Backdrop Header
+            item {
+              val configuration = LocalConfiguration.current
+              val isTablet = configuration.smallestScreenWidthDp >= 600
+              val headerHeight = if (isTablet) 420.dp else 340.dp
 
-            Box(
-              modifier = Modifier
-                .fillMaxWidth()
-                .height(headerHeight),
-            ) {
-              StreamingImage(
-                url = backdropUrl,
-                fallbackVideo = fallbackVideo,
-                isSeries = true,
-                contentScale = ContentScale.Crop,
-                maxDimensionPx = maxOf(context.resources.displayMetrics.widthPixels, context.resources.displayMetrics.heightPixels),
-                modifier = Modifier.fillMaxSize(),
-              )
-
-              // Natural edge blend at the very bottom edge only: 0-75% is 100% transparent so the poster stays vibrant
-              val isGlass = LocalGlass.current
               Box(
                 modifier = Modifier
-                  .fillMaxSize()
-                  .background(
-                    if (isGlass) {
-                      Brush.verticalGradient(
-                        0.0f to Color.Transparent,
-                        0.80f to Color.Transparent,
-                        1.0f to MaterialTheme.colorScheme.background.copy(alpha = 0.40f),
-                      )
-                    } else {
-                      Brush.verticalGradient(
-                        0.0f to Color.Transparent,
-                        0.75f to Color.Transparent,
-                        0.92f to MaterialTheme.colorScheme.background.copy(alpha = 0.70f),
-                        1.0f to MaterialTheme.colorScheme.background,
-                      )
-                    }
-                  )
-              )
-
-              // Material 3 Inset-Aware Floating Navigation Header
-              Row(
-                modifier = Modifier
-                  .align(Alignment.TopCenter)
-                  .statusBarsPadding()
                   .fillMaxWidth()
-                  .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                  .height(headerHeight),
               ) {
-                FilledTonalIconButton(
-                  onClick = {
-                    if (paneBack != null) {
-                      paneBack()
-                    } else if (backstack.size > 1) {
-                      backstack.removeLastOrNull()
-                    } else {
-                      (context as? android.app.Activity)?.finish()
-                    }
-                  },
-                  colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                  ),
-                  modifier = Modifier.size(42.dp),
-                ) {
-                  Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                  )
-                }
+                StreamingImage(
+                  url = backdropUrl,
+                  fallbackVideo = fallbackVideo,
+                  isSeries = true,
+                  contentScale = ContentScale.Crop,
+                  maxDimensionPx = maxOf(context.resources.displayMetrics.widthPixels, context.resources.displayMetrics.heightPixels),
+                  modifier = Modifier.fillMaxSize(),
+                )
 
-                Box {
-                  FilledTonalIconButton(
-                    onClick = { menuExpanded = true },
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                      containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
-                      contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                    modifier = Modifier.size(42.dp),
-                  ) {
-                    Icon(
-                      Icons.Filled.MoreVert,
-                      contentDescription = stringResource(R.string.more_options),
+                // Natural edge blend at the very bottom edge only: 0-75% is 100% transparent so the poster stays vibrant
+                val isGlass = LocalGlass.current
+                Box(
+                  modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                      if (isGlass) {
+                        Brush.verticalGradient(
+                          0.0f to Color.Transparent,
+                          0.80f to Color.Transparent,
+                          1.0f to MaterialTheme.colorScheme.background.copy(alpha = 0.40f),
+                        )
+                      } else {
+                        Brush.verticalGradient(
+                          0.0f to Color.Transparent,
+                          0.75f to Color.Transparent,
+                          0.92f to MaterialTheme.colorScheme.background.copy(alpha = 0.70f),
+                          1.0f to MaterialTheme.colorScheme.background,
+                        )
+                      }
                     )
-                  }
+                )
 
-                  DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false },
-                    containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
-                  ) {
-                    if (!isCustomSeries) {
-                      DropdownMenuItem(
-                        text = { Text(stringResource(R.string.fix_match)) },
-                        trailingIcon = {
-                          Icon(Icons.Filled.Refresh, contentDescription = null)
-                        },
-                        onClick = {
-                          menuExpanded = false
-                          showMatchPicker = true
-                        },
-                      )
-                    }
-                    DropdownMenuItem(
-                      text = {
-                        Text(
-                          stringResource(if (isCustomSeries) R.string.edit_series else R.string.metadata_edit_title)
-                        )
-                      },
-                      trailingIcon = {
-                        Icon(Icons.Filled.Edit, contentDescription = null)
-                      },
-                      onClick = {
-                        menuExpanded = false
-                        if (isCustomSeries && customSeriesId != null) {
-                          backstack.add(CustomSeriesBuilderScreen(seriesId = customSeriesId))
-                        } else {
-                          showEditMetadataSheet = true
-                        }
-                      },
-                    )
-                    DropdownMenuItem(
-                      text = { Text(stringResource(R.string.mark_as_action)) },
-                      trailingIcon = {
-                        Icon(Icons.Filled.CheckCircle, contentDescription = null)
-                      },
-                      onClick = {
-                        menuExpanded = false
-                        markShowAsOpen = true
-                      },
-                    )
-                    DropdownMenuItem(
-                      text = {
-                        Text(
-                          stringResource(if (isCustomSeries) R.string.delete_series_action else R.string.delete),
-                          color = MaterialTheme.colorScheme.error,
-                        )
-                      },
-                      trailingIcon = {
-                        Icon(
-                          Icons.Filled.Delete,
-                          contentDescription = null,
-                          tint = MaterialTheme.colorScheme.error,
-                        )
-                      },
-                      onClick = {
-                        menuExpanded = false
-                        if (isCustomSeries) {
-                          showDeleteCustomSeriesDialog = true
-                        } else {
-                          pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
-                        }
-                      },
-                    )
-                  }
-                }
+                detailTopBar(Modifier.align(Alignment.TopCenter))
               }
+            }
+          } else {
+            item {
+              detailTopBar(Modifier)
             }
           }
 
@@ -473,6 +500,19 @@ data class SeriesDetailScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             ) {
+              if (!showDetailPoster) {
+                // Title shown right below the back button instead of the poster
+                Text(
+                  text = currentSeries.title,
+                  style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp,
+                  ),
+                  color = MaterialTheme.colorScheme.onBackground,
+                  modifier = Modifier.padding(bottom = 12.dp),
+                )
+              }
+
               // Badges Row
               Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -531,16 +571,18 @@ data class SeriesDetailScreen(
                 }
               }
 
-              // Title
-              Text(
-                text = currentSeries.title,
-                style = MaterialTheme.typography.headlineLarge.copy(
-                  fontWeight = FontWeight.Bold,
-                  letterSpacing = (-0.5).sp,
-                ),
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(top = 12.dp),
-              )
+              if (showDetailPoster) {
+                // Title
+                Text(
+                  text = currentSeries.title,
+                  style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp,
+                  ),
+                  color = MaterialTheme.colorScheme.onBackground,
+                  modifier = Modifier.padding(top = 12.dp),
+                )
+              }
 
               // Genres Row
               if (currentSeries.genres.isNotEmpty()) {
