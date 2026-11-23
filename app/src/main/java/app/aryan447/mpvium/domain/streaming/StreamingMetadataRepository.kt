@@ -66,9 +66,53 @@ class StreamingMetadataRepository(
 ) {
   companion object {
     private const val TAG = "StreamingMetadataRepo"
-    private const val TMDB_IMAGE_BASE_W500 = "https://image.tmdb.org/t/p/w500"
-    private const val TMDB_IMAGE_BASE_W780 = "https://image.tmdb.org/t/p/w780"
-    private const val TMDB_IMAGE_BASE_W1280 = "https://image.tmdb.org/t/p/w1280"
+    const val TMDB_IMAGE_BASE_W500 = "https://image.tmdb.org/t/p/w500"
+    const val TMDB_IMAGE_BASE_W780 = "https://image.tmdb.org/t/p/w780"
+    const val TMDB_IMAGE_BASE_W1280 = "https://image.tmdb.org/t/p/w1280"
+    const val TMDB_IMAGE_BASE_ORIGINAL = "https://image.tmdb.org/t/p/original"
+
+    private val tmdbImagePattern = Regex("""^https?://image\.tmdb\.org/t/p/[^/]+/(.+)$""", RegexOption.IGNORE_CASE)
+    private val metahubImagePattern = Regex("""^https?://images\.metahub\.space/(poster|background)/[^/]+/(.+)$""", RegexOption.IGNORE_CASE)
+
+    fun formatImageUrl(pathOrUrl: String, baseUrl: String, isTablet: Boolean = false): String {
+      val trimmed = pathOrUrl.trim()
+      if (trimmed.isBlank()) return trimmed
+
+      // Upgrade TMDb URLs (e.g. w185 posters or w500 backdrops from Wyzie search) to target resolution
+      val tmdbMatch = tmdbImagePattern.matchEntire(trimmed)
+      if (tmdbMatch != null) {
+        val imagePath = tmdbMatch.groupValues[1].removePrefix("/")
+        return "$baseUrl/$imagePath"
+      }
+
+      // Upgrade Cinemeta / Metahub URLs (small/medium to large)
+      val metahubMatch = metahubImagePattern.matchEntire(trimmed)
+      if (metahubMatch != null) {
+        val type = metahubMatch.groupValues[1]
+        val rest = metahubMatch.groupValues[2].removePrefix("/")
+        val size = if (type.equals("poster", ignoreCase = true)) {
+          "large"
+        } else {
+          if (isTablet) "large" else "medium"
+        }
+        return "https://images.metahub.space/$type/$size/$rest"
+      }
+
+      if (trimmed.startsWith("http://", ignoreCase = true) ||
+        trimmed.startsWith("https://", ignoreCase = true) ||
+        trimmed.startsWith("file://", ignoreCase = true) ||
+        trimmed.startsWith("content://", ignoreCase = true) ||
+        trimmed.startsWith("/data") ||
+        trimmed.startsWith("/storage") ||
+        trimmed.startsWith("/sdcard") ||
+        trimmed.startsWith("/mnt")
+      ) {
+        return trimmed
+      }
+
+      val cleanPath = if (trimmed.startsWith("/")) trimmed else "/$trimmed"
+      return "$baseUrl$cleanPath"
+    }
     // v3 re-resolves automatic matches with the stricter title/year matcher.
     // v2 entries could permanently pin a wrong poster because cache entries
     // have no TTL, so only user-picked matches are migrated.
@@ -102,15 +146,19 @@ class StreamingMetadataRepository(
     }
   }
 
-  // Phone-sized artwork (w500 posters, w780 backdrops) upscales ~2.4x on a
-  // landscape tablet hero and looks blurry, so tablets fetch one size up.
+  // Posters: w780 (780x1170) is crisp across both modern phones (where 2-column cards
+  // are ~540px wide and detail heroes span full width) and tablets (3-6 columns), while
+  // keeping download payload light (~270KB).
+  //
+  // Backdrops: on tablets (1920-2960px wide landscape displays), TMDb original backdrops
+  // provide crystal clear native resolution without blur. On phones, w1280 is sharp and light (~170KB).
   // Episode stills stay w500: they render at ~110dp everywhere.
-  private val isTablet: Boolean =
-    context.resources.configuration.smallestScreenWidthDp >= 600
-  private val posterBase: String =
-    if (isTablet) TMDB_IMAGE_BASE_W780 else TMDB_IMAGE_BASE_W500
-  private val backdropBase: String =
-    if (isTablet) TMDB_IMAGE_BASE_W1280 else TMDB_IMAGE_BASE_W780
+  internal val isTablet: Boolean
+    get() = context.resources.configuration.smallestScreenWidthDp >= 600
+  internal val posterBase: String
+    get() = TMDB_IMAGE_BASE_W780
+  internal val backdropBase: String
+    get() = if (isTablet) TMDB_IMAGE_BASE_ORIGINAL else TMDB_IMAGE_BASE_W1280
 
   private val cacheFile = File(context.filesDir, CACHE_FILE_NAME)
   private val memoryCache = ConcurrentHashMap<String, CachedMediaMetadata>()
@@ -146,8 +194,24 @@ class StreamingMetadataRepository(
                 runCatching { cacheFile.delete() }
                 emptyMap()
               }
-              memoryCache.putAll(map)
-              Log.d(TAG, "Loaded ${memoryCache.size} metadata entries from disk cache")
+              var upgradedAny = false
+              val targetPosterBase = posterBase
+              val targetBackdropBase = backdropBase
+              val sanitized = map.mapValues { (_, metadata) ->
+                val upgradedPoster = metadata.posterUrl?.let { formatImageUrl(it, targetPosterBase) }
+                val upgradedBackdrop = metadata.backdropUrl?.let { formatImageUrl(it, targetBackdropBase) }
+                if (upgradedPoster != metadata.posterUrl || upgradedBackdrop != metadata.backdropUrl) {
+                  upgradedAny = true
+                  metadata.copy(posterUrl = upgradedPoster, backdropUrl = upgradedBackdrop)
+                } else {
+                  metadata
+                }
+              }
+              memoryCache.putAll(sanitized)
+              if (upgradedAny) {
+                runCatching { writeCacheAtomically(json.encodeToString(sanitized)) }
+              }
+              Log.d(TAG, "Loaded ${memoryCache.size} metadata entries from disk cache (upgraded=$upgradedAny)")
             }
           }
         } catch (e: Exception) {
@@ -829,11 +893,6 @@ class StreamingMetadataRepository(
     }
   }
 
-  private fun formatImageUrl(pathOrUrl: String, baseUrl: String): String {
-    if (pathOrUrl.startsWith("http://", ignoreCase = true) || pathOrUrl.startsWith("https://", ignoreCase = true)) {
-      return pathOrUrl
-    }
-    val cleanPath = if (pathOrUrl.startsWith("/")) pathOrUrl else "/$pathOrUrl"
-    return "$baseUrl$cleanPath"
-  }
+  internal fun formatImageUrl(pathOrUrl: String, baseUrl: String): String =
+    Companion.formatImageUrl(pathOrUrl, baseUrl, isTablet)
 }

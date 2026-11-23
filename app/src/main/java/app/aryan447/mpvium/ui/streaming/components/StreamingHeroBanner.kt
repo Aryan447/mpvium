@@ -80,7 +80,7 @@ fun StreamingHeroBanner(
       fallbackVideo = fallbackVideo,
       isSeries = true,
       contentScale = ContentScale.Crop,
-      maxDimensionPx = context.resources.displayMetrics.widthPixels,
+      maxDimensionPx = maxOf(context.resources.displayMetrics.widthPixels, context.resources.displayMetrics.heightPixels),
       modifier = Modifier.fillMaxSize(),
     )
 
