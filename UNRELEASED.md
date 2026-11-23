@@ -7,6 +7,7 @@
 ### Added
 
 - Built-in custom button presets and installable example scripts in Settings → Player controls → Custom buttons and Manage scripts.
+- Create custom series action in the unified Titles tab top bar and empty states.
 - Videos in WebDAV, SMB, and FTP folders are automatically queued into the playlist when playlist mode is enabled, advancing to the next file when playback ends or fails.
 - Custom Lua and mpv script buttons in player overlay with single tap and long-press actions, plus XML import and export.
 - Speed Binge grid dial on Home puts your last played show or movie first with instant resume, brings progress bars to every title, and replaces featured banners with a clean media grid.
@@ -27,6 +28,7 @@
 ### Fixed
 
 - Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
+- Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
 - Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.
 - Bottom navigation bar now respects 3-button navigation insets without overlapping system navigation buttons.
 

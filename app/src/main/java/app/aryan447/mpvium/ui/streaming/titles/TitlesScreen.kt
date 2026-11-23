@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Search
@@ -97,6 +98,7 @@ import app.aryan447.mpvium.ui.streaming.components.SeriesPosterCard
 import app.aryan447.mpvium.ui.streaming.components.SortOption
 import app.aryan447.mpvium.ui.streaming.components.TitleWatchFilterButton
 import app.aryan447.mpvium.ui.streaming.movies.MovieDetailScreen
+import app.aryan447.mpvium.ui.streaming.series.CustomSeriesBuilderScreen
 import app.aryan447.mpvium.ui.streaming.series.SeriesDetailScreen
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
@@ -205,7 +207,12 @@ data class TitlesScreen(
     var selectedItemId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedItemType by rememberSaveable { mutableStateOf<String?>(null) }
     val twoPane = configuration.screenWidthDp >= 840 && backstack.size == 1
-    BackHandler(enabled = twoPane && selectedItemId != null) {
+    BackHandler(enabled = isSearching) {
+      isSearching = false
+      searchQuery = ""
+    }
+
+    BackHandler(enabled = !isSearching && twoPane && selectedItemId != null) {
       selectedItemId = null
       selectedItemType = null
     }
@@ -273,6 +280,18 @@ data class TitlesScreen(
     var watchFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val watchFilter = TitleWatchFilter.entries[watchFilterOrdinal.coerceIn(TitleWatchFilter.entries.indices)]
     val durationFilter by streamingPreferences.movieDurationFilter.collectAsState()
+
+    val hasActiveFilter = activeTypeFilter != TitlesTypeFilter.ALL ||
+      watchFilter != TitleWatchFilter.ALL ||
+      durationFilter != MovieDurationFilter.ALL
+    BackHandler(enabled = !isSearching && !(twoPane && selectedItemId != null) && hasActiveFilter) {
+      if (watchFilter != TitleWatchFilter.ALL || durationFilter != MovieDurationFilter.ALL) {
+        watchFilterOrdinal = TitleWatchFilter.ALL.ordinal
+        streamingPreferences.movieDurationFilter.set(MovieDurationFilter.ALL)
+      } else {
+        streamingPreferences.titlesTypeFilter.set(TitlesTypeFilter.ALL)
+      }
+    }
     val titlesSort by streamingPreferences.titlesSort.collectAsState()
     val titlesSortOptions = remember {
       TitlesSort.entries.map { SortOption(it, it.label) }
@@ -384,6 +403,12 @@ data class TitlesScreen(
               IconButton(onClick = { isSearching = true }) {
                 Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search))
               }
+              IconButton(onClick = { backstack.add(CustomSeriesBuilderScreen()) }) {
+                Icon(
+                  Icons.Filled.Add,
+                  contentDescription = stringResource(R.string.create_series),
+                )
+              }
               MediaLayoutToggle(
                 mode = layoutTitles,
                 onToggle = {
@@ -435,6 +460,7 @@ data class TitlesScreen(
               titlesSortOptions = titlesSortOptions,
               onTitlesSortChange = { streamingPreferences.titlesSort.set(it) },
               totalTitlesCount = totalCount,
+              libraryTotalTitlesCount = allTitleItems.size,
               libraryFiltered = libraryFiltered,
               onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
               onItemClick = { item ->
@@ -450,6 +476,7 @@ data class TitlesScreen(
                 }
               },
               onMovieLongClick = { moviePendingDeletion = it },
+              onCreateSeries = { backstack.add(CustomSeriesBuilderScreen()) },
             )
           }
           VerticalDivider(modifier = Modifier.fillMaxHeight())
@@ -495,6 +522,7 @@ data class TitlesScreen(
           titlesSortOptions = titlesSortOptions,
           onTitlesSortChange = { streamingPreferences.titlesSort.set(it) },
           totalTitlesCount = totalCount,
+          libraryTotalTitlesCount = allTitleItems.size,
           libraryFiltered = libraryFiltered,
           onManageLibrarySources = { backstack.add(FoldersPreferencesScreen) },
           onItemClick = { item ->
@@ -504,6 +532,7 @@ data class TitlesScreen(
             }
           },
           onMovieLongClick = { moviePendingDeletion = it },
+          onCreateSeries = { backstack.add(CustomSeriesBuilderScreen()) },
         )
       }
     }
@@ -605,10 +634,12 @@ private fun TitlesGridContent(
   titlesSortOptions: List<SortOption<TitlesSort>>,
   onTitlesSortChange: (TitlesSort) -> Unit,
   totalTitlesCount: Int,
+  libraryTotalTitlesCount: Int,
   libraryFiltered: Boolean,
   onManageLibrarySources: () -> Unit,
   onItemClick: (TitleItem) -> Unit,
   onMovieLongClick: (LocalMovie) -> Unit,
+  onCreateSeries: () -> Unit,
 ) {
   if (isLoading) {
     Box(
@@ -620,9 +651,11 @@ private fun TitlesGridContent(
       CircularProgressIndicator()
     }
   } else if (filteredTitles.isEmpty()) {
+    val filteringByType = typeFilter != TitlesTypeFilter.ALL
     val filteringByWatchState = watchFilter != TitleWatchFilter.ALL
     val filteringByDuration = durationFilter != MovieDurationFilter.ALL
-    val hasFilter = filteringByWatchState || filteringByDuration
+    val hasFilter = filteringByType || filteringByWatchState || filteringByDuration
+    val showFilterControls = libraryTotalTitlesCount > 0 || hasFilter || searchQuery.isNotBlank()
 
     val emptyIcon = when (typeFilter) {
       TitlesTypeFilter.SHOWS -> Icons.Filled.Tv
@@ -635,7 +668,7 @@ private fun TitlesGridContent(
         TitlesTypeFilter.MOVIES -> stringResource(R.string.titles_empty_search_no_movies_title)
         TitlesTypeFilter.ALL -> stringResource(R.string.titles_empty_search_no_titles_title)
       }
-      hasFilter -> when (typeFilter) {
+      filteringByWatchState || filteringByDuration -> when (typeFilter) {
         TitlesTypeFilter.SHOWS -> {
           val watchLabel = if (watchFilter == TitleWatchFilter.WATCHED) "finished" else watchFilter.label.lowercase()
           "No $watchLabel TV shows"
@@ -656,41 +689,99 @@ private fun TitlesGridContent(
         TitlesTypeFilter.MOVIES -> stringResource(R.string.titles_empty_search_no_movies_message, searchQuery)
         TitlesTypeFilter.ALL -> stringResource(R.string.titles_empty_search_no_titles_message, searchQuery)
       }
-      hasFilter -> when (typeFilter) {
+      filteringByWatchState || filteringByDuration -> when (typeFilter) {
         TitlesTypeFilter.SHOWS -> stringResource(R.string.titles_empty_filter_watch_state_message)
         else -> stringResource(R.string.titles_empty_filter_message)
       }
       libraryFiltered -> stringResource(R.string.library_sources_banner_message)
+      typeFilter == TitlesTypeFilter.SHOWS -> stringResource(R.string.custom_series_empty_shows_help)
       else -> when (typeFilter) {
-        TitlesTypeFilter.SHOWS -> stringResource(R.string.titles_empty_no_shows_message)
+        TitlesTypeFilter.SHOWS -> stringResource(R.string.custom_series_empty_shows_help)
         TitlesTypeFilter.MOVIES -> stringResource(R.string.titles_empty_no_movies_message)
         TitlesTypeFilter.ALL -> stringResource(R.string.titles_empty_no_titles_message)
       }
     }
 
-    EmptyState(
-      icon = emptyIcon,
-      title = emptyTitle,
-      message = emptyMessage,
+    val actionLabel = when {
+      searchQuery.isNotBlank() -> stringResource(R.string.clear_search)
+      hasFilter -> stringResource(R.string.titles_empty_action_show_all)
+      libraryFiltered -> stringResource(R.string.library_sources_empty_action)
+      else -> stringResource(R.string.create_series)
+    }
+
+    val onAction = when {
+      searchQuery.isNotBlank() -> onClearSearch
+      hasFilter -> ({
+        onTypeFilterChange(TitlesTypeFilter.ALL)
+        onWatchFilterChange(TitleWatchFilter.ALL)
+        onDurationFilterChange(MovieDurationFilter.ALL)
+      })
+      libraryFiltered -> onManageLibrarySources
+      else -> onCreateSeries
+    }
+
+    val secondaryActionLabel = if (hasFilter && typeFilter == TitlesTypeFilter.SHOWS) {
+      stringResource(R.string.create_series)
+    } else {
+      null
+    }
+
+    val secondaryOnAction = if (hasFilter && typeFilter == TitlesTypeFilter.SHOWS) {
+      onCreateSeries
+    } else {
+      null
+    }
+
+    PullRefreshBox(
+      isRefreshing = isRefreshing,
+      onRefresh = onRefresh,
+      enabled = refreshEnabled,
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding),
-      actionLabel = when {
-        searchQuery.isNotBlank() -> stringResource(R.string.clear_search)
-        hasFilter -> stringResource(R.string.titles_empty_action_show_all)
-        libraryFiltered -> stringResource(R.string.library_sources_empty_action)
-        else -> null
-      },
-      onAction = when {
-        searchQuery.isNotBlank() -> onClearSearch
-        hasFilter -> ({
-          onWatchFilterChange(TitleWatchFilter.ALL)
-          onDurationFilterChange(MovieDurationFilter.ALL)
-        })
-        libraryFiltered -> onManageLibrarySources
-        else -> null
-      },
-    )
+    ) {
+      if (showFilterControls) {
+        Column(modifier = Modifier.fillMaxSize()) {
+          TitlesFilterControls(
+            typeFilter = typeFilter,
+            onTypeFilterChange = onTypeFilterChange,
+            watchFilter = watchFilter,
+            onWatchFilterChange = onWatchFilterChange,
+            durationFilter = durationFilter,
+            onDurationFilterChange = onDurationFilterChange,
+            titlesSort = titlesSort,
+            titlesSortOptions = titlesSortOptions,
+            onTitlesSortChange = onTitlesSortChange,
+            shownCount = filteredTitles.size,
+            totalCount = totalTitlesCount,
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp),
+          )
+          EmptyState(
+            icon = emptyIcon,
+            title = emptyTitle,
+            message = emptyMessage,
+            modifier = Modifier
+              .fillMaxWidth()
+              .weight(1f),
+            actionLabel = actionLabel,
+            onAction = onAction,
+            secondaryActionLabel = secondaryActionLabel,
+            onSecondaryAction = secondaryOnAction,
+          )
+        }
+      } else {
+        EmptyState(
+          icon = emptyIcon,
+          title = emptyTitle,
+          message = emptyMessage,
+          modifier = Modifier.fillMaxSize(),
+          actionLabel = actionLabel,
+          onAction = onAction,
+          secondaryActionLabel = secondaryActionLabel,
+          onSecondaryAction = secondaryOnAction,
+        )
+      }
+    }
   } else {
     PullRefreshBox(
       isRefreshing = isRefreshing,
@@ -802,8 +893,12 @@ private fun TitlesFilterControls(
   onTitlesSortChange: (TitlesSort) -> Unit,
   shownCount: Int,
   totalCount: Int,
+  modifier: Modifier = Modifier,
 ) {
-  Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+  Column(
+    modifier = modifier,
+    verticalArrangement = Arrangement.spacedBy(8.dp),
+  ) {
     // Single row: All | Shows | Movies chips, followed by Watch filter button, Duration filter button, and Sort button
     LibraryFilterBar(
       options = TitlesTypeFilter.entries,
