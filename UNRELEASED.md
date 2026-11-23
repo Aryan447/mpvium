@@ -24,6 +24,7 @@
 
 ### Fixed
 
+- Network connection dialog fields and checkboxes on Android TV are fully navigable via D-Pad with automatic scrolling and input activation.
 - Subtitles and audio track player sheets are fully remote-navigable on Android TV, with auto-focused actions, clear D-Pad focus rings, and no background key leaks.
 - Text fields on Android TV no longer summon the on-screen keyboard automatically when D-Pad focus moves over them; pressing Enter or Select explicitly opens input.
 - Downloaded and sideloaded media on Android TV is no longer suppressed from the Titles library by mobile transient folder thresholds.
