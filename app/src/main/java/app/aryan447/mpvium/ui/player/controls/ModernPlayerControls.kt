@@ -307,9 +307,8 @@ fun ModernPlayerControls(
             borderStroke = borderStroke,
             modifier = Modifier.weight(1f, fill = false),
           )
+          Spacer(modifier = Modifier.width(12.dp))
         }
-
-        Spacer(modifier = Modifier.width(12.dp))
 
         // Top-right Expandable Volume & Brightness Controls
         ModernTopRightControls(
@@ -492,9 +491,8 @@ fun ModernPlayerControls(
               borderStroke = borderStroke,
               modifier = Modifier.weight(1f, fill = false),
             )
+            Spacer(modifier = Modifier.width(12.dp))
           }
-
-          Spacer(modifier = Modifier.width(12.dp))
 
           // Bottom-Right Actions Pill: [ Subtitles | Audio | Explain | Menu ]
           ModernBottomActionsPill(
