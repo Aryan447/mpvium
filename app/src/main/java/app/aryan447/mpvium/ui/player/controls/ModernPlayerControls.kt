@@ -352,7 +352,7 @@ fun ModernPlayerControls(
     ) {
       Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
       ) {
         if (customButtons.isNotEmpty()) {
           CustomButtonsRow(

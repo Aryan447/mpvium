@@ -70,6 +70,19 @@ object ManageScriptsScreen : Screen {
     LaunchedEffect(refreshTick) {
       withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, "scripts")
+        if (dir.exists()) {
+          dir.listFiles()?.forEach { file ->
+            if (file.isFile && file.name.endsWith(".txt", ignoreCase = true)) {
+              val normalized = ScriptFileHelper.normalizeScriptName(file.name)
+              if (normalized != null && normalized != file.name) {
+                val dest = File(dir, normalized)
+                if (!dest.exists()) {
+                  file.renameTo(dest)
+                }
+              }
+            }
+          }
+        }
         val files =
           if (dir.exists()) {
             dir.listFiles()
@@ -98,10 +111,10 @@ object ManageScriptsScreen : Screen {
                   if (cursor.moveToFirst() && idx >= 0) cursor.getString(idx) else null
                 }
               }.getOrNull() ?: uri.lastPathSegment?.substringAfterLast('/') ?: continue
-            if (!ScriptFileHelper.isScriptFile(name)) continue
+            val targetName = ScriptFileHelper.normalizeScriptName(name) ?: continue
             runCatching {
               context.contentResolver.openInputStream(uri)?.use { input ->
-                File(dir, name).outputStream().use { output -> input.copyTo(output) }
+                File(dir, targetName).outputStream().use { output -> input.copyTo(output) }
               }
               imported++
             }

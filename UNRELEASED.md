@@ -17,11 +17,13 @@
 
 ### Changed
 
+- Custom script buttons render as individual floating glass pill chips matching the Modern Player aesthetic.
 - Modern is the default player layout; Classic is one tap away in Settings → Appearance → Player Layout.
 - Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.
 
 ### Fixed
 
+- Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
 - Bottom navigation bar now respects 3-button navigation insets without overlapping system navigation buttons.
 
 - HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
