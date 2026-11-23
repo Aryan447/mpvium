@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.PlayArrow
@@ -55,7 +56,9 @@ import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
+import app.aryan447.mpvium.ui.LocalBackStack
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import java.io.File
 import java.util.UUID
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.Preference
@@ -68,6 +71,7 @@ object CustomButtonsScreen : Screen {
   @Composable
   override fun Content() {
     val context = LocalContext.current
+    val backStack = LocalBackStack.current
     val preferences = koinInject<AdvancedPreferences>()
     val rawButtons by preferences.customScriptButtons.collectAsState()
     val buttons = remember(rawButtons) { CustomScriptButton.decode(rawButtons) }
@@ -93,11 +97,29 @@ object CustomButtonsScreen : Screen {
             if (imported.isNotEmpty()) {
               val next = buttons + imported.map { b -> b.copy(id = UUID.randomUUID().toString()) }
               saveButtons(next)
-              Toast.makeText(
-                context,
-                context.getString(R.string.pref_custom_buttons_import_toast, imported.size),
-                Toast.LENGTH_SHORT,
-              ).show()
+              val scriptsDir = File(context.filesDir, "scripts")
+              val missingScripts = imported.mapNotNull { btn ->
+                val combined = btn.code + " " + btn.longPressCode
+                Regex("""script-binding\s+([A-Za-z0-9_-]+)/""").find(combined)?.groupValues?.get(1)
+              }.distinct().filter { scriptName ->
+                !scriptsDir.exists() || scriptsDir.listFiles()?.none { f ->
+                  f.isFile && f.name.substringBeforeLast('.').equals(scriptName, ignoreCase = true)
+                } == true
+              }
+              if (missingScripts.isNotEmpty()) {
+                val scriptList = missingScripts.joinToString(", ") { "$it.lua" }
+                Toast.makeText(
+                  context,
+                  "Imported ${imported.size} buttons. Remember to add $scriptList in Manage scripts.",
+                  Toast.LENGTH_LONG,
+                ).show()
+              } else {
+                Toast.makeText(
+                  context,
+                  context.getString(R.string.pref_custom_buttons_import_toast, imported.size),
+                  Toast.LENGTH_SHORT,
+                ).show()
+              }
             } else {
               Toast.makeText(
                 context,
@@ -398,6 +420,27 @@ object CustomButtonsScreen : Screen {
                   if (index < buttons.lastIndex) PreferenceDivider()
                 }
               }
+            }
+          }
+
+          item {
+            PreferenceSectionHeader(title = "Scripts")
+          }
+          item {
+            PreferenceCard {
+              Preference(
+                title = { Text("Manage scripts") },
+                summary = {
+                  Text(
+                    "Import and manage Lua or JS scripts used by custom buttons",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                },
+                icon = {
+                  PreferenceRowIcon(icon = Icons.Outlined.Code)
+                },
+                onClick = { backStack.add(ManageScriptsScreen) },
+              )
             }
           }
         }

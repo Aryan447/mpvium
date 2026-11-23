@@ -128,4 +128,23 @@ object ScriptFileHelper {
     val ext = name.substringAfterLast('.', "").lowercase()
     return ext in SUPPORTED_EXTENSIONS
   }
+
+  fun normalizeScriptName(name: String?): String? {
+    if (name.isNullOrBlank()) return null
+    val trimmed = name.trim()
+    val ext = trimmed.substringAfterLast('.', "").lowercase()
+    return when {
+      ext in SUPPORTED_EXTENSIONS -> trimmed
+      ext == "txt" -> {
+        val base = trimmed.substringBeforeLast('.')
+        val innerExt = base.substringAfterLast('.', "").lowercase()
+        if (innerExt in SUPPORTED_EXTENSIONS) {
+          base
+        } else {
+          "$base.lua"
+        }
+      }
+      else -> null
+    }
+  }
 }
