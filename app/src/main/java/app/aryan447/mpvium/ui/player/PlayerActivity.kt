@@ -2928,31 +2928,6 @@ class PlayerActivity :
         return super.onKeyDown(keyCode, event)
       }
 
-      KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-        viewModel.pauseUnpause()
-        return true
-      }
-
-      KeyEvent.KEYCODE_MEDIA_PLAY -> {
-        viewModel.unpause()
-        return true
-      }
-
-      KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-        viewModel.pause()
-        return true
-      }
-
-      KeyEvent.KEYCODE_MEDIA_NEXT, KeyEvent.KEYCODE_CHANNEL_UP -> {
-        playNext()
-        return true
-      }
-
-      KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-        playPrevious()
-        return true
-      }
-
       KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_INFO -> {
         if (areControlsVisible) {
           viewModel.hideControls()
@@ -2989,6 +2964,26 @@ class PlayerActivity :
         return true
       }
 
+      KeyEvent.KEYCODE_HEADSETHOOK,
+      KeyEvent.KEYCODE_MEDIA_PLAY,
+      KeyEvent.KEYCODE_MEDIA_PAUSE,
+      KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+        viewModel.handleMediaPlay()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+      KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+        viewModel.handleMediaPrevious()
+        return true
+      }
+
+      KeyEvent.KEYCODE_MEDIA_NEXT,
+      KeyEvent.KEYCODE_CHANNEL_UP -> {
+        viewModel.handleMediaNext()
+        return true
+      }
+
       KeyEvent.KEYCODE_MEDIA_REWIND -> {
         viewModel.handleLeftDoubleTap()
         return true
@@ -3019,23 +3014,38 @@ class PlayerActivity :
     keyCode: Int,
     event: KeyEvent?,
   ): Boolean {
-    val isNoSheetOpen = viewModel.sheetShown.value == Sheets.None && viewModel.panelShown.value == Panels.None
-    val areControlsVisible = viewModel.controlsShown.value
-    val isDpadKey = when (keyCode) {
-      KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
-      KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
-      KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER,
-      KeyEvent.KEYCODE_NUMPAD_ENTER -> true
-      else -> false
+    when (keyCode) {
+      KeyEvent.KEYCODE_HEADSETHOOK,
+      KeyEvent.KEYCODE_MEDIA_PLAY,
+      KeyEvent.KEYCODE_MEDIA_PAUSE,
+      KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+      KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+      KeyEvent.KEYCODE_MEDIA_NEXT,
+      KeyEvent.KEYCODE_MEDIA_REWIND,
+      KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+      KeyEvent.KEYCODE_MEDIA_STOP,
+      KeyEvent.KEYCODE_CHANNEL_UP,
+      KeyEvent.KEYCODE_CHANNEL_DOWN -> return true
+      else -> {
+        val isNoSheetOpen = viewModel.sheetShown.value == Sheets.None && viewModel.panelShown.value == Panels.None
+        val areControlsVisible = viewModel.controlsShown.value
+        val isDpadKey = when (keyCode) {
+          KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+          KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+          KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER,
+          KeyEvent.KEYCODE_NUMPAD_ENTER -> true
+          else -> false
+        }
+        // Prevent key release from triggering mpv bindings (like seek 10 on RIGHT) while navigating sheets or controls
+        if (!isNoSheetOpen || (areControlsVisible && isDpadKey)) {
+          return super.onKeyUp(keyCode, event)
+        }
+        event?.let {
+          if (player.onKey(it)) return true
+        }
+        return super.onKeyUp(keyCode, event)
+      }
     }
-    // Prevent key release from triggering mpv bindings (like seek 10 on RIGHT) while navigating sheets or controls
-    if (!isNoSheetOpen || (areControlsVisible && isDpadKey)) {
-      return super.onKeyUp(keyCode, event)
-    }
-    event?.let {
-      if (player.onKey(it)) return true
-    }
-    return super.onKeyUp(keyCode, event)
   }
 
   // ==================== System UI Management ====================

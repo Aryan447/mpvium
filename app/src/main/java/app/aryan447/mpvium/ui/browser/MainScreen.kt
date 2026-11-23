@@ -18,9 +18,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.tappableElement
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -283,6 +288,7 @@ object MainScreen : Screen {
     // Adaptive navigation: rail on tablets / wide screens, bar on phones.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
       val isWide = maxWidth >= 600.dp
+      val tappableBottomPadding = WindowInsets.tappableElement.asPaddingValues().calculateBottomPadding()
 
       Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -307,10 +313,12 @@ object MainScreen : Screen {
                 // with real content padding, so edge items and their
                 // indicator pills never collide with the curved corners.
                 // Window insets are disabled on the bar itself; the outer
-                // padding clears the gesture navigation area instead.
+                // padding clears the gesture navigation area, while
+                // tappable element insets keep it safely above 3-button navigation.
                 Box(
                   modifier = Modifier
                     .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.tappableElement.only(WindowInsetsSides.Bottom))
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 16.dp),
                   contentAlignment = Alignment.Center,
@@ -370,7 +378,7 @@ object MainScreen : Screen {
                       enabled = isGlass,
                     ),
                   containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
-                  windowInsets = WindowInsets(0, 0, 0, 0),
+                  windowInsets = WindowInsets.tappableElement.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
                   arrangement = ShortNavigationBarArrangement.EqualWeight,
                 ) {
                   BottomNavItems(
@@ -422,7 +430,7 @@ object MainScreen : Screen {
             }
           }
           Box(modifier = Modifier.fillMaxSize().weight(1f).glassBackdrop(state = glassHaze, enabled = isGlass)) {
-            val fabBottomPadding = if (isWide) 24.dp else 80.dp
+            val fabBottomPadding = if (isWide) 24.dp else 80.dp + tappableBottomPadding
 
         AnimatedContent(
           targetState = selectedTabId,
@@ -484,6 +492,7 @@ internal fun MainBottomBarPreviewLayout(
     Box(
       modifier = Modifier
         .fillMaxWidth()
+        .windowInsetsPadding(WindowInsets.tappableElement.only(WindowInsetsSides.Bottom))
         .padding(horizontal = 16.dp)
         .padding(bottom = 16.dp),
       contentAlignment = Alignment.Center,
@@ -529,7 +538,7 @@ internal fun MainBottomBarPreviewLayout(
         )
       ),
       containerColor = MaterialTheme.colorScheme.surfaceContainer,
-      windowInsets = WindowInsets(0, 0, 0, 0),
+      windowInsets = WindowInsets.tappableElement.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
       arrangement = ShortNavigationBarArrangement.EqualWeight,
     ) {
       navItems.forEach { tab ->

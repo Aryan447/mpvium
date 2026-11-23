@@ -312,17 +312,17 @@ fun ModernPlayerControls(
         onPlayPause = {
           haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           resetControlsTimestamp()
-          viewModel.pauseUnpause()
+          viewModel.handleMediaPlay()
         },
         onRewind = {
           haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           resetControlsTimestamp()
-          viewModel.seekBy(-10)
+          viewModel.handleMediaPrevious()
         },
         onForward = {
           haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           resetControlsTimestamp()
-          viewModel.seekBy(10)
+          viewModel.handleMediaNext()
         },
         surfaceColor = surfaceColor,
         borderStroke = borderStroke,

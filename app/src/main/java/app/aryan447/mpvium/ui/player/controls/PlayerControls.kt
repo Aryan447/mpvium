@@ -944,7 +944,7 @@ fun PlayerControls(
                     paused = paused == true,
                     onClick = {
                       resetControlsTimestamp = System.currentTimeMillis()
-                      viewModel.pauseUnpause()
+                      viewModel.handleMediaPlay()
                     },
                     modifier = Modifier.focusRequester(playPauseFocusRequester),
                     hideBackground = hideBackground,
@@ -968,7 +968,7 @@ fun PlayerControls(
                   paused = paused == true,
                   onClick = {
                     resetControlsTimestamp = System.currentTimeMillis()
-                    viewModel.pauseUnpause()
+                    viewModel.handleMediaPlay()
                   },
                   modifier = Modifier.focusRequester(playPauseFocusRequester),
                   hideBackground = hideBackground,

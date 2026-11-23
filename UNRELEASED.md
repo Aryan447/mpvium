@@ -30,6 +30,7 @@
 - Downloaded and sideloaded media on Android TV is no longer suppressed from the Titles library by mobile transient folder thresholds.
 - Software decoder selection strictly disables hardware decoding across playback reloads, playlist items, and singleTask session switches.
 - Main navigation rail on TV uses clean native Material 3 indicator pills without distorted selection outlines.
+- Bottom navigation bar now respects 3-button navigation insets without overlapping system navigation buttons.
 - HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
 - Standalone movies now retain their own subtitle position and scale under per-title scope instead of sharing and overwriting a single profile.
 - Deleting or renaming a movie automatically removes or migrates its saved subtitle profile entry.
@@ -37,3 +38,4 @@
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.
 - Anime releases without dash episode separators are properly detected as TV series episodes instead of standalone movies.
 - Folders preferences whitelist and blacklist dialogs now list parent directories containing videos.
+- Media control buttons and keys now follow their configured action in Preferences → Gestures.
