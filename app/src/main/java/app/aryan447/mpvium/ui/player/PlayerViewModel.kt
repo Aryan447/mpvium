@@ -2411,10 +2411,12 @@ class PlayerViewModel(
   fun hasPrevious(): Boolean = (host as? PlayerActivity)?.hasPrevious() ?: false
 
   fun playNext() {
+    (host as? PlayerActivity)?.resetConsecutivePlaybackErrors()
     (host as? PlayerActivity)?.playNext()
   }
 
   fun playPrevious() {
+    (host as? PlayerActivity)?.resetConsecutivePlaybackErrors()
     (host as? PlayerActivity)?.playPrevious()
   }
 
@@ -2584,6 +2586,19 @@ class PlayerViewModel(
   }
 
   // ==================== Utility ====================
+
+  fun executeCustomCommand(raw: String) {
+    if (raw.isBlank()) return
+    val commands = app.aryan447.mpvium.preferences.CustomCommandParser.parse(raw)
+    if (commands.isEmpty()) return
+    for (cmd in commands) {
+      runCatching {
+        MPVLib.command(*cmd.toTypedArray())
+      }.onFailure { e ->
+        Log.e("PlayerViewModel", "Failed to run custom command: ${cmd.joinToString(" ")}", e)
+      }
+    }
+  }
 
   fun showToast(message: String) {
     Toast.makeText(host.context, message, Toast.LENGTH_SHORT).show()

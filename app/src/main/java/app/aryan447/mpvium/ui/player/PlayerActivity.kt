@@ -26,6 +26,7 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -37,6 +38,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.databinding.PlayerLayoutBinding
 import app.aryan447.mpvium.domain.playbackstate.PlaybackCheckpointDecider
@@ -252,6 +254,11 @@ class PlayerActivity :
    * Used to skip thumbnail/metadata extraction for network streams.
    */
   private var isM3uPlaylist: Boolean = false
+  private var consecutivePlaybackErrors = 0
+
+  fun resetConsecutivePlaybackErrors() {
+    consecutivePlaybackErrors = 0
+  }
 
   /**
    * Helper for managing Picture-in-Picture mode.
@@ -1541,6 +1548,7 @@ class PlayerActivity :
    * @param index The index of the playlist item to play
    */
   internal fun playPlaylistItem(index: Int) {
+    consecutivePlaybackErrors = 0
     if (index in playlist.indices) {
       loadPlaylistItem(index)
     }
@@ -1842,9 +1850,10 @@ class PlayerActivity :
    *
    * @param eventId The MPV event ID
    */
-  internal fun event(eventId: Int) {
+  internal fun event(eventId: Int, data: MPVNode? = null) {
     when (eventId) {
       MPVLib.MpvEvent.MPV_EVENT_FILE_LOADED -> {
+        consecutivePlaybackErrors = 0
         handleFileLoaded()
         isReady = true
       }
@@ -1853,6 +1862,43 @@ class PlayerActivity :
         player.isExiting = false
         if (!isReady) {
           isReady = true
+        }
+      }
+
+      MPVLib.MpvEvent.MPV_EVENT_END_FILE -> {
+        handleEndFileEvent(data)
+      }
+    }
+  }
+
+  private fun handleEndFileEvent(data: MPVNode?) {
+    val reason = runCatching { data?.get("reason")?.asInt() }.getOrNull()
+    val error = runCatching { data?.get("error")?.asInt() }.getOrNull()
+    val isError = reason == 4L || (error != null && error < 0L)
+
+    if (isError) {
+      Log.w(TAG, "File playback failed with error (reason=$reason, error=$error): $fileName")
+      if (playlist.isNotEmpty() && playlist.size > 1) {
+        consecutivePlaybackErrors++
+        if (consecutivePlaybackErrors < playlist.size) {
+          Log.i(
+            TAG,
+            "Auto-advancing to next video after failure ($consecutivePlaybackErrors/${playlist.size})",
+          )
+          Toast.makeText(
+            this,
+            getString(R.string.playback_failed_next, fileName),
+            Toast.LENGTH_SHORT,
+          ).show()
+          playNext()
+        } else {
+          Log.e(TAG, "All items in playlist failed to play")
+          consecutivePlaybackErrors = 0
+          Toast.makeText(
+            this,
+            R.string.playback_failed_all,
+            Toast.LENGTH_LONG,
+          ).show()
         }
       }
     }
@@ -2516,32 +2562,39 @@ class PlayerActivity :
         return@runCatching
       }
 
+      val networkFilePath = uri.getQueryParameter("network_path")
+        ?: (if (uri == extractUriFromIntent(intent)) intent.getStringExtra("network_file_path") else null)
+
       val filePath =
-        when (uri.scheme) {
-          "file" -> {
-            uri.path ?: uri.toString()
-          }
+        if (networkFilePath != null) {
+          networkFilePath
+        } else {
+          when (uri.scheme) {
+            "file" -> {
+              uri.path ?: uri.toString()
+            }
 
-          "content" -> {
-            contentResolver
-              .query(
-                uri,
-                arrayOf(MediaStore.MediaColumns.DATA),
-                null,
-                null,
-                null,
-              )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                  val columnIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
-                  if (columnIndex != -1) cursor.getString(columnIndex) else null
-                } else {
-                  null
-                }
-              } ?: uri.toString()
-          }
+            "content" -> {
+              contentResolver
+                .query(
+                  uri,
+                  arrayOf(MediaStore.MediaColumns.DATA),
+                  null,
+                  null,
+                  null,
+                )?.use { cursor ->
+                  if (cursor.moveToFirst()) {
+                    val columnIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
+                    if (columnIndex != -1) cursor.getString(columnIndex) else null
+                  } else {
+                    null
+                  }
+                } ?: uri.toString()
+            }
 
-          else -> {
-            uri.toString()
+            else -> {
+              uri.toString()
+            }
           }
         }
 
@@ -3692,32 +3745,39 @@ class PlayerActivity :
     name: String,
   ) {
     runCatching {
+      val networkFilePath = uri.getQueryParameter("network_path")
+        ?: (if (uri == extractUriFromIntent(intent)) intent.getStringExtra("network_file_path") else null)
+
       val filePath =
-        when (uri.scheme) {
-          "file" -> {
-            uri.path ?: uri.toString()
-          }
+        if (networkFilePath != null) {
+          networkFilePath
+        } else {
+          when (uri.scheme) {
+            "file" -> {
+              uri.path ?: uri.toString()
+            }
 
-          "content" -> {
-            contentResolver
-              .query(
-                uri,
-                arrayOf(MediaStore.MediaColumns.DATA),
-                null,
-                null,
-                null,
-              )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                  val columnIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
-                  if (columnIndex != -1) cursor.getString(columnIndex) else null
-                } else {
-                  null
-                }
-              } ?: uri.toString()
-          }
+            "content" -> {
+              contentResolver
+                .query(
+                  uri,
+                  arrayOf(MediaStore.MediaColumns.DATA),
+                  null,
+                  null,
+                  null,
+                )?.use { cursor ->
+                  if (cursor.moveToFirst()) {
+                    val columnIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
+                    if (columnIndex != -1) cursor.getString(columnIndex) else null
+                  } else {
+                    null
+                  }
+                } ?: uri.toString()
+            }
 
-          else -> {
-            uri.toString()
+            else -> {
+              uri.toString()
+            }
           }
         }
 
@@ -3782,7 +3842,9 @@ class PlayerActivity :
     // Check if this is a network file played via proxy (SMB/WebDAV/FTP)
     // Use the stable network file path instead of the temporary proxy URL
     val networkFilePath = intent.getStringExtra("network_file_path")
-    val networkConnectionId = intent.getLongExtra("network_connection_id", -1L)
+      ?: intent.data?.getQueryParameter("network_path")
+    val networkConnectionId = intent.getLongExtra("network_connection_id", -1L).takeIf { it != -1L }
+      ?: intent.data?.getQueryParameter("connection_id")?.toLongOrNull() ?: -1L
 
     if (networkFilePath != null && networkConnectionId != -1L) {
       // For network files via proxy: use connection ID + file path for stable identifier
@@ -3811,6 +3873,17 @@ class PlayerActivity :
    * For network URIs (http/https/rtmp/etc.), uses a hash of the URI string to distinguish different streams.
    */
   private fun getMediaIdentifierFromUri(uri: Uri, fileName: String): String {
+    val networkFilePath = uri.getQueryParameter("network_path")
+    val networkConnectionId = uri.getQueryParameter("connection_id")?.toLongOrNull()
+    if (networkFilePath != null && networkConnectionId != null && networkConnectionId != -1L) {
+      val identifier = "network_${networkConnectionId}_${networkFilePath.hashCode()}"
+      Log.d(
+        TAG,
+        "Using network file identifier from URI: $identifier (connection: $networkConnectionId, path: $networkFilePath)",
+      )
+      return identifier
+    }
+
     return if (uri.scheme?.startsWith("http") == true || uri.scheme == "rtmp" || uri.scheme == "ftp" || uri.scheme == "rtsp" || uri.scheme == "mms") {
       "${fileName}_${uri.toString().hashCode()}"
     } else {

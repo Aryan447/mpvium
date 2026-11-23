@@ -93,6 +93,7 @@ import kotlin.math.roundToInt
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
+import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.PlayerLayout
 import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
@@ -110,6 +111,7 @@ import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.BrightnessSlider
 import app.aryan447.mpvium.ui.player.controls.components.CompactSpeedIndicator
 import app.aryan447.mpvium.ui.player.controls.components.ControlsButton
+import app.aryan447.mpvium.ui.player.controls.components.CustomButtonsRow
 import app.aryan447.mpvium.ui.player.controls.components.HoldControlsPlayerUpdate
 import app.aryan447.mpvium.ui.player.controls.components.IntroSkipChip
 import app.aryan447.mpvium.ui.player.controls.components.MultipleSpeedPlayerUpdate
@@ -188,6 +190,10 @@ fun PlayerControls(
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
   val advancedPreferences = koinInject<AdvancedPreferences>()
   val leanSeekCache by advancedPreferences.leanSeekCache.collectAsState()
+  val rawCustomButtons by advancedPreferences.customScriptButtons.collectAsState()
+  val customButtons = remember(rawCustomButtons) {
+    CustomScriptButton.decode(rawCustomButtons).filter { it.enabled }
+  }
   val cacheRanges by viewModel.cacheRanges.collectAsState()
   val forwardCacheDuration by viewModel.forwardCacheDuration.collectAsState()
   val interactionSource = remember { MutableInteractionSource() }
@@ -428,7 +434,7 @@ fun PlayerControls(
         val (topLeftControls, topRightControls) = createRefs()
         val (volumeSlider, brightnessSlider) = createRefs()
         val unlockControlsButton = createRef()
-        val (bottomRightControls, bottomLeftControls) = createRefs()
+        val (bottomRightControls, bottomLeftControls, customButtonsRef) = createRefs()
         val playerPauseButton = createRef()
         val seekbar = createRef()
         val (playerUpdates) = createRefs()
@@ -893,6 +899,7 @@ fun PlayerControls(
             aspect = aspect,
             decoder = decoder,
             playPauseFocusRequester = playPauseFocusRequester,
+            customButtons = customButtons,
             modifier = Modifier.fillMaxSize(),
           )
         }
@@ -1460,6 +1467,33 @@ fun PlayerControls(
             viewModel = viewModel,
             activity = activity,
           )
+        }
+
+        if (customButtons.isNotEmpty()) {
+          AnimatedVisibility(
+            visible = controlsShown && !areControlsLocked && !areSlidersShown && !isModern,
+            enter = fadeIn(playerControlsEnterAnimationSpec()),
+            exit = fadeOut(playerControlsExitAnimationSpec()),
+            modifier =
+              Modifier.constrainAs(customButtonsRef) {
+                if (isPortrait) {
+                  bottom.linkTo(seekbar.top, spacing.small)
+                } else {
+                  bottom.linkTo(bottomLeftControls.top, spacing.small)
+                }
+                start.linkTo(parent.start, spacing.large)
+                end.linkTo(parent.end, spacing.large)
+                width = Dimension.fillToConstraints
+              },
+          ) {
+            CustomButtonsRow(
+              buttons = customButtons,
+              onExecute = { cmd -> viewModel.executeCustomCommand(cmd) },
+              resetControlsTimestamp = { resetControlsTimestamp = System.currentTimeMillis() },
+              surfaceColor = if (amoledMode) Color(0xCC0A0B0E) else Color(0x9916181D),
+              borderStroke = BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)),
+            )
+          }
         }
 
       }

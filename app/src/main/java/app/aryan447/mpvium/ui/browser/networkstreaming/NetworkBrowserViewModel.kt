@@ -10,7 +10,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkFile
+import app.aryan447.mpvium.domain.network.NetworkMediaTypes
 import app.aryan447.mpvium.domain.network.NetworkProtocol
+import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.repository.NetworkRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +32,7 @@ class NetworkBrowserViewModel(
 ) : AndroidViewModel(application),
   KoinComponent {
   private val repository: NetworkRepository by inject()
+  private val playerPreferences: PlayerPreferences by inject()
 
   private val _files = MutableStateFlow<List<NetworkFile>>(emptyList())
   val files: StateFlow<List<NetworkFile>> = _files.asStateFlow()
@@ -83,34 +86,68 @@ class NetworkBrowserViewModel(
 
         // Use proxy server for protocols that need seeking support
         val useProxy = connection.protocol in PROXY_PROTOCOLS
+        val isPlaylistMode = playerPreferences.playlistMode.get()
 
-        val uri = if (useProxy) {
-          val proxy = app.aryan447.mpvium.ui.browser.networkstreaming.proxy.NetworkStreamingProxy.getInstance()
-          val streamId = "${connectionId}_${System.currentTimeMillis()}"
-          val proxyUrl = proxy.registerStream(
-            streamId = streamId,
-            connection = connection,
-            filePath = file.path,
-            fileSize = file.size,
-            mimeType = file.mimeType ?: "video/mp4",
-          )
-          android.net.Uri.parse(proxyUrl)
+        val videoFiles = if (isPlaylistMode) {
+          val filtered = _files.value.filter {
+            !it.isDirectory && (
+              it.mimeType?.startsWith("video/") == true ||
+                NetworkMediaTypes.isPlaylistMimeType(it.mimeType) ||
+                NetworkMediaTypes.isVideoFileName(it.name)
+            )
+          }
+          if (filtered.any { it.path == file.path }) filtered else filtered + file
         } else {
-          NetworkStreamingProvider.setConnection(connectionId, connection)
-          NetworkStreamingProvider.getUri(application, connectionId, file.path)
+          listOf(file)
         }
 
+        val startIndex = videoFiles.indexOfFirst { it.path == file.path }.coerceAtLeast(0)
+
+        val playlistUris: ArrayList<android.net.Uri>
+        if (useProxy) {
+          val proxy = app.aryan447.mpvium.ui.browser.networkstreaming.proxy.NetworkStreamingProxy.getInstance()
+          val now = System.currentTimeMillis()
+          playlistUris = ArrayList(
+            videoFiles.mapIndexed { index, video ->
+              val streamId = "${connectionId}_${now}_$index"
+              val proxyBaseUrl = proxy.registerStream(
+                streamId = streamId,
+                connection = connection,
+                filePath = video.path,
+                fileSize = video.size,
+                mimeType = video.mimeType ?: "video/mp4",
+              )
+              val encodedName = android.net.Uri.encode(video.name)
+              val encodedPath = android.net.Uri.encode(video.path)
+              android.net.Uri.parse("$proxyBaseUrl/$encodedName?network_path=$encodedPath&connection_id=$connectionId")
+            }
+          )
+        } else {
+          NetworkStreamingProvider.setConnection(connectionId, connection)
+          playlistUris = ArrayList(
+            videoFiles.map { video ->
+              NetworkStreamingProvider.getUri(application, connectionId, video.path)
+            }
+          )
+        }
+
+        val targetUri = playlistUris[startIndex]
+
         // Launch the player
-        val intent = Intent(Intent.ACTION_VIEW, uri)
+        val intent = Intent(Intent.ACTION_VIEW, targetUri)
         intent.setClass(application, app.aryan447.mpvium.ui.player.PlayerActivity::class.java)
         intent.putExtra("internal_launch", true)
-        intent.putExtra("launch_source", "network_stream")
+        intent.putExtra("launch_source", if (playlistUris.size > 1) "playlist" else "network_stream")
         intent.putExtra("title", file.name)
         intent.putExtra("filename", file.name)
         // Pass the original network file path for stable media identifier (position saving)
         intent.putExtra("network_file_path", file.path)
         intent.putExtra("network_connection_id", connectionId)
-        intent.setDataAndType(uri, file.mimeType ?: "video/*")
+        if (playlistUris.size > 1) {
+          intent.putParcelableArrayListExtra("playlist", playlistUris)
+          intent.putExtra("playlist_index", startIndex)
+        }
+        intent.setDataAndType(targetUri, file.mimeType ?: "video/*")
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         if (!useProxy) {

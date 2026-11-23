@@ -9,6 +9,8 @@
 - Android TV and Google TV support with Leanback launcher banner, 10-foot D-Pad remote navigation, clear visual focus rings, landscape enforcement, and dedicated TV playback controls.
 - Comprehensive TV remote optimization for Modern player layout: auto-focused hero play/pause button, D-Pad Left/Right seekbar scrubbing, and interactive focus rings across transport controls, action pill buttons, and sheets.
 - TV settings layout with centered content, D-Pad focus indicators on preference rows and choice sheets, and remote-navigable theme preview cards.
+- Videos in WebDAV, SMB, and FTP folders are automatically queued into the playlist when playlist mode is enabled, advancing to the next file when playback ends or fails.
+- Custom Lua and mpv script buttons in player overlay with single tap and long-press actions, plus XML import and export.
 - Speed Binge grid dial on Home puts your last played show or movie first with instant resume, brings progress bars to every title, and replaces featured banners with a clean media grid.
 - mpv.conf ownership in Settings → Advanced lets you choose which mpv option groups your mpv.conf controls instead of the app.
 - Theme Studio card opens My Canvas with full primary, secondary, and tertiary color customization, continuous HSV and hex color pickers, and live player controls and homepage previews.

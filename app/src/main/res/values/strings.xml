@@ -315,6 +315,23 @@
   <string name="pref_subtitle_search_summary">Search and download subtitles from Online sources</string>
   <string name="pref_custom_lua_title">Custom Lua Buttons</string>
   <string name="pref_custom_lua_summary">Manage custom player buttons with Lua code</string>
+  <string name="pref_custom_buttons_title">Custom buttons</string>
+  <string name="pref_custom_buttons_summary">Create and manage script-powered player buttons</string>
+  <string name="pref_custom_buttons_empty_title">No custom buttons yet</string>
+  <string name="pref_custom_buttons_empty_summary">Create script-powered player buttons with tap and long-press actions, or import an XML configuration.</string>
+  <string name="pref_custom_buttons_dialog_new_title">New custom button</string>
+  <string name="pref_custom_buttons_dialog_edit_title">Edit custom button</string>
+  <string name="pref_custom_buttons_field_title">Button title</string>
+  <string name="pref_custom_buttons_field_tap">Tap command, e.g. cycle pause</string>
+  <string name="pref_custom_buttons_field_hold">Long-press command (optional)</string>
+  <string name="pref_custom_buttons_field_help">Runs as an mpv command on single tap. Optional long-press command runs on hold. Use script bindings such as script-binding Script/delete_file or cycle pause.</string>
+  <string name="pref_custom_buttons_import">Import XML</string>
+  <string name="pref_custom_buttons_export">Export XML</string>
+  <string name="pref_custom_buttons_import_toast">Imported %1$d button(s)</string>
+  <string name="pref_custom_buttons_export_toast">Exported %1$d button(s)</string>
+  <string name="pref_custom_buttons_import_failed">Failed to import buttons from XML</string>
+  <string name="pref_custom_buttons_export_failed">Failed to export buttons to XML</string>
+  <string name="pref_custom_buttons_validation_error">Title and tap command are required</string>
   <string name="pref_preferred_languages">Preferred languages</string>
   <string name="pref_subtitles_fonts_dir">Fonts directory</string>
   <string name="pref_subtitles_autoload_title">Automatically load subtitles</string>
@@ -740,6 +757,8 @@
   <string name="no_playlists_message">Create a playlist or add one from an M3U URL</string>
   <string name="no_playlists_found">No playlists found</string>
   <string name="no_playlists_found_message">Try a different search term</string>
+  <string name="playback_failed_next">Failed to play %s. Playing next…</string>
+  <string name="playback_failed_all">Unable to play videos in playlist.</string>
   <string name="clear_search">Clear search</string>
   <!-- Manual watch status (Mark as) -->
   <string name="mark_as_action">Mark as</string>
