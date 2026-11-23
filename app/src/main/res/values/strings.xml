@@ -761,6 +761,8 @@
   <string name="playback_failed_all">Unable to play videos in playlist.</string>
   <string name="clear_search">Clear search</string>
   <!-- Manual watch status (Mark as) -->
+  <string name="fix_match">Fix match</string>
+  <string name="more_options">More options</string>
   <string name="mark_as_action">Mark as</string>
   <string name="mark_as_title">Mark %1$d video(s) as</string>
   <string name="mark_as_last_played">Last played</string>

@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -45,15 +46,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
 import app.aryan447.mpvium.ui.theme.glassFilterChipColors
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
@@ -160,6 +165,7 @@ data class SeriesDetailScreen(
     var markAsEpisode by remember { mutableStateOf<LocalEpisode?>(null) }
     // Show-level Mark as: applies to all episodes (e.g. mark whole show finished)
     var markShowAsOpen by remember { mutableStateOf(false) }
+    var menuExpanded by remember { mutableStateOf(false) }
 
     val currentTheme = LocalAppTheme.current
     val auraArtwork = series?.posterUrl ?: series?.backdropUrl
@@ -371,29 +377,9 @@ data class SeriesDetailScreen(
                   )
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                  if (!isCustomSeries) {
-                    FilledTonalIconButton(
-                      onClick = {
-                        showMatchPicker = true
-                      },
-                      colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                      ),
-                      modifier = Modifier.size(42.dp),
-                    ) {
-                      Icon(Icons.Filled.Refresh, contentDescription = "Fix match from search")
-                    }
-                  }
+                Box {
                   FilledTonalIconButton(
-                    onClick = {
-                      if (isCustomSeries && customSeriesId != null) {
-                        backstack.add(CustomSeriesBuilderScreen(seriesId = customSeriesId))
-                      } else {
-                        showEditMetadataSheet = true
-                      }
-                    },
+                    onClick = { menuExpanded = true },
                     colors = IconButtonDefaults.filledTonalIconButtonColors(
                       containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
                       contentColor = MaterialTheme.colorScheme.onSurface,
@@ -401,37 +387,78 @@ data class SeriesDetailScreen(
                     modifier = Modifier.size(42.dp),
                   ) {
                     Icon(
-                      Icons.Filled.Edit,
-                      contentDescription = stringResource(if (isCustomSeries) R.string.edit_series else R.string.metadata_edit_title),
+                      Icons.Filled.MoreVert,
+                      contentDescription = stringResource(R.string.more_options),
                     )
                   }
-                  FilledTonalIconButton(
-                    onClick = { markShowAsOpen = true },
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                      containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
-                      contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                    modifier = Modifier.size(42.dp),
+
+                  DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
                   ) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = "Mark as")
-                  }
-                  FilledTonalIconButton(
-                    onClick = {
-                      if (isCustomSeries) {
-                        showDeleteCustomSeriesDialog = true
-                      } else {
-                        pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
-                      }
-                    },
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                      containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
-                      contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                    modifier = Modifier.size(42.dp),
-                  ) {
-                    Icon(
-                      Icons.Filled.Delete,
-                      contentDescription = if (isCustomSeries) stringResource(R.string.delete_series_action) else "Delete TV show",
+                    if (!isCustomSeries) {
+                      DropdownMenuItem(
+                        text = { Text(stringResource(R.string.fix_match)) },
+                        trailingIcon = {
+                          Icon(Icons.Filled.Refresh, contentDescription = null)
+                        },
+                        onClick = {
+                          menuExpanded = false
+                          showMatchPicker = true
+                        },
+                      )
+                    }
+                    DropdownMenuItem(
+                      text = {
+                        Text(
+                          stringResource(if (isCustomSeries) R.string.edit_series else R.string.metadata_edit_title)
+                        )
+                      },
+                      trailingIcon = {
+                        Icon(Icons.Filled.Edit, contentDescription = null)
+                      },
+                      onClick = {
+                        menuExpanded = false
+                        if (isCustomSeries && customSeriesId != null) {
+                          backstack.add(CustomSeriesBuilderScreen(seriesId = customSeriesId))
+                        } else {
+                          showEditMetadataSheet = true
+                        }
+                      },
+                    )
+                    DropdownMenuItem(
+                      text = { Text(stringResource(R.string.mark_as_action)) },
+                      trailingIcon = {
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null)
+                      },
+                      onClick = {
+                        menuExpanded = false
+                        markShowAsOpen = true
+                      },
+                    )
+                    DropdownMenuItem(
+                      text = {
+                        Text(
+                          stringResource(if (isCustomSeries) R.string.delete_series_action else R.string.delete),
+                          color = MaterialTheme.colorScheme.error,
+                        )
+                      },
+                      trailingIcon = {
+                        Icon(
+                          Icons.Filled.Delete,
+                          contentDescription = null,
+                          tint = MaterialTheme.colorScheme.error,
+                        )
+                      },
+                      onClick = {
+                        menuExpanded = false
+                        if (isCustomSeries) {
+                          showDeleteCustomSeriesDialog = true
+                        } else {
+                          pendingDeletion = currentSeries.title to currentSeries.seasons.values.flatten().map { it.video }
+                        }
+                      },
                     )
                   }
                 }
