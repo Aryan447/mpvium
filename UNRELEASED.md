@@ -22,6 +22,7 @@
 
 ### Fixed
 
+- Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.
 - Bottom navigation bar now respects 3-button navigation insets without overlapping system navigation buttons.
 
 - HLS playlists (.m3u8) now appear and play from WebDAV, SMB, and FTP network connections.
