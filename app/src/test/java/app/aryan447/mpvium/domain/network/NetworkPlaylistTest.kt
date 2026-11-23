@@ -46,12 +46,12 @@ class NetworkPlaylistTest {
   @Test
   fun `filter playable videos from network file list`() {
     val files = listOf(
-      NetworkFile(name = "Season 1", path = "/anime/Season 1", isDirectory = true),
-      NetworkFile(name = "Episode 01.mkv", path = "/anime/Episode 01.mkv", isDirectory = false, mimeType = "video/x-matroska"),
-      NetworkFile(name = "Episode 02.mp4", path = "/anime/Episode 02.mp4", isDirectory = false, mimeType = null),
-      NetworkFile(name = "stream.m3u8", path = "/anime/stream.m3u8", isDirectory = false, mimeType = "application/vnd.apple.mpegurl"),
-      NetworkFile(name = "cover.jpg", path = "/anime/cover.jpg", isDirectory = false, mimeType = "image/jpeg"),
-      NetworkFile(name = "subtitles.srt", path = "/anime/subtitles.srt", isDirectory = false, mimeType = "application/x-subrip"),
+      NetworkFile(name = "Season 1", path = "/anime/Season 1", size = 0L, isDirectory = true),
+      NetworkFile(name = "Episode 01.mkv", path = "/anime/Episode 01.mkv", size = 1000L, isDirectory = false, mimeType = "video/x-matroska"),
+      NetworkFile(name = "Episode 02.mp4", path = "/anime/Episode 02.mp4", size = 1000L, isDirectory = false, mimeType = null),
+      NetworkFile(name = "stream.m3u8", path = "/anime/stream.m3u8", size = 500L, isDirectory = false, mimeType = "application/vnd.apple.mpegurl"),
+      NetworkFile(name = "cover.jpg", path = "/anime/cover.jpg", size = 200L, isDirectory = false, mimeType = "image/jpeg"),
+      NetworkFile(name = "subtitles.srt", path = "/anime/subtitles.srt", size = 100L, isDirectory = false, mimeType = "application/x-subrip"),
     )
 
     val playable = files.filter {
