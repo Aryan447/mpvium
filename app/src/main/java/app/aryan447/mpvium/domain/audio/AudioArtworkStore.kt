@@ -398,7 +398,9 @@ class AudioArtworkStore(
     val longEdge = maxOf(options.outWidth, options.outHeight)
     if (longEdge <= 0) return 1
     var sampleSize = 1
-    while (longEdge / sampleSize > maxDimension) sampleSize *= 2
+    while ((longEdge / 2) / sampleSize >= maxDimension) {
+      sampleSize *= 2
+    }
     return sampleSize
   }
 
