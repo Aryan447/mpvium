@@ -217,18 +217,6 @@ data class TitlesScreen(
       selectedItemType = null
     }
 
-    val hasActiveFilter = activeTypeFilter != TitlesTypeFilter.ALL ||
-      watchFilter != TitleWatchFilter.ALL ||
-      durationFilter != MovieDurationFilter.ALL
-    BackHandler(enabled = !isSearching && !(twoPane && selectedItemId != null) && hasActiveFilter) {
-      if (watchFilter != TitleWatchFilter.ALL || durationFilter != MovieDurationFilter.ALL) {
-        watchFilterOrdinal = TitleWatchFilter.ALL.ordinal
-        streamingPreferences.movieDurationFilter.set(MovieDurationFilter.ALL)
-      } else {
-        streamingPreferences.titlesTypeFilter.set(TitlesTypeFilter.ALL)
-      }
-    }
-
     val isGrid = layoutTitles == MediaLayoutMode.GRID
     val atTop by remember(isGrid) {
       derivedStateOf {
@@ -292,6 +280,18 @@ data class TitlesScreen(
     var watchFilterOrdinal by rememberSaveable { mutableIntStateOf(0) }
     val watchFilter = TitleWatchFilter.entries[watchFilterOrdinal.coerceIn(TitleWatchFilter.entries.indices)]
     val durationFilter by streamingPreferences.movieDurationFilter.collectAsState()
+
+    val hasActiveFilter = activeTypeFilter != TitlesTypeFilter.ALL ||
+      watchFilter != TitleWatchFilter.ALL ||
+      durationFilter != MovieDurationFilter.ALL
+    BackHandler(enabled = !isSearching && !(twoPane && selectedItemId != null) && hasActiveFilter) {
+      if (watchFilter != TitleWatchFilter.ALL || durationFilter != MovieDurationFilter.ALL) {
+        watchFilterOrdinal = TitleWatchFilter.ALL.ordinal
+        streamingPreferences.movieDurationFilter.set(MovieDurationFilter.ALL)
+      } else {
+        streamingPreferences.titlesTypeFilter.set(TitlesTypeFilter.ALL)
+      }
+    }
     val titlesSort by streamingPreferences.titlesSort.collectAsState()
     val titlesSortOptions = remember {
       TitlesSort.entries.map { SortOption(it, it.label) }
