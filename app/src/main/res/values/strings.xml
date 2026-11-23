@@ -740,6 +740,8 @@
   <string name="no_playlists_message">Create a playlist or add one from an M3U URL</string>
   <string name="no_playlists_found">No playlists found</string>
   <string name="no_playlists_found_message">Try a different search term</string>
+  <string name="playback_failed_next">Failed to play %s. Playing next…</string>
+  <string name="playback_failed_all">Unable to play videos in playlist.</string>
   <string name="clear_search">Clear search</string>
   <!-- Manual watch status (Mark as) -->
   <string name="mark_as_action">Mark as</string>
