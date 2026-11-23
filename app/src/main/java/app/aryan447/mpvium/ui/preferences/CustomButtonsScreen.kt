@@ -13,17 +13,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
@@ -35,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.CustomButtonPresets
 import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
@@ -77,6 +82,7 @@ object CustomButtonsScreen : Screen {
     val buttons = remember(rawButtons) { CustomScriptButton.decode(rawButtons) }
 
     var showEditor by remember { mutableStateOf(false) }
+    var showPresetsDialog by remember { mutableStateOf(false) }
     var editingId by remember { mutableStateOf<String?>(null) }
     var draftTitle by remember { mutableStateOf("") }
     var draftCode by remember { mutableStateOf("") }
@@ -270,11 +276,111 @@ object CustomButtonsScreen : Screen {
       )
     }
 
+    if (showPresetsDialog) {
+      AlertDialog(
+        onDismissRequest = { showPresetsDialog = false },
+        title = { Text("Preset Buttons") },
+        text = {
+          LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            items(CustomButtonPresets.PRESETS.size) { index ->
+              val preset = CustomButtonPresets.PRESETS[index]
+              val alreadyAdded = buttons.any { it.title.equals(preset.title, ignoreCase = true) }
+              Surface(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .clip(RoundedCornerShape(12.dp))
+                  .clickable {
+                    val newBtn = CustomScriptButton(
+                      id = UUID.randomUUID().toString(),
+                      title = preset.title,
+                      code = preset.code,
+                      longPressCode = preset.longPressCode,
+                      enabled = true,
+                    )
+                    saveButtons(buttons + newBtn)
+                    if (preset.requiredScript != null) {
+                      val scriptsDir = File(context.filesDir, "scripts")
+                      val exists = scriptsDir.exists() && scriptsDir.listFiles()?.any {
+                        it.isFile && it.name.substringBeforeLast('.').equals(
+                          preset.requiredScript.substringBeforeLast('.'),
+                          ignoreCase = true,
+                        )
+                      } == true
+                      if (!exists) {
+                        Toast.makeText(
+                          context,
+                          "Added ${preset.title}. Remember to install ${preset.requiredScript} in Manage scripts.",
+                          Toast.LENGTH_LONG,
+                        ).show()
+                      } else {
+                        Toast.makeText(context, "Added ${preset.title}", Toast.LENGTH_SHORT).show()
+                      }
+                    } else {
+                      Toast.makeText(context, "Added ${preset.title}", Toast.LENGTH_SHORT).show()
+                    }
+                    showPresetsDialog = false
+                  },
+                color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(12.dp),
+              ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                  ) {
+                    Text(
+                      text = preset.title,
+                      style = MaterialTheme.typography.titleMedium,
+                      color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (alreadyAdded) {
+                      Text(
+                        text = "Added",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                      )
+                    }
+                  }
+                  Spacer(modifier = Modifier.height(4.dp))
+                  Text(
+                    text = preset.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                  if (preset.requiredScript != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                      text = "Requires ${preset.requiredScript}",
+                      style = MaterialTheme.typography.labelSmall,
+                      color = MaterialTheme.colorScheme.secondary,
+                    )
+                  }
+                }
+              }
+            }
+          }
+        },
+        confirmButton = {
+          TextButton(onClick = { showPresetsDialog = false }) { Text("Close") }
+        },
+      )
+    }
+
     Scaffold(
       topBar = {
         SettingsTopBar(
           title = stringResource(R.string.pref_custom_buttons_title),
           actions = {
+            IconButton(onClick = { showPresetsDialog = true }) {
+              Icon(
+                Icons.Outlined.AutoAwesome,
+                contentDescription = "Suggested presets",
+              )
+            }
             IconButton(
               onClick = {
                 importLauncher.launch(arrayOf("text/xml", "application/xml", "text/plain", "*/*"))
@@ -330,6 +436,20 @@ object CustomButtonsScreen : Screen {
                     )
                   },
                   onClick = ::openAdd,
+                )
+                PreferenceDivider()
+                Preference(
+                  title = { Text("Choose from presets") },
+                  summary = {
+                    Text(
+                      "Add suggested buttons for Sub/Audio delay, Speed, Stats, Snapshot, Night Mode, etc.",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  },
+                  icon = {
+                    PreferenceRowIcon(icon = Icons.Outlined.AutoAwesome)
+                  },
+                  onClick = { showPresetsDialog = true },
                 )
                 PreferenceDivider()
                 Preference(
@@ -419,6 +539,24 @@ object CustomButtonsScreen : Screen {
                   }
                   if (index < buttons.lastIndex) PreferenceDivider()
                 }
+              }
+            }
+
+            item {
+              PreferenceCard {
+                Preference(
+                  title = { Text("Choose from presets") },
+                  summary = {
+                    Text(
+                      "Explore suggested buttons (Sub/Audio delay, Speed, Stats, Snapshot, etc.)",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  },
+                  icon = {
+                    PreferenceRowIcon(icon = Icons.Outlined.AutoAwesome)
+                  },
+                  onClick = { showPresetsDialog = true },
+                )
               }
             }
           }
