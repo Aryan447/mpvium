@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -60,12 +61,13 @@ private const val TOTAL_SPLASH_MS = HOLD_DURATION_MS + ZOOM_DURATION_MS
 // High-speed expansion easing curve for zoom-through
 private val ZoomEasing = CubicBezierEasing(0.75f, 0.0f, 0.88f, 0.0f)
 
-// Canvas background matching the system splash windowSplashScreenBackground
-private val SplashCanvasBackground = Color(0xFF0E0B14)
+// Canvas background fallback
+private val DefaultSplashCanvasBackground = Color(0xFF0E0B14)
 
 @Composable
 fun MpviumSplashGate(
   appIcon: AppIcon = AppIcon.PORTAL,
+  backgroundColor: Color = MaterialTheme.colorScheme.surface,
   content: @Composable () -> Unit,
 ) {
   var splashDone by rememberSaveable { mutableStateOf(false) }
@@ -77,6 +79,7 @@ fun MpviumSplashGate(
     if (!splashDone) {
       MpviumSplashScreen(
         appIcon = appIcon,
+        backgroundColor = backgroundColor,
         onFinished = { splashDone = true },
       )
     }
@@ -86,6 +89,7 @@ fun MpviumSplashGate(
 @Composable
 private fun MpviumSplashScreen(
   appIcon: AppIcon,
+  backgroundColor: Color,
   onFinished: () -> Unit,
 ) {
   val clock = remember { Animatable(0f) }
@@ -109,6 +113,7 @@ private fun MpviumSplashScreen(
 
   MpviumSplashCanvas(
     appIcon = appIcon,
+    backgroundColor = backgroundColor,
     progress = clock.value,
     onTap = skipToFinish,
   )
@@ -117,6 +122,7 @@ private fun MpviumSplashScreen(
 @Composable
 private fun MpviumSplashCanvas(
   appIcon: AppIcon,
+  backgroundColor: Color,
   progress: Float,
   onTap: () -> Unit,
 ) {
@@ -160,8 +166,8 @@ private fun MpviumSplashCanvas(
     val cx = canvasW / 2f
     val cy = canvasH / 2f
 
-    // 1. Fill entire offscreen canvas with solid dark background
-    drawRect(color = SplashCanvasBackground)
+    // 1. Fill entire offscreen canvas with adaptive background
+    drawRect(color = backgroundColor)
 
     // Base emblem dimensions at 1.0f scale (centered at optical centroid)
     val baseEmblemSize = 88.dp.toPx()

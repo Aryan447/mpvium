@@ -42,8 +42,6 @@ import app.aryan447.mpvium.preferences.AppIcon
 import app.aryan447.mpvium.preferences.AppIconManager
 import app.aryan447.mpvium.ui.theme.spacing
 
-private val IconCanvasColor = Color(0xFF0E0B14)
-
 @Composable
 fun AppIconPicker(
   currentIcon: AppIcon,
@@ -140,11 +138,15 @@ private fun AppIconOptionCard(
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     Box(contentAlignment = Alignment.TopEnd) {
+      val iconBackground = when (icon) {
+        AppIcon.PORTAL -> MaterialTheme.colorScheme.surfaceContainerHigh
+        AppIcon.CLASSIC -> Color(0xFF0E0B14)
+      }
       Box(
         modifier = Modifier
           .size(68.dp)
           .clip(RoundedCornerShape(18.dp))
-          .background(IconCanvasColor)
+          .background(iconBackground)
           .padding(8.dp),
         contentAlignment = Alignment.Center,
       ) {

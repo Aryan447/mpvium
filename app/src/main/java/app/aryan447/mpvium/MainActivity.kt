@@ -124,7 +124,16 @@ class MainActivity : ComponentActivity() {
         // tab inherits it from one layer instead of each screen painting its own.
         Surface(color = Color.Transparent) {
           Box(modifier = Modifier.fillMaxSize().themeGlow()) {
-            MpviumSplashGate(appIcon = appIcon) {
+            val amoledMode by appearancePreferences.amoledMode.collectAsState()
+            val splashBg = if (amoledMode && isDarkMode) {
+              Color.Black
+            } else {
+              MaterialTheme.colorScheme.surface
+            }
+            MpviumSplashGate(
+              appIcon = appIcon,
+              backgroundColor = splashBg,
+            ) {
               Navigator()
             }
           }
