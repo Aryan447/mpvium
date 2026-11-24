@@ -320,6 +320,43 @@ class MediaInfoParserTest {
         expectedSeason = 1,
         expectedEpisode = 1,
       ),
+
+      // 13. Movie sequels without year tags or with metadata (issue #226)
+      ParseTestCase(
+        fileName = "Avatar 2 1080p BluRay.mkv",
+        expectedTitle = "Avatar 2",
+        expectedYear = null,
+        expectedSeason = null,
+        expectedEpisode = null,
+      ),
+      ParseTestCase(
+        fileName = "Iron Man 2 1080p.mkv",
+        expectedTitle = "Iron Man 2",
+        expectedYear = null,
+        expectedSeason = null,
+        expectedEpisode = null,
+      ),
+      ParseTestCase(
+        fileName = "Toy Story 3 720p.mkv",
+        expectedTitle = "Toy Story 3",
+        expectedYear = null,
+        expectedSeason = null,
+        expectedEpisode = null,
+      ),
+      ParseTestCase(
+        fileName = "Gladiator 2 1080p.mkv",
+        expectedTitle = "Gladiator 2",
+        expectedYear = null,
+        expectedSeason = null,
+        expectedEpisode = null,
+      ),
+      ParseTestCase(
+        fileName = "Deadpool 2 (2018) 1080p.mkv",
+        expectedTitle = "Deadpool 2",
+        expectedYear = "2018",
+        expectedSeason = null,
+        expectedEpisode = null,
+      ),
     )
 
     for (testCase in testTable) {

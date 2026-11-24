@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkProtocol
+import app.aryan447.mpvium.domain.network.sanitized
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +68,7 @@ fun AddConnectionSheet(
   }
 
   val handleSave = {
-    val connection =
+    val raw =
       NetworkConnection(
         name = name.ifBlank { "${protocol.displayName} - $host" },
         protocol = protocol,
@@ -79,7 +80,13 @@ fun AddConnectionSheet(
         isAnonymous = isAnonymous,
         useHttps = useHttps,
       )
-    onSave(connection)
+    val sanitized = raw.sanitized()
+    val finalConnection = if (name.isBlank()) {
+      sanitized.copy(name = "${sanitized.protocol.displayName} - ${sanitized.host}")
+    } else {
+      sanitized
+    }
+    onSave(finalConnection)
   }
 
   AlertDialog(

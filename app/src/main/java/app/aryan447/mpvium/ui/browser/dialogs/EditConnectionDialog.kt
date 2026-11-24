@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkProtocol
+import app.aryan447.mpvium.domain.network.sanitized
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,7 +85,7 @@ fun EditConnectionSheet(
         path = path.ifBlank { "/" },
         isAnonymous = isAnonymous,
         useHttps = useHttps,
-      )
+      ).sanitized()
     onSave(updatedConnection)
   }
 
