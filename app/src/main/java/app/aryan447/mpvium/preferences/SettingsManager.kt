@@ -239,6 +239,19 @@ class SettingsManager(
       stats.errors.add("Failed to insert database data: ${e.message}")
     }
 
+    // Sync launcher alias with imported app_icon preference
+    try {
+      val sharedPrefs =
+        androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+      val iconKey = sharedPrefs.getString("app_icon", null)
+      if (iconKey != null) {
+        val importedIcon = AppIcon.fromKey(iconKey)
+        AppIconManager.sync(context, importedIcon)
+      }
+    } catch (e: Exception) {
+      android.util.Log.e("SettingsManager", "Failed to sync app icon after import", e)
+    }
+
     return stats
   }
 

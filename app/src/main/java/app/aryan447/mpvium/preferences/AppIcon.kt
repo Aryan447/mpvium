@@ -29,14 +29,14 @@ enum class AppIcon(
 
   companion object {
     fun fromKey(key: String): AppIcon =
-      entries.firstOrNull { it.key == key } ?: PORTAL
+      entries.firstOrNull { it.key.equals(key, ignoreCase = true) || it.name.equals(key, ignoreCase = true) } ?: PORTAL
   }
 }
 
 object AppIconManager {
   private const val TAG = "AppIconManager"
 
-  fun setAppIcon(context: Context, targetIcon: AppIcon) {
+  fun sync(context: Context, targetIcon: AppIcon) {
     val pm = context.packageManager
     val portalComponent = ComponentName(context, AppIcon.PORTAL.aliasClass)
     val classicComponent = ComponentName(context, AppIcon.CLASSIC.aliasClass)
@@ -47,21 +47,28 @@ object AppIconManager {
     }
 
     try {
-      // Enable the selected alias first so a valid launcher entry always remains
-      pm.setComponentEnabledSetting(
-        enableComponent,
-        PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-        PackageManager.DONT_KILL_APP,
-      )
+      val enableState = pm.getComponentEnabledSetting(enableComponent)
+      val disableState = pm.getComponentEnabledSetting(disableComponent)
 
-      // Disable the other alias cleanly
-      pm.setComponentEnabledSetting(
-        disableComponent,
-        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-        PackageManager.DONT_KILL_APP,
-      )
+      if (enableState != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+        pm.setComponentEnabledSetting(
+          enableComponent,
+          PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+          PackageManager.DONT_KILL_APP,
+        )
+      }
+
+      if (disableState != PackageManager.COMPONENT_ENABLED_STATE_DISABLED) {
+        pm.setComponentEnabledSetting(
+          disableComponent,
+          PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+          PackageManager.DONT_KILL_APP,
+        )
+      }
     } catch (e: Exception) {
-      Log.e(TAG, "Failed to switch app icon alias", e)
+      Log.e(TAG, "Failed to sync app icon alias", e)
     }
   }
+
+  fun setAppIcon(context: Context, targetIcon: AppIcon) = sync(context, targetIcon)
 }
