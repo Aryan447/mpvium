@@ -283,64 +283,6 @@ private fun DrawScope.drawPortalSplash(
       join = StrokeJoin.Round,
     ),
   )
-
-  // Curved Glossy Specular Highlight along apex
-  val apexHighlightPath = Path().apply {
-    moveTo(cx + 16f * unit, cy - 8f * unit)
-    quadraticTo(
-      cx + 26f * unit,
-      cy - 2f * unit,
-      cx + 20f * unit,
-      cy + 3f * unit,
-    )
-  }
-
-  val apexHighlightGradient = Brush.linearGradient(
-    colorStops = arrayOf(
-      0.0f to Color(0x4DFFFFFF).copy(alpha = 0.3f * strokeAlpha),
-      1.0f to Color(0x00FFFFFF),
-    ),
-    start = Offset(cx + 16f * unit, cy - 8f * unit),
-    end = Offset(cx + 28f * unit, cy),
-  )
-
-  drawPath(
-    path = apexHighlightPath,
-    brush = apexHighlightGradient,
-    style = Stroke(
-      width = 3.2f * unit,
-      cap = StrokeCap.Round,
-    ),
-  )
-
-  // Curved Glossy Specular Highlight along top of vertical bar
-  val verticalHighlightPath = Path().apply {
-    moveTo(cx - 14f * unit, cy - 9f * unit)
-    quadraticTo(
-      cx - 12f * unit,
-      cy - 2f * unit,
-      cx - 14f * unit,
-      cy + 4f * unit,
-    )
-  }
-
-  val verticalHighlightGradient = Brush.linearGradient(
-    colorStops = arrayOf(
-      0.0f to Color(0x66FFFFFF).copy(alpha = 0.4f * strokeAlpha),
-      1.0f to Color(0x00FFFFFF),
-    ),
-    start = Offset(cx - 14f * unit, cy - 9f * unit),
-    end = Offset(cx - 12f * unit, cy + 4f * unit),
-  )
-
-  drawPath(
-    path = verticalHighlightPath,
-    brush = verticalHighlightGradient,
-    style = Stroke(
-      width = 3.2f * unit,
-      cap = StrokeCap.Round,
-    ),
-  )
 }
 
 /**
