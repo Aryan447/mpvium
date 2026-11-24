@@ -211,8 +211,6 @@ data class TitlesScreen(
     val twoPane = configuration.screenWidthDp >= 840 && backstack.size == 1
     BackHandler(enabled = isSearching) {
       isSearching = false
-    BackHandler(enabled = isSearching) {
-      isSearching = false
       searchQuery = ""
     }
     BackHandler(enabled = !isSearching && twoPane && selectedItemId != null) {
