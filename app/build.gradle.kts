@@ -14,7 +14,7 @@ android {
   // Compose 1.12.x / OkHttp 5.5.0 require compiling against API 37+.
   // targetSdk stays 36, so no runtime behavior change.
   compileSdk = 37
-  compileSdkMinor = 1
+  compileSdkMinor = 2
 
   defaultConfig {
     applicationId = "app.aryan447.mpvium"
