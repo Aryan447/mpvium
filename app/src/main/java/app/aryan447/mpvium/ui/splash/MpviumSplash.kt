@@ -227,13 +227,13 @@ private fun DrawScope.drawPortalSplash(
   // 1. Inner Triangular Cutout Path (bridges top-left gap cleanly along outer contour)
   val cutoutPath = Path().apply {
     // Inner vertical leg starts just inside left stroke
-    moveTo(cx - 10f * unit, cy - 9f * unit)
+    moveTo(cx - 11.5f * unit, cy - 9.5f * unit)
     // Bridge top-left gap across to top diagonal leg cap
-    lineTo(cx - 16f * unit, cy - 27f * unit)
+    lineTo(cx - 15.5f * unit, cy - 26.5f * unit)
     // Down-right along top diagonal to apex
-    lineTo(cx + 19f * unit, cy)
+    lineTo(cx + 20.5f * unit, cy)
     // Down-left along bottom diagonal to bottom-left corner
-    lineTo(cx - 10f * unit, cy + 18f * unit)
+    lineTo(cx - 11.5f * unit, cy + 18.5f * unit)
     close()
   }
 
@@ -245,39 +245,39 @@ private fun DrawScope.drawPortalSplash(
   )
 
   // 2. Open-Stroke Foreground Logo Path matching user design
-  // Coordinates relative to optical centroid: (48.0, 54.0) in 108 coordinate space
+  // Coordinates relative to optical centroid: (54.0, 54.0) in 108 coordinate space
   val strokePath = Path().apply {
-    // Top diagonal leg starts at top-left, projecting out above and left of the vertical bar
-    moveTo(cx - 16f * unit, cy - 27f * unit)
-    lineTo(cx + 21f * unit, cy - 5f * unit)
+    // Top diagonal leg starts at top-left, flush with vertical bar line
+    moveTo(cx - 15.5f * unit, cy - 26.5f * unit)
+    lineTo(cx + 20.5f * unit, cy - 5f * unit)
     // Smoothly rounded right apex
     quadraticTo(
-      cx + 28f * unit,
+      cx + 29.5f * unit,
       cy,
-      cx + 21f * unit,
+      cx + 20.5f * unit,
       cy + 5f * unit,
     )
-    lineTo(cx - 7f * unit, cy + 23f * unit)
+    lineTo(cx - 7.5f * unit, cy + 22.5f * unit)
     // Smoothly rounded bottom-left vertex
     quadraticTo(
-      cx - 14f * unit,
-      cy + 26f * unit,
-      cx - 14f * unit,
-      cy + 19f * unit,
+      cx - 15.5f * unit,
+      cy + 27f * unit,
+      cx - 15.5f * unit,
+      cy + 18.5f * unit,
     )
     // Vertical left leg up to its rounded top cap (leaving open gap below top diagonal)
-    lineTo(cx - 14f * unit, cy - 9f * unit)
+    lineTo(cx - 15.5f * unit, cy - 9.5f * unit)
   }
 
-  // Multi-stop diagonal linear gradient: #FF758F -> #9D3BE8 -> #4B7BF5
+  // Multi-stop diagonal linear gradient: #FF6B8B -> #9D3BE8 -> #448AFF
   val portalGradient = Brush.linearGradient(
     colorStops = arrayOf(
-      0.0f to Color(0xFFFF758F).copy(alpha = strokeAlpha),
+      0.0f to Color(0xFFFF6B8B).copy(alpha = strokeAlpha),
       0.45f to Color(0xFF9D3BE8).copy(alpha = strokeAlpha),
-      1.0f to Color(0xFF4B7BF5).copy(alpha = strokeAlpha),
+      1.0f to Color(0xFF448AFF).copy(alpha = strokeAlpha),
     ),
-    start = Offset(cx - 18.0f * unit, cy - 28.0f * unit),
-    end = Offset(cx + 30.0f * unit, cy + 26.0f * unit),
+    start = Offset(cx - 17.0f * unit, cy - 27.0f * unit),
+    end = Offset(cx + 31.0f * unit, cy + 29.0f * unit),
   )
 
   drawPath(
