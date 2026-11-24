@@ -39,5 +39,7 @@
 - Modern player layout custom action buttons scale consistently with built-in controls.
 - Shader peek upscale chip no longer covers top-right player buttons when smart skip is absent.
 - Anime releases without dash episode separators are properly detected as TV series episodes instead of standalone movies.
+- Movie sequels with quality metadata and without release years are no longer misclassified as TV series episodes.
+- Network connections entered with URLs or embedded paths (such as `offcloud.com/webdav` in the Host field) are automatically sanitized and split into clean host and directory path.
 - Folders preferences whitelist and blacklist dialogs now list parent directories containing videos.
 - Media control buttons and keys now follow their configured action in Preferences → Gestures.

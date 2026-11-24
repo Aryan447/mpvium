@@ -544,12 +544,15 @@ object MediaInfoParser {
                 if (match.range.first < yearMatch.range.first) {
                     if (!hasLeadingZero && !hasLeadingGroup && epTitle == null) continue
                 }
-            } else {
-                val afterEp = fileName.substring(match.range.last + 1)
-                val hasMetadataAfter = ANIME_EPISODE_TRAILING_METADATA_REGEX.containsMatchIn(afterEp)
-                if (!hasLeadingGroup && !hasLeadingZero && !hasMetadataAfter && epTitle == null) {
-                    continue
-                }
+            }
+
+            val afterEp = fileName.substring(match.range.last + 1)
+            val hasMetadataAfter = ANIME_EPISODE_TRAILING_METADATA_REGEX.containsMatchIn(afterEp)
+            // Guard: numbers without leading brackets or leading zeros must have at least 2 digits
+            // and trailing metadata (or an explicit episode title) to avoid misclassifying movie sequels
+            // like "Avatar 2 1080p" or "Iron Man 2" as TV series episodes (issue #226).
+            if (!hasLeadingGroup && !hasLeadingZero && (rawEp.length < 2 || !hasMetadataAfter) && epTitle == null) {
+                continue
             }
 
             val titlePrefix = fileName.substring(0, match.range.first)
