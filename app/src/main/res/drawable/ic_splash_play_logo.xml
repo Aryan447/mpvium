@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+
+    <!-- Center the 68dp x 86dp play mark inside the 160dp x 160dp system splash container.
+         Optical centroid (195.0, 300.0) lands at exactly (80.0, 80.0) -->
+    <group
+        android:translateX="52.05"
+        android:translateY="37.0"
+        android:scaleX="0.14333"
+        android:scaleY="0.14333">
+
+        <!-- Solid rounded-triangle play glyph (pink #FF8BA7 -> purple #9D3BE8 -> blue #4B7BF5) -->
+        <path
+            android:pathData="M 0.00,105.97 L 0.00,494.03 A 60.00,60.00 0 0,0 90.87,545.48 L 414.25,351.45 A 60.00,60.00 0 0,0 414.25,248.55 L 90.87,54.52 A 60.00,60.00 0 0,0 0.00,105.97 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="0"
+                    android:startY="50"
+                    android:endX="450"
+                    android:endY="550"
+                    android:startColor="#FF8BA7"
+                    android:centerColor="#9D3BE8"
+                    android:endColor="#4B7BF5" />
+            </aapt:attr>
+        </path>
+
+        <!-- Glossy specular reflection highlight along top curve -->
+        <path
+            android:pathData="M 0.00,260.00 L 0.00,105.97 A 60.00,60.00 0 0,1 90.87,54.52 L 414.25,248.55 A 60.00,60.00 0 0,1 435.34,270.00 C 330.00,310.00 180.00,285.00 0.00,260.00 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="90"
+                    android:startY="54"
+                    android:endX="260"
+                    android:endY="290"
+                    android:startColor="#66FFFFFF"
+                    android:endColor="#00FFFFFF" />
+            </aapt:attr>
+        </path>
+    </group>
+</vector>
