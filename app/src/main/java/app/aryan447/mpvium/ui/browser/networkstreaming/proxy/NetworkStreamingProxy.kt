@@ -5,6 +5,7 @@ import app.aryan447.mpvium.domain.network.HlsPlaylistRewriter
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkMediaTypes
 import app.aryan447.mpvium.domain.network.PlaylistPathResolver
+import app.aryan447.mpvium.domain.network.sanitized
 import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClient
 import app.aryan447.mpvium.ui.browser.networkstreaming.clients.NetworkClientFactory
 import com.hierynomus.msdtyp.AccessMask
@@ -83,10 +84,11 @@ class NetworkStreamingProxy private constructor() : NanoHTTPD("127.0.0.1", 0) {
     fileSize: Long = -1L,
     mimeType: String = "video/mp4",
   ): String {
-    val client = NetworkClientFactory.createClient(connection)
+    val sanitizedConnection = connection.sanitized()
+    val client = NetworkClientFactory.createClient(sanitizedConnection)
 
     val streamInfo = StreamInfo(
-      connection = connection,
+      connection = sanitizedConnection,
       filePath = filePath,
       client = client,
       fileSize = fileSize,

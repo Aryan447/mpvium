@@ -5,6 +5,7 @@ import android.util.Log
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkFile
 import app.aryan447.mpvium.domain.network.NetworkMediaTypes
+import app.aryan447.mpvium.domain.network.sanitized
 import com.thegrizzlylabs.sardineandroid.Sardine
 import com.thegrizzlylabs.sardineandroid.impl.OkHttpSardine
 import com.thegrizzlylabs.sardineandroid.DavResource
@@ -12,7 +13,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 
-class WebDavClient(private val connection: NetworkConnection) : NetworkClient {
+class WebDavClient(connection: NetworkConnection) : NetworkClient {
+  private val connection: NetworkConnection = connection.sanitized()
+
   companion object {
     private const val TAG = "WebDavClient"
   }
