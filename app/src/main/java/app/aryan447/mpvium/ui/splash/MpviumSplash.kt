@@ -221,13 +221,13 @@ private fun DrawScope.drawPortalSplash(
   // 1. Inner Triangular Cutout Path (bridges top-left gap cleanly along outer contour)
   val cutoutPath = Path().apply {
     // Inner vertical leg starts just inside left stroke
-    moveTo(cx - 9.67f * unit, cy - 14.5f * unit)
+    moveTo(cx - 10f * unit, cy - 9f * unit)
     // Bridge top-left gap across to top diagonal leg cap
-    lineTo(cx - 3.67f * unit, cy - 18.3f * unit)
+    lineTo(cx - 16f * unit, cy - 27f * unit)
     // Down-right along top diagonal to apex
-    lineTo(cx + 17.83f * unit, cy)
+    lineTo(cx + 19f * unit, cy)
     // Down-left along bottom diagonal to bottom-left corner
-    lineTo(cx - 9.67f * unit, cy + 14.5f * unit)
+    lineTo(cx - 10f * unit, cy + 18f * unit)
     close()
   }
 
@@ -238,72 +238,106 @@ private fun DrawScope.drawPortalSplash(
     blendMode = BlendMode.Clear,
   )
 
-  // 2. Open-Stroke Foreground Logo Path
-  // Coordinates relative to optical centroid: (48.67, 54.0) in 108 coordinate space
+  // 2. Open-Stroke Foreground Logo Path matching user design
+  // Coordinates relative to optical centroid: (48.0, 54.0) in 108 coordinate space
   val strokePath = Path().apply {
-    // Top diagonal leg starts with rounded cap slightly above and right of vertical left leg's top cap
-    moveTo(cx - 3.67f * unit, cy - 18.3f * unit)
-    lineTo(cx + 21.83f * unit, cy - 3.2f * unit)
+    // Top diagonal leg starts at top-left, projecting out above and left of the vertical bar
+    moveTo(cx - 16f * unit, cy - 27f * unit)
+    lineTo(cx + 21f * unit, cy - 5f * unit)
     // Smoothly rounded right apex
     quadraticTo(
-      cx + 27.33f * unit,
+      cx + 28f * unit,
       cy,
-      cx + 21.83f * unit,
-      cy + 3.2f * unit,
+      cx + 21f * unit,
+      cy + 5f * unit,
     )
-    lineTo(cx - 7.67f * unit, cy + 20.3f * unit)
+    lineTo(cx - 7f * unit, cy + 23f * unit)
     // Smoothly rounded bottom-left vertex
     quadraticTo(
-      cx - 13.67f * unit,
-      cy + 24.0f * unit,
-      cx - 13.67f * unit,
-      cy + 18.0f * unit,
+      cx - 14f * unit,
+      cy + 26f * unit,
+      cx - 14f * unit,
+      cy + 19f * unit,
     )
-    // Vertical left leg up to its rounded top cap (leaving open gap at top-left)
-    lineTo(cx - 13.67f * unit, cy - 10.0f * unit)
+    // Vertical left leg up to its rounded top cap (leaving open gap below top diagonal)
+    lineTo(cx - 14f * unit, cy - 9f * unit)
   }
 
   // Multi-stop diagonal linear gradient: #FF758F -> #9D3BE8 -> #4B7BF5
   val portalGradient = Brush.linearGradient(
     colorStops = arrayOf(
       0.0f to Color(0xFFFF758F).copy(alpha = strokeAlpha),
-      0.5f to Color(0xFF9D3BE8).copy(alpha = strokeAlpha),
+      0.45f to Color(0xFF9D3BE8).copy(alpha = strokeAlpha),
       1.0f to Color(0xFF4B7BF5).copy(alpha = strokeAlpha),
     ),
-    start = Offset(cx - 14.0f * unit, cy - 22.0f * unit),
-    end = Offset(cx + 28.0f * unit, cy + 24.0f * unit),
+    start = Offset(cx - 18.0f * unit, cy - 28.0f * unit),
+    end = Offset(cx + 30.0f * unit, cy + 26.0f * unit),
   )
 
   drawPath(
     path = strokePath,
     brush = portalGradient,
     style = Stroke(
-      width = 8.0f * unit,
+      width = 8.2f * unit,
       cap = StrokeCap.Round,
       join = StrokeJoin.Round,
     ),
   )
 
-  // Subtle semi-transparent white curved glossy highlight clipped to upper stroke
-  val highlightPath = Path().apply {
-    moveTo(cx - 3.67f * unit, cy - 18.3f * unit)
-    lineTo(cx + 21.83f * unit, cy - 3.2f * unit)
+  // Curved Glossy Specular Highlight along apex
+  val apexHighlightPath = Path().apply {
+    moveTo(cx + 16f * unit, cy - 8f * unit)
+    quadraticTo(
+      cx + 26f * unit,
+      cy - 2f * unit,
+      cx + 20f * unit,
+      cy + 3f * unit,
+    )
   }
 
-  val highlightGradient = Brush.linearGradient(
+  val apexHighlightGradient = Brush.linearGradient(
     colorStops = arrayOf(
-      0.0f to Color(0x26FFFFFF).copy(alpha = 0.15f * strokeAlpha),
+      0.0f to Color(0x4DFFFFFF).copy(alpha = 0.3f * strokeAlpha),
       1.0f to Color(0x00FFFFFF),
     ),
-    start = Offset(cx - 3.67f * unit, cy - 18.3f * unit),
-    end = Offset(cx + 21.83f * unit, cy - 3.2f * unit),
+    start = Offset(cx + 16f * unit, cy - 8f * unit),
+    end = Offset(cx + 28f * unit, cy),
   )
 
   drawPath(
-    path = highlightPath,
-    brush = highlightGradient,
+    path = apexHighlightPath,
+    brush = apexHighlightGradient,
     style = Stroke(
-      width = 3.5f * unit,
+      width = 3.2f * unit,
+      cap = StrokeCap.Round,
+    ),
+  )
+
+  // Curved Glossy Specular Highlight along top of vertical bar
+  val verticalHighlightPath = Path().apply {
+    moveTo(cx - 14f * unit, cy - 9f * unit)
+    quadraticTo(
+      cx - 12f * unit,
+      cy - 2f * unit,
+      cx - 14f * unit,
+      cy + 4f * unit,
+    )
+  }
+
+  val verticalHighlightGradient = Brush.linearGradient(
+    colorStops = arrayOf(
+      0.0f to Color(0x66FFFFFF).copy(alpha = 0.4f * strokeAlpha),
+      1.0f to Color(0x00FFFFFF),
+    ),
+    start = Offset(cx - 14f * unit, cy - 9f * unit),
+    end = Offset(cx - 12f * unit, cy + 4f * unit),
+  )
+
+  drawPath(
+    path = verticalHighlightPath,
+    brush = verticalHighlightGradient,
+    style = Stroke(
+      width = 3.2f * unit,
       cap = StrokeCap.Round,
     ),
   )

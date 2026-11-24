@@ -8,44 +8,61 @@
 
     <!-- Subtle ambient drop shadow beneath the open stroke -->
     <path
-        android:pathData="M 45,37.2 L 70.5,52.3 Q 76,55.5 70.5,58.7 L 41,75.8 Q 35,79.5 35,73.5 L 35,45.5"
+        android:pathData="M 32,28.5 L 69,50.5 Q 77,55.5 69,60.5 L 41,78.5 Q 34,82.5 34,74.5 L 34,46.5"
         android:strokeColor="#33000000"
-        android:strokeWidth="8"
+        android:strokeWidth="8.2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
 
     <!-- Main Portal Open-Stroke Play Triangle Glyph -->
     <path
-        android:pathData="M 45,35.7 L 70.5,50.8 Q 76,54 70.5,57.2 L 41,74.3 Q 35,78 35,72 L 35,44"
-        android:strokeWidth="8"
+        android:pathData="M 32,27 L 69,49 Q 77,54 69,59 L 41,77 Q 34,81 34,73 L 34,45"
+        android:strokeWidth="8.2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round">
         <aapt:attr name="android:strokeColor">
             <gradient
                 android:type="linear"
-                android:startX="35"
-                android:startY="32"
+                android:startX="30"
+                android:startY="26"
                 android:endX="78"
-                android:endY="78"
+                android:endY="80"
                 android:startColor="#FF758F"
                 android:centerColor="#9D3BE8"
                 android:endColor="#4B7BF5" />
         </aapt:attr>
     </path>
 
-    <!-- Curved Glossy Specular Highlight clipped along the upper stroke -->
+    <!-- Curved Glossy Specular Highlight along apex -->
     <path
-        android:pathData="M 45,35.7 L 70.5,50.8"
-        android:strokeWidth="3.5"
+        android:pathData="M 64,46 Q 74,52 68,57"
+        android:strokeWidth="3.2"
         android:strokeLineCap="round">
         <aapt:attr name="android:strokeColor">
             <gradient
                 android:type="linear"
-                android:startX="45"
-                android:startY="34"
-                android:endX="71"
-                android:endY="51"
-                android:startColor="#26FFFFFF"
+                android:startX="64"
+                android:startY="46"
+                android:endX="76"
+                android:endY="54"
+                android:startColor="#4DFFFFFF"
+                android:endColor="#00FFFFFF" />
+        </aapt:attr>
+    </path>
+
+    <!-- Curved Glossy Specular Highlight along vertical bar -->
+    <path
+        android:pathData="M 34,45 Q 36,52 34,58"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="34"
+                android:startY="45"
+                android:endX="36"
+                android:endY="58"
+                android:startColor="#66FFFFFF"
                 android:endColor="#00FFFFFF" />
         </aapt:attr>
     </path>
