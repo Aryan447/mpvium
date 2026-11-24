@@ -49,3 +49,6 @@
 - Anime releases without dash episode separators are properly detected as TV series episodes instead of standalone movies.
 - Folders preferences whitelist and blacklist dialogs now list parent directories containing videos.
 - Media control buttons and keys now follow their configured action in Preferences → Gestures.
+- Network streaming Add Connection button remains visible on scroll on Android TV and is supplemented with an inline section button for direct remote access.
+- Network streaming and browser cards display distinct focus borders on remote selection and resolve duplicate inner click targets.
+- Search mode in Home and Titles can be dismissed with the TV remote Back button, and search and stream link input fields require Enter or Select before invoking the keyboard.

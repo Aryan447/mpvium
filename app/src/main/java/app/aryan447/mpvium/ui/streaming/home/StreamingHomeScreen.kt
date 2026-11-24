@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.streaming.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -186,6 +187,10 @@ object StreamingHomeScreen : Screen {
       }
       lifecycleOwner.lifecycle.addObserver(observer)
       onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    BackHandler(enabled = state.isSearching) {
+      viewModel.setSearching(false)
     }
 
     Scaffold(

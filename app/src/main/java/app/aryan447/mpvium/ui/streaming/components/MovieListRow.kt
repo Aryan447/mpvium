@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.ripple
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -67,12 +70,20 @@ fun MovieListRow(
   val isGlass = LocalGlass.current
   val dark = isSystemInDarkTheme()
   val haptic = LocalHapticFeedback.current
+  val interactionSource = remember { MutableInteractionSource() }
 
   Row(
     modifier = modifier
       .fillMaxWidth()
+      .tvFocusHighlight(
+        shape = RoundedCornerShape(14.dp),
+        interactionSource = interactionSource,
+        scale = 1.02f,
+      )
       .clip(RoundedCornerShape(14.dp))
       .combinedClickable(
+        interactionSource = interactionSource,
+        indication = ripple(),
         onClick = {
           haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           onClick()

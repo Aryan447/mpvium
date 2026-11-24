@@ -1,6 +1,8 @@
 package app.aryan447.mpvium.presentation.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +19,8 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonColors
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -117,6 +121,9 @@ private fun ChoiceToggle(
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
+  val interactionSource = remember { MutableInteractionSource() }
+  val isFocused by interactionSource.collectIsFocusedAsState()
+
   ToggleButton(
     checked = isSelected,
     onCheckedChange = {
@@ -129,6 +136,7 @@ private fun ChoiceToggle(
       }
     },
     modifier = modifier,
+    interactionSource = interactionSource,
     shapes =
       when {
         count == 1 -> ToggleButtonDefaults.shapesFor(ButtonDefaults.MinHeight)
@@ -137,7 +145,12 @@ private fun ChoiceToggle(
         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
       },
     colors = colors,
-    border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    border =
+      when {
+        isFocused -> BorderStroke(2.dp, if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
+        isSelected -> null
+        else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+      },
     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
   ) {
     Text(

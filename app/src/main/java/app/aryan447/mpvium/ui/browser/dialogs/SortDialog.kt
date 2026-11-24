@@ -1,8 +1,10 @@
 package app.aryan447.mpvium.ui.browser.dialogs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -219,6 +221,8 @@ private fun SortTypeSelector(
       types.forEachIndexed { index, type ->
         val selected = sortType == type
         val shape = RoundedCornerShape(16.dp)
+        val interactionSource = remember { MutableInteractionSource() }
+        val isFocused by interactionSource.collectIsFocusedAsState()
 
         Column(
           horizontalAlignment = Alignment.CenterHorizontally,
@@ -237,9 +241,16 @@ private fun SortTypeSelector(
                       MaterialTheme.colorScheme.surfaceContainerHighest
                     },
                 )
+                .then(
+                  if (isFocused) {
+                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
+                  } else {
+                    Modifier
+                  }
+                )
                 .clickable(
                   onClick = { onSortTypeChange(type) },
-                  interactionSource = remember { MutableInteractionSource() },
+                  interactionSource = interactionSource,
                   indication = ripple(bounded = true),
                 ),
             contentAlignment = Alignment.Center,
