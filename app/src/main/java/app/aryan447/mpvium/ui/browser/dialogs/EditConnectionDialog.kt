@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkProtocol
+import app.aryan447.mpvium.domain.network.sanitized
 import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.utils.LocalIsTv
@@ -112,7 +113,7 @@ fun EditConnectionSheet(
         path = path.ifBlank { "/" },
         isAnonymous = isAnonymous,
         useHttps = useHttps,
-      )
+      ).sanitized()
     onSave(updatedConnection)
   }
 

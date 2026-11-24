@@ -525,6 +525,27 @@ object AppearancePreferencesScreen : Screen {
                                 },
                                 modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.show_network_thumbnails"),
                             )
+
+                            PreferenceDivider()
+
+                            val showDetailPoster by preferences.showDetailPoster.collectAsState()
+                            HapticSwitchPreference(
+                                value = showDetailPoster,
+                                onValueChange = { preferences.showDetailPoster.set(it) },
+                                icon = { PreferenceRowIcon(icon = Icons.Outlined.Movie) },
+                                title = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_show_detail_poster_title),
+                                    )
+                                },
+                                summary = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_appearance_show_detail_poster_summary),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                                modifier = Modifier.settingsHighlightTarget(highlightState, "appearance.show_detail_poster"),
+                            )
                         }
                     }
 

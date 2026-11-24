@@ -760,7 +760,13 @@
   <string name="playback_failed_next">Failed to play %s. Playing next…</string>
   <string name="playback_failed_all">Unable to play videos in playlist.</string>
   <string name="clear_search">Clear search</string>
+  <string name="pref_appearance_show_detail_poster_title">Show detail screen poster</string>
+  <string name="pref_appearance_show_detail_poster_summary">Display poster or backdrop artwork on movie and TV series detail screens</string>
+  <string name="hide_poster">Hide poster</string>
+  <string name="show_poster">Show poster</string>
   <!-- Manual watch status (Mark as) -->
+  <string name="fix_match">Fix match</string>
+  <string name="more_options">More options</string>
   <string name="mark_as_action">Mark as</string>
   <string name="mark_as_title">Mark %1$d video(s) as</string>
   <string name="mark_as_last_played">Last played</string>

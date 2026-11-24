@@ -47,6 +47,7 @@ class AppearancePreferences(
   val showUnplayedOldVideoLabel = preferenceStore.getBoolean("show_unplayed_old_video_label", true)
   val unplayedOldVideoDays = preferenceStore.getInt("unplayed_old_video_days", 7)
   val showNetworkThumbnails = preferenceStore.getBoolean("show_network_thumbnails", false)
+  val showDetailPoster = preferenceStore.getBoolean("show_detail_poster", true)
   val showSpeedBinge = preferenceStore.getBoolean("show_speed_binge", true)
   val showFeaturedHero = preferenceStore.getBoolean("show_featured_hero", false)
   val homeSectionOrder = preferenceStore.getString("home_section_order", HomeSection.defaultOrderCsv)
