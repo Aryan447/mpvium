@@ -1,5 +1,7 @@
 package app.aryan447.mpvium.ui.streaming.movies
 
+import android.content.res.Configuration
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -398,7 +400,12 @@ data class MovieDetailScreen(
             item {
               val configuration = LocalConfiguration.current
               val isTablet = configuration.smallestScreenWidthDp >= 600
-              val headerHeight = if (isTablet) 420.dp else 340.dp
+              val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+              val headerHeight = when {
+                isTablet && isLandscape -> 240.dp
+                isTablet -> 280.dp
+                else -> 320.dp
+              }
 
               Box(
                 modifier = Modifier
@@ -414,7 +421,7 @@ data class MovieDetailScreen(
                   modifier = Modifier.fillMaxSize(),
                 )
 
-                // Natural edge blend at the very bottom edge only: 0-75% is 100% transparent so the poster stays vibrant
+                // Natural edge blend at the bottom edge only: top ~65-70% is 100% transparent so the poster stays vibrant
                 val isGlass = LocalGlass.current
                 Box(
                   modifier = Modifier
@@ -423,14 +430,14 @@ data class MovieDetailScreen(
                       if (isGlass) {
                         Brush.verticalGradient(
                           0.0f to Color.Transparent,
-                          0.80f to Color.Transparent,
+                          0.70f to Color.Transparent,
                           1.0f to MaterialTheme.colorScheme.background.copy(alpha = 0.40f),
                         )
                       } else {
                         Brush.verticalGradient(
                           0.0f to Color.Transparent,
-                          0.75f to Color.Transparent,
-                          0.92f to MaterialTheme.colorScheme.background.copy(alpha = 0.70f),
+                          0.65f to Color.Transparent,
+                          0.88f to MaterialTheme.colorScheme.background.copy(alpha = 0.70f),
                           1.0f to MaterialTheme.colorScheme.background,
                         )
                       }
