@@ -96,6 +96,10 @@
   <string name="pref_appearance_home_section_move_up">Move section up</string>
   <string name="pref_appearance_home_section_move_down">Move section down</string>
   <string name="pref_appearance_theme_picker_label">App Theme</string>
+  <string name="pref_app_icon_title">App icon</string>
+  <string name="pref_app_icon_summary">Choose between the new Portal open-stroke emblem and Classic solid logo</string>
+  <string name="pref_app_icon_portal">Portal (Default)</string>
+  <string name="pref_app_icon_classic">Classic</string>
   <string name="pref_appearance_theme_studio">Theme Studio</string>
   <string name="pref_appearance_theme_studio_create_description">Create custom theme</string>
   <string name="pref_appearance_theme_options_title">Theme Options</string>

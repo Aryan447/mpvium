@@ -61,6 +61,7 @@ import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.ui.browser.MainTab
+import app.aryan447.mpvium.ui.preferences.components.AppIconPicker
 import app.aryan447.mpvium.ui.preferences.components.ThemePicker
 import app.aryan447.mpvium.ui.theme.AppTheme
 import app.aryan447.mpvium.ui.theme.DarkMode
@@ -85,6 +86,7 @@ object AppearancePreferencesScreen : Screen {
         val darkMode by preferences.darkMode.collectAsState()
         val darkModeLabels = DarkMode.entries.associateWith { stringResource(it.titleRes) }
         val appTheme by preferences.appTheme.collectAsState()
+        val appIcon by preferences.appIcon.collectAsState()
         val customThemes by preferences.customThemes.collectAsState()
         val selectedCustomThemeId by preferences.selectedCustomThemeId.collectAsState()
         val haptic = LocalHapticFeedback.current
@@ -128,6 +130,7 @@ object AppearancePreferencesScreen : Screen {
             listState = listState,
             keyToIndex = mapOf(
                 "appearance.theme" to 1,
+                "appearance.app_icon" to 1,
                 "appearance.amoled" to 1,
                 "appearance.pill_nav" to 1,
                 "appearance.bottom_nav_labels" to 1,
@@ -160,7 +163,7 @@ object AppearancePreferencesScreen : Screen {
                     item {
                         PreferenceSectionHeader(
                             title = stringResource(id = R.string.pref_appearance_category_theme),
-                            count = 5,
+                            count = 6,
                         )
                     }
 
@@ -201,6 +204,17 @@ object AppearancePreferencesScreen : Screen {
                                 onEditCustomTheme = { backstack.add(MyCanvasScreen(themeId = it.id)) },
                                 onDeleteCustomTheme = { preferences.deleteCustomTheme(it.id) },
                                 modifier = Modifier.padding(vertical = 8.dp),
+                            )
+
+                            PreferenceDivider()
+
+                            // App icon switcher
+                            AppIconPicker(
+                                currentIcon = appIcon,
+                                onIconSelected = { preferences.appIcon.set(it) },
+                                modifier = Modifier
+                                    .settingsHighlightTarget(highlightState, "appearance.app_icon")
+                                    .padding(vertical = 8.dp),
                             )
 
                             PreferenceDivider()

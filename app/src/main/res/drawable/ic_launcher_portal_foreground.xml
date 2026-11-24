@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Subtle ambient drop shadow beneath the open stroke -->
+    <path
+        android:pathData="M 45,37.2 L 70.5,52.3 Q 76,55.5 70.5,58.7 L 41,75.8 Q 35,79.5 35,73.5 L 35,45.5"
+        android:strokeColor="#33000000"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Main Portal Open-Stroke Play Triangle Glyph -->
+    <path
+        android:pathData="M 45,35.7 L 70.5,50.8 Q 76,54 70.5,57.2 L 41,74.3 Q 35,78 35,72 L 35,44"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="35"
+                android:startY="32"
+                android:endX="78"
+                android:endY="78"
+                android:startColor="#FF758F"
+                android:centerColor="#9D3BE8"
+                android:endColor="#4B7BF5" />
+        </aapt:attr>
+    </path>
+
+    <!-- Curved Glossy Specular Highlight clipped along the upper stroke -->
+    <path
+        android:pathData="M 45,35.7 L 70.5,50.8"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="45"
+                android:startY="34"
+                android:endX="71"
+                android:endY="51"
+                android:startColor="#26FFFFFF"
+                android:endColor="#00FFFFFF" />
+        </aapt:attr>
+    </path>
+</vector>

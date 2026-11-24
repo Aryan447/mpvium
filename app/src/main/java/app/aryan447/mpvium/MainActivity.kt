@@ -94,6 +94,7 @@ class MainActivity : ComponentActivity() {
       // Set up theme and edge-to-edge display
       val dark by appearancePreferences.darkMode.collectAsState()
       val appTheme by appearancePreferences.appTheme.collectAsState()
+      val appIcon by appearancePreferences.appIcon.collectAsState()
       val isSystemInDarkTheme = isSystemInDarkTheme()
       val isDarkMode = dark == DarkMode.Dark || (dark == DarkMode.System && isSystemInDarkTheme)
       val isGlass = appTheme == app.aryan447.mpvium.ui.theme.AppTheme.Glass
@@ -123,7 +124,7 @@ class MainActivity : ComponentActivity() {
         // tab inherits it from one layer instead of each screen painting its own.
         Surface(color = Color.Transparent) {
           Box(modifier = Modifier.fillMaxSize().themeGlow()) {
-            MpviumSplashGate {
+            MpviumSplashGate(appIcon = appIcon) {
               Navigator()
             }
           }
