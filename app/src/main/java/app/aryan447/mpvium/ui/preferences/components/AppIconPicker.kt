@@ -28,7 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -139,8 +141,15 @@ private fun AppIconOptionCard(
   ) {
     Box(contentAlignment = Alignment.TopEnd) {
       val iconBackground = when (icon) {
-        AppIcon.PORTAL -> MaterialTheme.colorScheme.surfaceContainerHigh
-        AppIcon.CLASSIC -> Color(0xFF0E0B14)
+        AppIcon.PORTAL -> Brush.linearGradient(
+          colors = listOf(
+            Color(0xFFFF6B8B),
+            Color(0xFFE040FB),
+            Color(0xFF7C4DFF),
+            Color(0xFF448AFF),
+          ),
+        )
+        AppIcon.CLASSIC -> SolidColor(Color(0xFF0E0B14))
       }
       Box(
         modifier = Modifier

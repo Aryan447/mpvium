@@ -8,7 +8,7 @@
         No branding image: bottom logos read as cheap and are deprecated. -->
     <style name="Theme.mpvium.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_portal_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_portal_foreground</item>
         <item name="windowSplashScreenAnimationDuration">1000</item>
         <item name="postSplashScreenTheme">@style/Theme.mpvium</item>
         <item name="android:windowLightStatusBar">false</item>
