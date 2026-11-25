@@ -70,6 +70,7 @@ val LocalSplashFinished = compositionLocalOf { true }
 private const val HOLD_MIN_MS = 250L
 private const val HOLD_MAX_MS = 400L
 private const val ZOOM_DURATION_MS = 320
+private const val PORTAL_ADAPTIVE_SCALE = 0.58f
 
 // Steep exponential ease-in curve for zoom-through
 private val ZoomEasing = CubicBezierEasing(0.78f, 0.0f, 0.90f, 0.0f)
@@ -147,7 +148,8 @@ private fun MpviumSplashScreen(
       }
     }
     val baseEmblemSizePx = with(density) { emblemSizeDp.toPx() }
-    val unit = baseEmblemSizePx / 108f
+    val viewportUnit = baseEmblemSizePx / 108f
+    val unit = if (appIcon == AppIcon.PORTAL) viewportUnit * PORTAL_ADAPTIVE_SCALE else viewportUnit
 
     val cx = canvasW / 2f
     val cy = canvasH / 2f
@@ -392,7 +394,7 @@ private fun DrawScope.drawPortalSplash(
     path = strokePath,
     brush = portalGradient,
     style = Stroke(
-      width = 8.2f * unit,
+      width = 8.6f * unit,
       cap = StrokeCap.Round,
       join = StrokeJoin.Round,
     ),
