@@ -2,23 +2,29 @@ package app.aryan447.mpvium.ui.splash
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -31,57 +37,79 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppIcon
+import kotlin.math.abs
 import kotlin.math.hypot
-import kotlin.math.max
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+
+/**
+ * Indicates whether the launch splash overlay has finished and unmounted.
+ * Home screen image loaders defer heavy disk/network decoding until true
+ * so the BlendMode.Clear zoom runs without main-thread contention.
+ */
+val LocalSplashFinished = compositionLocalOf { true }
 
 /**
  * Flagship X (Twitter)-style "zoom-through" mask reveal splash screen for mpvium.
  *
  * Choreographed launch sequence:
- * 1. System Splash Handoff: Theme.SplashScreen matches #0E0B14 canvas and center icon,
- *    handing off immediately at scale 1.0f with zero flash or jitter.
- * 2. Hold Phase (~280ms): Static at scale 1.0f while the underlying Compose UI initializes.
- *    - Portal: Inner transparent window cut out with BlendMode.Clear reveals the live UI inside
- *      the hollow open stroke from frame one.
- *    - Classic: Solid glossy gradient triangle masks the cutout at 1.0f alpha.
- * 3. Zoom-Through Phase (~380ms): CubicBezierEasing(0.75f, 0.0f, 0.88f, 0.0f) zooms both the
- *    BlendMode.Clear mask and foreground emblem outwards pivoted at the optical centroid.
- *    - Portal: Stroke stays at 1.0f alpha until the inner transparent window clears all viewport edges.
- *    - Classic: Fades solid gradient layer alpha 1.0f -> 0.0f over first 40% of zoom, morphing into
- *      a transparent play-shaped portal revealing the underlying UI.
- * 4. Cleanup: Unmounts completely on completion so there is zero GPU overdraw or touch interception.
+ * 1. System Splash Handoff: Matches the exact pixel bounds of Theme.SplashScreen's
+ *    iconView and removes the system splash view on the first rendered Compose frame.
+ * 2. Hold Phase (250ms min, up to 400ms max waiting for initial media state):
+ *    Static at scale 1.0f with no spinner visible inside the cutout.
+ * 3. Zoom-Through Phase (320ms): Single uninterrupted Animatable from 1.0f to targetScale
+ *    using CubicBezierEasing(0.78f, 0.0f, 0.90f, 0.0f), pivoted at the inner cutout's
+ *    centroid until the stroke completely clears all four viewport corners.
+ * 4. Cleanup: Unmounts completely once scale >= targetScale.
  */
-private const val HOLD_DURATION_MS = 280
-private const val ZOOM_DURATION_MS = 380
-private const val TOTAL_SPLASH_MS = HOLD_DURATION_MS + ZOOM_DURATION_MS
+private const val HOLD_MIN_MS = 250L
+private const val HOLD_MAX_MS = 400L
+private const val ZOOM_DURATION_MS = 320
 
-// High-speed expansion easing curve for zoom-through
-private val ZoomEasing = CubicBezierEasing(0.75f, 0.0f, 0.88f, 0.0f)
-
-// Canvas background fallback
-private val DefaultSplashCanvasBackground = Color(0xFF0E0B14)
+// Steep exponential ease-in curve for zoom-through
+private val ZoomEasing = CubicBezierEasing(0.78f, 0.0f, 0.90f, 0.0f)
 
 @Composable
 fun MpviumSplashGate(
   appIcon: AppIcon = AppIcon.PORTAL,
   backgroundColor: Color = MaterialTheme.colorScheme.surface,
+  systemIconSizePx: Int? = null,
+  hasPendingSystemSplash: Boolean = false,
+  onSystemSplashFirstFrame: () -> Unit = {},
+  isContentReady: Boolean = true,
   content: @Composable () -> Unit,
 ) {
   var splashDone by rememberSaveable { mutableStateOf(false) }
 
-  Box(modifier = Modifier.fillMaxSize()) {
-    // Underlying live UI initializes beneath the splash overlay
-    content()
+  // Safety guard: if splashDone was restored (e.g. config change) while a system
+  // splash view is pending, dismiss it immediately.
+  SideEffect {
+    if (splashDone && hasPendingSystemSplash) {
+      onSystemSplashFirstFrame()
+    }
+  }
 
-    if (!splashDone) {
-      MpviumSplashScreen(
-        appIcon = appIcon,
-        backgroundColor = backgroundColor,
-        onFinished = { splashDone = true },
-      )
+  CompositionLocalProvider(LocalSplashFinished provides splashDone) {
+    Box(modifier = Modifier.fillMaxSize()) {
+      // Underlying live UI initializes beneath the splash overlay
+      content()
+
+      if (!splashDone) {
+        MpviumSplashScreen(
+          appIcon = appIcon,
+          backgroundColor = backgroundColor,
+          systemIconSizePx = systemIconSizePx,
+          hasPendingSystemSplash = hasPendingSystemSplash,
+          onSystemSplashFirstFrame = onSystemSplashFirstFrame,
+          isContentReady = isContentReady,
+          onFinished = { splashDone = true },
+        )
+      }
     }
   }
 }
@@ -90,61 +118,122 @@ fun MpviumSplashGate(
 private fun MpviumSplashScreen(
   appIcon: AppIcon,
   backgroundColor: Color,
+  systemIconSizePx: Int?,
+  hasPendingSystemSplash: Boolean,
+  onSystemSplashFirstFrame: () -> Unit,
+  isContentReady: Boolean,
   onFinished: () -> Unit,
 ) {
-  val clock = remember { Animatable(0f) }
-  val scope = rememberCoroutineScope()
-  var isSkipping by remember { mutableStateOf(false) }
-
-  LaunchedEffect(Unit) {
-    clock.animateTo(1f, tween(TOTAL_SPLASH_MS, easing = LinearEasing))
-    onFinished()
-  }
-
-  val skipToFinish: () -> Unit = {
-    if (!isSkipping && clock.value < 0.95f) {
-      isSkipping = true
-      scope.launch {
-        clock.animateTo(1f, tween(100, easing = LinearEasing))
-        onFinished()
-      }
+  // Remove the system splash view after the first Compose frame with the
+  // matched icon size has composed and rendered.
+  LaunchedEffect(hasPendingSystemSplash, systemIconSizePx) {
+    if (hasPendingSystemSplash) {
+      withFrameNanos { }
+      onSystemSplashFirstFrame()
     }
   }
 
-  MpviumSplashCanvas(
-    appIcon = appIcon,
-    backgroundColor = backgroundColor,
-    progress = clock.value,
-    onTap = skipToFinish,
-  )
+  BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    val canvasW = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+    val canvasH = constraints.maxHeight.toFloat().coerceAtLeast(1f)
+    val density = LocalDensity.current
+
+    // Match Android 12+ SplashScreen iconView bounds (typically 288dp unmasked or 160-192dp masked)
+    val emblemSizeDp = remember(systemIconSizePx, density) {
+      if (systemIconSizePx != null && systemIconSizePx > 0) {
+        with(density) { systemIconSizePx.toDp() }
+      } else {
+        288.dp
+      }
+    }
+    val baseEmblemSizePx = with(density) { emblemSizeDp.toPx() }
+    val unit = baseEmblemSizePx / 108f
+
+    val cx = canvasW / 2f
+    val cy = canvasH / 2f
+
+    val (innerCentroid, innerInradiusPx) = remember(cx, cy, unit, appIcon) {
+      computeInnerCutoutMetrics(cx = cx, cy = cy, unit = unit, appIcon = appIcon)
+    }
+
+    // Dynamic target scale: screen diagonal / inner cutout inradius * 1.35f
+    val targetScale = remember(canvasW, canvasH, innerInradiusPx) {
+      (hypot(canvasW, canvasH) / innerInradiusPx) * 1.35f
+    }
+
+    val scaleAnim = remember { Animatable(1.0f) }
+    val scope = rememberCoroutineScope()
+    var isSkipping by remember { mutableStateOf(false) }
+    val currentIsContentReady by rememberUpdatedState(isContentReady)
+
+    LaunchedEffect(targetScale) {
+      // Hold phase: static at 1.0f for 250ms, or until media state is ready (capped at 400ms)
+      delay(HOLD_MIN_MS)
+      if (!currentIsContentReady) {
+        withTimeoutOrNull(HOLD_MAX_MS - HOLD_MIN_MS) {
+          snapshotFlow { currentIsContentReady }.first { it }
+        }
+      }
+
+      if (!isSkipping) {
+        scaleAnim.animateTo(
+          targetValue = targetScale,
+          animationSpec = tween(
+            durationMillis = ZOOM_DURATION_MS,
+            easing = ZoomEasing,
+          ),
+        )
+        if (scaleAnim.value >= targetScale) {
+          onFinished()
+        }
+      }
+    }
+
+    val skipToFinish: () -> Unit = {
+      if (!isSkipping && scaleAnim.value < targetScale) {
+        isSkipping = true
+        scope.launch {
+          scaleAnim.animateTo(
+            targetValue = targetScale,
+            animationSpec = tween(durationMillis = 120, easing = ZoomEasing),
+          )
+          if (scaleAnim.value >= targetScale) {
+            onFinished()
+          }
+        }
+      }
+    }
+
+    MpviumSplashCanvas(
+      appIcon = appIcon,
+      backgroundColor = backgroundColor,
+      cx = cx,
+      cy = cy,
+      unit = unit,
+      innerCentroid = innerCentroid,
+      currentScale = scaleAnim.value,
+      targetScale = targetScale,
+      onTap = skipToFinish,
+    )
+  }
 }
 
 @Composable
 private fun MpviumSplashCanvas(
   appIcon: AppIcon,
   backgroundColor: Color,
-  progress: Float,
+  cx: Float,
+  cy: Float,
+  unit: Float,
+  innerCentroid: Offset,
+  currentScale: Float,
+  targetScale: Float,
   onTap: () -> Unit,
 ) {
-  val timeMs = progress * TOTAL_SPLASH_MS
-
-  val (zoomScaleRatio, classicAlpha, portalStrokeAlpha) = if (timeMs <= HOLD_DURATION_MS) {
-    Triple(0f, 1f, 1f)
-  } else {
-    val rawZoom = ((timeMs - HOLD_DURATION_MS) / ZOOM_DURATION_MS.toFloat()).coerceIn(0f, 1f)
-    val easedZoom = ZoomEasing.transform(rawZoom)
-
-    // Classic fades solid color 1.0f -> 0.0f during the first 40% of zoom-through
-    val cAlpha = (1f - (rawZoom / 0.40f)).coerceIn(0f, 1f)
-
-    // Portal keeps 1.0f alpha until inner transparent window clears all viewport edges
-    val pAlpha = if (rawZoom >= 0.96f) {
-      (1f - (rawZoom - 0.96f) / 0.04f).coerceIn(0f, 1f)
-    } else {
-      1f
-    }
-
-    Triple(easedZoom, cAlpha, pAlpha)
+  // Classic fades solid fill 1.0f -> 0.0f during the first 40% of the zoom curve
+  val classicAlpha = remember(currentScale, targetScale) {
+    val normalizedZoom = ((currentScale - 1.0f) / (targetScale - 1.0f).coerceAtLeast(1f)).coerceIn(0f, 1f)
+    (1f - (normalizedZoom / 0.08f)).coerceIn(0f, 1f)
   }
 
   Canvas(
@@ -161,33 +250,15 @@ private fun MpviumSplashCanvas(
         compositingStrategy = CompositingStrategy.Offscreen
       },
   ) {
-    val canvasW = size.width
-    val canvasH = size.height
-    val cx = canvasW / 2f
-    val cy = canvasH / 2f
-
     // 1. Fill entire offscreen canvas with adaptive background
     drawRect(color = backgroundColor)
 
-    // Base emblem dimensions at 1.0f scale (centered at optical centroid)
-    val baseEmblemSize = 88.dp.toPx()
-    val unit = baseEmblemSize / 108f
-
-    // Calculate dynamic max scale so the inner transparent cutout clears all 4 screen corners
-    // Inradius of inner cutout is ~8.5 units in 108dp coordinate space
-    val innerInradiusPx = 8.5f * unit
-    val halfDiagonalPx = hypot(canvasW / 2f, canvasH / 2f)
-    val requiredClearScale = (halfDiagonalPx / innerInradiusPx) * 1.15f
-    val maxScale = max(45f, requiredClearScale)
-
-    val currentScale = 1.0f + (maxScale - 1.0f) * zoomScaleRatio
-
-    // Scale outward pivoted at the emblem's optical centroid (cx, cy)
+    // 2. Scale outward pivoted at the inner triangular cutout's centroid
     withTransform({
       scale(
         scaleX = currentScale,
         scaleY = currentScale,
-        pivot = Offset(cx, cy),
+        pivot = innerCentroid,
       )
     }) {
       when (appIcon) {
@@ -196,7 +267,7 @@ private fun MpviumSplashCanvas(
             cx = cx,
             cy = cy,
             unit = unit,
-            strokeAlpha = portalStrokeAlpha,
+            strokeAlpha = 1.0f,
           )
         }
         AppIcon.CLASSIC -> {
@@ -213,10 +284,48 @@ private fun MpviumSplashCanvas(
 }
 
 /**
+ * Computes the optical centroid (average of the 3 inner vertices) and minimum
+ * inradius (Area / Semiperimeter) of the inner triangular cutout.
+ */
+private fun computeInnerCutoutMetrics(
+  cx: Float,
+  cy: Float,
+  unit: Float,
+  appIcon: AppIcon,
+): Pair<Offset, Float> {
+  val (v1, v2, v3) = when (appIcon) {
+    AppIcon.PORTAL -> Triple(
+      Offset(cx - 11.4f * unit, cy - 19.3f * unit),
+      Offset(cx - 11.4f * unit, cy + 18.5f * unit),
+      Offset(cx + 20.5f * unit, cy),
+    )
+    AppIcon.CLASSIC -> Triple(
+      Offset(cx - 13.67f * unit, cy - 21.0f * unit),
+      Offset(cx - 13.67f * unit, cy + 21.0f * unit),
+      Offset(cx + 24.5f * unit, cy),
+    )
+  }
+
+  val centroid = Offset(
+    x = (v1.x + v2.x + v3.x) / 3f,
+    y = (v1.y + v2.y + v3.y) / 3f,
+  )
+
+  val a = hypot(v2.x - v3.x, v2.y - v3.y)
+  val b = hypot(v1.x - v3.x, v1.y - v3.y)
+  val c = hypot(v1.x - v2.x, v1.y - v2.y)
+  val s = (a + b + c) / 2f
+  val area = 0.5f * abs((v2.x - v1.x) * (v3.y - v1.y) - (v3.x - v1.x) * (v2.y - v1.y))
+  val inradius = (area / s).coerceAtLeast(1f)
+
+  return centroid to inradius
+}
+
+/**
  * Draws the Portal (Default) open-stroke logo and inner cutout:
  * - Inner triangular cutout punched with BlendMode.Clear (bridges top-left gap along outer contour).
  * - Full-color pink-purple-blue glossy open-stroke logo drawn directly over the cutout border.
- * - Live UI is visible inside the hollow triangle from frame one.
+ * - Keeps 1.0f alpha until the cutout clears all viewport corners.
  */
 private fun DrawScope.drawPortalSplash(
   cx: Float,
@@ -244,8 +353,7 @@ private fun DrawScope.drawPortalSplash(
     blendMode = BlendMode.Clear,
   )
 
-  // 2. Open-Stroke Foreground Logo Path matching user design
-  // Coordinates relative to optical centroid: (54.0, 54.0) in 108 coordinate space
+  // 2. Open-Stroke Foreground Logo Path matching ic_launcher_portal_foreground.xml
   val strokePath = Path().apply {
     // Top diagonal leg starts at top-left, flush with vertical bar line
     moveTo(cx - 15.5f * unit, cy - 26.5f * unit)

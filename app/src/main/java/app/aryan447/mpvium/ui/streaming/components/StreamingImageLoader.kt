@@ -20,12 +20,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.domain.streaming.StreamingArtworkStore
 import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
+import app.aryan447.mpvium.ui.splash.LocalSplashFinished
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
@@ -49,13 +51,16 @@ fun StreamingImage(
   val artworkStore = koinInject<StreamingArtworkStore>()
   val thumbnailRepository = koinInject<ThumbnailRepository>()
   val cappedDimension = maxDimensionPx.coerceAtLeast(1)
+  val isSplashFinished = LocalSplashFinished.current
 
   var bitmap by remember(url, cappedDimension) {
     mutableStateOf(url?.let { artworkStore.getFromMemory(it, cappedDimension) })
   }
   var isLoading by remember(url, cappedDimension) { mutableStateOf(bitmap == null) }
 
-  LaunchedEffect(url, cappedDimension, fallbackVideo) {
+  LaunchedEffect(url, cappedDimension, fallbackVideo, isSplashFinished) {
+    if (!isSplashFinished) return@LaunchedEffect
+
     if (bitmap != null) {
       isLoading = false
       return@LaunchedEffect
@@ -94,6 +99,13 @@ fun StreamingImage(
         contentDescription = contentDescription,
         modifier = Modifier.fillMaxSize(),
         contentScale = contentScale,
+      )
+    } else if (!isSplashFinished) {
+      // Lightweight solid placeholder while the splash zoom-through runs
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(Color(0xFF1C1824)),
       )
     } else {
       // Sleek streaming placeholder with subtle gradient

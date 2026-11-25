@@ -27,16 +27,20 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
@@ -65,6 +69,10 @@ import org.koin.android.ext.android.inject
 class MainActivity : ComponentActivity() {
   private val appearancePreferences by inject<AppearancePreferences>()
   private val networkRepository by inject<NetworkRepository>()
+  private val libraryIndexRepository by inject<LibraryIndexRepository>()
+
+  private var pendingSplashScreenView by mutableStateOf<SplashScreenViewProvider?>(null)
+  private var systemSplashIconSizePx by mutableStateOf<Int?>(null)
 
   // Create a coroutine scope tied to the activity lifecycle
   private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -77,9 +85,18 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    // System splash is a static emblem frame; dismiss it the moment the first
-    // frame draws so the choreographed in-app splash owns all motion.
-    installSplashScreen().setOnExitAnimationListener { it.remove() }
+    // Capture the exact rendered iconView dimensions from SplashScreen and hold
+    // removal until the Compose splash canvas draws its first matched frame.
+    val splashScreen = installSplashScreen()
+    splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
+      val iconView = splashScreenViewProvider.iconView
+      val measuredSize = minOf(iconView.width, iconView.height).takeIf { it > 0 }
+        ?: maxOf(iconView.measuredWidth, iconView.measuredHeight).takeIf { it > 0 }
+      if (measuredSize != null) {
+        systemSplashIconSizePx = measuredSize
+      }
+      pendingSplashScreenView = splashScreenViewProvider
+    }
 
     super.onCreate(savedInstanceState)
 
@@ -125,6 +142,7 @@ class MainActivity : ComponentActivity() {
         Surface(color = Color.Transparent) {
           Box(modifier = Modifier.fillMaxSize().themeGlow()) {
             val amoledMode by appearancePreferences.amoledMode.collectAsState()
+            val detectedLibrary by libraryIndexRepository.library.collectAsState()
             val splashBg = if (amoledMode && isDarkMode) {
               Color.Black
             } else {
@@ -133,6 +151,13 @@ class MainActivity : ComponentActivity() {
             MpviumSplashGate(
               appIcon = appIcon,
               backgroundColor = splashBg,
+              systemIconSizePx = systemSplashIconSizePx,
+              hasPendingSystemSplash = pendingSplashScreenView != null,
+              onSystemSplashFirstFrame = {
+                pendingSplashScreenView?.remove()
+                pendingSplashScreenView = null
+              },
+              isContentReady = detectedLibrary != null,
             ) {
               Navigator()
             }
@@ -143,6 +168,8 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onDestroy() {
+    pendingSplashScreenView?.remove()
+    pendingSplashScreenView = null
     try {
       super.onDestroy()
     } catch (e: Exception) {

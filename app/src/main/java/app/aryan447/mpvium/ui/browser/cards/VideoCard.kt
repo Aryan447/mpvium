@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.domain.thumbnail.ThumbnailRepository
+import app.aryan447.mpvium.ui.splash.LocalSplashFinished
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
@@ -163,8 +164,9 @@ fun VideoCard(
         }
 
         // Optional immediate generation (used on screens that don't run folder-wide sequential generation).
-        LaunchedEffect(thumbnailKey, allowThumbnailGeneration, showThumbnails) {
-          if (thumbnail == null && showThumbnails) {
+        val isSplashFinished = LocalSplashFinished.current
+        LaunchedEffect(thumbnailKey, allowThumbnailGeneration, showThumbnails, isSplashFinished) {
+          if (isSplashFinished && thumbnail == null && showThumbnails) {
             thumbnail =
               withContext(Dispatchers.IO) {
                 if (allowThumbnailGeneration) {
@@ -435,8 +437,9 @@ fun VideoCard(
         }
 
         // Optional immediate generation (used on screens that don't run folder-wide sequential generation).
-        LaunchedEffect(thumbnailKey, allowThumbnailGeneration, showThumbnails) {
-          if (thumbnail == null && showThumbnails) {
+        val isSplashFinished = LocalSplashFinished.current
+        LaunchedEffect(thumbnailKey, allowThumbnailGeneration, showThumbnails, isSplashFinished) {
+          if (isSplashFinished && thumbnail == null && showThumbnails) {
             thumbnail =
               withContext(Dispatchers.IO) {
                 if (allowThumbnailGeneration) {
