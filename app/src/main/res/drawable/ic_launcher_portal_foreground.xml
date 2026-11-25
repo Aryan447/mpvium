@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
@@ -11,20 +12,31 @@
         android:scaleX="0.58"
         android:scaleY="0.58">
 
-        <!-- Subtle ambient drop shadow beneath the white open stroke -->
+        <!-- Subtle ambient drop shadow beneath the colored stroke -->
         <path
             android:pathData="M 38.5,29 L 74.5,50.5 Q 83.5,55.5 74.5,60.5 L 46.5,78 Q 38.5,82.5 38.5,74 L 38.5,46"
-            android:strokeColor="#2E000000"
+            android:strokeColor="#22000000"
             android:strokeWidth="8.6"
             android:strokeLineCap="round"
             android:strokeLineJoin="round" />
 
-        <!-- Crisp White Portal Open-Stroke Play Triangle Glyph -->
+        <!-- Colored Portal Open-Stroke Play Triangle Glyph for Light Mode -->
         <path
             android:pathData="M 38.5,27.5 L 74.5,49 Q 83.5,54 74.5,59 L 46.5,76.5 Q 38.5,81 38.5,72.5 L 38.5,44.5"
-            android:strokeColor="#FFFFFFFF"
             android:strokeWidth="8.6"
             android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
+            android:strokeLineJoin="round">
+            <aapt:attr name="android:strokeColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="37"
+                    android:startY="27"
+                    android:endX="85"
+                    android:endY="83"
+                    android:startColor="#FF6B8B"
+                    android:centerColor="#9D3BE8"
+                    android:endColor="#448AFF" />
+            </aapt:attr>
+        </path>
     </group>
 </vector>

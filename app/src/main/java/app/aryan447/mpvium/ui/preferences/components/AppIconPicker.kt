@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -140,16 +141,29 @@ private fun AppIconOptionCard(
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     Box(contentAlignment = Alignment.TopEnd) {
+      val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
       val iconBackground = when (icon) {
-        AppIcon.PORTAL -> Brush.linearGradient(
-          colors = listOf(
-            Color(0xFFFF6B8B),
-            Color(0xFFE040FB),
-            Color(0xFF7C4DFF),
-            Color(0xFF448AFF),
-          ),
-        )
+        AppIcon.PORTAL -> if (isDark) {
+          Brush.linearGradient(
+            colors = listOf(
+              Color(0xFFFF6B8B),
+              Color(0xFFE040FB),
+              Color(0xFF7C4DFF),
+              Color(0xFF448AFF),
+            ),
+          )
+        } else {
+          SolidColor(Color.White)
+        }
         AppIcon.CLASSIC -> SolidColor(Color(0xFF0E0B14))
+      }
+      val previewDrawable = when (icon) {
+        AppIcon.PORTAL -> if (isDark) {
+          R.drawable.ic_launcher_portal_monochrome
+        } else {
+          R.drawable.ic_splash_portal_foreground
+        }
+        AppIcon.CLASSIC -> icon.previewRes
       }
       Box(
         modifier = Modifier
@@ -160,7 +174,7 @@ private fun AppIconOptionCard(
         contentAlignment = Alignment.Center,
       ) {
         Image(
-          painter = painterResource(icon.previewRes),
+          painter = painterResource(previewDrawable),
           contentDescription = null,
           modifier = Modifier.size(52.dp),
         )
