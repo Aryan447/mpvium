@@ -32,7 +32,8 @@ export const features: Feature[] = [
   },
   {
     title: "Modern Material 3 UI",
-    description: "Expressive motion, morphing controls, and 16 themes with light & dark modes.",
+    description:
+      "Expressive motion, morphing controls, 16 themes, and 10-foot Android TV support.",
     icon: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>',
   },
   {
@@ -75,10 +76,12 @@ export const features: Feature[] = [
 
 /** Extra capabilities from the README, shown on /features. */
 export const moreFeatures: string[] = [
+  "Android TV & Google TV support with Leanback banner and full D-Pad remote navigation",
   "Hardware-accelerated, high-quality playback through libmpv",
   "Gesture controls, zoom, and screen orientation controls",
   "Chapters, playlists, playback history, and resume support",
   "Local media browsing with folder and tree views",
   "Custom mpv configuration, scripts, and advanced playback options",
+  "Custom Theme Studio (My Canvas) with color pickers and live previews",
   "Media information and metadata caching",
 ];

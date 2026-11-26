@@ -17,5 +17,5 @@ export const links = {
 export const meta = {
   title: "mpvium — Sane defaults, pro-level control",
   description:
-    "mpvium — sane defaults, pro-level control. Opinionated for everyday watching, fully customizable for pros. Android video player powered by mpv.",
+    "mpvium — sane defaults, pro-level control. Opinionated for everyday watching, fully customizable for pros. Video player for Android phones, tablets, and TVs powered by mpv.",
 };
