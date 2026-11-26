@@ -479,6 +479,13 @@ class MediaInfoActivity : ComponentActivity() {
           items = data.videoStreams,
           key = { "video_${it.streamIndex}" },
         ) { video ->
+          val hdr = MediaCapabilityAnalyzer.detectHdrType(video)
+          val bitDepth = video.bitDepthBits.takeIf { it > 0 } ?: 8
+          val fpsNote = if (video.frameRateFps >= 48f) {
+            stringResource(R.string.mediainfo_track_video_fps_smooth)
+          } else {
+            stringResource(R.string.mediainfo_track_video_fps_cinema)
+          }
           TrackSummaryCard(
             icon = Icons.Filled.VideoFile,
             title = stringResource(R.string.mediainfo_track_video, video.streamIndex + 1),
@@ -490,6 +497,7 @@ class MediaInfoActivity : ComponentActivity() {
               if (video.frameRate.isNotBlank()) add(video.frameRate)
               if (video.bitRate.isNotBlank()) add(video.bitRate)
             }.joinToString(" • "),
+            detailText = stringResource(R.string.mediainfo_track_video_detail, bitDepth, hdr.label, fpsNote),
             isDefault = video.defaultStream.equals("Yes", ignoreCase = true),
             isForced = video.forcedStream.equals("Yes", ignoreCase = true),
             isDarkMode = isDarkMode,
@@ -500,6 +508,21 @@ class MediaInfoActivity : ComponentActivity() {
           items = data.audioStreams,
           key = { "audio_${it.streamIndex}" },
         ) { audio ->
+          val isLossless = audio.compressionMode.equals("Lossless", ignoreCase = true) ||
+            audio.format.contains("TrueHD", ignoreCase = true) ||
+            audio.format.contains("FLAC", ignoreCase = true) ||
+            audio.format.contains("DTS-HD", ignoreCase = true) ||
+            audio.format.equals("PCM", ignoreCase = true)
+          val audioDetail = buildList {
+            add(
+              if (isLossless) {
+                stringResource(R.string.mediainfo_track_audio_lossless)
+              } else {
+                stringResource(R.string.mediainfo_track_audio_lossy)
+              },
+            )
+            if (audio.title.isNotBlank()) add(audio.title)
+          }.joinToString(" • ")
           TrackSummaryCard(
             icon = Icons.Filled.AudioFile,
             title = stringResource(R.string.mediainfo_track_audio, audio.streamIndex + 1) +
@@ -510,6 +533,7 @@ class MediaInfoActivity : ComponentActivity() {
               if (audio.bitRate.isNotBlank()) add(audio.bitRate)
               if (audio.samplingRate.isNotBlank()) add(audio.samplingRate)
             }.joinToString(" • "),
+            detailText = audioDetail,
             isDefault = audio.defaultStream.equals("Yes", ignoreCase = true),
             isForced = audio.forcedStream.equals("Yes", ignoreCase = true),
             isDarkMode = isDarkMode,
@@ -522,6 +546,18 @@ class MediaInfoActivity : ComponentActivity() {
         ) { sub ->
           val subBadge = MediaCapabilityAnalyzer.normalizeSubtitleBadge(sub)
           val isSdh = MediaCapabilityAnalyzer.isSdhSubtitle(sub)
+          val formatExplain = when (subBadge) {
+            "SRT" -> stringResource(R.string.mediainfo_track_sub_srt)
+            "ASS", "SSA" -> stringResource(R.string.mediainfo_track_sub_ass)
+            "PGS" -> stringResource(R.string.mediainfo_track_sub_pgs)
+            "VTT" -> stringResource(R.string.mediainfo_track_sub_vtt)
+            else -> stringResource(R.string.mediainfo_track_sub_generic)
+          }
+          val subDetail = if (isSdh) {
+            "$formatExplain • ${stringResource(R.string.mediainfo_track_sub_sdh_note)}"
+          } else {
+            formatExplain
+          }
           TrackSummaryCard(
             icon = Icons.Filled.Subtitles,
             title = stringResource(R.string.mediainfo_track_subtitle, sub.streamIndex + 1) +
@@ -530,6 +566,7 @@ class MediaInfoActivity : ComponentActivity() {
               subBadge.takeIf { it.isNotBlank() },
               sub.title.takeIf { it.isNotBlank() },
             ).joinToString(" • "),
+            detailText = subDetail,
             isDefault = sub.defaultStream.equals("Yes", ignoreCase = true),
             isForced = sub.forcedStream.equals("Yes", ignoreCase = true),
             isSdh = isSdh,
@@ -798,6 +835,7 @@ class MediaInfoActivity : ComponentActivity() {
     icon: ImageVector,
     title: String,
     subtitle: String,
+    detailText: String? = null,
     isDefault: Boolean,
     isForced: Boolean,
     isSdh: Boolean = false,
@@ -857,6 +895,13 @@ class MediaInfoActivity : ComponentActivity() {
               text = subtitle,
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          if (!detailText.isNullOrBlank()) {
+            Text(
+              text = detailText,
+              style = MaterialTheme.typography.labelSmall,
+              color = MaterialTheme.colorScheme.primary,
             )
           }
         }
@@ -1114,31 +1159,37 @@ class MediaInfoActivity : ComponentActivity() {
 
   @Composable
   private fun metricExplanation(metric: MediaCapabilityAnalyzer.MetricScore): String =
-    when {
-      metric.kind == MediaCapabilityAnalyzer.MetricKind.AUDIO &&
-        metric.verdict == MediaCapabilityAnalyzer.VerdictKey.OVERKILL ->
-        stringResource(R.string.mediainfo_explain_audio_overkill)
-      else -> when (metric.verdict) {
+    when (metric.kind) {
+      MediaCapabilityAnalyzer.MetricKind.RESOLUTION -> when (metric.verdict) {
         MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_explain_resolution_overkill)
         MediaCapabilityAnalyzer.VerdictKey.SPOT_ON -> stringResource(R.string.mediainfo_explain_resolution_spot_on)
-        MediaCapabilityAnalyzer.VerdictKey.GREAT,
-        MediaCapabilityAnalyzer.VerdictKey.GOOD,
-        -> stringResource(R.string.mediainfo_explain_resolution_good)
         MediaCapabilityAnalyzer.VerdictKey.LOW_RES -> stringResource(R.string.mediainfo_explain_resolution_low)
-        MediaCapabilityAnalyzer.VerdictKey.BLOATED -> stringResource(R.string.mediainfo_explain_bitrate_bloated)
+        else -> stringResource(R.string.mediainfo_explain_resolution_good)
+      }
+      MediaCapabilityAnalyzer.MetricKind.BITRATE -> when (metric.verdict) {
+        MediaCapabilityAnalyzer.VerdictKey.BLOATED,
+        MediaCapabilityAnalyzer.VerdictKey.OVERKILL,
+        -> stringResource(R.string.mediainfo_explain_bitrate_bloated)
         MediaCapabilityAnalyzer.VerdictKey.REFERENCE -> stringResource(R.string.mediainfo_explain_bitrate_reference)
-        MediaCapabilityAnalyzer.VerdictKey.BALANCED -> stringResource(R.string.mediainfo_explain_bitrate_balanced)
         MediaCapabilityAnalyzer.VerdictKey.COMPRESSED -> stringResource(R.string.mediainfo_explain_bitrate_compressed)
+        else -> stringResource(R.string.mediainfo_explain_bitrate_balanced)
+      }
+      MediaCapabilityAnalyzer.MetricKind.COLOR_HDR -> when (metric.verdict) {
         MediaCapabilityAnalyzer.VerdictKey.NATIVE_HDR -> stringResource(R.string.mediainfo_explain_hdr_native)
         MediaCapabilityAnalyzer.VerdictKey.TONE_MAPPED -> stringResource(R.string.mediainfo_explain_hdr_tonemapped)
         MediaCapabilityAnalyzer.VerdictKey.SMOOTH_10BIT -> stringResource(R.string.mediainfo_explain_hdr_10bit)
-        MediaCapabilityAnalyzer.VerdictKey.STANDARD_COLOR -> stringResource(R.string.mediainfo_explain_hdr_standard)
-        MediaCapabilityAnalyzer.VerdictKey.HARDWARE_READY -> stringResource(R.string.mediainfo_explain_hw_ready)
+        else -> stringResource(R.string.mediainfo_explain_hdr_standard)
+      }
+      MediaCapabilityAnalyzer.MetricKind.PLAYBACK_EFFICIENCY -> when (metric.verdict) {
         MediaCapabilityAnalyzer.VerdictKey.CPU_HEAVY -> stringResource(R.string.mediainfo_explain_cpu_heavy)
+        else -> stringResource(R.string.mediainfo_explain_hw_ready)
+      }
+      MediaCapabilityAnalyzer.MetricKind.AUDIO -> when (metric.verdict) {
         MediaCapabilityAnalyzer.VerdictKey.SURROUND_READY -> stringResource(R.string.mediainfo_explain_audio_surround_ready)
+        MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_explain_audio_overkill)
         MediaCapabilityAnalyzer.VerdictKey.STUDIO_DOWNMIX -> stringResource(R.string.mediainfo_explain_audio_studio_downmix)
-        MediaCapabilityAnalyzer.VerdictKey.RICH_AUDIO -> stringResource(R.string.mediainfo_explain_audio_rich)
         MediaCapabilityAnalyzer.VerdictKey.THIN_AUDIO -> stringResource(R.string.mediainfo_explain_audio_thin)
+        else -> stringResource(R.string.mediainfo_explain_audio_rich)
       }
     }
 
