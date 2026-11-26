@@ -46,12 +46,10 @@ features or bugs.
   <img src="docs/screenshots/mpvium-player-skip-intro.jpg" width="380" alt="Player with skip intro" />
 </p>
 
-<!-- Android TV screenshots — add files to docs/screenshots/ and uncomment:
 <p align="center">
   <img src="docs/screenshots/mpvium-tv-home.jpg" width="380" alt="Android TV Home" />
   <img src="docs/screenshots/mpvium-tv-player.jpg" width="380" alt="Android TV Player" />
 </p>
--->
 
 <p align="center">
   <a href="docs/screenshots/">More screenshots</a> · Play Store set in <code>fastlane/metadata/android/en-US/images/phoneScreenshots/</code> (and <code>tvScreenshots/</code>)

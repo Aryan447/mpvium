@@ -57,26 +57,25 @@ export const shots: Shot[] = [
     title: "Welcome",
     caption: "First-run onboarding tour.",
   },
-  // Android TV screenshots — add files to website/public/screenshots/ and docs/screenshots/, then uncomment:
-  // {
-  //   src: "/screenshots/mpvium-tv-home.jpg",
-  //   alt: "mpvium Android TV home",
-  //   title: "Android TV Home",
-  //   caption: "10-foot navigation rail & Speed Binge grid with D-Pad focus.",
-  //   wide: true,
-  // },
-  // {
-  //   src: "/screenshots/mpvium-tv-titles.jpg",
-  //   alt: "mpvium Android TV library",
-  //   title: "Android TV Library",
-  //   caption: "Shows and movies browsable with a TV remote.",
-  //   wide: true,
-  // },
-  // {
-  //   src: "/screenshots/mpvium-tv-player.jpg",
-  //   alt: "mpvium Android TV player",
-  //   title: "Android TV Player",
-  //   caption: "Remote-friendly playback controls and seekbar.",
-  //   wide: true,
-  // },
+  {
+    src: "/screenshots/mpvium-tv-home.jpg",
+    alt: "mpvium Android TV home",
+    title: "Android TV Home",
+    caption: "10-foot navigation rail & Speed Binge grid with D-Pad focus.",
+    wide: true,
+  },
+  {
+    src: "/screenshots/mpvium-tv-titles.jpg",
+    alt: "mpvium Android TV library",
+    title: "Android TV Library",
+    caption: "Shows and movies browsable with a TV remote.",
+    wide: true,
+  },
+  {
+    src: "/screenshots/mpvium-tv-player.jpg",
+    alt: "mpvium Android TV player",
+    title: "Android TV Player",
+    caption: "Remote-friendly playback controls and seekbar.",
+    wide: true,
+  },
 ];
