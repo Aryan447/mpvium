@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.58"
+        android:scaleY="0.58">
+
+        <!-- Subtle ambient drop shadow beneath the white open stroke -->
+        <path
+            android:pathData="M 38.5,29 L 74.5,50.5 Q 83.5,55.5 74.5,60.5 L 46.5,78 Q 38.5,82.5 38.5,74 L 38.5,46"
+            android:strokeColor="#2E000000"
+            android:strokeWidth="8.6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Crisp White Portal Open-Stroke Play Triangle Glyph for Dark Mode -->
+        <path
+            android:pathData="M 38.5,27.5 L 74.5,49 Q 83.5,54 74.5,59 L 46.5,76.5 Q 38.5,81 38.5,72.5 L 38.5,44.5"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="8.6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

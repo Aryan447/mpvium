@@ -35,6 +35,14 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
+                key = "appearance.app_icon",
+                titleRes = R.string.pref_app_icon_title,
+                summaryRes = R.string.pref_app_icon_summary,
+                keywords = listOf("app icon", "icon", "logo", "portal", "prism", "classic", "launcher", "splash"),
+                category = "Appearance",
+                screen = AppearancePreferencesScreen,
+            ))
+            add(SearchablePreference(
                 key = "appearance.amoled",
                 titleRes = R.string.pref_appearance_amoled_mode_title,
                 summaryRes = R.string.pref_appearance_amoled_mode_summary,

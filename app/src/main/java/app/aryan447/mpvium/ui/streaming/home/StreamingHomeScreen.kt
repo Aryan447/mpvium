@@ -114,6 +114,7 @@ import app.aryan447.mpvium.ui.browser.states.EmptyState
 import app.aryan447.mpvium.ui.browser.videolist.VideoListScreen
 import app.aryan447.mpvium.ui.preferences.PreferencesScreen
 import app.aryan447.mpvium.ui.audio.AudioPlayerLauncher
+import app.aryan447.mpvium.ui.splash.LocalSplashFinished
 import app.aryan447.mpvium.ui.streaming.components.ContinueListeningRow
 import app.aryan447.mpvium.ui.streaming.components.ContinueWatchingRow
 import app.aryan447.mpvium.ui.streaming.components.MoviePosterCard
@@ -312,18 +313,20 @@ object StreamingHomeScreen : Screen {
       ) {
         when {
           state.isLoading && state.series.isEmpty() && state.movies.isEmpty() -> {
-            Box(
-              modifier = Modifier.fillMaxSize(),
-              contentAlignment = Alignment.Center,
-            ) {
-              Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator()
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                   text = "Scanning library & TV shows...",
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (LocalSplashFinished.current) {
+              Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+              ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                  CircularProgressIndicator()
+                  Spacer(modifier = Modifier.height(12.dp))
+                  Text(
+                    text = "Scanning library & TV shows...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                }
               }
             }
           }

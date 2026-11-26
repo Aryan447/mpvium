@@ -27,16 +27,21 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.presentation.Screen
@@ -65,6 +70,10 @@ import org.koin.android.ext.android.inject
 class MainActivity : ComponentActivity() {
   private val appearancePreferences by inject<AppearancePreferences>()
   private val networkRepository by inject<NetworkRepository>()
+  private val libraryIndexRepository by inject<LibraryIndexRepository>()
+
+  private var pendingSplashScreenView by mutableStateOf<SplashScreenViewProvider?>(null)
+  private var systemSplashIconSizePx by mutableStateOf<Int?>(null)
 
   // Create a coroutine scope tied to the activity lifecycle
   private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -77,9 +86,18 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    // System splash is a static emblem frame; dismiss it the moment the first
-    // frame draws so the choreographed in-app splash owns all motion.
-    installSplashScreen().setOnExitAnimationListener { it.remove() }
+    // Capture the exact rendered iconView dimensions from SplashScreen and hold
+    // removal until the Compose splash canvas draws its first matched frame.
+    val splashScreen = installSplashScreen()
+    splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
+      val iconView = splashScreenViewProvider.iconView
+      val measuredSize = minOf(iconView.width, iconView.height).takeIf { it > 0 }
+        ?: maxOf(iconView.measuredWidth, iconView.measuredHeight).takeIf { it > 0 }
+      if (measuredSize != null) {
+        systemSplashIconSizePx = measuredSize
+      }
+      pendingSplashScreenView = splashScreenViewProvider
+    }
 
     super.onCreate(savedInstanceState)
 
@@ -94,6 +112,7 @@ class MainActivity : ComponentActivity() {
       // Set up theme and edge-to-edge display
       val dark by appearancePreferences.darkMode.collectAsState()
       val appTheme by appearancePreferences.appTheme.collectAsState()
+      val appIcon by appearancePreferences.appIcon.collectAsState()
       val isSystemInDarkTheme = isSystemInDarkTheme()
       val isDarkMode = dark == DarkMode.Dark || (dark == DarkMode.System && isSystemInDarkTheme)
       val isGlass = appTheme == app.aryan447.mpvium.ui.theme.AppTheme.Glass
@@ -123,7 +142,18 @@ class MainActivity : ComponentActivity() {
         // tab inherits it from one layer instead of each screen painting its own.
         Surface(color = Color.Transparent) {
           Box(modifier = Modifier.fillMaxSize().themeGlow()) {
-            MpviumSplashGate {
+            val detectedLibrary by libraryIndexRepository.library.collectAsState()
+            MpviumSplashGate(
+              appIcon = appIcon,
+              backgroundColor = colorResource(R.color.splash_background),
+              systemIconSizePx = systemSplashIconSizePx,
+              hasPendingSystemSplash = pendingSplashScreenView != null,
+              onSystemSplashFirstFrame = {
+                pendingSplashScreenView?.remove()
+                pendingSplashScreenView = null
+              },
+              isContentReady = detectedLibrary != null,
+            ) {
               Navigator()
             }
           }
@@ -133,6 +163,8 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onDestroy() {
+    pendingSplashScreenView?.remove()
+    pendingSplashScreenView = null
     try {
       super.onDestroy()
     } catch (e: Exception) {

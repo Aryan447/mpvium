@@ -6,6 +6,8 @@
 
 ### Added
 
+- Dual app icon switcher (Portal & Classic) in Appearance settings with dynamic zoom-through mask reveal splash screen.
+
 - Built-in custom button presets and installable example scripts in Settings → Player controls → Custom buttons and Manage scripts.
 - Create custom series action in the unified Titles tab top bar and empty states.
 - Detail screen poster toggle in Settings → Appearance and directly from the screen menu, allowing users to hide artwork and display the title cleanly beneath the navigation bar.
@@ -28,6 +30,7 @@
 
 ### Fixed
 
+- Splash screen zoom-through animation now starts immediately with a smooth exponential curve and matches the system splash background color.
 - Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
 - Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
 - Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.

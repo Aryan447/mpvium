@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import app.aryan447.mpvium.domain.audio.AudioArtworkStore
 import app.aryan447.mpvium.domain.media.model.LocalAlbum
 import app.aryan447.mpvium.domain.media.model.LocalAudioTrack
+import app.aryan447.mpvium.ui.splash.LocalSplashFinished
 import org.koin.compose.koinInject
 
 /**
@@ -58,13 +59,14 @@ fun AlbumArtImage(
   }
 
   val cappedDimension = targetSizePx.coerceAtLeast(1)
+  val isSplashFinished = LocalSplashFinished.current
 
   var bitmap by remember(resolvedKey, cappedDimension) {
     mutableStateOf(if (resolvedKey.isNotBlank()) artworkStore.getFromMemory(resolvedKey, cappedDimension) else null)
   }
 
-  LaunchedEffect(resolvedKey, cappedDimension, resolvedUri) {
-    if (bitmap != null) return@LaunchedEffect
+  LaunchedEffect(resolvedKey, cappedDimension, resolvedUri, isSplashFinished) {
+    if (!isSplashFinished || bitmap != null) return@LaunchedEffect
 
     if (resolvedTitle.isNotBlank() || resolvedArtist.isNotBlank() || resolvedTracks.isNotEmpty() || resolvedUri != null) {
       val loaded = artworkStore.loadArtwork(

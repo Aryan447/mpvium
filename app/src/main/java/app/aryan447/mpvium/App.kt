@@ -54,6 +54,14 @@ class App : Application() {
         triggerMediaScanOnLaunch()
       }
     }
+
+    // Sync launcher icon alias with active preference on startup
+    applicationScope.launch(Dispatchers.IO) {
+      runCatching {
+        val appearancePreferences: app.aryan447.mpvium.preferences.AppearancePreferences by inject()
+        app.aryan447.mpvium.preferences.AppIconManager.sync(this@App, appearancePreferences.appIcon.get())
+      }
+    }
   }
 
   /**

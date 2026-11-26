@@ -1,12 +1,19 @@
 const fs = require('fs');
 const path = require('path');
-const sharp = require('../../website/node_modules/sharp');
+const { execSync } = require('child_process');
+
+let sharp;
+try {
+  sharp = require('../../website/node_modules/sharp');
+} catch (e) {
+  // Fall back to ImageMagick (magick) when sharp is not installed
+}
 
 const rootDir = path.resolve(__dirname, '../../');
 const sourceDir = path.resolve(__dirname, 'source');
 
-// Read source assets and convert to base64
-const iconPngB64 = fs.readFileSync(path.join(rootDir, 'docs/icon.png')).toString('base64');
+// Read source assets and convert to base64 (using the new Portal app icon)
+const iconPngB64 = fs.readFileSync(path.join(rootDir, 'docs/icon-portal.png')).toString('base64');
 const playerJpgB64 = fs.readFileSync(path.join(rootDir, 'docs/screenshots/mpvium-player.jpg')).toString('base64');
 const homeJpgB64 = fs.readFileSync(path.join(rootDir, 'docs/screenshots/mpvium-dark-default-home.jpg')).toString('base64');
 
@@ -48,11 +55,11 @@ function generateDesktopSvg() {
 
     <!-- Top Filmstrip Accent Gradient -->
     <linearGradient id="top_border_grad" x1="0" y1="0" x2="2560" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FF416C" stop-opacity="0" />
-      <stop offset="15%" stop-color="#FF416C" stop-opacity="0.45" />
-      <stop offset="50%" stop-color="#8A2BE2" stop-opacity="0.75" />
-      <stop offset="85%" stop-color="#00D2FF" stop-opacity="0.5" />
-      <stop offset="100%" stop-color="#00D2FF" stop-opacity="0" />
+      <stop offset="0%" stop-color="#FF758F" stop-opacity="0" />
+      <stop offset="15%" stop-color="#FF758F" stop-opacity="0.45" />
+      <stop offset="50%" stop-color="#9D3BE8" stop-opacity="0.75" />
+      <stop offset="85%" stop-color="#4B7BF5" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#4B7BF5" stop-opacity="0" />
     </linearGradient>
 
     <!-- Wordmark Gradient: Matches the official play glyph streaming colors -->
@@ -274,11 +281,11 @@ function generateMobileSvg() {
     </radialGradient>
 
     <linearGradient id="mobile_top_border" x1="0" y1="0" x2="1600" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FF416C" stop-opacity="0" />
-      <stop offset="20%" stop-color="#FF416C" stop-opacity="0.45" />
-      <stop offset="50%" stop-color="#8A2BE2" stop-opacity="0.75" />
-      <stop offset="80%" stop-color="#00D2FF" stop-opacity="0.5" />
-      <stop offset="100%" stop-color="#00D2FF" stop-opacity="0" />
+      <stop offset="0%" stop-color="#FF758F" stop-opacity="0" />
+      <stop offset="20%" stop-color="#FF758F" stop-opacity="0.45" />
+      <stop offset="50%" stop-color="#9D3BE8" stop-opacity="0.75" />
+      <stop offset="80%" stop-color="#4B7BF5" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#4B7BF5" stop-opacity="0" />
     </linearGradient>
 
     <linearGradient id="mobile_wordmark_grad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -434,9 +441,13 @@ async function run() {
   const desktopPngPath = path.resolve(__dirname, 'desktop-banner.png');
   fs.writeFileSync(desktopSvgPath, desktopSvg);
 
-  await sharp(Buffer.from(desktopSvg))
-    .png({ quality: 100, compressionLevel: 9 })
-    .toFile(desktopPngPath);
+  if (sharp) {
+    await sharp(Buffer.from(desktopSvg))
+      .png({ quality: 100, compressionLevel: 9 })
+      .toFile(desktopPngPath);
+  } else {
+    execSync(`magick "${desktopSvgPath}" "${desktopPngPath}"`);
+  }
   console.log('✓ Desktop banner exported:', desktopPngPath);
 
   console.log('Generating Mobile Banner (1600 x 480)...');
@@ -445,9 +456,13 @@ async function run() {
   const mobilePngPath = path.resolve(__dirname, 'mobile-banner.png');
   fs.writeFileSync(mobileSvgPath, mobileSvg);
 
-  await sharp(Buffer.from(mobileSvg))
-    .png({ quality: 100, compressionLevel: 9 })
-    .toFile(mobilePngPath);
+  if (sharp) {
+    await sharp(Buffer.from(mobileSvg))
+      .png({ quality: 100, compressionLevel: 9 })
+      .toFile(mobilePngPath);
+  } else {
+    execSync(`magick "${mobileSvgPath}" "${mobilePngPath}"`);
+  }
   console.log('✓ Mobile banner exported:', mobilePngPath);
 
   console.log('All banners successfully generated!');

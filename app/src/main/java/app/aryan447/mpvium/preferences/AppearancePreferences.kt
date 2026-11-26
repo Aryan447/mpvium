@@ -14,6 +14,7 @@ class AppearancePreferences(
 ) {
   val darkMode = preferenceStore.getEnum("dark_mode", DarkMode.System)
   val appTheme = preferenceStore.getEnum("app_theme", AppTheme.Default)
+  val appIcon = preferenceStore.getEnum("app_icon", AppIcon.PORTAL)
   val customThemes =
     preferenceStore.getObject(
       "custom_themes",
