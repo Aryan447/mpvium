@@ -759,7 +759,7 @@ class MediaInfoActivity : ComponentActivity() {
         )
 
         Text(
-          text = metricExplanation(metric.verdict),
+          text = metricExplanation(metric),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -1094,28 +1094,33 @@ class MediaInfoActivity : ComponentActivity() {
     }
 
   @Composable
-  private fun metricExplanation(key: MediaCapabilityAnalyzer.VerdictKey): String =
-    when (key) {
-      MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_explain_resolution_overkill)
-      MediaCapabilityAnalyzer.VerdictKey.SPOT_ON -> stringResource(R.string.mediainfo_explain_resolution_spot_on)
-      MediaCapabilityAnalyzer.VerdictKey.GREAT,
-      MediaCapabilityAnalyzer.VerdictKey.GOOD,
-      -> stringResource(R.string.mediainfo_explain_resolution_good)
-      MediaCapabilityAnalyzer.VerdictKey.LOW_RES -> stringResource(R.string.mediainfo_explain_resolution_low)
-      MediaCapabilityAnalyzer.VerdictKey.BLOATED -> stringResource(R.string.mediainfo_explain_bitrate_bloated)
-      MediaCapabilityAnalyzer.VerdictKey.REFERENCE -> stringResource(R.string.mediainfo_explain_bitrate_reference)
-      MediaCapabilityAnalyzer.VerdictKey.BALANCED -> stringResource(R.string.mediainfo_explain_bitrate_balanced)
-      MediaCapabilityAnalyzer.VerdictKey.COMPRESSED -> stringResource(R.string.mediainfo_explain_bitrate_compressed)
-      MediaCapabilityAnalyzer.VerdictKey.NATIVE_HDR -> stringResource(R.string.mediainfo_explain_hdr_native)
-      MediaCapabilityAnalyzer.VerdictKey.TONE_MAPPED -> stringResource(R.string.mediainfo_explain_hdr_tonemapped)
-      MediaCapabilityAnalyzer.VerdictKey.SMOOTH_10BIT -> stringResource(R.string.mediainfo_explain_hdr_10bit)
-      MediaCapabilityAnalyzer.VerdictKey.STANDARD_COLOR -> stringResource(R.string.mediainfo_explain_hdr_standard)
-      MediaCapabilityAnalyzer.VerdictKey.HARDWARE_READY -> stringResource(R.string.mediainfo_explain_hw_ready)
-      MediaCapabilityAnalyzer.VerdictKey.CPU_HEAVY -> stringResource(R.string.mediainfo_explain_cpu_heavy)
-      MediaCapabilityAnalyzer.VerdictKey.SURROUND_READY -> stringResource(R.string.mediainfo_explain_audio_surround_ready)
-      MediaCapabilityAnalyzer.VerdictKey.STUDIO_DOWNMIX -> stringResource(R.string.mediainfo_explain_audio_overkill)
-      MediaCapabilityAnalyzer.VerdictKey.RICH_AUDIO -> stringResource(R.string.mediainfo_explain_audio_rich)
-      MediaCapabilityAnalyzer.VerdictKey.THIN_AUDIO -> stringResource(R.string.mediainfo_explain_audio_thin)
+  private fun metricExplanation(metric: MediaCapabilityAnalyzer.MetricScore): String =
+    when {
+      metric.kind == MediaCapabilityAnalyzer.MetricKind.AUDIO &&
+        metric.verdict == MediaCapabilityAnalyzer.VerdictKey.OVERKILL ->
+        stringResource(R.string.mediainfo_explain_audio_overkill)
+      else -> when (metric.verdict) {
+        MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_explain_resolution_overkill)
+        MediaCapabilityAnalyzer.VerdictKey.SPOT_ON -> stringResource(R.string.mediainfo_explain_resolution_spot_on)
+        MediaCapabilityAnalyzer.VerdictKey.GREAT,
+        MediaCapabilityAnalyzer.VerdictKey.GOOD,
+        -> stringResource(R.string.mediainfo_explain_resolution_good)
+        MediaCapabilityAnalyzer.VerdictKey.LOW_RES -> stringResource(R.string.mediainfo_explain_resolution_low)
+        MediaCapabilityAnalyzer.VerdictKey.BLOATED -> stringResource(R.string.mediainfo_explain_bitrate_bloated)
+        MediaCapabilityAnalyzer.VerdictKey.REFERENCE -> stringResource(R.string.mediainfo_explain_bitrate_reference)
+        MediaCapabilityAnalyzer.VerdictKey.BALANCED -> stringResource(R.string.mediainfo_explain_bitrate_balanced)
+        MediaCapabilityAnalyzer.VerdictKey.COMPRESSED -> stringResource(R.string.mediainfo_explain_bitrate_compressed)
+        MediaCapabilityAnalyzer.VerdictKey.NATIVE_HDR -> stringResource(R.string.mediainfo_explain_hdr_native)
+        MediaCapabilityAnalyzer.VerdictKey.TONE_MAPPED -> stringResource(R.string.mediainfo_explain_hdr_tonemapped)
+        MediaCapabilityAnalyzer.VerdictKey.SMOOTH_10BIT -> stringResource(R.string.mediainfo_explain_hdr_10bit)
+        MediaCapabilityAnalyzer.VerdictKey.STANDARD_COLOR -> stringResource(R.string.mediainfo_explain_hdr_standard)
+        MediaCapabilityAnalyzer.VerdictKey.HARDWARE_READY -> stringResource(R.string.mediainfo_explain_hw_ready)
+        MediaCapabilityAnalyzer.VerdictKey.CPU_HEAVY -> stringResource(R.string.mediainfo_explain_cpu_heavy)
+        MediaCapabilityAnalyzer.VerdictKey.SURROUND_READY -> stringResource(R.string.mediainfo_explain_audio_surround_ready)
+        MediaCapabilityAnalyzer.VerdictKey.STUDIO_DOWNMIX -> stringResource(R.string.mediainfo_explain_audio_overkill)
+        MediaCapabilityAnalyzer.VerdictKey.RICH_AUDIO -> stringResource(R.string.mediainfo_explain_audio_rich)
+        MediaCapabilityAnalyzer.VerdictKey.THIN_AUDIO -> stringResource(R.string.mediainfo_explain_audio_thin)
+      }
     }
 
   private data class InfoSection(
