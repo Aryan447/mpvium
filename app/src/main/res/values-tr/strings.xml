@@ -12,6 +12,55 @@
   <string name="pref_language_title">Dil</string>
   <string name="pref_language_summary">Uygulama görüntüleme dili</string>
   <string name="pref_language_system">Sistem varsayılanı</string>
+  <string name="pref_section_personalize">Kişiselleştir</string>
+  <string name="pref_section_playback">Oynatma</string>
+  <string name="pref_section_library_media">Kütüphane ve Medya</string>
+  <string name="pref_section_system">Sistem</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">Ana Sayfa</string>
+  <string name="nav_titles">Başlıklar</string>
+  <string name="nav_shows">Diziler</string>
+  <string name="nav_movies">Filmler</string>
+  <string name="nav_folders">Klasörler</string>
+  <string name="nav_library">Kütüphane</string>
+  <string name="nav_playlists">Oynatma Listeleri</string>
+  <string name="nav_audio">Ses</string>
+  <!-- Home -->
+  <string name="home_greeting_1">Bugün ne izliyoruz? 🍿</string>
+  <string name="home_greeting_2">Sıkıldın mı? Harika bir şeyler izle!</string>
+  <string name="home_greeting_3">Film gecesi zamanı! ✨</string>
+  <string name="home_greeting_4">Yeni favorini keşfet…</string>
+  <string name="home_greeting_5">Bir bölüm daha izlemeye hazır mısın?</string>
+  <string name="home_greeting_6">Favori dizilerinle keyfine bak!</string>
+  <string name="home_greeting_7">Işıklar, kamera, motor! 🎬</string>
+  <string name="home_greeting_8">Patlamış mısırını kap ve rahatla!</string>
+  <string name="home_search_hint">Dizi, film, video ara…</string>
+  <string name="home_customize">Ana Sayfayı Özelleştir</string>
+  <string name="home_see_all">Tümünü gör</string>
+  <string name="home_no_results">Sonuç bulunamadı</string>
+  <string name="home_no_videos">Video algılanmadı</string>
+  <string name="home_section_up_next">Sıradaki</string>
+  <string name="home_section_recently_added">Son Eklenenler</string>
+  <string name="home_section_movies_videos">Filmler ve Videolar</string>
+  <string name="home_section_browse_folders">Klasörlere Göz At</string>
+  <string name="home_movie_label">Film</string>
+  <string name="home_continue_watching">İzlemeye Devam Et</string>
+  <!-- Library -->
+  <string name="library_insights_title">Kütüphane İstatistikleri</string>
+  <string name="library_insights_summary">Koleksiyon verileri ve izleme alışkanlıkları</string>
+  <string name="library_history_title">Oynatma Geçmişi</string>
+  <string name="library_history_summary">Son oynatılan videolar ve zaman damgaları</string>
+  <string name="library_playlists_summary">Özel oynatma listeleri ve M3U akışları</string>
+  <string name="library_network_title">Ağ Akışı</string>
+  <string name="library_network_summary">SMB, FTP, WebDAV bağlantıları ve akışları</string>
+  <string name="library_settings_title">Ayarlar ve Tercihler</string>
+  <string name="library_settings_summary">Görünüm, çözücü, ses, hareketler ve altyazılar</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">Ağ</string>
+  <string name="playlist_chip_local">Yerel</string>
+  <string name="playlist_rename_title">Oynatma Listesini Yeniden Adlandır</string>
+  <string name="playlist_name_label">Oynatma Listesi Adı</string>
+  <string name="playlist_stream_url">Akış URL\'si</string>
   <string name="pref_appearance_title">Görünüm</string>
   <string name="pref_appearance_summary">Koyu mod, Material You</string>
   <string name="pref_appearance_category_theme">Tema</string>

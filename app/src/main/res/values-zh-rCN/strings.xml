@@ -12,6 +12,55 @@
   <string name="pref_language_title">语言</string>
   <string name="pref_language_summary">应用显示语言</string>
   <string name="pref_language_system">系统默认</string>
+  <string name="pref_section_personalize">个性化</string>
+  <string name="pref_section_playback">播放</string>
+  <string name="pref_section_library_media">媒体库</string>
+  <string name="pref_section_system">系统</string>
+  <!-- 导航标签 -->
+  <string name="nav_home">主页</string>
+  <string name="nav_titles">标题</string>
+  <string name="nav_shows">剧集</string>
+  <string name="nav_movies">电影</string>
+  <string name="nav_folders">文件夹</string>
+  <string name="nav_library">媒体库</string>
+  <string name="nav_playlists">播放列表</string>
+  <string name="nav_audio">音频</string>
+  <!-- 主页 -->
+  <string name="home_greeting_1">今天打算连看什么？🍿</string>
+  <string name="home_greeting_2">觉得无聊？看点精彩内容吧！</string>
+  <string name="home_greeting_3">电影之夜时间到！✨</string>
+  <string name="home_greeting_4">发现你的下一部最爱…</string>
+  <string name="home_greeting_5">准备好继续看下一集了吗？</string>
+  <string name="home_greeting_6">伴随喜爱的剧集放松一下！</string>
+  <string name="home_greeting_7">灯光、摄影、开拍！🎬</string>
+  <string name="home_greeting_8">拿点爆米花，放松一下吧！</string>
+  <string name="home_search_hint">搜索剧集、电影、视频…</string>
+  <string name="home_customize">自定义主页</string>
+  <string name="home_see_all">查看全部</string>
+  <string name="home_no_results">未找到结果</string>
+  <string name="home_no_videos">未检测到视频</string>
+  <string name="home_section_up_next">接下来</string>
+  <string name="home_section_recently_added">最近添加</string>
+  <string name="home_section_movies_videos">电影与视频</string>
+  <string name="home_section_browse_folders">浏览文件夹</string>
+  <string name="home_movie_label">电影</string>
+  <string name="home_continue_watching">继续观看</string>
+  <!-- 媒体库 -->
+  <string name="library_insights_title">媒体库洞察</string>
+  <string name="library_insights_summary">收藏统计与观看习惯</string>
+  <string name="library_history_title">播放历史</string>
+  <string name="library_history_summary">最近播放的视频与时间戳</string>
+  <string name="library_playlists_summary">自定义播放列表与 M3U 串流</string>
+  <string name="library_network_title">网络串流</string>
+  <string name="library_network_summary">SMB、FTP、WebDAV 连接与串流</string>
+  <string name="library_settings_title">设置与偏好</string>
+  <string name="library_settings_summary">外观、解码器、音频、手势与字幕</string>
+  <!-- 播放列表 -->
+  <string name="playlist_chip_network">网络</string>
+  <string name="playlist_chip_local">本地</string>
+  <string name="playlist_rename_title">重命名播放列表</string>
+  <string name="playlist_name_label">播放列表名称</string>
+  <string name="playlist_stream_url">串流 URL</string>
   <string name="pref_appearance_title">外观</string>
   <string name="pref_appearance_summary">深色模式、Material You</string>
   <string name="pref_appearance_category_theme">主题</string>

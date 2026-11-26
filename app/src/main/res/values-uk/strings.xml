@@ -12,6 +12,55 @@
   <string name="pref_language_title">Мова</string>
   <string name="pref_language_summary">Мова інтерфейсу застосунку</string>
   <string name="pref_language_system">Системна за замовчуванням</string>
+  <string name="pref_section_personalize">Персоналізація</string>
+  <string name="pref_section_playback">Відтворення</string>
+  <string name="pref_section_library_media">Бібліотека та медіа</string>
+  <string name="pref_section_system">Система</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">Головна</string>
+  <string name="nav_titles">Назви</string>
+  <string name="nav_shows">Серіали</string>
+  <string name="nav_movies">Фільми</string>
+  <string name="nav_folders">Теки</string>
+  <string name="nav_library">Бібліотека</string>
+  <string name="nav_playlists">Плейлисти</string>
+  <string name="nav_audio">Аудіо</string>
+  <!-- Home -->
+  <string name="home_greeting_1">Що подивимося сьогодні? 🍿</string>
+  <string name="home_greeting_2">Нудно? Подивіться щось цікаве!</string>
+  <string name="home_greeting_3">Час для кіновечора! ✨</string>
+  <string name="home_greeting_4">Відкрийте нове захоплення…</string>
+  <string name="home_greeting_5">Готові до наступної серії?</string>
+  <string name="home_greeting_6">Відпочиньте з улюбленими серіалами!</string>
+  <string name="home_greeting_7">Світло, камера, мотор! 🎬</string>
+  <string name="home_greeting_8">Беріть попкорн і відпочивайте!</string>
+  <string name="home_search_hint">Пошук серіалів, фільмів, відео…</string>
+  <string name="home_customize">Налаштувати головну</string>
+  <string name="home_see_all">Показати всі</string>
+  <string name="home_no_results">Нічого не знайдено</string>
+  <string name="home_no_videos">Відео не знайдено</string>
+  <string name="home_section_up_next">Далі</string>
+  <string name="home_section_recently_added">Нещодавно додані</string>
+  <string name="home_section_movies_videos">Фільми та відео</string>
+  <string name="home_section_browse_folders">Огляд тек</string>
+  <string name="home_movie_label">Фільм</string>
+  <string name="home_continue_watching">Продовжити перегляд</string>
+  <!-- Library -->
+  <string name="library_insights_title">Статистика бібліотеки</string>
+  <string name="library_insights_summary">Статистика колекції та звички перегляду</string>
+  <string name="library_history_title">Історія відтворення</string>
+  <string name="library_history_summary">Нещодавно відтворені відео та мітки часу</string>
+  <string name="library_playlists_summary">Власні плейлисти та потоки M3U</string>
+  <string name="library_network_title">Мережеве мовлення</string>
+  <string name="library_network_summary">З\'єднання та потоки SMB, FTP, WebDAV</string>
+  <string name="library_settings_title">Налаштування та параметри</string>
+  <string name="library_settings_summary">Зовнішній вигляд, декодер, звук, жести та субтитри</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">Мережа</string>
+  <string name="playlist_chip_local">Локальний</string>
+  <string name="playlist_rename_title">Перейменувати плейлист</string>
+  <string name="playlist_name_label">Назва плейлиста</string>
+  <string name="playlist_stream_url">URL потоку</string>
   <string name="pref_appearance_title">Зовнішній вигляд</string>
   <string name="pref_appearance_summary">Темна тема, Material You</string>
   <string name="pref_appearance_category_theme">Тема</string>

@@ -482,7 +482,7 @@ object CustomButtonsScreen : Screen {
                   title = { Text(stringResource(R.string.pref_custom_buttons_import)) },
                   summary = {
                     Text(
-                      "Import buttons from mpvEx or mpvium XML file",
+                      "Import buttons from other mpv forks or mpvium XML file",
                       color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                   },

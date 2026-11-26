@@ -12,6 +12,55 @@
   <string name="pref_language_title">언어</string>
   <string name="pref_language_summary">앱 표시 언어</string>
   <string name="pref_language_system">시스템 기본값</string>
+  <string name="pref_section_personalize">개인 설정</string>
+  <string name="pref_section_playback">재생</string>
+  <string name="pref_section_library_media">라이브러리 및 미디어</string>
+  <string name="pref_section_system">시스템</string>
+  <!-- 탐색 탭 -->
+  <string name="nav_home">홈</string>
+  <string name="nav_titles">제목</string>
+  <string name="nav_shows">TV 프로그램</string>
+  <string name="nav_movies">영화</string>
+  <string name="nav_folders">폴더</string>
+  <string name="nav_library">라이브러리</string>
+  <string name="nav_playlists">재생목록</string>
+  <string name="nav_audio">오디오</string>
+  <!-- 홈 -->
+  <string name="home_greeting_1">오늘은 무엇을 정주행할까요? 🍿</string>
+  <string name="home_greeting_2">심심한가요? 멋진 영상을 감상해 보세요!</string>
+  <string name="home_greeting_3">영화의 밤 시간입니다! ✨</string>
+  <string name="home_greeting_4">다음 인생작을 찾아보세요…</string>
+  <string name="home_greeting_5">다음 에피소드를 볼 준비가 되셨나요?</string>
+  <string name="home_greeting_6">좋아하는 프로그램과 함께 휴식을 취하세요!</string>
+  <string name="home_greeting_7">조명, 카메라, 액션! 🎬</string>
+  <string name="home_greeting_8">팝콘을 챙기고 편하게 쉬세요!</string>
+  <string name="home_search_hint">TV 프로그램, 영화, 동영상 검색…</string>
+  <string name="home_customize">홈 사용자 지정</string>
+  <string name="home_see_all">모두 보기</string>
+  <string name="home_no_results">검색 결과가 없습니다</string>
+  <string name="home_no_videos">감지된 동영상이 없습니다</string>
+  <string name="home_section_up_next">다음 재생</string>
+  <string name="home_section_recently_added">최근 추가됨</string>
+  <string name="home_section_movies_videos">영화 및 동영상</string>
+  <string name="home_section_browse_folders">폴더 찾아보기</string>
+  <string name="home_movie_label">영화</string>
+  <string name="home_continue_watching">이어서 시청하기</string>
+  <!-- 라이브러리 -->
+  <string name="library_insights_title">라이브러리 인사이트</string>
+  <string name="library_insights_summary">컬렉션 통계 및 시청 습관</string>
+  <string name="library_history_title">재생 기록</string>
+  <string name="library_history_summary">최근 재생한 동영상 및 타임스탬프</string>
+  <string name="library_playlists_summary">사용자 지정 재생목록 및 M3U 스트림</string>
+  <string name="library_network_title">네트워크 스트리밍</string>
+  <string name="library_network_summary">SMB, FTP, WebDAV 연결 및 스트림</string>
+  <string name="library_settings_title">설정 및 환경설정</string>
+  <string name="library_settings_summary">테마, 디코더, 오디오, 제스처 및 자막</string>
+  <!-- 재생목록 -->
+  <string name="playlist_chip_network">네트워크</string>
+  <string name="playlist_chip_local">로컬</string>
+  <string name="playlist_rename_title">재생목록 이름 바꾸기</string>
+  <string name="playlist_name_label">재생목록 이름</string>
+  <string name="playlist_stream_url">스트림 URL</string>
   <string name="pref_appearance_title">테마 및 화면</string>
   <string name="pref_appearance_summary">다크 모드, Material You</string>
   <string name="pref_appearance_category_theme">테마</string>

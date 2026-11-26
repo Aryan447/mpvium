@@ -57,7 +57,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.streaming.model.ContinueWatchingItem
 
 @Composable
@@ -65,7 +67,7 @@ fun ContinueWatchingRow(
   items: List<ContinueWatchingItem>,
   onItemClick: (ContinueWatchingItem) -> Unit,
   modifier: Modifier = Modifier,
-  title: String = "Continue Watching",
+  title: String = stringResource(R.string.home_continue_watching),
   onSeeAllClick: (() -> Unit)? = null,
   onItemRemove: ((ContinueWatchingItem) -> Unit)? = null,
   onMarkAsClick: ((ContinueWatchingItem) -> Unit)? = null,

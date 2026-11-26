@@ -12,6 +12,55 @@
   <string name="pref_language_title">Język</string>
   <string name="pref_language_summary">Język wyświetlania aplikacji</string>
   <string name="pref_language_system">Domyślny systemowy</string>
+  <string name="pref_section_personalize">Personalizacja</string>
+  <string name="pref_section_playback">Odtwarzanie</string>
+  <string name="pref_section_library_media">Biblioteka i multimedia</string>
+  <string name="pref_section_system">System</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">Główna</string>
+  <string name="nav_titles">Tytuły</string>
+  <string name="nav_shows">Seriale</string>
+  <string name="nav_movies">Filmy</string>
+  <string name="nav_folders">Foldery</string>
+  <string name="nav_library">Biblioteka</string>
+  <string name="nav_playlists">Playlisty</string>
+  <string name="nav_audio">Audio</string>
+  <!-- Home -->
+  <string name="home_greeting_1">Co dzisiaj oglądamy? 🍿</string>
+  <string name="home_greeting_2">Nudzisz się? Obejrzyj coś fajnego!</string>
+  <string name="home_greeting_3">Czas na wieczór filmowy! ✨</string>
+  <string name="home_greeting_4">Odkryj swoją kolejną obsesję…</string>
+  <string name="home_greeting_5">Gotowy na kolejny odcinek?</string>
+  <string name="home_greeting_6">Zrelaksuj się przy ulubionych serialach!</string>
+  <string name="home_greeting_7">Światło, kamera, akcja! 🎬</string>
+  <string name="home_greeting_8">Weź popcorn i odpocznij!</string>
+  <string name="home_search_hint">Szukaj seriali, filmów, wideo…</string>
+  <string name="home_customize">Dostosuj ekran główny</string>
+  <string name="home_see_all">Zobacz wszystko</string>
+  <string name="home_no_results">Brak wyników</string>
+  <string name="home_no_videos">Nie wykryto filmów</string>
+  <string name="home_section_up_next">Następne</string>
+  <string name="home_section_recently_added">Ostatnio dodane</string>
+  <string name="home_section_movies_videos">Filmy i wideo</string>
+  <string name="home_section_browse_folders">Przeglądaj foldery</string>
+  <string name="home_movie_label">Film</string>
+  <string name="home_continue_watching">Kontynuuj oglądanie</string>
+  <!-- Library -->
+  <string name="library_insights_title">Statystyki biblioteki</string>
+  <string name="library_insights_summary">Statystyki kolekcji i nawyki oglądania</string>
+  <string name="library_history_title">Historia odtwarzania</string>
+  <string name="library_history_summary">Ostatnio odtwarzane filmy i znaczniki czasu</string>
+  <string name="library_playlists_summary">Własne playlisty i strumienie M3U</string>
+  <string name="library_network_title">Strumieniowanie sieciowe</string>
+  <string name="library_network_summary">Połączenia i strumienie SMB, FTP, WebDAV</string>
+  <string name="library_settings_title">Ustawienia i preferencje</string>
+  <string name="library_settings_summary">Wygląd, dekoder, dźwięk, gesty i napisy</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">Sieć</string>
+  <string name="playlist_chip_local">Lokalna</string>
+  <string name="playlist_rename_title">Zmień nazwę playlisty</string>
+  <string name="playlist_name_label">Nazwa playlisty</string>
+  <string name="playlist_stream_url">URL strumienia</string>
   <string name="pref_appearance_title">Wygląd</string>
   <string name="pref_appearance_summary">Tryb ciemny, Material You</string>
   <string name="pref_appearance_category_theme">Motyw</string>

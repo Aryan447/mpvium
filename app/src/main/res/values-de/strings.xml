@@ -12,6 +12,55 @@
   <string name="pref_language_title">Sprache</string>
   <string name="pref_language_summary">Anzeigesprache der App</string>
   <string name="pref_language_system">Systemstandard</string>
+  <string name="pref_section_personalize">Personalisieren</string>
+  <string name="pref_section_playback">Wiedergabe</string>
+  <string name="pref_section_library_media">Bibliothek &amp; Medien</string>
+  <string name="pref_section_system">System</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">Start</string>
+  <string name="nav_titles">Titel</string>
+  <string name="nav_shows">Serien</string>
+  <string name="nav_movies">Filme</string>
+  <string name="nav_folders">Ordner</string>
+  <string name="nav_library">Bibliothek</string>
+  <string name="nav_playlists">Playlists</string>
+  <string name="nav_audio">Audio</string>
+  <!-- Home -->
+  <string name="home_greeting_1">Was wird heute gesuchtet? 🍿</string>
+  <string name="home_greeting_2">Gelangweilt? Schau dir etwas Cooles an!</string>
+  <string name="home_greeting_3">Zeit für einen Filmabend! ✨</string>
+  <string name="home_greeting_4">Entdecke deine nächste Obsession…</string>
+  <string name="home_greeting_5">Bereit für eine weitere Folge?</string>
+  <string name="home_greeting_6">Entspanne dich mit deinen Lieblingsserien!</string>
+  <string name="home_greeting_7">Licht, Kamera, Action! 🎬</string>
+  <string name="home_greeting_8">Schnapp dir Popcorn und entspann dich!</string>
+  <string name="home_search_hint">Serien, Filme, Videos suchen…</string>
+  <string name="home_customize">Startseite anpassen</string>
+  <string name="home_see_all">Alle anzeigen</string>
+  <string name="home_no_results">Keine Ergebnisse gefunden</string>
+  <string name="home_no_videos">Keine Videos erkannt</string>
+  <string name="home_section_up_next">Als Nächstes</string>
+  <string name="home_section_recently_added">Kürzlich hinzugefügt</string>
+  <string name="home_section_movies_videos">Filme &amp; Videos</string>
+  <string name="home_section_browse_folders">Ordner durchsuchen</string>
+  <string name="home_movie_label">Film</string>
+  <string name="home_continue_watching">Weiterschauen</string>
+  <!-- Library -->
+  <string name="library_insights_title">Bibliotheksstatistiken</string>
+  <string name="library_insights_summary">Sammlungsstatistiken und Sehgewohnheiten</string>
+  <string name="library_history_title">Wiedergabeverlauf</string>
+  <string name="library_history_summary">Zuletzt abgespielte Videos und Zeitstempel</string>
+  <string name="library_playlists_summary">Eigene Playlists und M3U-Streams</string>
+  <string name="library_network_title">Netzwerk-Streaming</string>
+  <string name="library_network_summary">SMB-, FTP-, WebDAV-Verbindungen und -Streams</string>
+  <string name="library_settings_title">Einstellungen &amp; Optionen</string>
+  <string name="library_settings_summary">Darstellung, Decoder, Audio, Gesten und Untertitel</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">Netzwerk</string>
+  <string name="playlist_chip_local">Lokal</string>
+  <string name="playlist_rename_title">Playlist umbenennen</string>
+  <string name="playlist_name_label">Playlist-Name</string>
+  <string name="playlist_stream_url">Stream-URL</string>
   <string name="pref_appearance_title">Darstellung</string>
   <string name="pref_appearance_summary">Dunkelmodus, Material You</string>
   <string name="pref_appearance_category_theme">Design</string>

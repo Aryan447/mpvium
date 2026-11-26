@@ -6,7 +6,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.database.entities.PlaylistEntity
 import app.aryan447.mpvium.domain.media.model.VideoFolder
 
@@ -47,7 +49,9 @@ fun PlaylistCard(
   // Create a custom chip renderer for playlist type
   val customChipRenderer: @Composable () -> Unit = {
     // Add the playlist type chip (Network or Local)
-    val chipText = if (playlist.isM3uPlaylist) "Network" else "Local"
+    val chipText = stringResource(
+      if (playlist.isM3uPlaylist) R.string.playlist_chip_network else R.string.playlist_chip_local,
+    )
 
     // Use Material Design theme colors
     val materialTheme = androidx.compose.material3.MaterialTheme.colorScheme

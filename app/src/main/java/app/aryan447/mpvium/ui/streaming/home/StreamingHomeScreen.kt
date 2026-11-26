@@ -87,6 +87,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -201,11 +202,11 @@ object StreamingHomeScreen : Screen {
                 onSearch = {},
                 expanded = false,
                 onExpandedChange = {},
-                placeholder = { Text("Search TV shows, movies, videos...") },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                placeholder = { Text(stringResource(R.string.home_search_hint)) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search)) },
                 trailingIcon = {
                   IconButton(onClick = { viewModel.setSearching(false) }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close search")
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.close))
                   }
                 },
               )
@@ -337,7 +338,7 @@ object StreamingHomeScreen : Screen {
             if (filteredSeries.isEmpty() && filteredMovies.isEmpty()) {
               EmptyState(
                 icon = Icons.Filled.Search,
-                title = "No results found",
+                title = stringResource(R.string.home_no_results),
                 message = "No TV shows or movies match '${state.searchQuery}'",
                 modifier = Modifier.fillMaxSize(),
                 actionLabel = "Clear search",
@@ -392,7 +393,7 @@ object StreamingHomeScreen : Screen {
           state.series.isEmpty() && state.movies.isEmpty() && !state.isLoading -> {
             EmptyState(
               icon = Icons.Filled.Movie,
-              title = "No videos detected",
+              title = stringResource(R.string.home_no_videos),
               message = if (libraryFiltered) {
                 context.getString(R.string.library_sources_banner_message)
               } else {
@@ -690,7 +691,7 @@ object StreamingHomeScreen : Screen {
                         item(key = "home_up_next") {
                           ContinueWatchingRow(
                             items = upNext,
-                            title = "Up Next",
+                            title = stringResource(R.string.home_section_up_next),
                             onItemClick = { item ->
                               MediaUtils.playFile(item.video, context, "up_next")
                             },
@@ -709,7 +710,7 @@ object StreamingHomeScreen : Screen {
                         item(key = "home_recently_added") {
                           ContinueWatchingRow(
                             items = recentlyAdded,
-                            title = "Recently Added",
+                            title = stringResource(R.string.home_section_recently_added),
                             onItemClick = { item ->
                               MediaUtils.playFile(item.video, context, "recently_added")
                             },
@@ -729,7 +730,7 @@ object StreamingHomeScreen : Screen {
                     ) {
                       item(key = "home_shows") {
                         SectionHeader(
-                          title = "Shows",
+                          title = stringResource(R.string.nav_shows),
                           badge = "${state.series.size}",
                           onSeeAllClick = { backstack.add(SeriesGridScreen) },
                         )
@@ -757,7 +758,7 @@ object StreamingHomeScreen : Screen {
                     ) {
                       item(key = "home_movies") {
                         SectionHeader(
-                          title = "Movies & Videos",
+                          title = stringResource(R.string.home_section_movies_videos),
                           badge = "${state.movies.size}",
                           onSeeAllClick = { backstack.add(MoviesGridScreen) },
                         )
@@ -782,7 +783,7 @@ object StreamingHomeScreen : Screen {
                     if (showFoldersSection && state.selectedCategory == StreamingCategory.ALL && state.folders.isNotEmpty()) {
                       item(key = "home_folders") {
                         SectionHeader(
-                          title = "Browse Folders",
+                          title = stringResource(R.string.home_section_browse_folders),
                           badge = "${state.folders.size}",
                           onSeeAllClick = null,
                         )
@@ -838,7 +839,7 @@ object StreamingHomeScreen : Screen {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     TextButton(onClick = { backstack.add(app.aryan447.mpvium.ui.preferences.AppearancePreferencesScreen) }) {
-                      Text("Customize Home")
+                      Text(stringResource(R.string.home_customize))
                     }
                   }
                 }
@@ -934,7 +935,7 @@ private fun SectionHeader(
 
     if (onSeeAllClick != null) {
       TextButton(onClick = onSeeAllClick) {
-        Text("See all", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.home_see_all), style = MaterialTheme.typography.labelLarge)
         Spacer(modifier = Modifier.width(2.dp))
         Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
       }
@@ -992,18 +993,16 @@ private fun FolderQuickCard(
 private fun DynamicGreetingText(
   modifier: Modifier = Modifier,
 ) {
-  val greetings = remember {
-    listOf(
-      "What's on the binge today? 🍿",
-      "Feeling bored? Watch something cool!",
-      "Time for a movie night! ✨",
-      "Discover your next obsession...",
-      "Ready for another episode?",
-      "Unwind with your favorite shows!",
-      "Lights, camera, action! 🎬",
-      "Grab some popcorn and relax!"
-    )
-  }
+  val greetings = listOf(
+    stringResource(R.string.home_greeting_1),
+    stringResource(R.string.home_greeting_2),
+    stringResource(R.string.home_greeting_3),
+    stringResource(R.string.home_greeting_4),
+    stringResource(R.string.home_greeting_5),
+    stringResource(R.string.home_greeting_6),
+    stringResource(R.string.home_greeting_7),
+    stringResource(R.string.home_greeting_8),
+  )
 
   var currentIndex by remember { mutableIntStateOf(0) }
 

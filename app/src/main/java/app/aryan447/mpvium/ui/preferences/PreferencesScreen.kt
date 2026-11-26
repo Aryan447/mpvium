@@ -171,8 +171,9 @@ private data class DashboardEntry(
 )
 
 private data class DashboardSection(
-  val title: String,
+  @StringRes val titleRes: Int,
   val entries: List<DashboardEntry>,
+  val isSystemSection: Boolean = false,
 )
 
 @Serializable
@@ -264,25 +265,10 @@ object PreferencesScreen : Screen {
               LazyColumn(
                 modifier = Modifier.fillMaxSize(),
               ) {
-                item {
-                  PreferenceCard(
-                    modifier = Modifier.padding(top = 4.dp),
-                  ) {
-                    SettingsPreferenceRow(
-                      title = stringResource(R.string.pref_language_title),
-                      summary = activeLanguageLabel,
-                      icon = Icons.Outlined.Language,
-                      container = MaterialTheme.colorScheme.primaryContainer,
-                      content = MaterialTheme.colorScheme.onPrimaryContainer,
-                      onClick = { showLanguageSheet = true },
-                    )
-                  }
-                }
-
                 sections.forEach { section ->
                   item {
                     PreferenceSectionHeader(
-                      title = section.title,
+                      title = stringResource(section.titleRes),
                       count = section.entries.size,
                     )
                   }
@@ -292,6 +278,21 @@ object PreferencesScreen : Screen {
                       onOpen = { backstack.add(it.screen) },
                       modifier = Modifier.padding(horizontal = 16.dp),
                     )
+                  }
+                  if (section.isSystemSection) {
+                    item {
+                      Spacer(modifier = Modifier.height(6.dp))
+                      PreferenceCard {
+                        SettingsPreferenceRow(
+                          title = stringResource(R.string.pref_language_title),
+                          summary = activeLanguageLabel,
+                          icon = Icons.Outlined.Language,
+                          container = MaterialTheme.colorScheme.primaryContainer,
+                          content = MaterialTheme.colorScheme.onPrimaryContainer,
+                          onClick = { showLanguageSheet = true },
+                        )
+                      }
+                    }
                   }
                 }
 
@@ -328,7 +329,7 @@ private fun rememberDashboardSections(): List<DashboardSection> {
   return remember(scheme) {
     listOf(
       DashboardSection(
-        title = "Personalize",
+        titleRes = R.string.pref_section_personalize,
         entries = listOf(
           DashboardEntry(
             icon = Icons.Outlined.Palette,
@@ -349,7 +350,7 @@ private fun rememberDashboardSections(): List<DashboardSection> {
         ),
       ),
       DashboardSection(
-        title = "Playback",
+        titleRes = R.string.pref_section_playback,
         entries = listOf(
           DashboardEntry(
             icon = Icons.Outlined.PlayCircle,
@@ -370,7 +371,7 @@ private fun rememberDashboardSections(): List<DashboardSection> {
         ),
       ),
       DashboardSection(
-        title = "Library & Media",
+        titleRes = R.string.pref_section_library_media,
         entries = listOf(
           DashboardEntry(
             icon = Icons.Outlined.Folder,
@@ -407,7 +408,8 @@ private fun rememberDashboardSections(): List<DashboardSection> {
         ),
       ),
       DashboardSection(
-        title = "System",
+        titleRes = R.string.pref_section_system,
+        isSystemSection = true,
         entries = listOf(
           DashboardEntry(
             icon = Icons.Outlined.Code,

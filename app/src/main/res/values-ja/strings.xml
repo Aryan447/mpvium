@@ -12,6 +12,55 @@
   <string name="pref_language_title">言語</string>
   <string name="pref_language_summary">アプリの表示言語</string>
   <string name="pref_language_system">システムデフォルト</string>
+  <string name="pref_section_personalize">パーソナライズ</string>
+  <string name="pref_section_playback">再生</string>
+  <string name="pref_section_library_media">ライブラリとメディア</string>
+  <string name="pref_section_system">システム</string>
+  <!-- ナビゲーションタブ -->
+  <string name="nav_home">ホーム</string>
+  <string name="nav_titles">タイトル</string>
+  <string name="nav_shows">TV番組</string>
+  <string name="nav_movies">映画</string>
+  <string name="nav_folders">フォルダ</string>
+  <string name="nav_library">ライブラリ</string>
+  <string name="nav_playlists">プレイリスト</string>
+  <string name="nav_audio">オーディオ</string>
+  <!-- ホーム -->
+  <string name="home_greeting_1">今日は何を一気見する？ 🍿</string>
+  <string name="home_greeting_2">退屈？クールな動画を観よう！</string>
+  <string name="home_greeting_3">ムービーナイトの時間！ ✨</string>
+  <string name="home_greeting_4">次のお気に入りを見つけよう…</string>
+  <string name="home_greeting_5">次のエピソードの準備はいい？</string>
+  <string name="home_greeting_6">お気に入りの番組でくつろごう！</string>
+  <string name="home_greeting_7">ライト、カメラ、アクション！ 🎬</string>
+  <string name="home_greeting_8">ポップコーンを用意してリラックス！</string>
+  <string name="home_search_hint">TV番組、映画、動画を検索…</string>
+  <string name="home_customize">ホームをカスタマイズ</string>
+  <string name="home_see_all">すべて表示</string>
+  <string name="home_no_results">結果が見つかりません</string>
+  <string name="home_no_videos">動画が検出されませんでした</string>
+  <string name="home_section_up_next">次の動画</string>
+  <string name="home_section_recently_added">最近追加</string>
+  <string name="home_section_movies_videos">映画と動画</string>
+  <string name="home_section_browse_folders">フォルダを参照</string>
+  <string name="home_movie_label">映画</string>
+  <string name="home_continue_watching">視聴を続ける</string>
+  <!-- ライブラリ -->
+  <string name="library_insights_title">ライブラリ分析</string>
+  <string name="library_insights_summary">コレクション統計と視聴習慣</string>
+  <string name="library_history_title">再生履歴</string>
+  <string name="library_history_summary">最近再生した動画とタイムスタンプ</string>
+  <string name="library_playlists_summary">カスタムプレイリストと M3U ストリーム</string>
+  <string name="library_network_title">ネットワークストリーミング</string>
+  <string name="library_network_summary">SMB、FTP、WebDAV 接続とストリーム</string>
+  <string name="library_settings_title">設定と環境設定</string>
+  <string name="library_settings_summary">外観、デコーダー、オーディオ、ジェスチャー、字幕</string>
+  <!-- プレイリスト -->
+  <string name="playlist_chip_network">ネットワーク</string>
+  <string name="playlist_chip_local">ローカル</string>
+  <string name="playlist_rename_title">プレイリストの名前を変更</string>
+  <string name="playlist_name_label">プレイリスト名</string>
+  <string name="playlist_stream_url">ストリーム URL</string>
   <string name="pref_appearance_title">外観</string>
   <string name="pref_appearance_summary">ダークモード、Material You</string>
   <string name="pref_appearance_category_theme">テーマ</string>

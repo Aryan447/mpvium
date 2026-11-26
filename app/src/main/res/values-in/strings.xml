@@ -12,6 +12,55 @@
   <string name="pref_language_title">Bahasa</string>
   <string name="pref_language_summary">Bahasa tampilan aplikasi</string>
   <string name="pref_language_system">Default sistem</string>
+  <string name="pref_section_personalize">Personalisasi</string>
+  <string name="pref_section_playback">Pemutaran</string>
+  <string name="pref_section_library_media">Pustaka &amp; Media</string>
+  <string name="pref_section_system">Sistem</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">Beranda</string>
+  <string name="nav_titles">Judul</string>
+  <string name="nav_shows">Acara TV</string>
+  <string name="nav_movies">Film</string>
+  <string name="nav_folders">Folder</string>
+  <string name="nav_library">Pustaka</string>
+  <string name="nav_playlists">Daftar Putar</string>
+  <string name="nav_audio">Audio</string>
+  <!-- Home -->
+  <string name="home_greeting_1">Mau maraton apa hari ini? 🍿</string>
+  <string name="home_greeting_2">Merasa bosan? Tonton sesuatu yang keren!</string>
+  <string name="home_greeting_3">Waktunya malam nonton film! ✨</string>
+  <string name="home_greeting_4">Temukan tontonan favoritmu berikutnya…</string>
+  <string name="home_greeting_5">Siap untuk episode berikutnya?</string>
+  <string name="home_greeting_6">Bersantai dengan acara favoritmu!</string>
+  <string name="home_greeting_7">Lampu, kamera, aksi! 🎬</string>
+  <string name="home_greeting_8">Ambil popcorn dan bersantailah!</string>
+  <string name="home_search_hint">Cari acara TV, film, video…</string>
+  <string name="home_customize">Sesuaikan Beranda</string>
+  <string name="home_see_all">Lihat semua</string>
+  <string name="home_no_results">Tidak ada hasil ditemukan</string>
+  <string name="home_no_videos">Tidak ada video terdeteksi</string>
+  <string name="home_section_up_next">Berikutnya</string>
+  <string name="home_section_recently_added">Baru Ditambahkan</string>
+  <string name="home_section_movies_videos">Film &amp; Video</string>
+  <string name="home_section_browse_folders">Jelajahi Folder</string>
+  <string name="home_movie_label">Film</string>
+  <string name="home_continue_watching">Lanjutkan Menonton</string>
+  <!-- Library -->
+  <string name="library_insights_title">Wawasan Pustaka</string>
+  <string name="library_insights_summary">Statistik koleksi dan kebiasaan menonton</string>
+  <string name="library_history_title">Riwayat Pemutaran</string>
+  <string name="library_history_summary">Video yang baru diputar dan stempel waktu</string>
+  <string name="library_playlists_summary">Daftar putar kustom dan stream M3U</string>
+  <string name="library_network_title">Streaming Jaringan</string>
+  <string name="library_network_summary">Koneksi dan stream SMB, FTP, WebDAV</string>
+  <string name="library_settings_title">Setelan &amp; Preferensi</string>
+  <string name="library_settings_summary">Tampilan, dekoder, audio, gestur, dan subtitel</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">Jaringan</string>
+  <string name="playlist_chip_local">Lokal</string>
+  <string name="playlist_rename_title">Ubah Nama Daftar Putar</string>
+  <string name="playlist_name_label">Nama Daftar Putar</string>
+  <string name="playlist_stream_url">URL Stream</string>
   <string name="pref_appearance_title">Tampilan</string>
   <string name="pref_appearance_summary">Mode gelap, Material You</string>
   <string name="pref_appearance_category_theme">Tema</string>

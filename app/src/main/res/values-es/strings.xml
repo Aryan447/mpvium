@@ -12,6 +12,55 @@
   <string name="pref_language_title">Idioma</string>
   <string name="pref_language_summary">Idioma de la aplicación</string>
   <string name="pref_language_system">Predeterminado del sistema</string>
+  <string name="pref_section_personalize">Personalizar</string>
+  <string name="pref_section_playback">Reproducción</string>
+  <string name="pref_section_library_media">Biblioteca y medios</string>
+  <string name="pref_section_system">Sistema</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">Inicio</string>
+  <string name="nav_titles">Títulos</string>
+  <string name="nav_shows">Series</string>
+  <string name="nav_movies">Películas</string>
+  <string name="nav_folders">Carpetas</string>
+  <string name="nav_library">Biblioteca</string>
+  <string name="nav_playlists">Listas</string>
+  <string name="nav_audio">Audio</string>
+  <!-- Home -->
+  <string name="home_greeting_1">¿Qué toca maratonear hoy? 🍿</string>
+  <string name="home_greeting_2">¿Aburrido? ¡Mira algo genial!</string>
+  <string name="home_greeting_3">¡Hora de una noche de cine! ✨</string>
+  <string name="home_greeting_4">Descubre tu próxima obsesión…</string>
+  <string name="home_greeting_5">¿Listo para otro episodio?</string>
+  <string name="home_greeting_6">¡Relájate con tus series favoritas!</string>
+  <string name="home_greeting_7">¡Luces, cámara, acción! 🎬</string>
+  <string name="home_greeting_8">¡Agarra palomitas y relájate!</string>
+  <string name="home_search_hint">Buscar series, películas, videos…</string>
+  <string name="home_customize">Personalizar Inicio</string>
+  <string name="home_see_all">Ver todo</string>
+  <string name="home_no_results">No se encontraron resultados</string>
+  <string name="home_no_videos">No se detectaron videos</string>
+  <string name="home_section_up_next">A continuación</string>
+  <string name="home_section_recently_added">Añadido recientemente</string>
+  <string name="home_section_movies_videos">Películas y videos</string>
+  <string name="home_section_browse_folders">Explorar carpetas</string>
+  <string name="home_movie_label">Película</string>
+  <string name="home_continue_watching">Seguir viendo</string>
+  <!-- Library -->
+  <string name="library_insights_title">Estadísticas de la biblioteca</string>
+  <string name="library_insights_summary">Estadísticas de la colección y hábitos de visualización</string>
+  <string name="library_history_title">Historial de reproducción</string>
+  <string name="library_history_summary">Videos reproducidos recientemente y marcas de tiempo</string>
+  <string name="library_playlists_summary">Listas personalizadas y transmisiones M3U</string>
+  <string name="library_network_title">Transmisión en red</string>
+  <string name="library_network_summary">Conexiones y transmisiones SMB, FTP y WebDAV</string>
+  <string name="library_settings_title">Ajustes y preferencias</string>
+  <string name="library_settings_summary">Apariencia, decodificador, audio, gestos y subtítulos</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">Red</string>
+  <string name="playlist_chip_local">Local</string>
+  <string name="playlist_rename_title">Renombrar lista</string>
+  <string name="playlist_name_label">Nombre de la lista</string>
+  <string name="playlist_stream_url">URL de transmisión</string>
   <string name="pref_appearance_title">Apariencia</string>
   <string name="pref_appearance_summary">Modo oscuro, Material You</string>
   <string name="pref_appearance_category_theme">Tema</string>

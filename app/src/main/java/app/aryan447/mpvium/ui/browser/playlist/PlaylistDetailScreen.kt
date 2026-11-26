@@ -201,7 +201,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
                 onSearch = { },
                 expanded = false,
                 onExpandedChange = { },
-                placeholder = { Text("Search videos...") },
+                placeholder = { Text(stringResource(R.string.search_videos)) },
                 leadingIcon = {
                   Icon(
                     imageVector = Icons.Filled.Search,
@@ -703,7 +703,7 @@ private fun StreamUrlDialog(
   androidx.compose.material3.AlertDialog(
     onDismissRequest = onDismiss,
     containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
-    title = { Text("Stream URL") },
+    title = { Text(stringResource(R.string.playlist_stream_url)) },
     text = {
       Text(
         text = url,
@@ -723,12 +723,12 @@ private fun StreamUrlDialog(
           contentDescription = null,
           modifier = Modifier.padding(end = 4.dp).size(18.dp)
         )
-        Text("Copy")
+        Text(stringResource(R.string.copy))
       }
     },
     dismissButton = {
       androidx.compose.material3.TextButton(onClick = onDismiss) {
-        Text("Close")
+        Text(stringResource(R.string.close))
       }
     },
   )
@@ -800,7 +800,7 @@ private fun RemoveFromPlaylistDialog(
         onClick = onDismiss,
         shape = MaterialTheme.shapes.extraLarge,
       ) {
-        Text("Cancel", fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
+        Text(stringResource(R.string.cancel), fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
       }
     },
     tonalElevation = 6.dp,

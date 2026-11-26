@@ -12,6 +12,55 @@
   <string name="pref_language_title">Lingua</string>
   <string name="pref_language_summary">Lingua dell\'app</string>
   <string name="pref_language_system">Predefinita di sistema</string>
+  <string name="pref_section_personalize">Personalizzazione</string>
+  <string name="pref_section_playback">Riproduzione</string>
+  <string name="pref_section_library_media">Libreria e media</string>
+  <string name="pref_section_system">Sistema</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">Home</string>
+  <string name="nav_titles">Titoli</string>
+  <string name="nav_shows">Serie TV</string>
+  <string name="nav_movies">Film</string>
+  <string name="nav_folders">Cartelle</string>
+  <string name="nav_library">Libreria</string>
+  <string name="nav_playlists">Playlist</string>
+  <string name="nav_audio">Audio</string>
+  <!-- Home -->
+  <string name="home_greeting_1">Cosa guardiamo oggi? 🍿</string>
+  <string name="home_greeting_2">Ti annoi? Guarda qualcosa di bello!</string>
+  <string name="home_greeting_3">È ora di una serata cinema! ✨</string>
+  <string name="home_greeting_4">Scopri la tua prossima ossessione…</string>
+  <string name="home_greeting_5">Pronto per un\'altra puntata?</string>
+  <string name="home_greeting_6">Rilassati con le tue serie preferite!</string>
+  <string name="home_greeting_7">Luci, motore, azione! 🎬</string>
+  <string name="home_greeting_8">Prendi i popcorn e rilassati!</string>
+  <string name="home_search_hint">Cerca serie TV, film, video…</string>
+  <string name="home_customize">Personalizza Home</string>
+  <string name="home_see_all">Vedi tutto</string>
+  <string name="home_no_results">Nessun risultato trovato</string>
+  <string name="home_no_videos">Nessun video rilevato</string>
+  <string name="home_section_up_next">Prossimi</string>
+  <string name="home_section_recently_added">Aggiunti di recente</string>
+  <string name="home_section_movies_videos">Film e video</string>
+  <string name="home_section_browse_folders">Sfoglia cartelle</string>
+  <string name="home_movie_label">Film</string>
+  <string name="home_continue_watching">Continua a guardare</string>
+  <!-- Library -->
+  <string name="library_insights_title">Statistiche libreria</string>
+  <string name="library_insights_summary">Statistiche della raccolta e abitudini di visione</string>
+  <string name="library_history_title">Cronologia riproduzione</string>
+  <string name="library_history_summary">Video riprodotti di recente e timestamp</string>
+  <string name="library_playlists_summary">Playlist personalizzate e flussi M3U</string>
+  <string name="library_network_title">Streaming di rete</string>
+  <string name="library_network_summary">Connessioni e flussi SMB, FTP, WebDAV</string>
+  <string name="library_settings_title">Impostazioni e preferenze</string>
+  <string name="library_settings_summary">Aspetto, decoder, audio, gesti e sottotitoli</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">Rete</string>
+  <string name="playlist_chip_local">Locale</string>
+  <string name="playlist_rename_title">Rinomina playlist</string>
+  <string name="playlist_name_label">Nome playlist</string>
+  <string name="playlist_stream_url">URL del flusso</string>
   <string name="pref_appearance_title">Aspetto</string>
   <string name="pref_appearance_summary">Modalità scura, Material You</string>
   <string name="pref_appearance_category_theme">Tema</string>

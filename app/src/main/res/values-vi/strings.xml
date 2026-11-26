@@ -12,6 +12,55 @@
   <string name="pref_language_title">Ngôn ngữ</string>
   <string name="pref_language_summary">Ngôn ngữ hiển thị của ứng dụng</string>
   <string name="pref_language_system">Mặc định hệ thống</string>
+  <string name="pref_section_personalize">Cá nhân hóa</string>
+  <string name="pref_section_playback">Phát lại</string>
+  <string name="pref_section_library_media">Thư viện &amp; Phương tiện</string>
+  <string name="pref_section_system">Hệ thống</string>
+  <!-- Tab điều hướng -->
+  <string name="nav_home">Trang chủ</string>
+  <string name="nav_titles">Tiêu đề</string>
+  <string name="nav_shows">Chương trình TV</string>
+  <string name="nav_movies">Phim</string>
+  <string name="nav_folders">Thư mục</string>
+  <string name="nav_library">Thư viện</string>
+  <string name="nav_playlists">Danh sách phát</string>
+  <string name="nav_audio">Âm thanh</string>
+  <!-- Trang chủ -->
+  <string name="home_greeting_1">Hôm nay cày phim gì đây? 🍿</string>
+  <string name="home_greeting_2">Thấy chán à? Xem gì đó thú vị đi!</string>
+  <string name="home_greeting_3">Đến giờ xem phim buổi tối rồi! ✨</string>
+  <string name="home_greeting_4">Khám phá bộ phim yêu thích tiếp theo…</string>
+  <string name="home_greeting_5">Sẵn sàng cho tập tiếp theo chưa?</string>
+  <string name="home_greeting_6">Thư giãn cùng những chương trình yêu thích!</string>
+  <string name="home_greeting_7">Ánh sáng, máy quay, diễn! 🎬</string>
+  <string name="home_greeting_8">Lấy ít bỏng ngô và thư giãn nào!</string>
+  <string name="home_search_hint">Tìm chương trình TV, phim, video…</string>
+  <string name="home_customize">Tùy chỉnh Trang chủ</string>
+  <string name="home_see_all">Xem tất cả</string>
+  <string name="home_no_results">Không tìm thấy kết quả</string>
+  <string name="home_no_videos">Không phát hiện video nào</string>
+  <string name="home_section_up_next">Tiếp theo</string>
+  <string name="home_section_recently_added">Mới thêm gần đây</string>
+  <string name="home_section_movies_videos">Phim &amp; Video</string>
+  <string name="home_section_browse_folders">Duyệt thư mục</string>
+  <string name="home_movie_label">Phim</string>
+  <string name="home_continue_watching">Tiếp tục xem</string>
+  <!-- Thư viện -->
+  <string name="library_insights_title">Thống kê thư viện</string>
+  <string name="library_insights_summary">Số liệu bộ sưu tập và thói quen xem</string>
+  <string name="library_history_title">Lịch sử phát</string>
+  <string name="library_history_summary">Video đã phát gần đây và mốc thời gian</string>
+  <string name="library_playlists_summary">Danh sách phát tùy chỉnh và luồng M3U</string>
+  <string name="library_network_title">Phát trực tuyến qua mạng</string>
+  <string name="library_network_summary">Kết nối và luồng SMB, FTP, WebDAV</string>
+  <string name="library_settings_title">Cài đặt &amp; Tùy chọn</string>
+  <string name="library_settings_summary">Giao diện, bộ giải mã, âm thanh, cử chỉ và phụ đề</string>
+  <!-- Danh sách phát -->
+  <string name="playlist_chip_network">Mạng</string>
+  <string name="playlist_chip_local">Cục bộ</string>
+  <string name="playlist_rename_title">Đổi tên danh sách phát</string>
+  <string name="playlist_name_label">Tên danh sách phát</string>
+  <string name="playlist_stream_url">URL luồng</string>
   <string name="pref_appearance_title">Giao diện</string>
   <string name="pref_appearance_summary">Chế độ tối, Material You</string>
   <string name="pref_appearance_category_theme">Chủ đề</string>

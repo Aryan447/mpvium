@@ -12,6 +12,55 @@
   <string name="pref_language_title">اللغة</string>
   <string name="pref_language_summary">لغة عرض التطبيق</string>
   <string name="pref_language_system">افتراضي النظام</string>
+  <string name="pref_section_personalize">التخصيص</string>
+  <string name="pref_section_playback">التشغيل</string>
+  <string name="pref_section_library_media">المكتبة والوسائط</string>
+  <string name="pref_section_system">النظام</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">الرئيسية</string>
+  <string name="nav_titles">العناوين</string>
+  <string name="nav_shows">المسلسلات</string>
+  <string name="nav_movies">الأفلام</string>
+  <string name="nav_folders">المجلدات</string>
+  <string name="nav_library">المكتبة</string>
+  <string name="nav_playlists">قوائم التشغيل</string>
+  <string name="nav_audio">الصوت</string>
+  <!-- Home -->
+  <string name="home_greeting_1">ماذا ستشاهد اليوم؟ 🍿</string>
+  <string name="home_greeting_2">هل تشعر بالملل؟ شاهد شيئاً رائعاً!</string>
+  <string name="home_greeting_3">حان وقت ليلة الأفلام! ✨</string>
+  <string name="home_greeting_4">اكتشف شغفك التالي…</string>
+  <string name="home_greeting_5">هل أنت مستعد لحلقة أخرى؟</string>
+  <string name="home_greeting_6">استرخِ مع مسلسلاتك المفضلة!</string>
+  <string name="home_greeting_7">أضواء، كاميرا، أكشن! 🎬</string>
+  <string name="home_greeting_8">أحضر بعض الفشار واسترخِ!</string>
+  <string name="home_search_hint">ابحث عن مسلسلات، أفلام، فيديوهات…</string>
+  <string name="home_customize">تخصيص الرئيسية</string>
+  <string name="home_see_all">عرض الكل</string>
+  <string name="home_no_results">لم يتم العثور على نتائج</string>
+  <string name="home_no_videos">لم يتم اكتشاف فيديوهات</string>
+  <string name="home_section_up_next">التالي</string>
+  <string name="home_section_recently_added">المضافة حديثاً</string>
+  <string name="home_section_movies_videos">الأفلام والفيديوهات</string>
+  <string name="home_section_browse_folders">تصفح المجلدات</string>
+  <string name="home_movie_label">فيلم</string>
+  <string name="home_continue_watching">متابعة المشاهدة</string>
+  <!-- Library -->
+  <string name="library_insights_title">إحصائيات المكتبة</string>
+  <string name="library_insights_summary">إحصائيات المجموعة وعادات المشاهدة</string>
+  <string name="library_history_title">سجل التشغيل</string>
+  <string name="library_history_summary">الفيديوهات المشغّلة مؤخراً والطوابع الزمنية</string>
+  <string name="library_playlists_summary">قوائم التشغيل المخصصة وبثوث M3U</string>
+  <string name="library_network_title">البث عبر الشبكة</string>
+  <string name="library_network_summary">اتصالات وبثوث SMB وFTP وWebDAV</string>
+  <string name="library_settings_title">الإعدادات والتفضيلات</string>
+  <string name="library_settings_summary">المظهر، وحدة فك التشفير، الصوت، الإيماءات، والترجمة</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">الشبكة</string>
+  <string name="playlist_chip_local">محلي</string>
+  <string name="playlist_rename_title">إعادة تسمية قائمة التشغيل</string>
+  <string name="playlist_name_label">اسم قائمة التشغيل</string>
+  <string name="playlist_stream_url">رابط البث</string>
   <string name="pref_appearance_title">المظهر</string>
   <string name="pref_appearance_summary">الوضع الداكن، Material You</string>
   <string name="pref_appearance_category_theme">السمة</string>

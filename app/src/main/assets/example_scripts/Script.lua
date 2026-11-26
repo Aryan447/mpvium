@@ -1,5 +1,5 @@
 -- Script.lua
--- Combined script for mpvEx. Contains three parts, each in its own scope:
+-- Combined script for mpvium. Contains three parts, each in its own scope:
 --   1. Subtitle      - saves subtitle delay + selected subtitle track per video
 --                      (data in Subtitle.json; x / z keys change the delay)
 --   2. delete_file   - mark the current video for deletion (done when mpv closes)
@@ -30,7 +30,7 @@ local function part_subtitle()
 
 local mputils = require "mp.utils"
 
-local DIR = '/storage/emulated/0/projects/mpvEx/'
+local DIR = '/storage/emulated/0/projects/mpvium/'
 local JSON = DIR .. 'Subtitle.json'
 local OLD_DELAY_JSON = DIR .. 'mpv_sub-delay.json'
 local OLD_TRACK_JSON = DIR .. 'mpv_sub-track.json'

@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.browser
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Audiotrack
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.ui.graphics.vector.ImageVector
+import app.aryan447.mpvium.R
 
 /**
  * Canonical bottom-navigation tabs in fixed order.
@@ -32,16 +34,16 @@ enum class MainTab(
   val key: String,
   val canonicalIndex: Int,
   val icon: ImageVector,
-  val label: String,
+  @StringRes val labelRes: Int,
 ) {
-  HOME("HOME", 0, Icons.Filled.Home, "Home"),
-  TITLES("TITLES", 1, Icons.Filled.Movie, "Titles"),
-  SHOWS("SHOWS", 1, Icons.Filled.Tv, "TV Shows"),
-  MOVIES("MOVIES", 2, Icons.Filled.Movie, "Movies"),
-  FOLDERS("FOLDERS", 3, Icons.Filled.Folder, "Folders"),
-  LIBRARY("LIBRARY", 4, Icons.Filled.VideoLibrary, "Library"),
-  PLAYLISTS("PLAYLISTS", 5, Icons.AutoMirrored.Filled.PlaylistPlay, "Playlists"),
-  AUDIO("AUDIO", 6, Icons.Filled.Audiotrack, "Audio"),
+  HOME("HOME", 0, Icons.Filled.Home, R.string.nav_home),
+  TITLES("TITLES", 1, Icons.Filled.Movie, R.string.nav_titles),
+  SHOWS("SHOWS", 1, Icons.Filled.Tv, R.string.nav_shows),
+  MOVIES("MOVIES", 2, Icons.Filled.Movie, R.string.nav_movies),
+  FOLDERS("FOLDERS", 3, Icons.Filled.Folder, R.string.nav_folders),
+  LIBRARY("LIBRARY", 4, Icons.Filled.VideoLibrary, R.string.nav_library),
+  PLAYLISTS("PLAYLISTS", 5, Icons.AutoMirrored.Filled.PlaylistPlay, R.string.nav_playlists),
+  AUDIO("AUDIO", 6, Icons.Filled.Audiotrack, R.string.nav_audio),
   ;
 
   companion object {

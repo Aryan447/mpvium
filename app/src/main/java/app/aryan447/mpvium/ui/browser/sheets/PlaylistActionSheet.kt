@@ -186,7 +186,7 @@ fun PlaylistActionSheet(
           verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
           Text(
-            text = "Create Playlist",
+            text = stringResource(R.string.create_playlist),
             style = MaterialTheme.typography.headlineSmall,
           )
           OutlinedTextField(

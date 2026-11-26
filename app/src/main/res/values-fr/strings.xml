@@ -12,6 +12,55 @@
   <string name="pref_language_title">Langue</string>
   <string name="pref_language_summary">Langue d\'affichage de l\'application</string>
   <string name="pref_language_system">Langue du système</string>
+  <string name="pref_section_personalize">Personnaliser</string>
+  <string name="pref_section_playback">Lecture</string>
+  <string name="pref_section_library_media">Bibliothèque et médias</string>
+  <string name="pref_section_system">Système</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">Accueil</string>
+  <string name="nav_titles">Titres</string>
+  <string name="nav_shows">Séries</string>
+  <string name="nav_movies">Films</string>
+  <string name="nav_folders">Dossiers</string>
+  <string name="nav_library">Bibliothèque</string>
+  <string name="nav_playlists">Listes</string>
+  <string name="nav_audio">Audio</string>
+  <!-- Home -->
+  <string name="home_greeting_1">On regarde quoi en boucle aujourd\'hui ? 🍿</string>
+  <string name="home_greeting_2">Vous vous ennuyez ? Regardez quelque chose de cool !</string>
+  <string name="home_greeting_3">L\'heure d\'une soirée cinéma ! ✨</string>
+  <string name="home_greeting_4">Découvrez votre prochaine obsession…</string>
+  <string name="home_greeting_5">Prêt pour un autre épisode ?</string>
+  <string name="home_greeting_6">Détendez-vous avec vos séries préférées !</string>
+  <string name="home_greeting_7">Silence, moteur, action ! 🎬</string>
+  <string name="home_greeting_8">Prenez du pop-corn et détendez-vous !</string>
+  <string name="home_search_hint">Rechercher séries, films, vidéos…</string>
+  <string name="home_customize">Personnaliser l\'accueil</string>
+  <string name="home_see_all">Tout voir</string>
+  <string name="home_no_results">Aucun résultat trouvé</string>
+  <string name="home_no_videos">Aucune vidéo détectée</string>
+  <string name="home_section_up_next">À suivre</string>
+  <string name="home_section_recently_added">Ajoutés récemment</string>
+  <string name="home_section_movies_videos">Films et vidéos</string>
+  <string name="home_section_browse_folders">Parcourir les dossiers</string>
+  <string name="home_movie_label">Film</string>
+  <string name="home_continue_watching">Reprendre la lecture</string>
+  <!-- Library -->
+  <string name="library_insights_title">Statistiques de la bibliothèque</string>
+  <string name="library_insights_summary">Statistiques de collection et habitudes de visionnage</string>
+  <string name="library_history_title">Historique de lecture</string>
+  <string name="library_history_summary">Vidéos lues récemment et horodatages</string>
+  <string name="library_playlists_summary">Listes personnalisées et flux M3U</string>
+  <string name="library_network_title">Streaming réseau</string>
+  <string name="library_network_summary">Connexions et flux SMB, FTP, WebDAV</string>
+  <string name="library_settings_title">Paramètres et préférences</string>
+  <string name="library_settings_summary">Apparence, décodeur, audio, gestes et sous-titres</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">Réseau</string>
+  <string name="playlist_chip_local">Local</string>
+  <string name="playlist_rename_title">Renommer la liste</string>
+  <string name="playlist_name_label">Nom de la liste</string>
+  <string name="playlist_stream_url">URL du flux</string>
   <string name="pref_appearance_title">Apparence</string>
   <string name="pref_appearance_summary">Mode sombre, Material You</string>
   <string name="pref_appearance_category_theme">Thème</string>

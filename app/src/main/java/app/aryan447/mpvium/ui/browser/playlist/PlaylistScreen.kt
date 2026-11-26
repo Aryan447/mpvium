@@ -343,12 +343,12 @@ object PlaylistScreen : Screen {
           androidx.compose.material3.AlertDialog(
             onDismissRequest = { showRenameDialog = false },
             containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
-            title = { Text("Rename Playlist") },
+            title = { Text(stringResource(R.string.playlist_rename_title)) },
             text = {
               androidx.compose.material3.OutlinedTextField(
                 value = playlistName,
                 onValueChange = { playlistName = it },
-                label = { Text("Playlist Name") },
+                label = { Text(stringResource(R.string.playlist_name_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
               )
@@ -366,14 +366,14 @@ object PlaylistScreen : Screen {
                 },
                 enabled = playlistName.isNotBlank(),
               ) {
-                Text("Rename")
+                Text(stringResource(R.string.rename))
               }
             },
             dismissButton = {
               androidx.compose.material3.TextButton(
                 onClick = { showRenameDialog = false },
               ) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
               }
             },
           )

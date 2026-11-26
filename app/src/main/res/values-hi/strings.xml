@@ -12,6 +12,55 @@
   <string name="pref_language_title">भाषा</string>
   <string name="pref_language_summary">ऐप प्रदर्शन भाषा</string>
   <string name="pref_language_system">सिस्टम डिफ़ॉल्ट</string>
+  <string name="pref_section_personalize">वैयक्तिकृत करें</string>
+  <string name="pref_section_playback">प्लेबैक</string>
+  <string name="pref_section_library_media">लाइब्रेरी और मीडिया</string>
+  <string name="pref_section_system">सिस्टम</string>
+  <!-- Navigation Tabs -->
+  <string name="nav_home">होम</string>
+  <string name="nav_titles">शीर्षक</string>
+  <string name="nav_shows">टीवी शो</string>
+  <string name="nav_movies">फ़िल्में</string>
+  <string name="nav_folders">फ़ोल्डर</string>
+  <string name="nav_library">लाइब्रेरी</string>
+  <string name="nav_playlists">प्लेलिस्ट</string>
+  <string name="nav_audio">ऑडियो</string>
+  <!-- Home -->
+  <string name="home_greeting_1">आज लगातार क्या देख रहे हैं? 🍿</string>
+  <string name="home_greeting_2">बोर हो रहे हैं? कुछ बढ़िया देखें!</string>
+  <string name="home_greeting_3">मूवी नाइट का समय है! ✨</string>
+  <string name="home_greeting_4">अपना अगला पसंदीदा खोजें…</string>
+  <string name="home_greeting_5">एक और एपिसोड के लिए तैयार हैं?</string>
+  <string name="home_greeting_6">अपने पसंदीदा शो के साथ आराम करें!</string>
+  <string name="home_greeting_7">लाइट्स, कैमरा, एक्शन! 🎬</string>
+  <string name="home_greeting_8">पॉपकॉर्न लें और आराम करें!</string>
+  <string name="home_search_hint">टीवी शो, फ़िल्में, वीडियो खोजें…</string>
+  <string name="home_customize">होम कस्टमाइज़ करें</string>
+  <string name="home_see_all">सभी देखें</string>
+  <string name="home_no_results">कोई परिणाम नहीं मिला</string>
+  <string name="home_no_videos">कोई वीडियो नहीं मिला</string>
+  <string name="home_section_up_next">आगे देखें</string>
+  <string name="home_section_recently_added">हाल ही में जोड़ा गया</string>
+  <string name="home_section_movies_videos">फ़िल्में और वीडियो</string>
+  <string name="home_section_browse_folders">फ़ोल्डर ब्राउज़ करें</string>
+  <string name="home_movie_label">फ़िल्म</string>
+  <string name="home_continue_watching">देखना जारी रखें</string>
+  <!-- Library -->
+  <string name="library_insights_title">लाइब्रेरी आंकड़े</string>
+  <string name="library_insights_summary">संग्रह आंकड़े और देखने की आदतें</string>
+  <string name="library_history_title">प्लेबैक इतिहास</string>
+  <string name="library_history_summary">हाल ही में चलाए गए वीडियो और टाइमस्टैम्प</string>
+  <string name="library_playlists_summary">कस्टम प्लेलिस्ट और M3U स्ट्रीम</string>
+  <string name="library_network_title">नेटवर्क स्ट्रीमिंग</string>
+  <string name="library_network_summary">SMB, FTP, WebDAV कनेक्शन और स्ट्रीम</string>
+  <string name="library_settings_title">सेटिंग्स और प्राथमिकताएँ</string>
+  <string name="library_settings_summary">दिखावट, डिकोडर, ऑडियो, जेस्चर और सबटाइटल</string>
+  <!-- Playlists -->
+  <string name="playlist_chip_network">नेटवर्क</string>
+  <string name="playlist_chip_local">लोकल</string>
+  <string name="playlist_rename_title">प्लेलिस्ट का नाम बदलें</string>
+  <string name="playlist_name_label">प्लेलिस्ट का नाम</string>
+  <string name="playlist_stream_url">स्ट्रीम URL</string>
   <string name="pref_appearance_title">दिखावट</string>
   <string name="pref_appearance_summary">डार्क मोड, Material You</string>
   <string name="pref_appearance_category_theme">थीम</string>
