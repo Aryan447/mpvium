@@ -120,8 +120,9 @@ fun MoviePosterCard(
         )
       }
 
-      // Rating Badge (Top-End)
-      if (movie.rating != null && movie.rating > 0f) {
+      // Rating Badge (Top-End, TV only)
+      val isTv = app.aryan447.mpvium.ui.utils.LocalIsTv.current
+      if (isTv && movie.rating != null && movie.rating > 0f) {
         Surface(
           color = Color(0xFFE5A00D).copy(alpha = 0.95f),
           shape = RoundedCornerShape(6.dp),
