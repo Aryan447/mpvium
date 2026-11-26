@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 
 /**
  * Modifier to provide TV / D-Pad friendly visual focus indication (scale + border ring)
@@ -29,9 +30,12 @@ fun Modifier.tvFocusHighlight(
 ): Modifier = composed {
   if (!enabled) return@composed this
 
+  val isTv = LocalIsTv.current
   val isFocused by interactionSource.collectIsFocusedAsState()
+  val targetScale = if (isTv && scale < 1.06f) 1.06f else scale
+  val effectiveBorderWidth = if (isTv && borderWidth < 3.dp) 3.dp else borderWidth
   val animatedScale by animateFloatAsState(
-    targetValue = if (isFocused) scale else 1f,
+    targetValue = if (isFocused) targetScale else 1f,
     animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
     label = "tv_focus_scale",
   )
@@ -39,6 +43,7 @@ fun Modifier.tvFocusHighlight(
   val focusBorderColor = borderColor ?: MaterialTheme.colorScheme.primary
 
   this
+    .zIndex(if (isFocused) 1f else 0f)
     .graphicsLayer {
       scaleX = animatedScale
       scaleY = animatedScale
@@ -46,7 +51,7 @@ fun Modifier.tvFocusHighlight(
     .then(
       if (isFocused) {
         Modifier.border(
-          border = BorderStroke(borderWidth, focusBorderColor),
+          border = BorderStroke(effectiveBorderWidth, focusBorderColor),
           shape = shape,
         )
       } else {

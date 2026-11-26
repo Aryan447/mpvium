@@ -74,6 +74,7 @@ import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
 import app.aryan447.mpvium.ui.theme.glassShortNavigationBarItemColors
 import app.aryan447.mpvium.ui.theme.glassNavigationRailItemColors
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import app.aryan447.mpvium.ui.theme.glassRimBrush
 import app.aryan447.mpvium.ui.theme.glassRimColor
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
@@ -410,7 +411,9 @@ object MainScreen : Screen {
                 ),
                 containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.surface,
               ) {
+                val isTv = app.aryan447.mpvium.ui.utils.LocalIsTv.current
                 navItems.forEach { tab ->
+                  val navInteraction = remember(tab) { androidx.compose.foundation.interaction.MutableInteractionSource() }
                   NavigationRailItem(
                     icon = { Icon(tab.icon, contentDescription = tab.label) },
                     label = if (showBottomNavLabels) ({
@@ -423,6 +426,17 @@ object MainScreen : Screen {
                     alwaysShowLabel = showBottomNavLabels,
                     selected = selectedTabId == tab.canonicalIndex,
                     onClick = { selectTab(tab.canonicalIndex) },
+                    interactionSource = navInteraction,
+                    modifier = if (isTv) {
+                      Modifier.tvFocusHighlight(
+                        shape = RoundedCornerShape(16.dp),
+                        interactionSource = navInteraction,
+                        scale = 1.06f,
+                        borderWidth = 2.5.dp,
+                      )
+                    } else {
+                      Modifier
+                    },
                     colors = glassNavigationRailItemColors(),
                   )
                 }

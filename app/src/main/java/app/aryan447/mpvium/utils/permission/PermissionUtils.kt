@@ -168,10 +168,15 @@ object PermissionUtils {
     }
 
     // Wrap permission state to consider MANAGE_EXTERNAL_STORAGE on Android 11+
+    // On Android TV, standard runtime media permission is also accepted since many TV ROMs
+    // lack a functional All Files Access settings screen.
+    val isTv = remember(context) { app.aryan447.mpvium.utils.DeviceUtils.isTv(context) }
     val effectivePermissionState =
-      remember(permissionState.status, lifecycleTrigger) {
+      remember(permissionState.status, lifecycleTrigger, isTv) {
         if (!BuildConfig.SCOPED_STORAGE_ONLY && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-          if (android.os.Environment.isExternalStorageManager()) {
+          val isGranted = android.os.Environment.isExternalStorageManager() ||
+            (isTv && permissionState.status is PermissionStatus.Granted)
+          if (isGranted) {
             object : PermissionState {
               override val permission = permissionState.permission
               override val status = PermissionStatus.Granted

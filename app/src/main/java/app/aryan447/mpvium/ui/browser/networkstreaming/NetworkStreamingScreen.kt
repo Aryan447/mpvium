@@ -154,7 +154,9 @@ object NetworkStreamingScreen : Screen {
       },
       floatingActionButton = {
         val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
-        if (isFabVisible) {
+        // On Android TV, the inline "+ Add Connection" button in the Local Network header
+        // replaces the FAB so it never overlaps connection cards' Connect/Browse buttons.
+        if (!isTv && isFabVisible) {
           ExtendedFloatingActionButton(
             onClick = { showAddSheet = true },
             icon = { Icon(Icons.Filled.Add, contentDescription = null) },
@@ -178,7 +180,7 @@ object NetworkStreamingScreen : Screen {
           start = 16.dp,
           end = 16.dp,
           top = 16.dp,
-          bottom = navigationBarHeight
+          bottom = navigationBarHeight + 24.dp,
         ),
       ) {
           // Section 1: Stream Link

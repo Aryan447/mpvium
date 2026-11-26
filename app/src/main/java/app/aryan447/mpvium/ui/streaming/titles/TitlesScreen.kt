@@ -158,6 +158,7 @@ data class TitlesScreen(
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val isTablet = configuration.smallestScreenWidthDp >= 600
     val columns = when {
+      isTv -> 5
       isTablet -> if (isLandscape) 5 else 4
       isLandscape -> 4
       else -> 3
@@ -208,7 +209,7 @@ data class TitlesScreen(
 
     var selectedItemId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedItemType by rememberSaveable { mutableStateOf<String?>(null) }
-    val twoPane = configuration.screenWidthDp >= 840 && backstack.size == 1
+    val twoPane = !isTv && configuration.screenWidthDp >= 840 && backstack.size == 1
     BackHandler(enabled = isSearching) {
       isSearching = false
       searchQuery = ""

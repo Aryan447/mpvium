@@ -136,6 +136,7 @@ object MoviesGridScreen : Screen {
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val isTablet = configuration.smallestScreenWidthDp >= 600
     val columns = when {
+      isTv -> 5
       isTablet -> if (isLandscape) 5 else 4
       isLandscape -> 4
       else -> 3
@@ -166,7 +167,7 @@ object MoviesGridScreen : Screen {
     // Master-detail on wide screens when this grid is the tab root.
     // Pushed instances (e.g. from home See-all) stay single-pane.
     var selectedMovieId by rememberSaveable { mutableStateOf<Long?>(null) }
-    val twoPane = configuration.screenWidthDp >= 840 && backstack.size == 1
+    val twoPane = !isTv && configuration.screenWidthDp >= 840 && backstack.size == 1
     BackHandler(enabled = twoPane && selectedMovieId != null) {
       selectedMovieId = null
     }

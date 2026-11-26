@@ -166,6 +166,12 @@ class MainActivity : ComponentActivity() {
   }
 
   private fun requestStoragePermission(requestRuntimePermission: () -> Unit) {
+    // Android TV ROMs often lack or display a black screen for All Files Access settings;
+    // use standard runtime storage permission on TV.
+    if (app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) {
+      requestRuntimePermission()
+      return
+    }
     if (!BuildConfig.SCOPED_STORAGE_ONLY && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       try {
         startActivity(
