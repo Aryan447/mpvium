@@ -38,6 +38,7 @@
 - Downloaded and sideloaded media on Android TV is no longer suppressed from the Titles library by mobile transient folder thresholds.
 - Software decoder selection strictly disables hardware decoding across playback reloads, playlist items, and singleTask session switches.
 - Main navigation rail on TV uses clean native Material 3 indicator pills without distorted selection outlines.
+- Switching directly between SW and HW (mediacodec-copy) decoders during 10-bit HEVC playback now reloads the video pipeline cleanly instead of getting stuck.
 - Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
 - Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
 - Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.

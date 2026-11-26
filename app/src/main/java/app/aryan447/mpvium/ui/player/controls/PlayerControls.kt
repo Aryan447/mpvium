@@ -1529,30 +1529,7 @@ fun PlayerControls(
         viewModel.unpause()
       },
       decoder = decoder,
-      onUpdateDecoder = { newDecoder ->
-        if (app.aryan447.mpvium.utils.DeviceUtils.isTv(context)) {
-          val activity = context as? PlayerActivity
-          if (activity != null) {
-            activity.applyDecoder(newDecoder)
-          } else {
-            decoderPreferences.defaultDecoder.set(newDecoder)
-            if (newDecoder == app.aryan447.mpvium.ui.player.Decoder.SW) {
-              MPVLib.setPropertyString("hwdec", "no")
-              MPVLib.setPropertyString("hwdec-codecs", "")
-            } else {
-              MPVLib.setPropertyString("hwdec", newDecoder.value)
-              MPVLib.setPropertyString("hwdec-codecs", "all")
-            }
-            val currentVid = MPVLib.getPropertyInt("vid") ?: 1
-            if (currentVid > 0) {
-              MPVLib.setPropertyString("vid", "no")
-              MPVLib.setPropertyInt("vid", currentVid)
-            }
-          }
-        } else {
-          MPVLib.setPropertyString("hwdec", newDecoder.value)
-        }
-      },
+      onUpdateDecoder = viewModel::updateDecoder,
       speed = playbackSpeed ?: playerPreferences.defaultSpeed.get(),
       onSpeedChange = { MPVLib.setPropertyFloat("speed", it.toFixed(2)) },
       onMakeDefaultSpeed = { playerPreferences.defaultSpeed.set(it.toFixed(2)) },

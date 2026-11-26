@@ -122,7 +122,7 @@ enum class Decoder(
     val defaultOptions: List<Decoder> = listOf(Auto, SW, HW, HWPlus)
 
     fun getDecoderFromValue(value: String): Decoder =
-      Decoder.entries.firstOrNull { it.value == value } ?: SW
+      Decoder.entries.firstOrNull { it.value == value } ?: Auto
   }
 }
 
