@@ -26,9 +26,7 @@ object MediaInfoOps {
         val mi = MediaInfo()
 
         try {
-          if (mi.Open(fd, fileName) == 0) {
-            error("Could not open media file")
-          }
+          mi.Open(fd, fileName)
 
           val generalInfo = extractGeneralInfo(mi)
           val videoStreams = extractVideoStreams(mi)
@@ -68,9 +66,7 @@ object MediaInfoOps {
         val mi = MediaInfo()
 
         try {
-          if (mi.Open(fd, fileName) == 0) {
-            error("Could not open media file")
-          }
+          mi.Open(fd, fileName)
 
           val data = MediaInfoData(
             general = extractGeneralInfo(mi),
@@ -80,9 +76,17 @@ object MediaInfoOps {
           )
 
           mi.Option("Inform", "Text")
-          val textOutput = formatTextOutput(fileName, mi.Inform())
+          val rawText = mi.Inform()
+          if (data.general.format.isBlank() &&
+            data.videoStreams.isEmpty() &&
+            data.audioStreams.isEmpty() &&
+            data.textStreams.isEmpty() &&
+            rawText.isBlank()
+          ) {
+            error("Could not open media file")
+          }
 
-          MediaInfoReport(data = data, textOutput = textOutput)
+          MediaInfoReport(data = data, textOutput = formatTextOutput(fileName, rawText))
         } finally {
           mi.Close()
           mi.Destroy()
@@ -110,9 +114,7 @@ object MediaInfoOps {
         val mi = MediaInfo()
 
         try {
-          if (mi.Open(fd, fileName) == 0) {
-            error("Could not open media file")
-          }
+          mi.Open(fd, fileName)
 
           // Set output format to Text (human-readable format like MediaInfo desktop app)
           mi.Option("Inform", "Text")
