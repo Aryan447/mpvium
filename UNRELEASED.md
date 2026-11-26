@@ -28,6 +28,8 @@
 
 ### Fixed
 
+- Switching directly between SW and HW (mediacodec-copy) decoders during 10-bit HEVC playback now reloads the video pipeline cleanly instead of getting stuck.
+
 - Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
 - Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
 - Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.
