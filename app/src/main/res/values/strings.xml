@@ -539,6 +539,8 @@
   <string name="player_sheets_speed_slider_label">Speed</string>
   <string name="player_sheets_speed_make_default">Make default speed</string>
   <string name="player_sheets_decoder_formatted" formatted="false">%s (%s)</string>
+  <string name="player_decoder_hw_copy_10bit_unsupported">HW (copy) unsupported for 10-bit on this device — use HW+</string>
+  <string name="player_decoder_hw_copy_unsupported">HW (copy) unsupported on this device — use HW+</string>
   <string name="numeric_chooser_value_too_big">Value too big</string>
   <string name="numeric_chooser_value_too_small">Value too small</string>
   <string name="player_sheets_more_title">More</string>
