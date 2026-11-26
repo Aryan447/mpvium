@@ -537,21 +537,6 @@ private fun DashboardGrid(
         }
       }
     }
-
-    if (showLanguageSheet) {
-      LanguagePickerSheet(
-        selectedTag = currentAppLanguageTag(),
-        onSelect = { tag ->
-          val locales = if (tag.isEmpty()) {
-            LocaleListCompat.getEmptyLocaleList()
-          } else {
-            LocaleListCompat.forLanguageTags(tag)
-          }
-          AppCompatDelegate.setApplicationLocales(locales)
-        },
-        onDismiss = { showLanguageSheet = false },
-      )
-    }
   }
 }
 
