@@ -121,7 +121,8 @@ enum class Decoder(
     /** Options offered by the default decoder setting. */
     val defaultOptions: List<Decoder> = listOf(Auto, SW, HW, HWPlus)
 
-    fun getDecoderFromValue(value: String): Decoder = Decoder.entries.first { it.value == value }
+    fun getDecoderFromValue(value: String): Decoder =
+      Decoder.entries.firstOrNull { it.value == value } ?: Auto
   }
 }
 
