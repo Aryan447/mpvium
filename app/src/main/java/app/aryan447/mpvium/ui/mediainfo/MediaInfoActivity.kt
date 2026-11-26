@@ -459,7 +459,20 @@ class MediaInfoActivity : ComponentActivity() {
 
       if (data.videoStreams.isNotEmpty() || data.audioStreams.isNotEmpty() || data.textStreams.isNotEmpty()) {
         item(key = "tracks_header") {
-          SectionHeaderText(stringResource(R.string.mediainfo_section_tracks))
+          Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SectionHeaderText(stringResource(R.string.mediainfo_section_tracks))
+            Text(
+              text = stringResource(
+                R.string.mediainfo_tracks_summary_subtitle,
+                data.videoStreams.size,
+                data.audioStreams.size,
+                data.textStreams.size,
+              ),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(start = spacing.extraSmall),
+            )
+          }
         }
 
         items(
@@ -639,6 +652,12 @@ class MediaInfoActivity : ComponentActivity() {
             }
           }
         }
+
+        Text(
+          text = overallExplanation(quality.overallVerdict),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         HorizontalDivider(
           thickness = 0.75.dp,
@@ -1117,10 +1136,20 @@ class MediaInfoActivity : ComponentActivity() {
         MediaCapabilityAnalyzer.VerdictKey.HARDWARE_READY -> stringResource(R.string.mediainfo_explain_hw_ready)
         MediaCapabilityAnalyzer.VerdictKey.CPU_HEAVY -> stringResource(R.string.mediainfo_explain_cpu_heavy)
         MediaCapabilityAnalyzer.VerdictKey.SURROUND_READY -> stringResource(R.string.mediainfo_explain_audio_surround_ready)
-        MediaCapabilityAnalyzer.VerdictKey.STUDIO_DOWNMIX -> stringResource(R.string.mediainfo_explain_audio_overkill)
+        MediaCapabilityAnalyzer.VerdictKey.STUDIO_DOWNMIX -> stringResource(R.string.mediainfo_explain_audio_studio_downmix)
         MediaCapabilityAnalyzer.VerdictKey.RICH_AUDIO -> stringResource(R.string.mediainfo_explain_audio_rich)
         MediaCapabilityAnalyzer.VerdictKey.THIN_AUDIO -> stringResource(R.string.mediainfo_explain_audio_thin)
       }
+    }
+
+  @Composable
+  private fun overallExplanation(verdict: MediaCapabilityAnalyzer.VerdictKey): String =
+    when (verdict) {
+      MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_explain_overall_overkill)
+      MediaCapabilityAnalyzer.VerdictKey.SPOT_ON -> stringResource(R.string.mediainfo_explain_overall_spot_on)
+      MediaCapabilityAnalyzer.VerdictKey.GREAT -> stringResource(R.string.mediainfo_explain_overall_great)
+      MediaCapabilityAnalyzer.VerdictKey.GOOD -> stringResource(R.string.mediainfo_explain_overall_good)
+      else -> stringResource(R.string.mediainfo_explain_overall_low)
     }
 
   private data class InfoSection(

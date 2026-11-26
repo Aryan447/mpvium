@@ -960,8 +960,15 @@
   <string name="mediainfo_explain_hdr_standard">Standard 8-bit color supported by every display.</string>
   <string name="mediainfo_explain_hw_ready">Plays smoothly using your device\'s dedicated video chip for low battery use.</string>
   <string name="mediainfo_explain_cpu_heavy">No hardware decoder found for this format — decoded by CPU, which uses more battery.</string>
-  <string name="mediainfo_explain_audio_surround_ready">Your connected audio output supports multi-channel surround playback.</string>
-  <string name="mediainfo_explain_audio_overkill">Surround or studio-grade audio downmixed to stereo for your current speakers.</string>
-  <string name="mediainfo_explain_audio_rich">Clean, detailed audio quality for headphones and speakers.</string>
-  <string name="mediainfo_explain_audio_thin">Low audio bitrate — dialogue or music may sound compressed.</string>
+  <string name="mediainfo_explain_audio_surround_ready">Your connected audio output supports multi-channel surround playback without downmixing.</string>
+  <string name="mediainfo_explain_audio_overkill">Surround audio (5.1/7.1) is mixed down to stereo for your current speakers — connect a surround system to hear every channel.</string>
+  <string name="mediainfo_explain_audio_studio_downmix">Studio-grade lossless audio is played on phone speakers — wired headphones or a DAC will reveal the extra detail.</string>
+  <string name="mediainfo_explain_audio_rich">Clean, detailed audio quality well-suited for headphones and speakers.</string>
+  <string name="mediainfo_explain_audio_thin">Low audio bitrate — dialogue, music, or effects may sound flat or compressed.</string>
+  <string name="mediainfo_explain_overall_overkill">Plays smoothly, though this file packs more resolution or surround detail than your device can output natively.</string>
+  <string name="mediainfo_explain_overall_spot_on">Ideal match — resolution, color, codec, and audio line up cleanly with your device\'s hardware.</string>
+  <string name="mediainfo_explain_overall_great">High-quality file that your device plays comfortably with crisp picture and clean sound.</string>
+  <string name="mediainfo_explain_overall_good">Solid everyday quality — mpvium adapts color and audio automatically for your device.</string>
+  <string name="mediainfo_explain_overall_low">Lower quality than your screen can show — expect softer detail in full screen.</string>
+  <string name="mediainfo_tracks_summary_subtitle">%1$d video • %2$d audio • %3$d subtitles</string>
 </resources>
