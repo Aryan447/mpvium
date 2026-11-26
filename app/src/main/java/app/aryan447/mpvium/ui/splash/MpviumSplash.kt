@@ -1,7 +1,7 @@
 package app.aryan447.mpvium.ui.splash
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -19,10 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -38,14 +35,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppIcon
 import kotlin.math.abs
 import kotlin.math.hypot
+import kotlin.math.pow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Indicates whether the launch splash overlay has finished and unmounted.
@@ -58,27 +56,24 @@ val LocalSplashFinished = compositionLocalOf { true }
  * Flagship X (Twitter)-style "zoom-through" mask reveal splash screen for mpvium.
  *
  * Choreographed launch sequence:
- * 1. System Splash Handoff: Matches the exact pixel bounds of Theme.SplashScreen's
- *    iconView and removes the system splash view on the first rendered Compose frame.
- * 2. Hold Phase (250ms min, up to 400ms max waiting for initial media state):
- *    Static at scale 1.0f with no spinner visible inside the cutout.
- * 3. Zoom-Through Phase (320ms): Single uninterrupted Animatable from 1.0f to targetScale
- *    using CubicBezierEasing(0.78f, 0.0f, 0.90f, 0.0f), pivoted at the inner cutout's
- *    centroid until the stroke completely clears all four viewport corners.
- * 4. Cleanup: Unmounts completely once scale >= targetScale.
+ * 1. System Splash Handoff: Matches the exact pixel bounds and background color of
+ *    Theme.SplashScreen's iconView and removes the system splash view on the first
+ *    rendered Compose frame.
+ * 2. Immediate Zoom-Through Phase (400ms): Starts immediately once the first Compose
+ *    frame renders, animating progress linearly (0f -> 1f) and computing scale with
+ *    a smooth power curve (`1f + (targetScale - 1f) * progress.pow(2.4f)`), pivoted
+ *    at the inner cutout's centroid until the stroke clears all four viewport corners.
+ * 3. Cleanup: Unmounts completely once progress >= 1f.
  */
-private const val HOLD_MIN_MS = 250L
-private const val HOLD_MAX_MS = 400L
-private const val ZOOM_DURATION_MS = 320
+private const val INITIAL_HOLD_MS = 24L
+private const val ZOOM_DURATION_MS = 400
+private const val SKIP_DURATION_MS = 120
 private const val PORTAL_ADAPTIVE_SCALE = 0.58f
-
-// Steep exponential ease-in curve for zoom-through
-private val ZoomEasing = CubicBezierEasing(0.78f, 0.0f, 0.90f, 0.0f)
 
 @Composable
 fun MpviumSplashGate(
   appIcon: AppIcon = AppIcon.PORTAL,
-  backgroundColor: Color = MaterialTheme.colorScheme.surface,
+  backgroundColor: Color = colorResource(R.color.splash_background),
   systemIconSizePx: Int? = null,
   hasPendingSystemSplash: Boolean = false,
   onSystemSplashFirstFrame: () -> Unit = {},
@@ -163,48 +158,48 @@ private fun MpviumSplashScreen(
       (hypot(canvasW, canvasH) / innerInradiusPx) * 1.35f
     }
 
-    val scaleAnim = remember { Animatable(1.0f) }
+    val progressAnim = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     var isSkipping by remember { mutableStateOf(false) }
-    val currentIsContentReady by rememberUpdatedState(isContentReady)
 
     LaunchedEffect(targetScale) {
-      // Hold phase: static at 1.0f for 250ms, or until media state is ready (capped at 400ms)
-      delay(HOLD_MIN_MS)
-      if (!currentIsContentReady) {
-        withTimeoutOrNull(HOLD_MAX_MS - HOLD_MIN_MS) {
-          snapshotFlow { currentIsContentReady }.first { it }
-        }
-      }
+      // Start zoom immediately once the first Compose frame renders (no long hold delay)
+      withFrameNanos { }
+      delay(INITIAL_HOLD_MS)
 
       if (!isSkipping) {
-        scaleAnim.animateTo(
-          targetValue = targetScale,
+        progressAnim.animateTo(
+          targetValue = 1f,
           animationSpec = tween(
             durationMillis = ZOOM_DURATION_MS,
-            easing = ZoomEasing,
+            easing = LinearEasing,
           ),
         )
-        if (scaleAnim.value >= targetScale) {
+        if (progressAnim.value >= 1f) {
           onFinished()
         }
       }
     }
 
     val skipToFinish: () -> Unit = {
-      if (!isSkipping && scaleAnim.value < targetScale) {
+      if (!isSkipping && progressAnim.value < 1f) {
         isSkipping = true
         scope.launch {
-          scaleAnim.animateTo(
-            targetValue = targetScale,
-            animationSpec = tween(durationMillis = 120, easing = ZoomEasing),
+          progressAnim.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = SKIP_DURATION_MS, easing = LinearEasing),
           )
-          if (scaleAnim.value >= targetScale) {
+          if (progressAnim.value >= 1f) {
             onFinished()
           }
         }
       }
     }
+
+    // Smoothly grows from 1.0f -> ~2.2f in the first half so the eye tracks the opening,
+    // then accelerates cleanly past the screen edges to targetScale in the second half:
+    val progress = progressAnim.value.coerceIn(0f, 1f)
+    val currentScale = 1f + (targetScale - 1f) * progress.pow(2.4f)
 
     MpviumSplashCanvas(
       appIcon = appIcon,
@@ -213,7 +208,7 @@ private fun MpviumSplashScreen(
       cy = cy,
       unit = unit,
       innerCentroid = innerCentroid,
-      currentScale = scaleAnim.value,
+      currentScale = currentScale,
       targetScale = targetScale,
       onTap = skipToFinish,
     )

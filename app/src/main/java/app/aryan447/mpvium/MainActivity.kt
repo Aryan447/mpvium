@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.splashscreen.SplashScreenViewProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -141,16 +142,10 @@ class MainActivity : ComponentActivity() {
         // tab inherits it from one layer instead of each screen painting its own.
         Surface(color = Color.Transparent) {
           Box(modifier = Modifier.fillMaxSize().themeGlow()) {
-            val amoledMode by appearancePreferences.amoledMode.collectAsState()
             val detectedLibrary by libraryIndexRepository.library.collectAsState()
-            val splashBg = if (amoledMode && isDarkMode) {
-              Color.Black
-            } else {
-              MaterialTheme.colorScheme.surface
-            }
             MpviumSplashGate(
               appIcon = appIcon,
-              backgroundColor = splashBg,
+              backgroundColor = colorResource(R.color.splash_background),
               systemIconSizePx = systemSplashIconSizePx,
               hasPendingSystemSplash = pendingSplashScreenView != null,
               onSystemSplashFirstFrame = {

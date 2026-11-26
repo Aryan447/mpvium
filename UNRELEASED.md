@@ -30,6 +30,7 @@
 
 ### Fixed
 
+- Splash screen zoom-through animation now starts immediately with a smooth exponential curve and matches the system splash background color.
 - Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
 - Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
 - Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.
