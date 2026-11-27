@@ -33,6 +33,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -597,20 +599,50 @@ class PlayerViewModel(
   // ==================== Decoder ====================
 
   private var decoderSwitchJob: Job? = null
+  private var pendingHwCopyToastJob: Job? = null
 
   fun updateDecoder(decoder: Decoder) {
     decoderSwitchJob?.cancel()
+    pendingHwCopyToastJob?.cancel()
+
     decoderSwitchJob =
       viewModelScope.launch(Dispatchers.IO) {
+        // Ensure 10-bit HEVC/H.264 profiles are never filtered out by mpv.
+        MPVLib.setPropertyString("hwdec-codecs", "all")
+
+        // HW+ (mediacodec) uses zero-copy Surface output and initializes asynchronously on the
+        // next decoded frame/surface pass. Never run video-reload or overwrite hwdec on HW+.
+        if (decoder == Decoder.HWPlus) {
+          val currentVo = MPVLib.getPropertyString("vo")
+          if (currentVo.isNullOrBlank() || currentVo == "null") {
+            val expectedVo = if (decoderPreferences.gpuNext.get()) "gpu-next" else "gpu"
+            MPVLib.setPropertyString("vo", expectedVo)
+          }
+          val wid = MPVLib.getPropertyLong("wid") ?: MPVLib.getPropertyString("wid")?.toLongOrNull()
+          if (wid == 0L) {
+            Log.w(TAG, "Skipping HW+ (mediacodec) switch: Surface wid is not attached")
+            return@launch
+          }
+          MPVLib.setPropertyString("hwdec", decoder.value)
+          return@launch
+        }
+
+        val previousHwdec = MPVLib.getPropertyString("hwdec-current")
+        val needsPipelineReload =
+          decoder == Decoder.HW || previousHwdec == Decoder.HW.value
+
+        if (!needsPipelineReload) {
+          MPVLib.setPropertyString("hwdec", decoder.value)
+          return@launch
+        }
+
         val wasPaused = MPVLib.getPropertyBoolean("pause") ?: (paused == true)
         val savedPos = MPVLib.getPropertyDouble("time-pos")
 
-        // Ensure 10-bit HEVC/H.264 profiles are never filtered out by mpv.
-        MPVLib.setPropertyString("hwdec-codecs", "all")
         MPVLib.setPropertyString("hwdec", decoder.value)
 
-        // Reload the video pipeline so MediaCodec cleanly initializes or tears down
-        // (e.g. P010 10-bit buffer negotiation on MediaTek when switching no <-> mediacodec-copy).
+        // Reload the video pipeline only when switching to/from mediacodec-copy so MediaCodec
+        // cleanly initializes or tears down 10-bit P010 buffers without breaking HW+ Surface binding.
         runCatching {
           MPVLib.command("video-reload")
         }.onFailure {
@@ -619,7 +651,7 @@ class PlayerViewModel(
           }
         }
 
-        delay(250L)
+        delay(200L)
 
         // Preserve exact time-pos and pause state across the reload.
         if (savedPos != null && savedPos >= 0.0) {
@@ -631,22 +663,34 @@ class PlayerViewModel(
         }
         MPVLib.setPropertyBoolean("pause", wasPaused)
 
-        // Safety net: verify hwdec-current after reload. If mediacodec-copy failed to stick
-        // (e.g. unsupported 10-bit P010 buffer negotiation), fall back cleanly and notify the user.
-        val activeHwdec = MPVLib.getPropertyString("hwdec-current")
-        if (decoder == Decoder.HW && activeHwdec != Decoder.HW.value) {
-          val fallback = activeHwdec?.takeIf { it.isNotBlank() } ?: Decoder.SW.value
-          MPVLib.setPropertyString("hwdec", fallback)
-          val pixFmt = MPVLib.getPropertyString("video-params/pixelformat").orEmpty()
-          val msgRes =
-            if (pixFmt.contains("10")) {
-              R.string.player_decoder_hw_copy_10bit_unsupported
-            } else {
-              R.string.player_decoder_hw_copy_unsupported
+        // Reactive toast guard scoped strictly to explicit HW (mediacodec-copy) selection:
+        // notify if mpv settles back on "no", without overwriting hwdec.
+        if (decoder == Decoder.HW) {
+          pendingHwCopyToastJob =
+            viewModelScope.launch(Dispatchers.IO) {
+              MPVLib.propString["hwdec-current"].collectLatest { current ->
+                if (current == Decoder.HW.value) {
+                  cancel()
+                  return@collectLatest
+                }
+                if (current == Decoder.SW.value) {
+                  delay(300L)
+                  if (MPVLib.getPropertyString("hwdec-current") == Decoder.SW.value) {
+                    val pixFmt = MPVLib.getPropertyString("video-params/pixelformat").orEmpty()
+                    val msgRes =
+                      if (pixFmt.contains("10")) {
+                        R.string.player_decoder_hw_copy_10bit_unsupported
+                      } else {
+                        R.string.player_decoder_hw_copy_unsupported
+                      }
+                    withContext(Dispatchers.Main) {
+                      showToast(host.context.getString(msgRes))
+                    }
+                    cancel()
+                  }
+                }
+              }
             }
-          withContext(Dispatchers.Main) {
-            showToast(host.context.getString(msgRes))
-          }
         }
       }
   }
@@ -2688,6 +2732,8 @@ class PlayerViewModel(
     cachePollJob = null
     decoderSwitchJob?.cancel()
     decoderSwitchJob = null
+    pendingHwCopyToastJob?.cancel()
+    pendingHwCopyToastJob = null
     super.onCleared()
   }
 }
