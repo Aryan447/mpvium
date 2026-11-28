@@ -811,6 +811,9 @@
   <string name="no_playlists_found_message">Try a different search term</string>
   <string name="playback_failed_next">Failed to play %s. Playing next…</string>
   <string name="playback_failed_all">Unable to play videos in playlist.</string>
+  <string name="youtube_stream_title">YouTube</string>
+  <string name="youtube_playback_failed">Unable to play YouTube video.</string>
+  <string name="network_stream_url_placeholder">https://example.com/video.mp4 or YouTube URL</string>
   <string name="clear_search">Clear search</string>
   <string name="pref_appearance_show_detail_poster_title">Show detail screen poster</string>
   <string name="pref_appearance_show_detail_poster_summary">Display poster or backdrop artwork on movie and TV series detail screens</string>

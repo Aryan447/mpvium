@@ -51,9 +51,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
@@ -326,7 +328,7 @@ private fun StreamLinkSection(
           label = { Text("Video URL") },
           placeholder = {
             Text(
-              text = "https://example.com/video.mp4",
+              text = stringResource(R.string.network_stream_url_placeholder),
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           },
@@ -376,8 +378,9 @@ private fun StreamLinkSection(
 
           FilledTonalButton(
             onClick = {
-              if (linkUrl.isNotBlank()) {
-                onPlayLink(linkUrl)
+              val trimmed = linkUrl.trim()
+              if (trimmed.isNotBlank()) {
+                onPlayLink(trimmed)
                 linkUrl = ""
               }
             },

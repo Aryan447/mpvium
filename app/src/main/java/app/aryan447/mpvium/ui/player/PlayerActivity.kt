@@ -61,6 +61,7 @@ import app.aryan447.mpvium.ui.theme.MpviumTheme
 import app.aryan447.mpvium.ui.widget.ContinueWatchingWidgetProvider
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
 import app.aryan447.mpvium.utils.media.HttpUtils
+import app.aryan447.mpvium.utils.media.YouTubeExtractor
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.media.SubtitleOps
 import app.aryan447.mpvium.utils.storage.FileTypeUtils
@@ -205,6 +206,10 @@ class PlayerActivity :
    * For network streams, this includes a hash of the URI to ensure uniqueness.
    */
   private var mediaIdentifier = ""
+
+  private var pendingYouTubeAudioUrl: String? = null
+  private var isCurrentStreamYouTube: Boolean = false
+  private var youtubeResolveJob: kotlinx.coroutines.Job? = null
 
   /**
    * Playlist of URIs for sequential playback
@@ -475,8 +480,15 @@ class PlayerActivity :
     }
 
     getPlayableUri(intent)?.let { uri ->
-      applySeekCacheOptionsBeforeLoadfile(uri)
-      player.playFile(uri)
+      if (YouTubeExtractor.isYouTubeUrl(uri)) {
+        resolveAndPlayYouTube(uri, isInitialPlay = true)
+      } else {
+        youtubeResolveJob?.cancel()
+        pendingYouTubeAudioUrl = null
+        isCurrentStreamYouTube = false
+        applySeekCacheOptionsBeforeLoadfile(uri)
+        player.playFile(uri)
+      }
     }
 
     // Only set orientation immediately if NOT in Video mode
@@ -1456,11 +1468,12 @@ class PlayerActivity :
       uri?.resolveUri(this@PlayerActivity)
     } else {
       intent.getStringExtra(Intent.EXTRA_TEXT)?.let { text ->
-        val uri = text.trim().toUri()
-        if (uri.isHierarchical && !uri.isRelative) {
-          uri.resolveUri(this)
-        } else {
-          null
+        HttpUtils.extractUrlFromSharedText(text)?.toUri()?.let { uri ->
+          if (uri.isHierarchical && !uri.isRelative) {
+            uri.resolveUri(this)
+          } else {
+            null
+          }
         }
       }
     }
@@ -1493,6 +1506,10 @@ class PlayerActivity :
    * @return The extracted filename
    */
   private fun extractFileNameFromUri(uri: Uri): String {
+    if (YouTubeExtractor.isYouTubeUrl(uri.toString())) {
+      return getString(R.string.youtube_stream_title)
+    }
+
     // For HTTP/HTTPS URLs, extract from path (will be updated async via HTTP headers)
     if (HttpUtils.isNetworkStream(uri)) {
       // Get the last path segment and decode URL encoding
@@ -1561,8 +1578,8 @@ class PlayerActivity :
    * @return The extracted URI, or null if not found
    */
   private fun extractUriFromIntent(intent: Intent): Uri? =
-    if (intent.type == "text/plain") {
-      intent.getStringExtra(Intent.EXTRA_TEXT)?.toUri()
+    if (intent.type?.startsWith("text/") == true) {
+      intent.getStringExtra(Intent.EXTRA_TEXT)?.let { HttpUtils.extractUrlFromSharedText(it)?.toUri() }
     } else {
       intent.data ?: if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
         intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
@@ -1927,6 +1944,17 @@ class PlayerActivity :
     // Start media notification service (like YouTube - always show notification)
     startBackgroundPlayback()
 
+    val ytAudioUrl = pendingYouTubeAudioUrl
+    pendingYouTubeAudioUrl = null
+    if (!ytAudioUrl.isNullOrBlank()) {
+      lifecycleScope.launch(Dispatchers.Default) {
+        MPVLib.command("audio-add", ytAudioUrl, "select")
+      }
+    }
+    if (isCurrentStreamYouTube && fileName.isNotBlank()) {
+      MPVLib.setPropertyString("force-media-title", fileName)
+    }
+
     // Reset AB loop values when video changes
     viewModel.clearABLoop()
 
@@ -2055,7 +2083,7 @@ class PlayerActivity :
     lifecycleScope.launch(Dispatchers.IO) {
       try {
         val uri = extractUriFromIntent(intent)
-        if (uri == null || !HttpUtils.isNetworkStream(uri)) {
+        if (uri == null || !HttpUtils.isNetworkStream(uri) || isCurrentStreamYouTube) {
           return@launch
         }
 
@@ -2766,10 +2794,53 @@ class PlayerActivity :
 
     // Load the new file
     getPlayableUri(intent)?.let { uri ->
-      applySeekCacheOptionsBeforeLoadfile(uri)
-      // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
-      lifecycleScope.launch(Dispatchers.Default) {
-        MPVLib.command("loadfile", uri)
+      if (YouTubeExtractor.isYouTubeUrl(uri)) {
+        resolveAndPlayYouTube(uri, isInitialPlay = false)
+      } else {
+        youtubeResolveJob?.cancel()
+        pendingYouTubeAudioUrl = null
+        isCurrentStreamYouTube = false
+        applySeekCacheOptionsBeforeLoadfile(uri)
+        // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
+        lifecycleScope.launch(Dispatchers.Default) {
+          MPVLib.command("loadfile", uri)
+        }
+      }
+    }
+  }
+
+  private fun resolveAndPlayYouTube(youtubeUrl: String, isInitialPlay: Boolean) {
+    youtubeResolveJob?.cancel()
+    isCurrentStreamYouTube = true
+    pendingYouTubeAudioUrl = null
+    youtubeResolveJob = lifecycleScope.launch {
+      val result = YouTubeExtractor.resolve(youtubeUrl)
+      result.onSuccess { resolved ->
+        resolved.title?.let { title ->
+          fileName = title
+          viewModel.setMediaTitle(title)
+          if (isReady) {
+            MPVLib.setPropertyString("force-media-title", title)
+          }
+        }
+        pendingYouTubeAudioUrl = resolved.audioUrl
+        applySeekCacheOptionsBeforeLoadfile(resolved.videoUrl)
+        if (isInitialPlay && !player.isSurfaceReady) {
+          player.playFile(resolved.videoUrl)
+        } else {
+          withContext(Dispatchers.Default) {
+            MPVLib.command("loadfile", resolved.videoUrl)
+          }
+        }
+      }.onFailure {
+        Toast.makeText(
+          this@PlayerActivity,
+          R.string.youtube_playback_failed,
+          Toast.LENGTH_LONG,
+        ).show()
+        if (isInitialPlay) {
+          finish()
+        }
       }
     }
   }
