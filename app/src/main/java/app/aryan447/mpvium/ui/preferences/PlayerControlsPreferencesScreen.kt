@@ -43,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
@@ -126,6 +127,12 @@ object PlayerControlsPreferencesScreen : Screen {
       appearancePrefs.parseButtons(zenActionState, mutableSetOf())
     }
 
+    val zenSecondaryState by appearancePrefs.zenSecondaryActionControls.collectAsState()
+    val zenSecondaryMap = remember(zenSecondaryState) {
+      appearancePrefs.parseSecondaryButtons(zenSecondaryState)
+    }
+    var editingZenSecondaryFor by remember { mutableStateOf<app.aryan447.mpvium.preferences.PlayerButton?>(null) }
+
     val listState = rememberLazyListState()
     val highlightState = rememberSettingsHighlightState(
       screen = PlayerControlsPreferencesScreen,
@@ -203,7 +210,11 @@ object PlayerControlsPreferencesScreen : Screen {
                 isZenLayout -> "Landscape Controls (Zen)"
                 else -> "Landscape Controls"
               },
-              count = if (isModernLayout || isZenLayout) 1 else 3,
+              count = when {
+                isModernLayout -> 1
+                isZenLayout -> 2
+                else -> 3
+              },
             )
           }
 
@@ -228,6 +239,73 @@ object PlayerControlsPreferencesScreen : Screen {
                   modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_right"),
                 )
                 PreferenceIconSummary(buttons = if (isZenLayout) zenActionButtons else modernActionButtons)
+
+                if (isZenLayout && zenActionButtons.isNotEmpty()) {
+                  PreferenceDivider()
+                  Column(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                  ) {
+                    Text(
+                      text = "Alternate Actions (Swipe / Long Press)",
+                      style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                      text = "Swipe left/right or long-press a button in the bottom-right pill to switch it",
+                      style = MaterialTheme.typography.bodySmall,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    zenActionButtons.forEach { primary ->
+                      val alternate = zenSecondaryMap[primary]
+                      Row(
+                        modifier = Modifier
+                          .fillMaxWidth()
+                          .clip(SettingsTileShape)
+                          .clickable { editingZenSecondaryFor = primary }
+                          .padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                      ) {
+                        Row(
+                          verticalAlignment = Alignment.CenterVertically,
+                          horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                          Icon(
+                            imageVector = primary.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                          )
+                          Text(
+                            text = app.aryan447.mpvium.preferences.getPlayerButtonLabel(primary),
+                            style = MaterialTheme.typography.bodyMedium,
+                          )
+                        }
+                        Row(
+                          verticalAlignment = Alignment.CenterVertically,
+                          horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                          if (alternate != null) {
+                            Icon(
+                              imageVector = alternate.icon,
+                              contentDescription = null,
+                              modifier = Modifier.size(18.dp),
+                              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                          }
+                          Text(
+                            text = alternate?.let { app.aryan447.mpvium.preferences.getPlayerButtonLabel(it) } ?: "None",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                          )
+                        }
+                      }
+                    }
+                  }
+                }
               } else {
                 PreferenceCategoryWithEditButton(
                   title = stringResource(id = R.string.pref_layout_top_right_controls),
@@ -429,6 +507,75 @@ object PlayerControlsPreferencesScreen : Screen {
                   )
                 },
                 modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.hide_control_time"),
+              )
+            }
+
+            if (editingZenSecondaryFor != null) {
+              val primaryButton = editingZenSecondaryFor!!
+              val currentAlternate = zenSecondaryMap[primaryButton]
+              AlertDialog(
+                onDismissRequest = { editingZenSecondaryFor = null },
+                containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
+                title = {
+                  Text(
+                    text = "Alternate for ${app.aryan447.mpvium.preferences.getPlayerButtonLabel(primaryButton)}",
+                  )
+                },
+                text = {
+                  Column(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .height(340.dp)
+                      .verticalScroll(rememberScrollState()),
+                  ) {
+                    val options = listOf<app.aryan447.mpvium.preferences.PlayerButton?>(null) +
+                      app.aryan447.mpvium.preferences.allPlayerButtons.filter { it != primaryButton }
+                    options.forEach { candidate ->
+                      val isSelected = currentAlternate == candidate
+                      Row(
+                        modifier = Modifier
+                          .fillMaxWidth()
+                          .clip(SettingsTileShape)
+                          .clickable {
+                            val nextMap = zenSecondaryMap.toMutableMap()
+                            if (candidate == null) {
+                              nextMap.remove(primaryButton)
+                            } else {
+                              nextMap[primaryButton] = candidate
+                            }
+                            appearancePrefs.zenSecondaryActionControls.set(
+                              appearancePrefs.encodeSecondaryButtons(nextMap),
+                            )
+                            editingZenSecondaryFor = null
+                          }
+                          .padding(horizontal = 8.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                      ) {
+                        RadioButton(
+                          selected = isSelected,
+                          onClick = null,
+                        )
+                        if (candidate != null) {
+                          Icon(
+                            imageVector = candidate.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                          )
+                        }
+                        Text(
+                          text = candidate?.let { app.aryan447.mpvium.preferences.getPlayerButtonLabel(it) } ?: "None",
+                          style = MaterialTheme.typography.bodyMedium,
+                        )
+                      }
+                    }
+                  }
+                },
+                confirmButton = {
+                  TextButton(onClick = { editingZenSecondaryFor = null }) {
+                    Text(text = stringResource(R.string.generic_cancel))
+                  }
+                },
               )
             }
 

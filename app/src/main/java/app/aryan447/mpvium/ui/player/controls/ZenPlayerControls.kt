@@ -1,13 +1,17 @@
 package app.aryan447.mpvium.ui.player.controls
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,9 +37,13 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.outlined.Forward10
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Replay10
 import androidx.compose.material.icons.outlined.Subscriptions
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +64,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -138,6 +149,10 @@ fun ZenPlayerControls(
 
   val appearancePreferences = koinInject<AppearancePreferences>()
   val zenSeekbarStyle by appearancePreferences.zenSeekbarStyle.collectAsState()
+  val zenSecondaryState by appearancePreferences.zenSecondaryActionControls.collectAsState()
+  val zenSecondaryMap = remember(zenSecondaryState) {
+    appearancePreferences.parseSecondaryButtons(zenSecondaryState)
+  }
 
   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
   val navBarBottom = navBarPadding.calculateBottomPadding()
@@ -409,8 +424,9 @@ fun ZenPlayerControls(
               borderStroke = borderStroke,
             )
 
-            ModernBottomActionsPill(
+            ZenBottomActionsPill(
               buttons = actionButtons,
+              secondaryButtons = zenSecondaryMap,
               onOpenSubtitles = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 resetControlsTimestamp()
@@ -506,8 +522,9 @@ fun ZenPlayerControls(
               modifier = Modifier.weight(1f),
             )
 
-            ModernBottomActionsPill(
+            ZenBottomActionsPill(
               buttons = actionButtons,
+              secondaryButtons = zenSecondaryMap,
               onOpenSubtitles = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 resetControlsTimestamp()
@@ -726,5 +743,301 @@ private fun ZenSeekbarPill(
         )
       }
     }
+  }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ZenBottomActionsPill(
+  buttons: List<PlayerButton>,
+  secondaryButtons: Map<PlayerButton, PlayerButton>,
+  onOpenSubtitles: () -> Unit,
+  onOpenAudio: () -> Unit,
+  onOpenExplain: () -> Unit,
+  onOpenMore: () -> Unit,
+  onOpenSheet: (Sheets) -> Unit,
+  onOpenPanel: (Panels) -> Unit,
+  viewModel: PlayerViewModel,
+  activity: PlayerActivity,
+  chapters: List<Segment>,
+  currentChapter: Int?,
+  surfaceColor: Color,
+  borderStroke: BorderStroke,
+  resetControlsTimestamp: () -> Unit,
+  isSpeedNonOne: Boolean,
+  playbackSpeed: Float,
+  currentZoom: Float,
+  aspect: VideoAspect,
+  decoder: app.aryan447.mpvium.ui.player.Decoder,
+  pillHeight: Dp = 50.dp,
+  modifier: Modifier = Modifier,
+) {
+  val displayButtons = if (buttons.isNotEmpty()) {
+    buttons
+  } else {
+    listOf(PlayerButton.SUBTITLES, PlayerButton.MORE_OPTIONS)
+  }
+
+  val hasAnySecondary = displayButtons.any { secondaryButtons.containsKey(it) }
+  if (!hasAnySecondary) {
+    ModernBottomActionsPill(
+      buttons = displayButtons,
+      onOpenSubtitles = onOpenSubtitles,
+      onOpenAudio = onOpenAudio,
+      onOpenExplain = onOpenExplain,
+      onOpenMore = onOpenMore,
+      onOpenSheet = onOpenSheet,
+      onOpenPanel = onOpenPanel,
+      viewModel = viewModel,
+      activity = activity,
+      chapters = chapters,
+      currentChapter = currentChapter,
+      surfaceColor = surfaceColor,
+      borderStroke = borderStroke,
+      resetControlsTimestamp = resetControlsTimestamp,
+      isSpeedNonOne = isSpeedNonOne,
+      playbackSpeed = playbackSpeed,
+      currentZoom = currentZoom,
+      aspect = aspect,
+      decoder = decoder,
+      pillHeight = pillHeight,
+      modifier = modifier,
+    )
+    return
+  }
+
+  val haptic = LocalHapticFeedback.current
+  val context = LocalContext.current
+  val swipeThresholdPx = with(LocalDensity.current) { 16.dp.toPx() }
+
+  Surface(
+    modifier = modifier.height(pillHeight),
+    shape = RoundedCornerShape(pillHeight / 2),
+    color = surfaceColor,
+    border = borderStroke,
+  ) {
+    Row(
+      modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+      displayButtons.forEach { primary ->
+        val alternate = secondaryButtons[primary]
+        if (alternate == null) {
+          RenderZenSingleButton(
+            button = primary,
+            onOpenSubtitles = onOpenSubtitles,
+            onOpenAudio = onOpenAudio,
+            onOpenExplain = onOpenExplain,
+            onOpenMore = onOpenMore,
+            onOpenSheet = onOpenSheet,
+            onOpenPanel = onOpenPanel,
+            viewModel = viewModel,
+            activity = activity,
+            chapters = chapters,
+            currentChapter = currentChapter,
+            resetControlsTimestamp = resetControlsTimestamp,
+            isSpeedNonOne = isSpeedNonOne,
+            playbackSpeed = playbackSpeed,
+            currentZoom = currentZoom,
+            aspect = aspect,
+            decoder = decoder,
+          )
+        } else {
+          var useAlternate by remember(primary, alternate) { mutableStateOf(false) }
+          val activeButton = if (useAlternate) alternate else primary
+
+          Box(
+            modifier = Modifier
+              .size(28.dp)
+              .clip(CircleShape)
+              .pointerInput(primary, alternate, swipeThresholdPx) {
+                var accumX = 0f
+                var toggledThisDrag = false
+                detectHorizontalDragGestures(
+                  onDragStart = {
+                    accumX = 0f
+                    toggledThisDrag = false
+                  },
+                  onHorizontalDrag = { change, dragAmount ->
+                    accumX += dragAmount
+                    if (!toggledThisDrag && kotlin.math.abs(accumX) >= swipeThresholdPx) {
+                      change.consume()
+                      toggledThisDrag = true
+                      haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                      resetControlsTimestamp()
+                      useAlternate = !useAlternate
+                    }
+                  },
+                )
+              }
+              .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(bounded = true, radius = 18.dp),
+                onClick = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  triggerZenButtonAction(
+                    button = activeButton,
+                    onOpenSubtitles = onOpenSubtitles,
+                    onOpenAudio = onOpenAudio,
+                    onOpenExplain = onOpenExplain,
+                    onOpenMore = onOpenMore,
+                    onOpenSheet = onOpenSheet,
+                    onOpenPanel = onOpenPanel,
+                    viewModel = viewModel,
+                    activity = activity,
+                    context = context,
+                  )
+                },
+                onLongClick = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  useAlternate = !useAlternate
+                },
+              ),
+            contentAlignment = Alignment.Center,
+          ) {
+            Crossfade(targetState = activeButton, label = "ZenButtonSwap") { shown ->
+              Icon(
+                imageVector = zenButtonIcon(shown),
+                contentDescription = shown.name,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp),
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun RenderZenSingleButton(
+  button: PlayerButton,
+  onOpenSubtitles: () -> Unit,
+  onOpenAudio: () -> Unit,
+  onOpenExplain: () -> Unit,
+  onOpenMore: () -> Unit,
+  onOpenSheet: (Sheets) -> Unit,
+  onOpenPanel: (Panels) -> Unit,
+  viewModel: PlayerViewModel,
+  activity: PlayerActivity,
+  chapters: List<Segment>,
+  currentChapter: Int?,
+  resetControlsTimestamp: () -> Unit,
+  isSpeedNonOne: Boolean,
+  playbackSpeed: Float,
+  currentZoom: Float,
+  aspect: VideoAspect,
+  decoder: app.aryan447.mpvium.ui.player.Decoder,
+) {
+  val haptic = LocalHapticFeedback.current
+  when (button) {
+    PlayerButton.SUBTITLES,
+    PlayerButton.AUDIO_TRACK,
+    PlayerButton.EXPLAIN,
+    PlayerButton.MORE_OPTIONS -> {
+      val onClick = when (button) {
+        PlayerButton.SUBTITLES -> onOpenSubtitles
+        PlayerButton.AUDIO_TRACK -> onOpenAudio
+        PlayerButton.EXPLAIN -> onOpenExplain
+        PlayerButton.MORE_OPTIONS -> onOpenMore
+        else -> onOpenMore
+      }
+      Icon(
+        imageVector = zenButtonIcon(button),
+        contentDescription = button.name,
+        tint = Color.White,
+        modifier = Modifier
+          .size(20.dp)
+          .clip(CircleShape)
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(bounded = true, radius = 18.dp),
+            onClick = {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+              onClick()
+            },
+          ),
+      )
+    }
+
+    else -> {
+      RenderPlayerButton(
+        button = button,
+        chapters = chapters,
+        currentChapter = currentChapter,
+        isPortrait = false,
+        isSpeedNonOne = isSpeedNonOne,
+        currentZoom = currentZoom,
+        aspect = aspect,
+        mediaTitle = null,
+        hideBackground = true,
+        decoder = decoder,
+        playbackSpeed = playbackSpeed,
+        onBackPress = {},
+        onOpenSheet = { sheet ->
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+          resetControlsTimestamp()
+          onOpenSheet(sheet)
+        },
+        onOpenPanel = { panel ->
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+          resetControlsTimestamp()
+          onOpenPanel(panel)
+        },
+        viewModel = viewModel,
+        activity = activity,
+        buttonSize = 30.dp,
+      )
+    }
+  }
+}
+
+private fun zenButtonIcon(button: PlayerButton) = when (button) {
+  PlayerButton.SUBTITLES -> Icons.Default.Subtitles
+  PlayerButton.AUDIO_TRACK -> Icons.Outlined.GraphicEq
+  PlayerButton.EXPLAIN -> Icons.Outlined.Translate
+  PlayerButton.MORE_OPTIONS -> Icons.Outlined.MoreVert
+  else -> button.icon
+}
+
+private fun triggerZenButtonAction(
+  button: PlayerButton,
+  onOpenSubtitles: () -> Unit,
+  onOpenAudio: () -> Unit,
+  onOpenExplain: () -> Unit,
+  onOpenMore: () -> Unit,
+  onOpenSheet: (Sheets) -> Unit,
+  onOpenPanel: (Panels) -> Unit,
+  viewModel: PlayerViewModel,
+  activity: PlayerActivity,
+  context: android.content.Context,
+) {
+  when (button) {
+    PlayerButton.SUBTITLES -> onOpenSubtitles()
+    PlayerButton.AUDIO_TRACK -> onOpenAudio()
+    PlayerButton.EXPLAIN -> onOpenExplain()
+    PlayerButton.MORE_OPTIONS -> onOpenMore()
+    PlayerButton.BOOKMARKS_CHAPTERS, PlayerButton.CURRENT_CHAPTER -> onOpenSheet(Sheets.Chapters)
+    PlayerButton.PLAYBACK_SPEED -> onOpenSheet(Sheets.PlaybackSpeed)
+    PlayerButton.DECODER -> onOpenSheet(Sheets.Decoders)
+    PlayerButton.SCREEN_ROTATION -> viewModel.cycleScreenRotations()
+    PlayerButton.FRAME_NAVIGATION -> onOpenSheet(Sheets.FrameNavigation)
+    PlayerButton.VIDEO_ZOOM -> onOpenPanel(Panels.VideoZoom)
+    PlayerButton.PICTURE_IN_PICTURE -> activity.enterPipModeHidingOverlay()
+    PlayerButton.ASPECT_RATIO -> viewModel.changeVideoAspect()
+    PlayerButton.LOCK_CONTROLS -> viewModel.lockControls()
+    PlayerButton.REPEAT_MODE -> viewModel.cycleRepeatMode()
+    PlayerButton.SHUFFLE -> viewModel.toggleShuffle()
+    PlayerButton.MIRROR -> viewModel.toggleMirroring()
+    PlayerButton.VERTICAL_FLIP -> viewModel.toggleVerticalFlip()
+    PlayerButton.AB_LOOP -> viewModel.handleABLoopClick()
+    PlayerButton.CUSTOM_SKIP, PlayerButton.SKIP_INTRO, PlayerButton.SKIP_RECAP -> viewModel.skipSmart()
+    PlayerButton.BACKGROUND_PLAYBACK -> viewModel.toggleBackgroundPlayback(context)
+    PlayerButton.HOLD_GESTURE_TOGGLE -> viewModel.toggleHoldGestureMode()
+    else -> onOpenMore()
   }
 }

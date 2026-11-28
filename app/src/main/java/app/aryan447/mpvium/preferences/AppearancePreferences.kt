@@ -109,6 +109,12 @@ class AppearancePreferences(
       "SUBTITLES,MORE_OPTIONS",
     )
 
+  val zenSecondaryActionControls =
+    preferenceStore.getString(
+      "zen_secondary_action_controls",
+      "SUBTITLES=AUDIO_TRACK",
+    )
+
   fun selectTheme(theme: AppTheme) {
     selectedCustomThemeId.set("")
     appTheme.set(theme)
@@ -184,4 +190,25 @@ class AppearancePreferences(
       }.filter { it != PlayerButton.NONE }
       .filter { usedButtons.add(it) }
       .toList()
+
+  fun parseSecondaryButtons(raw: String): Map<PlayerButton, PlayerButton> =
+    raw
+      .splitToSequence(',')
+      .mapNotNull { entry ->
+        val parts = entry.split('=')
+        if (parts.size != 2) return@mapNotNull null
+        val primary = runCatching { PlayerButton.valueOf(parts[0].trim().uppercase()) }.getOrNull()
+        val secondary = runCatching { PlayerButton.valueOf(parts[1].trim().uppercase()) }.getOrNull()
+        if (primary != null && secondary != null && primary != secondary && secondary != PlayerButton.NONE) {
+          primary to secondary
+        } else {
+          null
+        }
+      }
+      .toMap()
+
+  fun encodeSecondaryButtons(map: Map<PlayerButton, PlayerButton>): String =
+    map.entries
+      .filter { it.key != it.value && it.value != PlayerButton.NONE }
+      .joinToString(",") { "${it.key.name}=${it.value.name}" }
 }
