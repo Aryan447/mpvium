@@ -22,6 +22,7 @@
 
 ### Changed
 
+- Media Info screen redesigned with Material 3 Expressive cards, vector tech badges (Dolby Vision/Atmos, HDR10+, 4K, HEVC, 10-bit, DTS), per-metric quality scores and friendly verdicts compared against your device's screen and hardware decoders, and a toggle to switch back to the classic Technical view.
 - Modern player layout places custom buttons directly between the title and bottom-right controls or between Close/PiP and volume controls without extra rows.
 - Custom script buttons render as individual floating glass pill chips matching the Modern Player aesthetic.
 - Movie and TV series detail screens redesigned with Material 3 styling, compact backdrop sizing optimized for tablets, consolidating top actions into an overflow menu and removing the dark poster gradient overlay for pure artwork clarity.
@@ -29,6 +30,9 @@
 - Player button backgrounds are now opt-in by default, giving controls clean floating icons that can be re-enabled in Settings → Player controls.
 
 ### Fixed
+
+- MediaInfo scans now open the file once instead of twice and release native MediaInfo handles after closing.
+- Switching directly between SW and HW (mediacodec-copy) decoders during 10-bit HEVC playback now reloads the video pipeline cleanly instead of getting stuck.
 
 - Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
 - Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
