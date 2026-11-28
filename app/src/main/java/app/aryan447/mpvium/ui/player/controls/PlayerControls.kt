@@ -1551,7 +1551,7 @@ fun PlayerControls(
         viewModel.unpause()
       },
       decoder = decoder,
-      onUpdateDecoder = { MPVLib.setPropertyString("hwdec", it.value) },
+      onUpdateDecoder = viewModel::updateDecoder,
       speed = playbackSpeed ?: playerPreferences.defaultSpeed.get(),
       onSpeedChange = { MPVLib.setPropertyFloat("speed", it.toFixed(2)) },
       onMakeDefaultSpeed = { playerPreferences.defaultSpeed.set(it.toFixed(2)) },

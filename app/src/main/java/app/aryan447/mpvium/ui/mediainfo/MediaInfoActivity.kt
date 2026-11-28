@@ -2,17 +2,27 @@ package app.aryan447.mpvium.ui.mediainfo
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,22 +31,35 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DisplaySettings
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.HearingDisabled
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -52,26 +75,37 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.presentation.components.ExpressiveChoiceRow
 import app.aryan447.mpvium.ui.theme.DarkMode
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.MpviumTheme
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
+import app.aryan447.mpvium.ui.theme.glassCardColors
 import app.aryan447.mpvium.ui.theme.glassChrome
 import app.aryan447.mpvium.ui.theme.glassHazeStyle
+import app.aryan447.mpvium.ui.theme.glassRimStroke
 import app.aryan447.mpvium.ui.theme.glassSheen
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
+import app.aryan447.mpvium.ui.theme.spacing
 import app.aryan447.mpvium.utils.media.MediaInfoOps
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -79,9 +113,14 @@ import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.io.File
 
+private enum class MediaInfoViewMode {
+  OVERVIEW,
+  TECHNICAL,
+}
+
 class MediaInfoActivity : ComponentActivity() {
   private val appearancePreferences by inject<AppearancePreferences>()
-  private val TAG = "MediaInfoActivity"
+  private val tag = "MediaInfoActivity"
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -99,17 +138,15 @@ class MediaInfoActivity : ComponentActivity() {
       )
 
       MpviumTheme {
-        Surface {
-          MediaInfoScreen(
-            onBack = { finish() },
-            isDarkMode = isDarkMode,
-          )
-        }
+        MediaInfoScreen(
+          onBack = { finish() },
+          isDarkMode = isDarkMode,
+        )
       }
     }
   }
 
-  @OptIn(ExperimentalMaterial3Api::class)
+  @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
   @Composable
   private fun MediaInfoScreen(
     onBack: () -> Unit,
@@ -117,22 +154,16 @@ class MediaInfoActivity : ComponentActivity() {
   ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val defaultFileName = stringResource(R.string.mediainfo_default_filename)
+    val noFileError = stringResource(R.string.mediainfo_no_file_error)
+    val loadError = stringResource(R.string.mediainfo_load_error)
+
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    var textContent by remember { mutableStateOf<String?>(null) }
-    var fullMediaInfoText by remember { mutableStateOf<String?>(null) }
-    var fileName by remember { mutableStateOf("Media File") }
-    var fileUri by remember { mutableStateOf<Uri?>(null) }
-    var mediaInfo by remember { mutableStateOf<MediaInfoOps.MediaInfoData?>(null) }
-
-    // Get Material Theme colors
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val surfaceColor = MaterialTheme.colorScheme.surface
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val surfaceContainerColor = MaterialTheme.colorScheme.surfaceContainer
-    val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
+    var report by remember { mutableStateOf<MediaInfoOps.MediaInfoReport?>(null) }
+    var qualityReport by remember { mutableStateOf<MediaCapabilityAnalyzer.QualityReport?>(null) }
+    var fileName by remember { mutableStateOf(defaultFileName) }
+    var viewMode by remember { mutableStateOf(MediaInfoViewMode.OVERVIEW) }
 
     val isGlass = LocalGlass.current
     val glassHaze = rememberGlassHazeState()
@@ -141,77 +172,48 @@ class MediaInfoActivity : ComponentActivity() {
     LaunchedEffect(Unit) {
       val uri = when (intent?.action) {
         Intent.ACTION_SEND -> {
-          if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
           } else {
             @Suppress("DEPRECATION")
-            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            intent.getParcelableExtra(Intent.EXTRA_STREAM)
           }
         }
-
-        Intent.ACTION_VIEW -> {
-          intent.data
-        }
-
+        Intent.ACTION_VIEW -> intent.data
         else -> null
       }
 
       if (uri == null) {
-        error = "No media file provided"
+        error = noFileError
         isLoading = false
         return@LaunchedEffect
       }
 
-      fileUri = uri
+      fileName = resolveFileName(uri) ?: defaultFileName
 
-      // Get the file name
-      fileName = try {
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-          val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-          if (nameIndex >= 0 && cursor.moveToFirst()) {
-            cursor.getString(nameIndex) ?: uri.lastPathSegment ?: "Unknown"
-          } else {
-            uri.lastPathSegment ?: "Unknown"
-          }
-        } ?: uri.lastPathSegment ?: "Unknown"
-      } catch (e: Exception) {
-        Log.e(TAG, "Error getting file name", e)
-        uri.lastPathSegment ?: "Unknown"
-      }
-
-      // Load media info
-      scope.launch {
-        try {
-          val result = MediaInfoOps.getMediaInfo(context, uri, fileName)
-          result.onSuccess { mediaInfoResult ->
-            mediaInfo = mediaInfoResult
-
-            // Also generate text content for sharing/copying
-            val textResult = MediaInfoOps.generateTextOutput(context, uri, fileName)
-            textResult.onSuccess { text ->
-              textContent = text
-              fullMediaInfoText = text
-            }
-
-            isLoading = false
-          }.onFailure { e ->
-            error = e.message ?: "Failed to load media information"
-            isLoading = false
-          }
-        } catch (e: Exception) {
-          error = e.message ?: "Unknown error"
-          isLoading = false
+      val result = MediaInfoOps.getMediaInfoReport(context, uri, fileName)
+      result.onSuccess { loaded ->
+        val analyzed = withContext(Dispatchers.Default) {
+          val deviceCaps = MediaCapabilityAnalyzer.detectDeviceCapabilities(context)
+          MediaCapabilityAnalyzer.evaluate(loaded.data, deviceCaps)
         }
+        report = loaded
+        qualityReport = analyzed
+        isLoading = false
+      }.onFailure { e ->
+        error = e.message ?: loadError
+        isLoading = false
       }
     }
 
     Scaffold(
+      containerColor = Color.Transparent,
       topBar = {
         TopAppBar(
           title = {
             Column {
               Text(
-                text = "Media Info",
+                text = stringResource(R.string.mediainfo_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
               )
@@ -226,73 +228,58 @@ class MediaInfoActivity : ComponentActivity() {
           },
           navigationIcon = {
             IconButton(onClick = onBack) {
-              Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+              Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.mediainfo_back_desc),
+              )
             }
           },
           actions = {
-            if (!isLoading && error == null && textContent != null) {
-              Row(modifier = Modifier.padding(end = 12.dp)) {
+            val text = report?.textOutput
+            if (!isLoading && error == null && text != null) {
+              Row(modifier = Modifier.padding(end = MaterialTheme.spacing.small)) {
                 FilledTonalIconButton(
-                  onClick = {
-                    scope.launch {
-                      copyToClipboard(textContent!!, fileName)
-                    }
-                  },
-                  modifier = if (LocalGlass.current) {
+                  onClick = { scope.launch { copyToClipboard(text, fileName) } },
+                  modifier = if (isGlass) {
                     Modifier.size(48.dp).glassSheen(CircleShape, true)
                   } else {
                     Modifier
                   },
                   colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = glassButtonContainerColor(
-                      MaterialTheme.colorScheme.secondaryContainer,
-                    ),
-                    contentColor = glassButtonContentColor(
-                      MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
+                    containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
+                    contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
                   ),
                 ) {
                   Icon(
                     imageVector = Icons.Filled.ContentCopy,
-                    contentDescription = "Copy",
+                    contentDescription = stringResource(R.string.mediainfo_copy_desc),
                   )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(MaterialTheme.spacing.smaller))
 
                 FilledTonalIconButton(
-                  onClick = {
-                    scope.launch {
-                      shareMediaInfo(textContent!!, fileName, fileUri)
-                    }
-                  },
-                  modifier = if (LocalGlass.current) {
+                  onClick = { scope.launch { shareMediaInfo(text, fileName) } },
+                  modifier = if (isGlass) {
                     Modifier.size(48.dp).glassSheen(CircleShape, true)
                   } else {
                     Modifier
                   },
                   colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = glassButtonContainerColor(
-                      MaterialTheme.colorScheme.secondaryContainer,
-                    ),
-                    contentColor = glassButtonContentColor(
-                      MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
+                    containerColor = glassButtonContainerColor(MaterialTheme.colorScheme.secondaryContainer),
+                    contentColor = glassButtonContentColor(MaterialTheme.colorScheme.onSecondaryContainer),
                   ),
                 ) {
                   Icon(
                     imageVector = Icons.Filled.Share,
-                    contentDescription = "Share",
+                    contentDescription = stringResource(R.string.mediainfo_share_desc),
                   )
                 }
               }
             }
           },
-          colors = if (isGlass) TopAppBarDefaults.topAppBarColors(
+          colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-          ) else TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
           ),
           modifier = Modifier.glassChrome(
@@ -312,11 +299,74 @@ class MediaInfoActivity : ComponentActivity() {
         when {
           isLoading -> LoadingContent()
           error != null -> ErrorContent(error!!)
-          mediaInfo != null -> MediaInfoContent(mediaInfo!!, fileName, fullMediaInfoText)
+          report != null && qualityReport != null -> {
+            val loadedReport = report!!
+            val loadedQuality = qualityReport!!
+            val overviewLabel = stringResource(R.string.mediainfo_mode_overview)
+            val technicalLabel = stringResource(R.string.mediainfo_mode_technical)
+
+            Column(modifier = Modifier.fillMaxSize()) {
+              ExpressiveChoiceRow(
+                options = listOf(MediaInfoViewMode.OVERVIEW, MediaInfoViewMode.TECHNICAL),
+                selected = viewMode,
+                labelOf = { mode ->
+                  when (mode) {
+                    MediaInfoViewMode.OVERVIEW -> overviewLabel
+                    MediaInfoViewMode.TECHNICAL -> technicalLabel
+                  }
+                },
+                onSelect = { viewMode = it },
+                equalWidth = true,
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(
+                    horizontal = MaterialTheme.spacing.medium,
+                    vertical = MaterialTheme.spacing.smaller,
+                  ),
+              )
+
+              val enterSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+              val exitSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+              AnimatedContent(
+                targetState = viewMode,
+                transitionSpec = {
+                  fadeIn(enterSpec) togetherWith fadeOut(exitSpec)
+                },
+                label = "mediainfo_mode_switch",
+              ) { mode ->
+                when (mode) {
+                  MediaInfoViewMode.OVERVIEW -> OverviewContent(
+                    data = loadedReport.data,
+                    quality = loadedQuality,
+                    isDarkMode = isDarkMode,
+                  )
+                  MediaInfoViewMode.TECHNICAL -> TechnicalContent(
+                    fullMediaInfoText = loadedReport.textOutput,
+                    isDarkMode = isDarkMode,
+                  )
+                }
+              }
+            }
+          }
         }
       }
     }
   }
+
+  private fun resolveFileName(uri: Uri): String? =
+    try {
+      contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (nameIndex >= 0 && cursor.moveToFirst()) {
+          cursor.getString(nameIndex) ?: uri.lastPathSegment
+        } else {
+          uri.lastPathSegment
+        }
+      } ?: uri.lastPathSegment
+    } catch (e: Exception) {
+      Log.e(tag, "Error getting file name", e)
+      uri.lastPathSegment
+    }
 
   @Composable
   private fun LoadingContent() {
@@ -326,7 +376,7 @@ class MediaInfoActivity : ComponentActivity() {
     ) {
       Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
       ) {
         CircularProgressIndicator(
           color = MaterialTheme.colorScheme.primary,
@@ -334,7 +384,7 @@ class MediaInfoActivity : ComponentActivity() {
           modifier = Modifier.size(48.dp),
         )
         Text(
-          text = "Analyzing media file...",
+          text = stringResource(R.string.mediainfo_analyzing),
           style = MaterialTheme.typography.bodyLarge,
           fontWeight = FontWeight.Medium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -348,7 +398,7 @@ class MediaInfoActivity : ComponentActivity() {
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .padding(24.dp),
+        .padding(MaterialTheme.spacing.large),
       contentAlignment = Alignment.Center,
     ) {
       Card(
@@ -358,57 +408,588 @@ class MediaInfoActivity : ComponentActivity() {
         shape = MaterialTheme.shapes.extraLarge,
       ) {
         Text(
-          text = "Error: $errorMessage",
+          text = stringResource(R.string.mediainfo_error_prefix, errorMessage),
           style = MaterialTheme.typography.bodyLarge,
           fontWeight = FontWeight.Medium,
           color = MaterialTheme.colorScheme.onErrorContainer,
-          modifier = Modifier.padding(24.dp),
+          modifier = Modifier.padding(MaterialTheme.spacing.large),
         )
       }
     }
   }
 
   @Composable
-  private fun MediaInfoContent(mediaInfo: MediaInfoOps.MediaInfoData, fileName: String, fullMediaInfoText: String?) {
-    if (fullMediaInfoText == null) {
-      Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-      ) {
-        Text("Loading detailed information...")
-      }
-      return
-    }
-
-    // Parse the text output into sections
-    val sections = parseMediaInfoText(fullMediaInfoText)
-
-    Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .verticalScroll(rememberScrollState())
-        .padding(16.dp),
-      verticalArrangement = Arrangement.spacedBy(12.dp),
+  private fun OverviewContent(
+    data: MediaInfoOps.MediaInfoData,
+    quality: MediaCapabilityAnalyzer.QualityReport,
+    isDarkMode: Boolean,
+  ) {
+    val spacing = MaterialTheme.spacing
+    LazyColumn(
+      modifier = Modifier.fillMaxSize(),
+      contentPadding = PaddingValues(
+        horizontal = spacing.medium,
+        vertical = spacing.smaller,
+      ),
+      verticalArrangement = Arrangement.spacedBy(spacing.small),
     ) {
-      sections.forEach { section ->
-        MediaInfoSection(section)
+      item(key = "hero") {
+        HeroSummaryCard(
+          data = data,
+          quality = quality,
+          isDarkMode = isDarkMode,
+        )
       }
 
-      Spacer(modifier = Modifier.height(8.dp))
+      if (quality.metrics.isNotEmpty()) {
+        item(key = "breakdown_header") {
+          SectionHeaderText(stringResource(R.string.mediainfo_section_breakdown))
+        }
 
-      // Footer
-      Text(
-        text = "Generated by mpvium using MediaInfoLib",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        items(
+          items = quality.metrics,
+          key = { it.kind.name },
+        ) { metric ->
+          MetricCompatibilityCard(
+            metric = metric,
+            isDarkMode = isDarkMode,
+          )
+        }
+      }
+
+      if (data.videoStreams.isNotEmpty() || data.audioStreams.isNotEmpty() || data.textStreams.isNotEmpty()) {
+        item(key = "tracks_header") {
+          Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SectionHeaderText(stringResource(R.string.mediainfo_section_tracks))
+            Text(
+              text = stringResource(
+                R.string.mediainfo_tracks_summary_subtitle,
+                data.videoStreams.size,
+                data.audioStreams.size,
+                data.textStreams.size,
+              ),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(start = spacing.extraSmall),
+            )
+          }
+        }
+
+        items(
+          items = data.videoStreams,
+          key = { "video_${it.streamIndex}" },
+        ) { video ->
+          val hdr = MediaCapabilityAnalyzer.detectHdrType(video)
+          val bitDepth = video.bitDepthBits.takeIf { it > 0 } ?: 8
+          val fpsNote = if (video.frameRateFps >= 48f) {
+            stringResource(R.string.mediainfo_track_video_fps_smooth)
+          } else {
+            stringResource(R.string.mediainfo_track_video_fps_cinema)
+          }
+          TrackSummaryCard(
+            icon = Icons.Filled.VideoFile,
+            title = stringResource(R.string.mediainfo_track_video, video.streamIndex + 1),
+            subtitle = buildList {
+              add(MediaCapabilityAnalyzer.normalizeVideoCodec(video.format))
+              if (video.widthPx > 0 && video.heightPx > 0) {
+                add("${video.widthPx}×${video.heightPx}")
+              }
+              if (video.frameRate.isNotBlank()) add(video.frameRate)
+              if (video.bitRate.isNotBlank()) add(video.bitRate)
+            }.joinToString(" • "),
+            detailText = stringResource(R.string.mediainfo_track_video_detail, bitDepth, hdr.label, fpsNote),
+            isDefault = video.defaultStream.equals("Yes", ignoreCase = true),
+            isForced = video.forcedStream.equals("Yes", ignoreCase = true),
+            isDarkMode = isDarkMode,
+          )
+        }
+
+        items(
+          items = data.audioStreams,
+          key = { "audio_${it.streamIndex}" },
+        ) { audio ->
+          val isLossless = audio.compressionMode.equals("Lossless", ignoreCase = true) ||
+            audio.format.contains("TrueHD", ignoreCase = true) ||
+            audio.format.contains("FLAC", ignoreCase = true) ||
+            audio.format.contains("DTS-HD", ignoreCase = true) ||
+            audio.format.equals("PCM", ignoreCase = true)
+          val audioDetail = buildList {
+            add(
+              if (isLossless) {
+                stringResource(R.string.mediainfo_track_audio_lossless)
+              } else {
+                stringResource(R.string.mediainfo_track_audio_lossy)
+              },
+            )
+            if (audio.title.isNotBlank()) add(audio.title)
+          }.joinToString(" • ")
+          TrackSummaryCard(
+            icon = Icons.Filled.AudioFile,
+            title = stringResource(R.string.mediainfo_track_audio, audio.streamIndex + 1) +
+              audio.language.takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty(),
+            subtitle = buildList {
+              add(audio.formatCommercial.ifBlank { audio.format })
+              if (audio.channels.isNotBlank()) add(audio.channels)
+              if (audio.bitRate.isNotBlank()) add(audio.bitRate)
+              if (audio.samplingRate.isNotBlank()) add(audio.samplingRate)
+            }.joinToString(" • "),
+            detailText = audioDetail,
+            isDefault = audio.defaultStream.equals("Yes", ignoreCase = true),
+            isForced = audio.forcedStream.equals("Yes", ignoreCase = true),
+            isDarkMode = isDarkMode,
+          )
+        }
+
+        items(
+          items = data.textStreams,
+          key = { "sub_${it.streamIndex}" },
+        ) { sub ->
+          val subBadge = MediaCapabilityAnalyzer.normalizeSubtitleBadge(sub)
+          val isSdh = MediaCapabilityAnalyzer.isSdhSubtitle(sub)
+          val formatExplain = when (subBadge) {
+            "SRT" -> stringResource(R.string.mediainfo_track_sub_srt)
+            "ASS", "SSA" -> stringResource(R.string.mediainfo_track_sub_ass)
+            "PGS" -> stringResource(R.string.mediainfo_track_sub_pgs)
+            "VTT" -> stringResource(R.string.mediainfo_track_sub_vtt)
+            else -> stringResource(R.string.mediainfo_track_sub_generic)
+          }
+          val subDetail = if (isSdh) {
+            "$formatExplain • ${stringResource(R.string.mediainfo_track_sub_sdh_note)}"
+          } else {
+            formatExplain
+          }
+          TrackSummaryCard(
+            icon = Icons.Filled.Subtitles,
+            title = stringResource(R.string.mediainfo_track_subtitle, sub.streamIndex + 1) +
+              sub.language.takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty(),
+            subtitle = listOfNotNull(
+              subBadge.takeIf { it.isNotBlank() },
+              sub.title.takeIf { it.isNotBlank() },
+            ).joinToString(" • "),
+            detailText = subDetail,
+            isDefault = sub.defaultStream.equals("Yes", ignoreCase = true),
+            isForced = sub.forcedStream.equals("Yes", ignoreCase = true),
+            isSdh = isSdh,
+            isDarkMode = isDarkMode,
+          )
+        }
+      }
+
+      item(key = "footer") {
+        FooterLabel()
+      }
+    }
+  }
+
+  @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+  @Composable
+  private fun HeroSummaryCard(
+    data: MediaInfoOps.MediaInfoData,
+    quality: MediaCapabilityAnalyzer.QualityReport,
+    isDarkMode: Boolean,
+  ) {
+    val isGlass = LocalGlass.current
+    val spacing = MaterialTheme.spacing
+    val (badgeBg, badgeFg) = verdictColors(quality.overallTone)
+    val animatedSweep by animateFloatAsState(
+      targetValue = (quality.overallScore / 100f) * 360f,
+      animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+      label = "hero_score_ring",
+    )
+
+    Card(
+      modifier = Modifier.fillMaxWidth(),
+      shape = RoundedCornerShape(28.dp),
+      colors = if (isGlass) {
+        glassCardColors()
+      } else {
+        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+      },
+      border = if (isGlass) {
+        glassRimStroke(isDarkMode)
+      } else {
+        BorderStroke(0.75.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+      },
+      elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+      Column(
+        modifier = Modifier.padding(spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
+          val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+          val arcColor = badgeFg
+          Box(
+            modifier = Modifier.size(76.dp),
+            contentAlignment = Alignment.Center,
+          ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+              val strokeWidth = 8.dp.toPx()
+              drawArc(
+                color = trackColor,
+                startAngle = 0f,
+                sweepAngle = 360f,
+                useCenter = false,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+              )
+              drawArc(
+                color = arcColor,
+                startAngle = -90f,
+                sweepAngle = animatedSweep,
+                useCenter = false,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+              )
+            }
+            Text(
+              text = "${quality.overallScore}",
+              style = MaterialTheme.typography.titleLarge,
+              fontWeight = FontWeight.Bold,
+              color = MaterialTheme.colorScheme.onSurface,
+            )
+          }
+
+          Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+          ) {
+            Text(
+              text = stringResource(R.string.mediainfo_quality_score_label),
+              style = MaterialTheme.typography.labelMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Surface(
+              shape = RoundedCornerShape(8.dp),
+              color = badgeBg,
+            ) {
+              Text(
+                text = verdictLabel(quality.overallVerdict),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = badgeFg,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+              )
+            }
+            val summaryLine = listOfNotNull(
+              data.general.duration.takeIf { it.isNotBlank() },
+              data.general.fileSize.takeIf { it.isNotBlank() },
+              data.general.overallBitRate.takeIf { it.isNotBlank() },
+            ).joinToString(" • ")
+            if (summaryLine.isNotBlank()) {
+              Text(
+                text = summaryLine,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+              )
+            }
+          }
+        }
+
+        Text(
+          text = overallExplanation(quality.overallVerdict),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        HorizontalDivider(
+          thickness = 0.75.dp,
+          color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+        )
+
+        TechBadgeRow(badges = quality.badges)
+      }
+    }
+  }
+
+  @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+  @Composable
+  private fun MetricCompatibilityCard(
+    metric: MediaCapabilityAnalyzer.MetricScore,
+    isDarkMode: Boolean,
+  ) {
+    val isGlass = LocalGlass.current
+    val spacing = MaterialTheme.spacing
+    val (badgeBg, badgeFg) = verdictColors(metric.tone)
+    val animatedProgress by animateFloatAsState(
+      targetValue = (metric.score / 100f).coerceIn(0f, 1f),
+      animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+      label = "metric_bar_${metric.kind.name}",
+    )
+
+    Card(
+      modifier = Modifier.fillMaxWidth(),
+      shape = RoundedCornerShape(24.dp),
+      colors = if (isGlass) {
+        glassCardColors()
+      } else {
+        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+      },
+      border = if (isGlass) {
+        glassRimStroke(isDarkMode)
+      } else {
+        BorderStroke(0.75.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+      },
+      elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+      Column(
+        modifier = Modifier.padding(spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(spacing.smaller),
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.smaller),
+            modifier = Modifier.weight(1f),
+          ) {
+            Surface(
+              shape = CircleShape,
+              color = MaterialTheme.colorScheme.secondaryContainer,
+              modifier = Modifier.size(36.dp),
+            ) {
+              Box(contentAlignment = Alignment.Center) {
+                Icon(
+                  imageVector = metricIcon(metric.kind),
+                  contentDescription = null,
+                  tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                  modifier = Modifier.size(20.dp),
+                )
+              }
+            }
+            Column {
+              Text(
+                text = metricTitle(metric.kind),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+              )
+              Text(
+                text = metric.primaryValue,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+          }
+
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.smaller),
+          ) {
+            Surface(
+              shape = RoundedCornerShape(8.dp),
+              color = badgeBg,
+            ) {
+              Text(
+                text = verdictLabel(metric.verdict),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = badgeFg,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+              )
+            }
+            Text(
+              text = stringResource(R.string.mediainfo_score_out_of_100, metric.score),
+              style = MaterialTheme.typography.labelMedium,
+              fontWeight = FontWeight.SemiBold,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+        }
+
+        LinearProgressIndicator(
+          progress = { animatedProgress },
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(6.dp)
+            .clip(CircleShape),
+          color = badgeFg,
+          trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        )
+
+        Text(
+          text = metricExplanation(metric),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Text(
+          text = stringResource(R.string.mediainfo_your_device, metric.deviceValue),
+          style = MaterialTheme.typography.labelSmall,
+          color = MaterialTheme.colorScheme.primary,
+          fontWeight = FontWeight.Medium,
+        )
+      }
+    }
+  }
+
+  @Composable
+  private fun TrackSummaryCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    detailText: String? = null,
+    isDefault: Boolean,
+    isForced: Boolean,
+    isSdh: Boolean = false,
+    isDarkMode: Boolean,
+  ) {
+    val isGlass = LocalGlass.current
+    val spacing = MaterialTheme.spacing
+    Card(
+      modifier = Modifier.fillMaxWidth(),
+      shape = RoundedCornerShape(24.dp),
+      colors = if (isGlass) {
+        glassCardColors()
+      } else {
+        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+      },
+      border = if (isGlass) {
+        glassRimStroke(isDarkMode)
+      } else {
+        BorderStroke(0.75.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+      },
+      elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+      Row(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(vertical = 12.dp),
-        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-      )
+          .padding(spacing.medium),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.small),
+      ) {
+        Surface(
+          shape = CircleShape,
+          color = MaterialTheme.colorScheme.primaryContainer,
+          modifier = Modifier.size(40.dp),
+        ) {
+          Box(contentAlignment = Alignment.Center) {
+            Icon(
+              imageVector = icon,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onPrimaryContainer,
+              modifier = Modifier.size(20.dp),
+            )
+          }
+        }
 
-      Spacer(modifier = Modifier.height(8.dp))
+        Column(
+          modifier = Modifier.weight(1f),
+          verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+          Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+          )
+          if (subtitle.isNotBlank()) {
+            Text(
+              text = subtitle,
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          if (!detailText.isNullOrBlank()) {
+            Text(
+              text = detailText,
+              style = MaterialTheme.typography.labelSmall,
+              color = MaterialTheme.colorScheme.primary,
+            )
+          }
+        }
+
+        if (isSdh) {
+          Icon(
+            imageVector = Icons.Filled.HearingDisabled,
+            contentDescription = stringResource(R.string.mediainfo_badge_sdh),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+          )
+        }
+
+        if (isDefault || isForced) {
+          Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.secondaryContainer,
+          ) {
+            Text(
+              text = if (isForced) {
+                stringResource(R.string.mediainfo_badge_forced)
+              } else {
+                stringResource(R.string.mediainfo_badge_default)
+              },
+              style = MaterialTheme.typography.labelSmall,
+              fontWeight = FontWeight.Bold,
+              color = MaterialTheme.colorScheme.onSecondaryContainer,
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+          }
+        }
+      }
     }
+  }
+
+  @Composable
+  private fun SectionHeaderText(text: String) {
+    Text(
+      text = text.uppercase(),
+      style = MaterialTheme.typography.labelMedium,
+      fontWeight = FontWeight.Bold,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.padding(
+        start = MaterialTheme.spacing.extraSmall,
+        top = MaterialTheme.spacing.extraSmall,
+      ),
+    )
+  }
+
+  @Composable
+  private fun TechnicalContent(
+    fullMediaInfoText: String,
+    isDarkMode: Boolean,
+  ) {
+    val sections = remember(fullMediaInfoText) { parseMediaInfoText(fullMediaInfoText) }
+    val spacing = MaterialTheme.spacing
+
+    LazyColumn(
+      modifier = Modifier.fillMaxSize(),
+      contentPadding = PaddingValues(
+        horizontal = spacing.medium,
+        vertical = spacing.smaller,
+      ),
+      verticalArrangement = Arrangement.spacedBy(spacing.small),
+    ) {
+      items(
+        items = sections,
+        key = { "${it.name}_${it.properties.size}" },
+      ) { section ->
+        MediaInfoSection(section = section, isDarkMode = isDarkMode)
+      }
+      item(key = "tech_footer") {
+        FooterLabel()
+      }
+    }
+  }
+
+  @Composable
+  private fun FooterLabel() {
+    Text(
+      text = stringResource(R.string.mediainfo_footer),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = MaterialTheme.spacing.small),
+      textAlign = TextAlign.Center,
+    )
   }
 
   private fun parseMediaInfoText(text: String): List<InfoSection> {
@@ -420,23 +1001,15 @@ class MediaInfoActivity : ComponentActivity() {
 
     for (line in lines) {
       when {
-        // Skip separator lines and empty lines
         line.trim().startsWith("=") || line.trim().isEmpty() -> continue
-
-        // Skip header/footer
         line.contains("MEDIA INFO -") || line.contains("Generated by mpvium") -> continue
-
-        // New section (no colon, not indented, has content)
         !line.startsWith(" ") && !line.contains(":") && line.trim().isNotEmpty() -> {
-          // Save previous section
           if (currentSectionName != null && currentProperties.isNotEmpty()) {
             sections.add(InfoSection(currentSectionName, currentProperties.toList()))
             currentProperties.clear()
           }
           currentSectionName = line.trim()
         }
-
-        // Property line (contains colon)
         line.contains(":") -> {
           val parts = line.split(":", limit = 2)
           if (parts.size == 2) {
@@ -450,7 +1023,6 @@ class MediaInfoActivity : ComponentActivity() {
       }
     }
 
-    // Add last section
     if (currentSectionName != null && currentProperties.isNotEmpty()) {
       sections.add(InfoSection(currentSectionName, currentProperties.toList()))
     }
@@ -459,35 +1031,40 @@ class MediaInfoActivity : ComponentActivity() {
   }
 
   @Composable
-  private fun MediaInfoSection(section: InfoSection) {
+  private fun MediaInfoSection(
+    section: InfoSection,
+    isDarkMode: Boolean,
+  ) {
+    val isGlass = LocalGlass.current
     Card(
       modifier = Modifier.fillMaxWidth(),
-      colors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-      ),
-      shape = MaterialTheme.shapes.large,
-      elevation = CardDefaults.cardElevation(
-        defaultElevation = 2.dp,
-        pressedElevation = 4.dp,
-        hoveredElevation = 4.dp,
-      ),
+      colors = if (isGlass) {
+        glassCardColors()
+      } else {
+        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+      },
+      shape = RoundedCornerShape(24.dp),
+      border = if (isGlass) {
+        glassRimStroke(isDarkMode)
+      } else {
+        BorderStroke(0.75.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+      },
+      elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
       Column(
-        modifier = Modifier.padding(16.dp),
+        modifier = Modifier.padding(MaterialTheme.spacing.medium),
       ) {
-        // Section title
         Text(
           text = section.name,
           style = MaterialTheme.typography.titleMedium,
           fontWeight = FontWeight.Bold,
           color = MaterialTheme.colorScheme.primary,
-          modifier = Modifier.padding(bottom = 12.dp),
+          modifier = Modifier.padding(bottom = MaterialTheme.spacing.small),
         )
 
-        // Properties
-        androidx.compose.foundation.text.selection.SelectionContainer {
+        SelectionContainer {
           Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
           ) {
             section.properties.forEach { (key, value) ->
               PropertyRow(key, value)
@@ -511,7 +1088,7 @@ class MediaInfoActivity : ComponentActivity() {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
           .weight(1f)
-          .padding(end = 16.dp),
+          .padding(end = MaterialTheme.spacing.medium),
       )
 
       Text(
@@ -524,6 +1101,108 @@ class MediaInfoActivity : ComponentActivity() {
     }
   }
 
+  @Composable
+  private fun verdictColors(tone: MediaCapabilityAnalyzer.VerdictTone): Pair<Color, Color> =
+    when (tone) {
+      MediaCapabilityAnalyzer.VerdictTone.OPTIMAL ->
+        MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+      MediaCapabilityAnalyzer.VerdictTone.OVERKILL ->
+        MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+      MediaCapabilityAnalyzer.VerdictTone.ADAPTED ->
+        MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+      MediaCapabilityAnalyzer.VerdictTone.LOW ->
+        MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
+    }
+
+  private fun metricIcon(kind: MediaCapabilityAnalyzer.MetricKind): ImageVector =
+    when (kind) {
+      MediaCapabilityAnalyzer.MetricKind.RESOLUTION -> Icons.Filled.DisplaySettings
+      MediaCapabilityAnalyzer.MetricKind.BITRATE -> Icons.Filled.Speed
+      MediaCapabilityAnalyzer.MetricKind.COLOR_HDR -> Icons.Filled.Palette
+      MediaCapabilityAnalyzer.MetricKind.AUDIO -> Icons.Filled.GraphicEq
+      MediaCapabilityAnalyzer.MetricKind.PLAYBACK_EFFICIENCY -> Icons.Filled.Memory
+    }
+
+  @Composable
+  private fun metricTitle(kind: MediaCapabilityAnalyzer.MetricKind): String =
+    when (kind) {
+      MediaCapabilityAnalyzer.MetricKind.RESOLUTION -> stringResource(R.string.mediainfo_metric_resolution)
+      MediaCapabilityAnalyzer.MetricKind.BITRATE -> stringResource(R.string.mediainfo_metric_bitrate)
+      MediaCapabilityAnalyzer.MetricKind.COLOR_HDR -> stringResource(R.string.mediainfo_metric_color_hdr)
+      MediaCapabilityAnalyzer.MetricKind.AUDIO -> stringResource(R.string.mediainfo_metric_audio)
+      MediaCapabilityAnalyzer.MetricKind.PLAYBACK_EFFICIENCY -> stringResource(R.string.mediainfo_metric_playback)
+    }
+
+  @Composable
+  private fun verdictLabel(key: MediaCapabilityAnalyzer.VerdictKey): String =
+    when (key) {
+      MediaCapabilityAnalyzer.VerdictKey.SPOT_ON -> stringResource(R.string.mediainfo_verdict_spot_on)
+      MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_verdict_overkill)
+      MediaCapabilityAnalyzer.VerdictKey.GREAT -> stringResource(R.string.mediainfo_verdict_great)
+      MediaCapabilityAnalyzer.VerdictKey.GOOD -> stringResource(R.string.mediainfo_verdict_good)
+      MediaCapabilityAnalyzer.VerdictKey.LOW_RES -> stringResource(R.string.mediainfo_verdict_low_res)
+      MediaCapabilityAnalyzer.VerdictKey.BLOATED -> stringResource(R.string.mediainfo_verdict_bloated)
+      MediaCapabilityAnalyzer.VerdictKey.REFERENCE -> stringResource(R.string.mediainfo_verdict_reference)
+      MediaCapabilityAnalyzer.VerdictKey.BALANCED -> stringResource(R.string.mediainfo_verdict_balanced)
+      MediaCapabilityAnalyzer.VerdictKey.COMPRESSED -> stringResource(R.string.mediainfo_verdict_compressed)
+      MediaCapabilityAnalyzer.VerdictKey.NATIVE_HDR -> stringResource(R.string.mediainfo_verdict_native_hdr)
+      MediaCapabilityAnalyzer.VerdictKey.TONE_MAPPED -> stringResource(R.string.mediainfo_verdict_tone_mapped)
+      MediaCapabilityAnalyzer.VerdictKey.SMOOTH_10BIT -> stringResource(R.string.mediainfo_verdict_smooth_10bit)
+      MediaCapabilityAnalyzer.VerdictKey.STANDARD_COLOR -> stringResource(R.string.mediainfo_verdict_standard_color)
+      MediaCapabilityAnalyzer.VerdictKey.HARDWARE_READY -> stringResource(R.string.mediainfo_verdict_hardware_ready)
+      MediaCapabilityAnalyzer.VerdictKey.CPU_HEAVY -> stringResource(R.string.mediainfo_verdict_cpu_heavy)
+      MediaCapabilityAnalyzer.VerdictKey.SURROUND_READY -> stringResource(R.string.mediainfo_verdict_surround_ready)
+      MediaCapabilityAnalyzer.VerdictKey.STUDIO_DOWNMIX -> stringResource(R.string.mediainfo_verdict_studio_downmix)
+      MediaCapabilityAnalyzer.VerdictKey.RICH_AUDIO -> stringResource(R.string.mediainfo_verdict_rich_audio)
+      MediaCapabilityAnalyzer.VerdictKey.THIN_AUDIO -> stringResource(R.string.mediainfo_verdict_thin_audio)
+    }
+
+  @Composable
+  private fun metricExplanation(metric: MediaCapabilityAnalyzer.MetricScore): String =
+    when (metric.kind) {
+      MediaCapabilityAnalyzer.MetricKind.RESOLUTION -> when (metric.verdict) {
+        MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_explain_resolution_overkill)
+        MediaCapabilityAnalyzer.VerdictKey.SPOT_ON -> stringResource(R.string.mediainfo_explain_resolution_spot_on)
+        MediaCapabilityAnalyzer.VerdictKey.LOW_RES -> stringResource(R.string.mediainfo_explain_resolution_low)
+        else -> stringResource(R.string.mediainfo_explain_resolution_good)
+      }
+      MediaCapabilityAnalyzer.MetricKind.BITRATE -> when (metric.verdict) {
+        MediaCapabilityAnalyzer.VerdictKey.BLOATED,
+        MediaCapabilityAnalyzer.VerdictKey.OVERKILL,
+        -> stringResource(R.string.mediainfo_explain_bitrate_bloated)
+        MediaCapabilityAnalyzer.VerdictKey.REFERENCE -> stringResource(R.string.mediainfo_explain_bitrate_reference)
+        MediaCapabilityAnalyzer.VerdictKey.COMPRESSED -> stringResource(R.string.mediainfo_explain_bitrate_compressed)
+        else -> stringResource(R.string.mediainfo_explain_bitrate_balanced)
+      }
+      MediaCapabilityAnalyzer.MetricKind.COLOR_HDR -> when (metric.verdict) {
+        MediaCapabilityAnalyzer.VerdictKey.NATIVE_HDR -> stringResource(R.string.mediainfo_explain_hdr_native)
+        MediaCapabilityAnalyzer.VerdictKey.TONE_MAPPED -> stringResource(R.string.mediainfo_explain_hdr_tonemapped)
+        MediaCapabilityAnalyzer.VerdictKey.SMOOTH_10BIT -> stringResource(R.string.mediainfo_explain_hdr_10bit)
+        else -> stringResource(R.string.mediainfo_explain_hdr_standard)
+      }
+      MediaCapabilityAnalyzer.MetricKind.PLAYBACK_EFFICIENCY -> when (metric.verdict) {
+        MediaCapabilityAnalyzer.VerdictKey.CPU_HEAVY -> stringResource(R.string.mediainfo_explain_cpu_heavy)
+        else -> stringResource(R.string.mediainfo_explain_hw_ready)
+      }
+      MediaCapabilityAnalyzer.MetricKind.AUDIO -> when (metric.verdict) {
+        MediaCapabilityAnalyzer.VerdictKey.SURROUND_READY -> stringResource(R.string.mediainfo_explain_audio_surround_ready)
+        MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_explain_audio_overkill)
+        MediaCapabilityAnalyzer.VerdictKey.STUDIO_DOWNMIX -> stringResource(R.string.mediainfo_explain_audio_studio_downmix)
+        MediaCapabilityAnalyzer.VerdictKey.THIN_AUDIO -> stringResource(R.string.mediainfo_explain_audio_thin)
+        else -> stringResource(R.string.mediainfo_explain_audio_rich)
+      }
+    }
+
+  @Composable
+  private fun overallExplanation(verdict: MediaCapabilityAnalyzer.VerdictKey): String =
+    when (verdict) {
+      MediaCapabilityAnalyzer.VerdictKey.OVERKILL -> stringResource(R.string.mediainfo_explain_overall_overkill)
+      MediaCapabilityAnalyzer.VerdictKey.SPOT_ON -> stringResource(R.string.mediainfo_explain_overall_spot_on)
+      MediaCapabilityAnalyzer.VerdictKey.GREAT -> stringResource(R.string.mediainfo_explain_overall_great)
+      MediaCapabilityAnalyzer.VerdictKey.GOOD -> stringResource(R.string.mediainfo_explain_overall_good)
+      else -> stringResource(R.string.mediainfo_explain_overall_low)
+    }
+
   private data class InfoSection(
     val name: String,
     val properties: List<Pair<String, String>>,
@@ -531,17 +1210,18 @@ class MediaInfoActivity : ComponentActivity() {
 
   private suspend fun copyToClipboard(content: String, fileName: String) {
     withContext(Dispatchers.Main) {
-      val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+      val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
       val clip = android.content.ClipData.newPlainText("Media Info - $fileName", content)
       clipboard.setPrimaryClip(clip)
-      Toast.makeText(this@MediaInfoActivity, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+      Toast.makeText(this@MediaInfoActivity, getString(R.string.mediainfo_copied), Toast.LENGTH_SHORT).show()
     }
   }
 
-  private suspend fun shareMediaInfo(content: String, fileName: String, mediaUri: Uri?) {
+  private suspend fun shareMediaInfo(content: String, fileName: String) {
     withContext(Dispatchers.IO) {
       try {
-        val textFileName = "mediainfo_${fileName.substringBeforeLast('.')}.txt"
+        val safeName = fileName.substringBeforeLast('.').ifBlank { "media" }
+        val textFileName = "mediainfo_$safeName.txt"
         val file = File(cacheDir, textFileName)
         file.writeText(content)
 
@@ -560,13 +1240,13 @@ class MediaInfoActivity : ComponentActivity() {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
           }
 
-          startActivity(Intent.createChooser(shareIntent, "Share Media Info"))
+          startActivity(Intent.createChooser(shareIntent, getString(R.string.mediainfo_share_chooser)))
         }
       } catch (e: Exception) {
         withContext(Dispatchers.Main) {
           Toast.makeText(
             this@MediaInfoActivity,
-            "Failed to share: ${e.message}",
+            getString(R.string.mediainfo_share_failed, e.message ?: ""),
             Toast.LENGTH_LONG,
           ).show()
         }
