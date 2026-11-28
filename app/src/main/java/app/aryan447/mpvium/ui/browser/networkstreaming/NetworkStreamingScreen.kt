@@ -58,6 +58,9 @@ import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.browser.components.BrowserTopBar
 import app.aryan447.mpvium.ui.browser.cards.NetworkConnectionCard
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 import app.aryan447.mpvium.ui.browser.dialogs.AddConnectionSheet
 import app.aryan447.mpvium.ui.browser.dialogs.EditConnectionSheet
 import app.aryan447.mpvium.ui.browser.states.EmptyState
@@ -85,6 +88,7 @@ object NetworkStreamingScreen : Screen {
     val connections by viewModel.connections.collectAsState()
     val connectionStatuses by viewModel.connectionStatuses.collectAsState()
     val browserPreferences = koinInject<app.aryan447.mpvium.preferences.BrowserPreferences>()
+    val isTv = LocalIsTv.current
     var showAddSheet by remember { mutableStateOf(false) }
     var editingConnection by remember { mutableStateOf<NetworkConnection?>(null) }
     val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
@@ -100,6 +104,9 @@ object NetworkStreamingScreen : Screen {
 
     val isFabVisible by remember {
       derivedStateOf {
+        // Always visible on TV to prevent remote D-pad focus loss on scroll
+        if (isTv) return@derivedStateOf true
+
         val currentIndex = listState.firstVisibleItemIndex
         val currentOffset = listState.firstVisibleItemScrollOffset
 
@@ -147,7 +154,9 @@ object NetworkStreamingScreen : Screen {
       },
       floatingActionButton = {
         val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
-        if (isFabVisible) {
+        // On Android TV, the inline "+ Add Connection" button in the Local Network header
+        // replaces the FAB so it never overlaps connection cards' Connect/Browse buttons.
+        if (!isTv && isFabVisible) {
           ExtendedFloatingActionButton(
             onClick = { showAddSheet = true },
             icon = { Icon(Icons.Filled.Add, contentDescription = null) },
@@ -171,7 +180,7 @@ object NetworkStreamingScreen : Screen {
           start = 16.dp,
           end = 16.dp,
           top = 16.dp,
-          bottom = navigationBarHeight
+          bottom = navigationBarHeight + 24.dp,
         ),
       ) {
           // Section 1: Stream Link
@@ -186,13 +195,32 @@ object NetworkStreamingScreen : Screen {
           // Section 2: Local Network header
           item {
             Spacer(modifier = Modifier.height(24.dp))
-            Text(
-              text = "Local Network",
-              style = MaterialTheme.typography.titleLarge,
-              fontWeight = FontWeight.Bold,
-              color = MaterialTheme.colorScheme.primary,
-              modifier = Modifier.padding(vertical = 8.dp),
-            )
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text(
+                text = "Local Network",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+              )
+              if (isTv) {
+                FilledTonalButton(
+                  onClick = { showAddSheet = true },
+                ) {
+                  Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 6.dp),
+                  )
+                  Text("Add Connection")
+                }
+              }
+            }
           }
 
           // Show empty state or connection list
@@ -299,6 +327,8 @@ private fun StreamLinkSection(
   onPlayLink: (String) -> Unit,
 ) {
   val context = LocalContext.current
+  val isTv = LocalIsTv.current
+  val tvState = rememberTvTextFieldState(isTv)
   var linkUrl by rememberSaveable { mutableStateOf("") }
 
   Column(
@@ -337,7 +367,9 @@ private fun StreamLinkSection(
               tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           },
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier
+            .fillMaxWidth()
+            .tvTextFieldControl(tvState),
           singleLine = true,
         )
         Row(

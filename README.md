@@ -47,12 +47,18 @@ features or bugs.
 </p>
 
 <p align="center">
-  <a href="docs/screenshots/">More screenshots</a> · Play Store set in <code>fastlane/metadata/android/en-US/images/phoneScreenshots/</code>
+  <img src="docs/screenshots/mpvium-tv-home.jpg" width="380" alt="Android TV Home" />
+  <img src="docs/screenshots/mpvium-tv-player.jpg" width="380" alt="Android TV Player" />
+</p>
+
+<p align="center">
+  <a href="docs/screenshots/">More screenshots</a> · Play Store set in <code>fastlane/metadata/android/en-US/images/phoneScreenshots/</code> (and <code>tvScreenshots/</code>)
 </p>
 
 ## Features
 
 - Hardware-accelerated, high-quality video playback through libmpv
+- Full Android TV and Google TV support with Leanback launcher banner, 10-foot D-Pad remote navigation, and landscape-optimized playback controls
 - Material 3 interface with light and dark themes
 - Picture-in-picture and background playback
 - Gesture controls, zoom, and screen orientation controls
@@ -74,9 +80,9 @@ The repository may provide several APKs for different CPU architectures:
 
 | APK | Devices |
 | --- | --- |
-| `universal` | Most devices; larger download |
-| `arm64-v8a` | Modern 64-bit ARM devices; recommended for most phones |
-| `armeabi-v7a` | Older 32-bit ARM devices |
+| `universal` | Most devices, Android TV, and Google TV; larger download |
+| `arm64-v8a` | Modern 64-bit ARM devices (phones, tablets, Android TV) |
+| `armeabi-v7a` | Older 32-bit ARM devices (older phones and TV sticks) |
 | `x86` | 32-bit Intel/AMD devices |
 | `x86_64` | 64-bit Intel/AMD devices |
 

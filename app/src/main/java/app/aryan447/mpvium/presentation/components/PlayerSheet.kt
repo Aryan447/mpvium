@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -61,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.ui.theme.GlassKind
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassFrostColor
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -82,6 +84,7 @@ fun PlayerSheet(
 ) {
   val scope = rememberCoroutineScope()
   val density = LocalDensity.current
+  val isTv = LocalIsTv.current
   val latestOnDismissRequest by rememberUpdatedState(onDismissRequest)
   val maxWidth = customMaxWidth ?:
   if (LocalConfiguration.current.orientation == ORIENTATION_LANDSCAPE) {
@@ -130,7 +133,9 @@ fun PlayerSheet(
           interactionSource = remember { MutableInteractionSource() },
           indication = null,
           onClick = internalOnDismissRequest,
-        ).fillMaxSize()
+        )
+        .focusProperties { canFocus = false }
+        .fillMaxSize()
         .background(Color.Black.copy(alpha))
         .onSizeChanged {
           val anchors =
@@ -150,7 +155,9 @@ fun PlayerSheet(
             interactionSource = remember { MutableInteractionSource() },
             indication = null,
             onClick = {},
-          ).nestedScroll(
+          )
+          .focusProperties { canFocus = false }
+          .nestedScroll(
             remember(anchoredDraggableState) {
               anchoredDraggableState.preUpPostDownNestedScrollConnection()
             },
@@ -186,17 +193,19 @@ fun PlayerSheet(
           onBack = internalOnDismissRequest,
         )
         Column {
-          Box(
-            modifier =
-              Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(top = 12.dp, bottom = 4.dp)
-                .size(width = 32.dp, height = 4.dp)
-                .background(
-                  MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                  RoundedCornerShape(50),
-                ),
-          )
+          if (!isTv) {
+            Box(
+              modifier =
+                Modifier
+                  .align(Alignment.CenterHorizontally)
+                  .padding(top = 12.dp, bottom = 4.dp)
+                  .size(width = 32.dp, height = 4.dp)
+                  .background(
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    RoundedCornerShape(50),
+                  ),
+            )
+          }
           content()
         }
       },

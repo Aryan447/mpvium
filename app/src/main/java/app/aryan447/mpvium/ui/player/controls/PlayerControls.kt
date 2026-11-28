@@ -1,7 +1,11 @@
 package app.aryan447.mpvium.ui.player.controls
 
 import androidx.activity.compose.LocalActivity
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import app.aryan447.mpvium.preferences.AdvancedPreferences
+import app.aryan447.mpvium.preferences.DecoderPreferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -170,6 +174,7 @@ fun PlayerControls(
   modifier: Modifier = Modifier,
 ) {
   val spacing = MaterialTheme.spacing
+  val context = androidx.compose.ui.platform.LocalContext.current
   val appearancePreferences = koinInject<AppearancePreferences>()
   val playerLayout by appearancePreferences.playerLayout.collectAsState()
   val isModern = playerLayout == PlayerLayout.MODERN
@@ -178,6 +183,7 @@ fun PlayerControls(
   val amoledMode by appearancePreferences.amoledMode.collectAsState()
   val playerFullColors by appearancePreferences.playerFullColors.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
+  val decoderPreferences = koinInject<DecoderPreferences>()
   val invertDuration by playerPreferences.invertDuration.collectAsState()
   val audioPreferences = koinInject<AudioPreferences>()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
@@ -231,7 +237,7 @@ fun PlayerControls(
     }
   }
   val mpvDecoder by MPVLib.propString["hwdec-current"].collectAsState()
-  val decoder by remember { derivedStateOf { getDecoderFromValue(mpvDecoder ?: "auto") } }
+  val decoder by remember(mpvDecoder) { derivedStateOf { getDecoderFromValue(mpvDecoder ?: "no") } }
   val isSpeedNonOne by remember(playbackSpeed) {
     derivedStateOf { abs((playbackSpeed ?: 1f) - 1f) > 0.001f }
   }
@@ -284,20 +290,34 @@ fun PlayerControls(
   }
 
   var isUnlockSliderDragging by remember { mutableStateOf(false) }
+  val isTv = LocalIsTv.current
+  val controlsInteractionTimestamp by viewModel.controlsInteractionTimestamp.collectAsState()
+  val playPauseFocusRequester = remember { FocusRequester() }
+
+  LaunchedEffect(controlsShown, isTv) {
+    if (controlsShown && isTv) {
+      try {
+        playPauseFocusRequester.requestFocus()
+      } catch (_: Exception) {}
+    }
+  }
 
   LaunchedEffect(
     controlsShown,
     paused,
     isSeeking,
     resetControlsTimestamp,
+    controlsInteractionTimestamp,
     areControlsLocked,
     isUnlockSliderDragging,
     playerLayout,
+    isTv,
   ) {
     if (controlsShown && paused == false && !isSeeking && !isUnlockSliderDragging) {
-      // Use 2.5 second delay in Modern mode, 2 second delay when controls are locked, otherwise user preference
+      // Use 5s on TV for remote accessibility, 2s when locked, 2.5s in Modern, otherwise user pref
       val delayTime = when {
         areControlsLocked -> 2000L
+        isTv -> 5000L
         isModern -> 2500L
         else -> playerTimeToDisappear.toLong()
       }
@@ -878,6 +898,7 @@ fun PlayerControls(
             currentZoom = currentZoom,
             aspect = aspect,
             decoder = decoder,
+            playPauseFocusRequester = playPauseFocusRequester,
             customButtons = customButtons,
             modifier = Modifier.fillMaxSize(),
           )
@@ -932,6 +953,7 @@ fun PlayerControls(
                       resetControlsTimestamp = System.currentTimeMillis()
                       viewModel.handleMediaPlay()
                     },
+                    modifier = Modifier.focusRequester(playPauseFocusRequester),
                     hideBackground = hideBackground,
                     size = if (isModern) 84.dp else 72.dp,
                   )
@@ -955,6 +977,7 @@ fun PlayerControls(
                     resetControlsTimestamp = System.currentTimeMillis()
                     viewModel.handleMediaPlay()
                   },
+                  modifier = Modifier.focusRequester(playPauseFocusRequester),
                   hideBackground = hideBackground,
                   size = if (isModern) 84.dp else 72.dp,
                 )
@@ -1506,7 +1529,7 @@ fun PlayerControls(
         viewModel.unpause()
       },
       decoder = decoder,
-      onUpdateDecoder = { MPVLib.setPropertyString("hwdec", it.value) },
+      onUpdateDecoder = viewModel::updateDecoder,
       speed = playbackSpeed ?: playerPreferences.defaultSpeed.get(),
       onSpeedChange = { MPVLib.setPropertyFloat("speed", it.toFixed(2)) },
       onMakeDefaultSpeed = { playerPreferences.defaultSpeed.set(it.toFixed(2)) },

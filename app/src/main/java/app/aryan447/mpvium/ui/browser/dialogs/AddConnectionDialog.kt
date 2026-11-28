@@ -1,19 +1,21 @@
 package app.aryan447.mpvium.ui.browser.dialogs
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MenuDefaults
-import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
-import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
@@ -23,16 +25,23 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -41,6 +50,11 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.domain.network.NetworkConnection
 import app.aryan447.mpvium.domain.network.NetworkProtocol
 import app.aryan447.mpvium.domain.network.sanitized
+import app.aryan447.mpvium.ui.theme.glassMenuContainerColor
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +76,20 @@ fun AddConnectionSheet(
   var isAnonymous by remember { mutableStateOf(false) }
   var useHttps by remember { mutableStateOf(false) }
   var protocolMenuExpanded by remember { mutableStateOf(false) }
+  val isTv = LocalIsTv.current
+  val initialFocusRequester = remember { FocusRequester() }
+  val nameTvState = rememberTvTextFieldState(isTv)
+  val hostTvState = rememberTvTextFieldState(isTv)
+  val portTvState = rememberTvTextFieldState(isTv)
+  val pathTvState = rememberTvTextFieldState(isTv)
+  val usernameTvState = rememberTvTextFieldState(isTv)
+  val passwordTvState = rememberTvTextFieldState(isTv)
+
+  LaunchedEffect(Unit) {
+    if (isTv) {
+      initialFocusRequester.requestFocus()
+    }
+  }
 
   val handleDismiss = {
     onDismiss()
@@ -91,7 +119,9 @@ fun AddConnectionSheet(
 
   AlertDialog(
     onDismissRequest = handleDismiss,
-    modifier = Modifier.widthIn(min = 400.dp, max = 600.dp),
+    modifier = Modifier
+      .widthIn(min = 400.dp, max = 600.dp)
+      .then(if (isTv) Modifier.heightIn(max = 480.dp) else Modifier),
     title = {
       Text(
         text = "Add Network Connection",
@@ -107,154 +137,201 @@ fun AddConnectionSheet(
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
 
-      // Name and Protocol in one row
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-              // Connection Name
-              OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Name", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.weight(0.50f),
-                singleLine = true,
-              )
+        // Name and Protocol in one row
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          // Connection Name
+          OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            readOnly = nameTvState.readOnly,
+            label = { Text("Name", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            modifier = Modifier
+              .weight(0.50f)
+              .focusRequester(initialFocusRequester)
+              .tvTextFieldControl(nameTvState),
+            singleLine = true,
+          )
 
-              // Protocol Dropdown
-              ExposedDropdownMenuBox(
-                expanded = protocolMenuExpanded,
-                onExpandedChange = { protocolMenuExpanded = it },
-                modifier = Modifier.weight(0.50f),
-              ) {
-                OutlinedTextField(
-                  value = protocol.displayName,
-                  onValueChange = { },
-                  readOnly = true,
-                  label = { Text("Protocol", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                  trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = protocolMenuExpanded) },
-                  modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+          // Protocol Dropdown
+          ExposedDropdownMenuBox(
+            expanded = protocolMenuExpanded,
+            onExpandedChange = { protocolMenuExpanded = it },
+            modifier = Modifier.weight(0.50f),
+          ) {
+            OutlinedTextField(
+              value = protocol.displayName,
+              onValueChange = { },
+              readOnly = true,
+              label = { Text("Protocol", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+              trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = protocolMenuExpanded) },
+              modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            )
+            ExposedDropdownMenu(
+              expanded = protocolMenuExpanded,
+              onDismissRequest = { protocolMenuExpanded = false },
+              containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
+            ) {
+              NetworkProtocol.entries.forEach { proto ->
+                DropdownMenuItem(
+                  text = { Text(proto.displayName) },
+                  onClick = {
+                    protocol = proto
+                    port = proto.defaultPort.toString()
+                    protocolMenuExpanded = false
+                  },
                 )
-                ExposedDropdownMenu(
-                  expanded = protocolMenuExpanded,
-                  onDismissRequest = { protocolMenuExpanded = false },
-                  containerColor = glassMenuContainerColor(MenuDefaults.containerColor),
-                ) {
-                  NetworkProtocol.entries.forEach { proto ->
-                    DropdownMenuItem(
-                      text = { Text(proto.displayName) },
-                      onClick = {
-                        protocol = proto
-                        port = proto.defaultPort.toString()
-                        protocolMenuExpanded = false
-                      },
-                    )
-                  }
+              }
+            }
           }
         }
-      }
 
-      // Host
-      OutlinedTextField(
-        value = host,
-        onValueChange = { host = it },
-        label = { Text("Host/IP Address", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        placeholder = { Text("192.168.1.100", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-      )
-
-      // Port and Path in one row
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-              // Port
-              OutlinedTextField(
-                value = port,
-                onValueChange = { port = it },
-                label = { Text("Port", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.weight(0.3f),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-              )
-
-              // Path
-              OutlinedTextField(
-                value = path,
-                onValueChange = { path = it },
-                label = { Text("Path", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.weight(0.7f),
-                singleLine = true,
-                placeholder = { Text("/", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-              )
-            }
-
-      // Anonymous and HTTPS checkboxes
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth(),
-      ) {
-        Checkbox(
-          checked = isAnonymous,
-          onCheckedChange = { isAnonymous = it },
+        // Host
+        OutlinedTextField(
+          value = host,
+          onValueChange = { host = it },
+          readOnly = hostTvState.readOnly,
+          label = { Text("Host/IP Address", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          modifier = Modifier.fillMaxWidth().tvTextFieldControl(hostTvState),
+          singleLine = true,
+          placeholder = { Text("192.168.1.100", maxLines = 1, overflow = TextOverflow.Ellipsis) },
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Anonymous/Guest Access")
-      }
 
-      // HTTPS checkbox (only for WebDAV)
-      if (protocol == NetworkProtocol.WEBDAV) {
+        // Port and Path in one row
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          // Port
+          OutlinedTextField(
+            value = port,
+            onValueChange = { port = it },
+            readOnly = portTvState.readOnly,
+            label = { Text("Port", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            modifier = Modifier.weight(0.3f).tvTextFieldControl(portTvState),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+          )
+
+          // Path
+          OutlinedTextField(
+            value = path,
+            onValueChange = { path = it },
+            readOnly = pathTvState.readOnly,
+            label = { Text("Path", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            modifier = Modifier.weight(0.7f).tvTextFieldControl(pathTvState),
+            singleLine = true,
+            placeholder = { Text("/", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          )
+        }
+
+        // Anonymous checkbox row
+        var isAnonFocused by remember { mutableStateOf(false) }
         Row(
           verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .onFocusChanged { isAnonFocused = it.isFocused || it.hasFocus }
+            .toggleable(
+              value = isAnonymous,
+              role = Role.Checkbox,
+              onValueChange = { isAnonymous = it },
+            )
+            .then(
+              if (isTv && isAnonFocused) {
+                Modifier
+                  .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                  .border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small)
+              } else {
+                Modifier
+              }
+            )
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         ) {
           Checkbox(
-            checked = useHttps,
-            onCheckedChange = {
-              useHttps = it
-              // Auto-update port when toggling HTTPS
-              if (it && port == "80") {
-                port = "443"
-              } else if (!it && port == "443") {
-                port = "80"
-              }
-            },
+            checked = isAnonymous,
+            onCheckedChange = null,
           )
           Spacer(modifier = Modifier.width(8.dp))
-          Text("Use HTTPS (Secure Connection)")
+          Text("Anonymous/Guest Access")
         }
-      }
 
-      // Username and Password in one row
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-              // Username
-              OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.weight(0.50f),
-                singleLine = true,
-                enabled = !isAnonymous,
+        // HTTPS checkbox (only for WebDAV)
+        if (protocol == NetworkProtocol.WEBDAV) {
+          var isHttpsFocused by remember { mutableStateOf(false) }
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(MaterialTheme.shapes.small)
+              .onFocusChanged { isHttpsFocused = it.isFocused || it.hasFocus }
+              .toggleable(
+                value = useHttps,
+                role = Role.Checkbox,
+                onValueChange = {
+                  useHttps = it
+                  // Auto-update port when toggling HTTPS
+                  if (it && port == "80") {
+                    port = "443"
+                  } else if (!it && port == "443") {
+                    port = "80"
+                  }
+                },
               )
+              .then(
+                if (isTv && isHttpsFocused) {
+                  Modifier
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small)
+                } else {
+                  Modifier
+                }
+              )
+              .padding(horizontal = 8.dp, vertical = 6.dp),
+          ) {
+            Checkbox(
+              checked = useHttps,
+              onCheckedChange = null,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Use HTTPS (Secure Connection)")
+          }
+        }
 
-              // Password
-              OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.weight(0.50f),
-                singleLine = true,
-                enabled = !isAnonymous,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-              )
-            }
+        // Username and Password in one row
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          // Username
+          OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+            readOnly = usernameTvState.readOnly,
+            label = { Text("Username", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            modifier = Modifier.weight(0.50f).tvTextFieldControl(usernameTvState),
+            singleLine = true,
+            enabled = !isAnonymous,
+          )
+
+          // Password
+          OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            readOnly = passwordTvState.readOnly,
+            label = { Text("Password", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            modifier = Modifier.weight(0.50f).tvTextFieldControl(passwordTvState),
+            singleLine = true,
+            enabled = !isAnonymous,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+          )
+        }
 
       }
     },

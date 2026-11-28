@@ -108,6 +108,7 @@ import app.aryan447.mpvium.ui.theme.glassSearchBarColors
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.permission.PermissionUtils
 import kotlinx.coroutines.Dispatchers
@@ -151,11 +152,13 @@ data class TitlesScreen(
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
     val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
     val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
+    val isTv = LocalIsTv.current
     val navigationBarHeight = LocalNavigationBarHeight.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val isTablet = configuration.smallestScreenWidthDp >= 600
     val columns = when {
+      isTv -> 5
       isTablet -> if (isLandscape) 5 else 4
       isLandscape -> 4
       else -> 3
@@ -206,12 +209,11 @@ data class TitlesScreen(
 
     var selectedItemId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedItemType by rememberSaveable { mutableStateOf<String?>(null) }
-    val twoPane = configuration.screenWidthDp >= 840 && backstack.size == 1
+    val twoPane = !isTv && configuration.screenWidthDp >= 840 && backstack.size == 1
     BackHandler(enabled = isSearching) {
       isSearching = false
       searchQuery = ""
     }
-
     BackHandler(enabled = !isSearching && twoPane && selectedItemId != null) {
       selectedItemId = null
       selectedItemType = null
@@ -232,7 +234,7 @@ data class TitlesScreen(
     LaunchedEffect(refreshKey) {
       withContext(Dispatchers.IO) {
         val detected = libraryIndexRepository.getLibrary(force = isRefreshing.value)
-        val libraryMovies = detected.movies.filter { MovieLibraryClassifier.isMovieLibraryItem(it) }
+        val libraryMovies = detected.movies.filter { MovieLibraryClassifier.isMovieLibraryItem(it, isTv = isTv) }
 
         runCatching {
           metadataRepository.pruneStaleMetadata(

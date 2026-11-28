@@ -1,8 +1,10 @@
 package app.aryan447.mpvium.ui.preferences.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,13 +25,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -95,6 +101,7 @@ fun CustomThemePreviewCard(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ThemePreviewCardContent(
     colorScheme: ColorScheme,
@@ -107,20 +114,29 @@ private fun ThemePreviewCardContent(
 ) {
     // Use the current MaterialTheme primary for selection to ensure visibility
     val selectionColor = MaterialTheme.colorScheme.primary
+    var isFocused by remember { mutableStateOf(false) }
 
-    val borderWidth = if (isSelected) 3.dp else 1.dp
-    val borderColor = if (isSelected) selectionColor else Color.Transparent
-    val elevation = if (isSelected) 8.dp else 2.dp
+    val borderWidth = when {
+        isFocused -> 3.dp
+        isSelected -> 3.dp
+        else -> 1.dp
+    }
+    val borderColor = when {
+        isFocused -> selectionColor
+        isSelected -> selectionColor
+        else -> Color.Transparent
+    }
+    val elevation = if (isSelected || isFocused) 8.dp else 2.dp
 
     Column(
         modifier = modifier
             .width(ThemeCardColumnWidth)
-            .pointerInput(onClick, onLongClick) {
-                detectTapGestures(
-                    onTap = { onClick() },
-                    onLongPress = if (onLongClick != null) { { onLongClick() } } else null,
-                )
-            },
+            .clip(RoundedCornerShape(ThemeCardCorner))
+            .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Theme preview card
@@ -247,25 +263,25 @@ fun ThemeStudioCard(
     modifier: Modifier = Modifier,
 ) {
     val cardShape = RoundedCornerShape(ThemeCardCorner)
+    var isFocused by remember { mutableStateOf(false) }
+    val primary = MaterialTheme.colorScheme.primary
 
     Column(
         modifier = modifier
             .width(ThemeCardColumnWidth)
-            .pointerInput(Unit) {
-                detectTapGestures {
-                    onClick()
-                }
-            },
+            .clip(cardShape)
+            .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
+            .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier = Modifier
                 .size(width = ThemeCardWidth, height = ThemeCardHeight)
                 .shadow(
-                    elevation = 2.dp,
+                    elevation = if (isFocused) 8.dp else 2.dp,
                     shape = cardShape,
-                    ambientColor = Color.Black.copy(alpha = 0.2f),
-                    spotColor = Color.Black.copy(alpha = 0.2f),
+                    ambientColor = if (isFocused) primary.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.2f),
+                    spotColor = if (isFocused) primary.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.2f),
                 )
                 .clip(cardShape)
                 .background(
@@ -277,8 +293,8 @@ fun ThemeStudioCard(
                     )
                 )
                 .border(
-                    width = 1.dp,
-                    color = Color.Transparent,
+                    width = if (isFocused) 3.dp else 1.dp,
+                    color = if (isFocused) primary else Color.Transparent,
                     shape = cardShape,
                 ),
             contentAlignment = Alignment.Center,

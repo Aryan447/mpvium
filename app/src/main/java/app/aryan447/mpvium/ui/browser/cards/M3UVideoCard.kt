@@ -30,6 +30,10 @@ import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.remember
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import org.koin.compose.koinInject
 
 /**
@@ -51,16 +55,25 @@ fun M3UVideoCard(
   val maxLines = if (unlimitedNameLines) Int.MAX_VALUE else 2
 
   val thumbSizeDp = 64.dp
+  val cardInteraction = remember { MutableInteractionSource() }
 
   Card(
     modifier =
       modifier
         .fillMaxWidth()
+        .tvFocusHighlight(
+          shape = RoundedCornerShape(12.dp),
+          interactionSource = cardInteraction,
+          scale = 1.02f,
+        )
         .combinedClickable(
+          interactionSource = cardInteraction,
+          indication = ripple(),
           onClick = onClick,
           onLongClick = onLongClick,
         ),
-    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
   ) {
     Row(
       modifier =
@@ -82,11 +95,7 @@ fun M3UVideoCard(
           Modifier
             .size(thumbSizeDp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .combinedClickable(
-              onClick = onClick,
-              onLongClick = onLongClick,
-            ),
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
       ) {
         // Play icon overlay

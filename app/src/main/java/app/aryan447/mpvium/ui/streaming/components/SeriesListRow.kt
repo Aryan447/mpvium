@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.ripple
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -65,12 +68,20 @@ fun SeriesListRow(
   val dark = isSystemInDarkTheme()
   val haptic = LocalHapticFeedback.current
   val fallbackVideo = series.seasons.values.firstOrNull()?.firstOrNull()?.video
+  val interactionSource = remember { MutableInteractionSource() }
 
   Row(
     modifier = modifier
       .fillMaxWidth()
+      .tvFocusHighlight(
+        shape = RoundedCornerShape(14.dp),
+        interactionSource = interactionSource,
+        scale = 1.02f,
+      )
       .clip(RoundedCornerShape(14.dp))
       .clickable(
+        interactionSource = interactionSource,
+        indication = ripple(),
         onClick = {
           haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           onClick()
@@ -116,8 +127,9 @@ fun SeriesListRow(
         )
       }
 
-      // Rating Badge (Top-End)
-      if (series.rating != null && series.rating > 0f) {
+      // Rating Badge (Top-End, TV only)
+      val isTv = app.aryan447.mpvium.ui.utils.LocalIsTv.current
+      if (isTv && series.rating != null && series.rating > 0f) {
         Surface(
           color = Color(0xFFE5A00D).copy(alpha = 0.95f),
           shape = RoundedCornerShape(6.dp),

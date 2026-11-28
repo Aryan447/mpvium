@@ -1,6 +1,12 @@
 package app.aryan447.mpvium.ui.browser.cards
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -125,15 +131,23 @@ fun NetworkConnectionCard(
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(top = 12.dp),
+          .padding(top = 8.dp)
+          .clip(RoundedCornerShape(8.dp))
+          .toggleable(
+            value = connection.autoConnect,
+            onValueChange = { checked ->
+              onAutoConnectChange(connection, checked)
+            },
+            role = Role.Checkbox,
+          )
+          .padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
       ) {
         Checkbox(
           checked = connection.autoConnect,
-          onCheckedChange = { checked ->
-            onAutoConnectChange(connection, checked)
-          },
+          onCheckedChange = null,
         )
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
           text = "Connect automatically on app launch",
           style = MaterialTheme.typography.bodySmall,

@@ -54,9 +54,10 @@ restraint is the feature.
 
 ## One app, every screen
 
-Phones and tablets are the same product. Layouts, the player, the seekbar, and the
-sheets use the room a large screen gives them instead of stretching phone UI across
-it. Small screens are the constraint, not the only target.
+Phones, tablets, and TVs are the same product. Layouts, the player, the seekbar, and the
+sheets use the room a large screen gives them and work with a remote as naturally as with
+touch, instead of stretching phone UI across them. Small screens are the constraint, not
+the only target.
 
 ## Boring integrity
 

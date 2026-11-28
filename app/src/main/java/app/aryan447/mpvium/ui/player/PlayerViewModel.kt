@@ -344,6 +344,13 @@ class PlayerViewModel(
   private val _controlsShown = MutableStateFlow(false)
   val controlsShown: StateFlow<Boolean> = _controlsShown.asStateFlow()
 
+  private val _controlsInteractionTimestamp = MutableStateFlow(0L)
+  val controlsInteractionTimestamp: StateFlow<Long> = _controlsInteractionTimestamp.asStateFlow()
+
+  fun keepControlsAlive() {
+    _controlsInteractionTimestamp.value = android.os.SystemClock.uptimeMillis()
+  }
+
   private val _seekBarShown = MutableStateFlow(false)
   val seekBarShown: StateFlow<Boolean> = _seekBarShown.asStateFlow()
 
@@ -595,6 +602,61 @@ class PlayerViewModel(
   }
 
   // ==================== Decoder ====================
+
+  private var decoderSwitchJob: Job? = null
+
+  fun updateDecoder(decoder: Decoder) {
+    decoderSwitchJob?.cancel()
+    decoderSwitchJob =
+      viewModelScope.launch(Dispatchers.IO) {
+        val wasPaused = MPVLib.getPropertyBoolean("pause") ?: (paused == true)
+        val savedPos = MPVLib.getPropertyDouble("time-pos")
+
+        // Ensure 10-bit HEVC/H.264 profiles are never filtered out by mpv.
+        MPVLib.setPropertyString("hwdec-codecs", "all")
+        MPVLib.setPropertyString("hwdec", decoder.value)
+
+        // Reload the video pipeline so MediaCodec cleanly initializes or tears down
+        // (e.g. P010 10-bit buffer negotiation on MediaTek when switching no <-> mediacodec-copy).
+        runCatching {
+          MPVLib.command("video-reload")
+        }.onFailure {
+          if (savedPos != null && savedPos >= 0.0) {
+            runCatching { MPVLib.command("seek", savedPos.toString(), "absolute+exact") }
+          }
+        }
+
+        delay(250L)
+
+        // Preserve exact time-pos and pause state across the reload.
+        if (savedPos != null && savedPos >= 0.0) {
+          val currentPos = MPVLib.getPropertyDouble("time-pos")
+          val tolerance = if (wasPaused) 0.05 else 1.0
+          if (currentPos == null || abs(currentPos - savedPos) > tolerance) {
+            MPVLib.command("seek", savedPos.toString(), "absolute+exact")
+          }
+        }
+        MPVLib.setPropertyBoolean("pause", wasPaused)
+
+        // Safety net: verify hwdec-current after reload. If mediacodec-copy failed to stick
+        // (e.g. unsupported 10-bit P010 buffer negotiation), fall back cleanly and notify the user.
+        val activeHwdec = MPVLib.getPropertyString("hwdec-current")
+        if (decoder == Decoder.HW && activeHwdec != Decoder.HW.value) {
+          val fallback = activeHwdec?.takeIf { it.isNotBlank() } ?: Decoder.SW.value
+          MPVLib.setPropertyString("hwdec", fallback)
+          val pixFmt = MPVLib.getPropertyString("video-params/pixelformat").orEmpty()
+          val msgRes =
+            if (pixFmt.contains("10")) {
+              R.string.player_decoder_hw_copy_10bit_unsupported
+            } else {
+              R.string.player_decoder_hw_copy_unsupported
+            }
+          withContext(Dispatchers.Main) {
+            showToast(host.context.getString(msgRes))
+          }
+        }
+      }
+  }
 
   // ==================== Audio/Subtitle Management ====================
 
@@ -2631,6 +2693,8 @@ class PlayerViewModel(
   override fun onCleared() {
     cachePollJob?.cancel()
     cachePollJob = null
+    decoderSwitchJob?.cancel()
+    decoderSwitchJob = null
     super.onCleared()
   }
 }

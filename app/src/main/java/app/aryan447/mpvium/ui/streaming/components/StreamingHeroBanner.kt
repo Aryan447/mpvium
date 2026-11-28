@@ -145,8 +145,9 @@ fun StreamingHeroBanner(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        // Rating Badge
-        if (series.rating != null && series.rating > 0f) {
+        // Rating Badge (TV only)
+        val isTv = app.aryan447.mpvium.ui.utils.LocalIsTv.current
+        if (isTv && series.rating != null && series.rating > 0f) {
           Surface(
             color = Color(0xFFE5A00D).copy(alpha = 0.95f),
             shape = RoundedCornerShape(6.dp)

@@ -29,6 +29,10 @@ import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.domain.network.NetworkFile
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.remember
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import org.koin.compose.koinInject
 
 @Composable
@@ -43,15 +47,25 @@ fun NetworkFolderCard(
   val unlimitedNameLines by appearancePreferences.unlimitedNameLines.collectAsState()
   val maxLines = if (unlimitedNameLines) Int.MAX_VALUE else 2
 
+  val cardInteraction = remember { MutableInteractionSource() }
+
   Card(
     modifier =
       modifier
         .fillMaxWidth()
+        .tvFocusHighlight(
+          shape = RoundedCornerShape(12.dp),
+          interactionSource = cardInteraction,
+          scale = 1.02f,
+        )
         .combinedClickable(
+          interactionSource = cardInteraction,
+          indication = ripple(),
           onClick = onClick,
           onLongClick = onLongClick,
         ),
-    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
   ) {
     Row(
       modifier =
@@ -68,11 +82,7 @@ fun NetworkFolderCard(
           Modifier
             .size(64.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .combinedClickable(
-              onClick = onClick,
-              onLongClick = onLongClick,
-            ),
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
       ) {
         Icon(

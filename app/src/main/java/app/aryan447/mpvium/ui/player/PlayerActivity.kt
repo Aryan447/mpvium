@@ -49,6 +49,7 @@ import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
+import app.aryan447.mpvium.preferences.DecoderPreferences
 import app.aryan447.mpvium.preferences.MpvConfigOwnershipPolicy
 import app.aryan447.mpvium.preferences.ScriptFileHelper
 import app.aryan447.mpvium.preferences.PlayerLayout
@@ -168,6 +169,11 @@ class PlayerActivity :
    * Preferences for appearance settings.
    */
   private val appearancePreferences: AppearancePreferences by inject()
+
+  /**
+   * Preferences for decoder settings (hardware/software).
+   */
+  private val decoderPreferences: DecoderPreferences by inject()
 
   /**
    * Manager for file operations.
@@ -475,6 +481,7 @@ class PlayerActivity :
     }
 
     getPlayableUri(intent)?.let { uri ->
+      applyDecoderOptionsBeforeLoadfile()
       applySeekCacheOptionsBeforeLoadfile(uri)
       player.playFile(uri)
     }
@@ -482,7 +489,9 @@ class PlayerActivity :
     // Only set orientation immediately if NOT in Video mode
     // For Video mode, wait for video-params/aspect to become available
     if (isAudioMode) {
-      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      if (!app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) {
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      }
       window.statusBarColor = android.graphics.Color.TRANSPARENT
       window.navigationBarColor = android.graphics.Color.TRANSPARENT
       try {
@@ -552,6 +561,12 @@ class PlayerActivity :
       return
     }
 
+    // When controls are visible on TV or phone, Back dismisses the controls first
+    if (viewModel.controlsShown.value) {
+      viewModel.hideControls()
+      return
+    }
+
     // Check if auto PIP is enabled - enter PIP mode instead of finishing
     if (playerPreferences.autoPiPOnNavigation.get() && isReady) {
       pipHelper.enterPipMode()
@@ -563,16 +578,21 @@ class PlayerActivity :
   }
 
   private fun setupPlayerControls() {
+    val isTv = app.aryan447.mpvium.utils.DeviceUtils.isTv(this)
     binding.controls.setContent {
-      MpviumTheme {
-        PlayerControls(
-          viewModel = viewModel,
-          onBackPress = {
-            isUserFinishing = true
-            finish()
-          },
-          modifier = Modifier,
-        )
+      androidx.compose.runtime.CompositionLocalProvider(
+        app.aryan447.mpvium.ui.utils.LocalIsTv provides isTv,
+      ) {
+        MpviumTheme {
+          PlayerControls(
+            viewModel = viewModel,
+            onBackPress = {
+              isUserFinishing = true
+              finish()
+            },
+            modifier = Modifier,
+          )
+        }
       }
     }
   }
@@ -1269,6 +1289,7 @@ class PlayerActivity :
   override fun onResume() {
     super.onResume()
     updateVolume()
+    syncDecoderPreferenceIfChanged()
   }
 
   /**
@@ -1926,6 +1947,12 @@ class PlayerActivity :
 
     // Start media notification service (like YouTube - always show notification)
     startBackgroundPlayback()
+
+    val configuredDecoder = decoderPreferences.defaultDecoder.get()
+    val activeHwdec = MPVLib.getPropertyString("hwdec")
+    val hwdecCurrent = MPVLib.getPropertyString("hwdec-current")
+    val videoCodec = MPVLib.getPropertyString("video-codec")
+    Log.i(TAG, "Playback started - Decoder Diagnostics: configured=${configuredDecoder.name}, hwdec=$activeHwdec, hwdec-current=$hwdecCurrent, video-codec=$videoCodec")
 
     // Reset AB loop values when video changes
     viewModel.clearABLoop()
@@ -2766,6 +2793,7 @@ class PlayerActivity :
 
     // Load the new file
     getPlayableUri(intent)?.let { uri ->
+      applyDecoderOptionsBeforeLoadfile()
       applySeekCacheOptionsBeforeLoadfile(uri)
       // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
       lifecycleScope.launch(Dispatchers.Default) {
@@ -2858,6 +2886,11 @@ class PlayerActivity :
    * to the correct orientation, starting with landscape as fallback.
    */
   private fun setOrientation() {
+    if (app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) {
+      requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+      return
+    }
+
     if (viewModel.isAudioMode.value) {
       requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
       return
@@ -2917,45 +2950,70 @@ class PlayerActivity :
     keyCode: Int,
     event: KeyEvent?,
   ): Boolean {
-    val isTrackSheetOpen =
-      viewModel.sheetShown.value == Sheets.SubtitleTracks ||
-        viewModel.sheetShown.value == Sheets.AudioTracks
-    val isNoSheetOpen = viewModel.sheetShown.value == Sheets.None
+    val isNoSheetOpen = viewModel.sheetShown.value == Sheets.None && viewModel.panelShown.value == Panels.None
+    val areControlsVisible = viewModel.controlsShown.value
+
+    if (areControlsVisible) {
+      viewModel.keepControlsAlive()
+    }
 
     when (keyCode) {
-      KeyEvent.KEYCODE_DPAD_UP -> {
-        return super.onKeyDown(keyCode, event)
-      }
-
-      KeyEvent.KEYCODE_DPAD_DOWN,
-      KeyEvent.KEYCODE_DPAD_RIGHT,
-      KeyEvent.KEYCODE_DPAD_LEFT,
-        -> {
-        if (isTrackSheetOpen) {
-          return super.onKeyDown(keyCode, event)
-        }
-
-        if (isNoSheetOpen) {
-          when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-              viewModel.handleRightDoubleTap()
-              return true
-            }
-
-            KeyEvent.KEYCODE_DPAD_LEFT -> {
-              viewModel.handleLeftDoubleTap()
-              return true
-            }
-          }
+      KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> {
+        if (!areControlsVisible && isNoSheetOpen) {
+          viewModel.showControls()
+          return true
         }
         return super.onKeyDown(keyCode, event)
       }
 
-      KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-        if (isTrackSheetOpen) {
+      KeyEvent.KEYCODE_DPAD_RIGHT -> {
+        if (!isNoSheetOpen) {
           return super.onKeyDown(keyCode, event)
         }
+
+        if (!areControlsVisible) {
+          viewModel.handleRightDoubleTap()
+          return true
+        }
         return super.onKeyDown(keyCode, event)
+      }
+
+      KeyEvent.KEYCODE_DPAD_LEFT -> {
+        if (!isNoSheetOpen) {
+          return super.onKeyDown(keyCode, event)
+        }
+
+        if (!areControlsVisible) {
+          viewModel.handleLeftDoubleTap()
+          return true
+        }
+        return super.onKeyDown(keyCode, event)
+      }
+
+      KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+        if (!isNoSheetOpen) {
+          return super.onKeyDown(keyCode, event)
+        }
+        if (!areControlsVisible) {
+          viewModel.pauseUnpause()
+          viewModel.showControls()
+          return true
+        }
+        return super.onKeyDown(keyCode, event)
+      }
+
+      KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_INFO -> {
+        if (areControlsVisible) {
+          viewModel.hideControls()
+        } else {
+          viewModel.showControls()
+        }
+        return true
+      }
+
+      KeyEvent.KEYCODE_VOLUME_MUTE -> {
+        MPVLib.command("cycle", "mute")
+        return true
       }
 
       KeyEvent.KEYCODE_SPACE -> {
@@ -2988,12 +3046,14 @@ class PlayerActivity :
         return true
       }
 
-      KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+      KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+      KeyEvent.KEYCODE_CHANNEL_DOWN -> {
         viewModel.handleMediaPrevious()
         return true
       }
 
-      KeyEvent.KEYCODE_MEDIA_NEXT -> {
+      KeyEvent.KEYCODE_MEDIA_NEXT,
+      KeyEvent.KEYCODE_CHANNEL_UP -> {
         viewModel.handleMediaNext()
         return true
       }
@@ -3009,7 +3069,9 @@ class PlayerActivity :
       }
 
       else -> {
-        event?.let { player.onKey(it) }
+        if (isNoSheetOpen) {
+          event?.let { player.onKey(it) }
+        }
         return super.onKeyDown(keyCode, event)
       }
     }
@@ -3035,8 +3097,23 @@ class PlayerActivity :
       KeyEvent.KEYCODE_MEDIA_NEXT,
       KeyEvent.KEYCODE_MEDIA_REWIND,
       KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
-      KeyEvent.KEYCODE_MEDIA_STOP -> return true
+      KeyEvent.KEYCODE_MEDIA_STOP,
+      KeyEvent.KEYCODE_CHANNEL_UP,
+      KeyEvent.KEYCODE_CHANNEL_DOWN -> return true
       else -> {
+        val isNoSheetOpen = viewModel.sheetShown.value == Sheets.None && viewModel.panelShown.value == Panels.None
+        val areControlsVisible = viewModel.controlsShown.value
+        val isDpadKey = when (keyCode) {
+          KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+          KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+          KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER,
+          KeyEvent.KEYCODE_NUMPAD_ENTER -> true
+          else -> false
+        }
+        // Prevent key release from triggering mpv bindings (like seek 10 on RIGHT) while navigating sheets or controls
+        if (!isNoSheetOpen || (areControlsVisible && isDpadKey)) {
+          return super.onKeyUp(keyCode, event)
+        }
         event?.let {
           if (player.onKey(it)) return true
         }
@@ -3602,6 +3679,7 @@ class PlayerActivity :
 
     // Load the new video
     // Avoid blocking UI thread while mpv opens network streams (e.g., HLS).
+    applyDecoderOptionsBeforeLoadfile()
     applySeekCacheOptionsBeforeLoadfile(playableUri)
     lifecycleScope.launch(Dispatchers.Default) {
       MPVLib.command("loadfile", playableUri)
@@ -3831,6 +3909,60 @@ class PlayerActivity :
       "${fileName}_${uri.toString().hashCode()}"
     } else {
       fileName
+    }
+  }
+
+  /**
+   * Applies decoder preferences (HW/SW) to MPV before loading a video file on TV devices.
+   * This guarantees that any changes made in Settings or previously are
+   * strictly applied to the player instance, even when PlayerActivity is reused
+   * via singleTask / onNewIntent. Non-TV devices preserve their standard behavior.
+   */
+  internal fun applyDecoderOptionsBeforeLoadfile() {
+    if (!app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) return
+    val configuredDecoder = decoderPreferences.defaultDecoder.get()
+    if (configuredDecoder == Decoder.SW) {
+      MPVLib.setOptionString("hwdec", "no")
+      MPVLib.setPropertyString("hwdec", "no")
+      MPVLib.setPropertyString("hwdec-codecs", "")
+    } else {
+      MPVLib.setOptionString("hwdec", configuredDecoder.defaultHwdec)
+      MPVLib.setPropertyString("hwdec", configuredDecoder.defaultHwdec)
+      MPVLib.setPropertyString("hwdec-codecs", "all")
+    }
+    Log.i(TAG, "Applied TV decoder options before loadfile: ${configuredDecoder.name} (hwdec=${configuredDecoder.defaultHwdec})")
+  }
+
+  internal fun applyDecoder(decoder: Decoder) {
+    if (app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) {
+      decoderPreferences.defaultDecoder.set(decoder)
+      if (decoder == Decoder.SW) {
+        MPVLib.setPropertyString("hwdec", "no")
+        MPVLib.setPropertyString("hwdec-codecs", "")
+      } else {
+        MPVLib.setPropertyString("hwdec", decoder.value)
+        MPVLib.setPropertyString("hwdec-codecs", "all")
+      }
+      // Re-initialize video track to drop MediaCodec and immediately bind FFmpeg software decoder (or vice-versa)
+      val currentVid = MPVLib.getPropertyInt("vid") ?: 1
+      if (currentVid > 0) {
+        MPVLib.setPropertyString("vid", "no")
+        MPVLib.setPropertyInt("vid", currentVid)
+      }
+      Log.i(TAG, "Switched TV decoder to ${decoder.name} (hwdec=${decoder.value}) and reloaded video track $currentVid")
+    } else {
+      MPVLib.setPropertyString("hwdec", decoder.value)
+    }
+  }
+
+  private fun syncDecoderPreferenceIfChanged() {
+    if (!app.aryan447.mpvium.utils.DeviceUtils.isTv(this) || !mpvInitialized || !isReady) return
+    val configured = decoderPreferences.defaultDecoder.get()
+    val currentHwdec = MPVLib.getPropertyString("hwdec")
+    val targetHwdec = if (configured == Decoder.SW) "no" else configured.defaultHwdec
+    if (currentHwdec != targetHwdec) {
+      Log.i(TAG, "Syncing TV decoder preference onResume: current=$currentHwdec -> target=$targetHwdec")
+      applyDecoder(configured)
     }
   }
 

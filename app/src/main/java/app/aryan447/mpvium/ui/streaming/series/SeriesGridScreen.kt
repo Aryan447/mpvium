@@ -122,11 +122,13 @@ object SeriesGridScreen : Screen {
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
     val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
     val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
+    val isTv = app.aryan447.mpvium.ui.utils.LocalIsTv.current
     val navigationBarHeight = LocalNavigationBarHeight.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val isTablet = configuration.smallestScreenWidthDp >= 600
     val columns = when {
+      isTv -> 5
       isTablet -> if (isLandscape) 5 else 4
       isLandscape -> 4
       else -> 3
@@ -156,7 +158,7 @@ object SeriesGridScreen : Screen {
     // Master-detail on wide screens when this grid is the tab root.
     // Pushed instances (e.g. from home See-all) stay single-pane.
     var selectedSeriesId by rememberSaveable { mutableStateOf<String?>(null) }
-    val twoPane = configuration.screenWidthDp >= 840 && backstack.size == 1
+    val twoPane = !isTv && configuration.screenWidthDp >= 840 && backstack.size == 1
     BackHandler(enabled = twoPane && selectedSeriesId != null) {
       selectedSeriesId = null
     }

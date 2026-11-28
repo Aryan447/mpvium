@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -451,14 +452,21 @@ fun PlaylistTrackListItem(
     }
   }
 
-  val borderModifier = if (item.isPlaying) {
-    Modifier.border(
+  var isFocused by remember { mutableStateOf(false) }
+  val primary = MaterialTheme.colorScheme.primary
+
+  val borderModifier = when {
+    isFocused -> Modifier.border(
+      width = 2.5.dp,
+      color = primary,
+      shape = RoundedCornerShape(12.dp),
+    )
+    item.isPlaying -> Modifier.border(
       width = 2.dp,
       brush = Brush.linearGradient(listOf(accentColor, accentSecondary)),
       shape = RoundedCornerShape(12.dp),
     )
-  } else {
-    Modifier
+    else -> Modifier
   }
 
   Surface(
@@ -468,13 +476,14 @@ fun PlaylistTrackListItem(
         horizontal = MaterialTheme.spacing.medium,
         vertical = MaterialTheme.spacing.extraSmall,
       )
+      .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
       .clip(RoundedCornerShape(12.dp))
       .then(borderModifier)
       .clickable(onClick = onClick),
-    color = if (item.isPlaying) {
-      MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
-    } else {
-      Color.Transparent
+    color = when {
+      isFocused -> primary.copy(alpha = 0.2f)
+      item.isPlaying -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+      else -> Color.Transparent
     },
     shape = RoundedCornerShape(12.dp),
   ) {

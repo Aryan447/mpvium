@@ -39,6 +39,7 @@ import app.aryan447.mpvium.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerColors
 import app.aryan447.mpvium.ui.player.controls.LocalPlayerLayout
 import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import org.koin.compose.koinInject
 
 private val modernGlyphShadow =
@@ -86,6 +87,12 @@ fun ControlsButton(
     modifier =
       modifier
         .sizeIn(minWidth = if (isModern) 28.dp else 40.dp, minHeight = if (isModern) 28.dp else 40.dp)
+        .tvFocusHighlight(
+          shape = CircleShape,
+          interactionSource = interactionSource,
+          scale = 1.15f,
+          borderWidth = 2.dp,
+        )
         .clip(CircleShape)
         .combinedClickable(
           onClick = {

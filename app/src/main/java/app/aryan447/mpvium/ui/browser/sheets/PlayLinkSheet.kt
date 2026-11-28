@@ -33,6 +33,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import app.aryan447.mpvium.utils.history.RecentlyPlayedOps
@@ -83,6 +86,8 @@ fun PlayLinkSheet(
     }
   }
 
+  val isTv = LocalIsTv.current
+  val tvState = rememberTvTextFieldState(isTv)
   val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
   ModalBottomSheet(
@@ -118,7 +123,9 @@ fun PlayLinkSheet(
             linkInputUrl = newValue
             isLinkInputUrlValid = newValue.isBlank() || MediaUtils.isURLValid(newValue)
           },
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier
+            .fillMaxWidth()
+            .tvTextFieldControl(tvState),
           label = { Text("Enter URL") },
           placeholder = { Text("https://example.com/video.mp4") },
           singleLine = true,

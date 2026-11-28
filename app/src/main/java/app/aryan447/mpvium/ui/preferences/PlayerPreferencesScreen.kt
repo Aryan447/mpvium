@@ -58,6 +58,7 @@ import app.aryan447.mpvium.ui.player.PlayerOrientation
 import app.aryan447.mpvium.ui.player.PlayerTitleMode
 import app.aryan447.mpvium.ui.player.SavePositionInterval
 import app.aryan447.mpvium.ui.player.controls.components.sheets.toFixed
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.FooterPreference
@@ -71,6 +72,7 @@ object PlayerPreferencesScreen : Screen {
   @Composable
   override fun Content() {
     val context = LocalContext.current
+    val isTv = LocalIsTv.current
     val preferences = koinInject<PlayerPreferences>()
     val listState = rememberLazyListState()
     val highlightState = rememberSettingsHighlightState(
@@ -137,24 +139,26 @@ object PlayerPreferencesScreen : Screen {
                 isCard = true,
               ),
             ) {
-              val orientation by preferences.orientation.collectAsState()
-              ExpressiveListPreference(
-                value = orientation,
-                onValueChange = preferences.orientation::set,
-                values = PlayerOrientation.entries,
-                valueToText = { AnnotatedString(context.getString(it.titleRes)) },
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.AspectRatio) },
-                title = { Text(text = stringResource(id = R.string.pref_player_orientation)) },
-                summary = {
-                  Text(
-                    text = stringResource(id = orientation.titleRes),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  )
-                },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.orientation"),
-              )
+              if (!isTv) {
+                val orientation by preferences.orientation.collectAsState()
+                ExpressiveListPreference(
+                  value = orientation,
+                  onValueChange = preferences.orientation::set,
+                  values = PlayerOrientation.entries,
+                  valueToText = { AnnotatedString(context.getString(it.titleRes)) },
+                  icon = { PreferenceRowIcon(icon = Icons.Outlined.AspectRatio) },
+                  title = { Text(text = stringResource(id = R.string.pref_player_orientation)) },
+                  summary = {
+                    Text(
+                      text = stringResource(id = orientation.titleRes),
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.orientation"),
+                )
 
-              PreferenceDivider()
+                PreferenceDivider()
+              }
 
               val savePositionOnQuit by preferences.savePositionOnQuit.collectAsState()
               HapticSwitchPreference(
@@ -304,22 +308,24 @@ object PlayerPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              val autoPiPOnNavigation by preferences.autoPiPOnNavigation.collectAsState()
-              HapticSwitchPreference(
-                value = autoPiPOnNavigation,
-                onValueChange = preferences.autoPiPOnNavigation::set,
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.PictureInPicture) },
-                title = { Text("Auto Picture-in-Picture") },
-                summary = {
-                  Text(
-                    text = "Automatically enter PIP mode when pressing home or back",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  )
-                },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.auto_pip"),
-              )
+              if (!isTv) {
+                val autoPiPOnNavigation by preferences.autoPiPOnNavigation.collectAsState()
+                HapticSwitchPreference(
+                  value = autoPiPOnNavigation,
+                  onValueChange = preferences.autoPiPOnNavigation::set,
+                  icon = { PreferenceRowIcon(icon = Icons.Outlined.PictureInPicture) },
+                  title = { Text("Auto Picture-in-Picture") },
+                  summary = {
+                    Text(
+                      text = "Automatically enter PIP mode when pressing home or back",
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.auto_pip"),
+                )
 
-              PreferenceDivider()
+                PreferenceDivider()
+              }
 
               val keepScreenOnWhenPaused by preferences.keepScreenOnWhenPaused.collectAsState()
               HapticSwitchPreference(
@@ -341,32 +347,34 @@ object PlayerPreferencesScreen : Screen {
           }
           // Seeking Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_seeking_title), count = 6)
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_seeking_title), count = if (isTv) 4 else 6)
           }
 
           item {
             PreferenceCard {
-              val showDoubleTapOvals by preferences.showDoubleTapOvals.collectAsState()
-              HapticSwitchPreference(
-                value = showDoubleTapOvals,
-                onValueChange = preferences.showDoubleTapOvals::set,
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.Gesture) },
-                title = { Text(stringResource(R.string.show_splash_ovals_on_double_tap_to_seek)) },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.seek_splash_ovals"),
-              )
+              if (!isTv) {
+                val showDoubleTapOvals by preferences.showDoubleTapOvals.collectAsState()
+                HapticSwitchPreference(
+                  value = showDoubleTapOvals,
+                  onValueChange = preferences.showDoubleTapOvals::set,
+                  icon = { PreferenceRowIcon(icon = Icons.Outlined.Gesture) },
+                  title = { Text(stringResource(R.string.show_splash_ovals_on_double_tap_to_seek)) },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.seek_splash_ovals"),
+                )
 
-              PreferenceDivider()
+                PreferenceDivider()
 
-              val showSeekTimeWhileSeeking by preferences.showSeekTimeWhileSeeking.collectAsState()
-              HapticSwitchPreference(
-                value = showSeekTimeWhileSeeking,
-                onValueChange = preferences.showSeekTimeWhileSeeking::set,
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.Schedule) },
-                title = { Text(stringResource(R.string.show_time_on_double_tap_to_seek)) },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.seek_show_time"),
-              )
+                val showSeekTimeWhileSeeking by preferences.showSeekTimeWhileSeeking.collectAsState()
+                HapticSwitchPreference(
+                  value = showSeekTimeWhileSeeking,
+                  onValueChange = preferences.showSeekTimeWhileSeeking::set,
+                  icon = { PreferenceRowIcon(icon = Icons.Outlined.Schedule) },
+                  title = { Text(stringResource(R.string.show_time_on_double_tap_to_seek)) },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.seek_show_time"),
+                )
 
-              PreferenceDivider()
+                PreferenceDivider()
+              }
 
               val usePreciseSeeking by preferences.usePreciseSeeking.collectAsState()
               HapticSwitchPreference(
@@ -426,13 +434,14 @@ object PlayerPreferencesScreen : Screen {
               )
             }
           }
-          // Gestures Section
-          item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 7)
-          }
+          if (!isTv) {
+            // Gestures Section
+            item {
+              PreferenceSectionHeader(title = stringResource(R.string.pref_player_gestures), count = 7)
+            }
 
-          item {
-            PreferenceCard {
+            item {
+              PreferenceCard {
               val brightnessGesture by preferences.brightnessGesture.collectAsState()
               HapticSwitchPreference(
                 value = brightnessGesture,
@@ -633,38 +642,41 @@ object PlayerPreferencesScreen : Screen {
               }
             }
           }
+        }
           // Controls Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_controls), count = 4)
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_controls), count = if (isTv) 2 else 4)
           }
 
           item {
             PreferenceCard {
-              val allowGesturesInPanels by preferences.allowGesturesInPanels.collectAsState()
-              HapticSwitchPreference(
-                value = allowGesturesInPanels,
-                onValueChange = preferences.allowGesturesInPanels::set,
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.Layers) },
-                title = {
-                  Text(
-                    text = stringResource(id = R.string.pref_player_controls_allow_gestures_in_panels),
-                  )
-                },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.allow_in_panels"),
-              )
+              if (!isTv) {
+                val allowGesturesInPanels by preferences.allowGesturesInPanels.collectAsState()
+                HapticSwitchPreference(
+                  value = allowGesturesInPanels,
+                  onValueChange = preferences.allowGesturesInPanels::set,
+                  icon = { PreferenceRowIcon(icon = Icons.Outlined.Layers) },
+                  title = {
+                    Text(
+                      text = stringResource(id = R.string.pref_player_controls_allow_gestures_in_panels),
+                    )
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.allow_in_panels"),
+                )
 
-              PreferenceDivider()
+                PreferenceDivider()
 
-              val swapVolumeAndBrightness by preferences.swapVolumeAndBrightness.collectAsState()
-              HapticSwitchPreference(
-                value = swapVolumeAndBrightness,
-                onValueChange = preferences.swapVolumeAndBrightness::set,
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.SwapHoriz) },
-                title = { Text(stringResource(R.string.swap_the_volume_and_brightness_slider)) },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.swap_volume_brightness"),
-              )
+                val swapVolumeAndBrightness by preferences.swapVolumeAndBrightness.collectAsState()
+                HapticSwitchPreference(
+                  value = swapVolumeAndBrightness,
+                  onValueChange = preferences.swapVolumeAndBrightness::set,
+                  icon = { PreferenceRowIcon(icon = Icons.Outlined.SwapHoriz) },
+                  title = { Text(stringResource(R.string.swap_the_volume_and_brightness_slider)) },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.gestures.swap_volume_brightness"),
+                )
 
-              PreferenceDivider()
+                PreferenceDivider()
+              }
 
               val showLoadingCircle by preferences.showLoadingCircle.collectAsState()
               HapticSwitchPreference(
@@ -695,32 +707,34 @@ object PlayerPreferencesScreen : Screen {
           }
           // Display Section
           item {
-            PreferenceSectionHeader(title = stringResource(R.string.pref_player_display), count = 3)
+            PreferenceSectionHeader(title = stringResource(R.string.pref_player_display), count = if (isTv) 1 else 3)
           }
 
           item {
             PreferenceCard {
-              val showSystemStatusBar by preferences.showSystemStatusBar.collectAsState()
-              HapticSwitchPreference(
-                value = showSystemStatusBar,
-                onValueChange = preferences.showSystemStatusBar::set,
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.Smartphone) },
-                title = { Text(stringResource(R.string.pref_player_display_show_status_bar)) },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.display.status_bar"),
-              )
+              if (!isTv) {
+                val showSystemStatusBar by preferences.showSystemStatusBar.collectAsState()
+                HapticSwitchPreference(
+                  value = showSystemStatusBar,
+                  onValueChange = preferences.showSystemStatusBar::set,
+                  icon = { PreferenceRowIcon(icon = Icons.Outlined.Smartphone) },
+                  title = { Text(stringResource(R.string.pref_player_display_show_status_bar)) },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.display.status_bar"),
+                )
 
-              PreferenceDivider()
+                PreferenceDivider()
 
-              val showSystemNavigationBar by preferences.showSystemNavigationBar.collectAsState()
-              HapticSwitchPreference(
-                value = showSystemNavigationBar,
-                onValueChange = preferences.showSystemNavigationBar::set,
-                icon = { PreferenceRowIcon(icon = Icons.Outlined.PhoneAndroid) },
-                title = { Text("Show navigation bar with controls") },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.display.navigation_bar"),
-              )
+                val showSystemNavigationBar by preferences.showSystemNavigationBar.collectAsState()
+                HapticSwitchPreference(
+                  value = showSystemNavigationBar,
+                  onValueChange = preferences.showSystemNavigationBar::set,
+                  icon = { PreferenceRowIcon(icon = Icons.Outlined.PhoneAndroid) },
+                  title = { Text("Show navigation bar with controls") },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.display.navigation_bar"),
+                )
 
-              PreferenceDivider()
+                PreferenceDivider()
+              }
 
               val reduceMotion by preferences.reduceMotion.collectAsState()
               HapticSwitchPreference(

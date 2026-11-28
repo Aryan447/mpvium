@@ -73,6 +73,8 @@ fun PermissionDeniedState(
 
   // Determine if we're using MANAGE_EXTERNAL_STORAGE or scoped storage permissions
   val isPlayStoreBuild = remember { BuildConfig.SCOPED_STORAGE_ONLY }
+  val isTv = app.aryan447.mpvium.ui.utils.LocalIsTv.current
+  val useScopedOrRuntimePermission = isPlayStoreBuild || isTv
 
   // Animated scale for the icon
   val infiniteTransition = rememberInfiniteTransition(label = "permission_icon")
@@ -155,7 +157,7 @@ fun PermissionDeniedState(
             verticalArrangement = Arrangement.spacedBy(12.dp),
           ) {
             Text(
-              text = if (isPlayStoreBuild) {
+              text = if (useScopedOrRuntimePermission) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                   "mpvium requires \"Photos and videos\" permission to access and play your video files stored on your device."
                 } else {
@@ -176,20 +178,24 @@ fun PermissionDeniedState(
         // Allow Access Button
         FilledTonalButton(
           onClick = {
-            if (isPlayStoreBuild) {
-              // Play Store build: Use regular permission request
+            if (useScopedOrRuntimePermission) {
+              // Play Store build or Android TV: Use standard runtime permission dialog
               onRequestPermission()
             } else {
-              // Standard build: Open All Files Access settings for Android 11+
+              // Standard mobile build: Open All Files Access settings for Android 11+
               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 try {
                   val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
                   intent.data = Uri.parse("package:${context.packageName}")
                   context.startActivity(intent)
                 } catch (_: Exception) {
-                  // Fallback to general All Files Access settings
-                  val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                  context.startActivity(intent)
+                  // Fallback to general All Files Access settings, or runtime permission if unavailable
+                  try {
+                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                    context.startActivity(intent)
+                  } catch (_: Exception) {
+                    onRequestPermission()
+                  }
                 }
               } else {
                 // For older Android versions, use the regular permission request

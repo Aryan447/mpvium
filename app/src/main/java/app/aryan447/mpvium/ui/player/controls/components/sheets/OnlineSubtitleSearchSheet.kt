@@ -32,6 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.components.PlayerSheet
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 import app.aryan447.mpvium.repository.wyzie.WyzieSubtitle
 import app.aryan447.mpvium.ui.theme.glassButtonContainerColor
 import app.aryan447.mpvium.ui.theme.glassButtonContentColor
@@ -515,12 +518,15 @@ private fun SubtitleSearchField(
   onClear: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  val isTv = LocalIsTv.current
+  val tvState = rememberTvTextFieldState(isTv)
   val keyboardController = LocalSoftwareKeyboardController.current
   OutlinedTextField(
     value = query,
     onValueChange = onQueryChange,
     modifier = modifier
       .fillMaxWidth()
+      .tvTextFieldControl(tvState)
       .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.extraSmall),
     placeholder = { Text(stringResource(R.string.pref_subtitles_search_online)) },
     leadingIcon = {

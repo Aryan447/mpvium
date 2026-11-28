@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,9 +26,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -115,10 +118,16 @@ fun SpeedBingeCard(
   val isGlass = LocalGlass.current
   val dark = isSystemInDarkTheme()
   val isLastPlayed = item is SpeedBingeItem.LastPlayed
+  val interactionSource = remember { MutableInteractionSource() }
 
   Box(
     modifier = modifier
       .aspectRatio(2f / 3f)
+      .tvFocusHighlight(
+        shape = RoundedCornerShape(12.dp),
+        interactionSource = interactionSource,
+        scale = 1.05f,
+      )
       .clip(RoundedCornerShape(12.dp))
       .background(MaterialTheme.colorScheme.surfaceContainerHigh)
       .then(if (isCinema) Modifier.cinemaFilmStrip(enabled = true) else Modifier)
@@ -130,6 +139,8 @@ fun SpeedBingeCard(
         }
       )
       .combinedClickable(
+        interactionSource = interactionSource,
+        indication = null,
         onClick = {
           haptic.performHapticFeedback(HapticFeedbackType.LongPress)
           onClick()

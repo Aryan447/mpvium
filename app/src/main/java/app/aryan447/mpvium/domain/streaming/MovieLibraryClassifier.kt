@@ -142,16 +142,17 @@ object MovieLibraryClassifier {
   /**
    * Classifies an already-detected movie-library candidate.
    */
-  fun classify(movie: LocalMovie): MovieLibraryKind = classify(
+  fun classify(movie: LocalMovie, isTv: Boolean = false): MovieLibraryKind = classify(
     fileName = movie.video.displayName,
     folderPath = movie.video.path.substringBeforeLast('/', ""),
     durationMs = movie.video.duration,
     width = movie.video.width,
     height = movie.video.height,
+    isTv = isTv,
   )
 
-  fun isMovieLibraryItem(movie: LocalMovie): Boolean =
-    classify(movie) == MovieLibraryKind.MOVIE
+  fun isMovieLibraryItem(movie: LocalMovie, isTv: Boolean = false): Boolean =
+    classify(movie, isTv) == MovieLibraryKind.MOVIE
 
   /**
    * Pure classification entry point used by the scanner-facing wrapper and by
@@ -163,6 +164,7 @@ object MovieLibraryClassifier {
     durationMs: Long,
     width: Int,
     height: Int,
+    isTv: Boolean = false,
   ): MovieLibraryKind {
     // Missing metadata must never hide a file: MediaStore occasionally reports
     // no duration, and the filesystem fallback may not have dimensions.
@@ -201,8 +203,10 @@ object MovieLibraryClassifier {
         MovieLibraryKind.SHORT_VIDEO
 
       // Downloads and camera/recording folders are ambiguous, so require a
-      // shorter duration before hiding anything from Movies.
-      transientSource && durationMs <= TRANSIENT_SOURCE_MAX_MS ->
+      // shorter duration before hiding anything from Movies. On Android TV,
+      // media is often transferred directly to Downloads, so landscape media
+      // above VERY_SHORT_MAX_MS stays visible in the movie library.
+      !isTv && transientSource && durationMs <= TRANSIENT_SOURCE_MAX_MS ->
         MovieLibraryKind.SHORT_VIDEO
 
       else -> MovieLibraryKind.MOVIE

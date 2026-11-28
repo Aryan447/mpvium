@@ -55,6 +55,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.PlayerButton
@@ -88,6 +89,7 @@ object PlayerControlsPreferencesScreen : Screen {
   @Composable
   override fun Content() {
     val backstack = LocalBackStack.current
+    val isTv = LocalIsTv.current
     val appearancePrefs = koinInject<AppearancePreferences>()
     val playerPrefs = koinInject<PlayerPreferences>()
 
@@ -247,21 +249,23 @@ object PlayerControlsPreferencesScreen : Screen {
             }
           }
 
-          // Portrait Controls Section
-          item {
-            PreferenceSectionHeader(title = "Portrait Controls", count = 1)
-          }
+          if (!isTv) {
+            // Portrait Controls Section
+            item {
+              PreferenceSectionHeader(title = "Portrait Controls", count = 1)
+            }
 
-          item {
-            PreferenceCard {
-              PreferenceCategoryWithEditButton(
-                title = stringResource(id = R.string.pref_layout_portrait_bottom_controls),
-                onClick = {
-                  backstack.add(ControlLayoutEditorScreen(ControlRegion.PORTRAIT_BOTTOM))
-                },
-                modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.portrait_bottom"),
-              )
-              PreferenceIconSummary(buttons = portraitBottomButtons)
+            item {
+              PreferenceCard {
+                PreferenceCategoryWithEditButton(
+                  title = stringResource(id = R.string.pref_layout_portrait_bottom_controls),
+                  onClick = {
+                    backstack.add(ControlLayoutEditorScreen(ControlRegion.PORTRAIT_BOTTOM))
+                  },
+                  modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.portrait_bottom"),
+                )
+                PreferenceIconSummary(buttons = portraitBottomButtons)
+              }
             }
           }
 
@@ -305,18 +309,20 @@ object PlayerControlsPreferencesScreen : Screen {
             )
           }
 
-          // Brightness Slider Style Section
-          item {
-            PreferenceSectionHeader(title = "Brightness Slider Style", count = SeekbarStyle.entries.size)
-          }
+          if (!isTv) {
+            // Brightness Slider Style Section
+            item {
+              PreferenceSectionHeader(title = "Brightness Slider Style", count = SeekbarStyle.entries.size)
+            }
 
-          item {
-            val brightnessSliderStyle by appearancePrefs.brightnessSliderStyle.collectAsState()
-            SliderStylePicker(
-              selected = brightnessSliderStyle,
-              onSelect = { appearancePrefs.brightnessSliderStyle.set(it) },
-              isVertical = true,
-            )
+            item {
+              val brightnessSliderStyle by appearancePrefs.brightnessSliderStyle.collectAsState()
+              SliderStylePicker(
+                selected = brightnessSliderStyle,
+                onSelect = { appearancePrefs.brightnessSliderStyle.set(it) },
+                isVertical = true,
+              )
+            }
           }
 
           // Appearance Section

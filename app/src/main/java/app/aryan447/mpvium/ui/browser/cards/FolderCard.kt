@@ -45,6 +45,7 @@ import app.aryan447.mpvium.domain.media.model.VideoFolder
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.BrowserPreferences
 import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
 import kotlin.math.pow
 import org.koin.compose.koinInject
 
@@ -127,6 +128,11 @@ fun FolderCard(
   Card(
     modifier = modifier
       .fillMaxWidth()
+      .tvFocusHighlight(
+        shape = if (expressive) RoundedCornerShape(cardCorner) else CardDefaults.shape,
+        interactionSource = cardInteraction,
+        scale = 1.03f,
+      )
       .graphicsLayer {
         scaleX = pressScale
         scaleY = pressScale

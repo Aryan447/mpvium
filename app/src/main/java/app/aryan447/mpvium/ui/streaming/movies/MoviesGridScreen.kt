@@ -100,6 +100,7 @@ import app.aryan447.mpvium.ui.streaming.components.SortOption
 import app.aryan447.mpvium.ui.theme.rememberGlassHazeState
 import app.aryan447.mpvium.ui.utils.LocalBackStack
 import app.aryan447.mpvium.ui.utils.LocalDetailPaneBack
+import app.aryan447.mpvium.ui.utils.LocalIsTv
 import app.aryan447.mpvium.utils.media.MediaLibraryEvents
 import app.aryan447.mpvium.utils.media.MediaUtils
 import app.aryan447.mpvium.utils.permission.PermissionUtils
@@ -129,11 +130,13 @@ object MoviesGridScreen : Screen {
     val whitelistOnlyEnabled by foldersPreferences.whitelistOnlyEnabled.collectAsState()
     val whitelistedFolders by foldersPreferences.whitelistedFolders.collectAsState()
     val libraryFiltered = whitelistOnlyEnabled && whitelistedFolders.isNotEmpty()
+    val isTv = LocalIsTv.current
     val navigationBarHeight = LocalNavigationBarHeight.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val isTablet = configuration.smallestScreenWidthDp >= 600
     val columns = when {
+      isTv -> 5
       isTablet -> if (isLandscape) 5 else 4
       isLandscape -> 4
       else -> 3
@@ -164,7 +167,7 @@ object MoviesGridScreen : Screen {
     // Master-detail on wide screens when this grid is the tab root.
     // Pushed instances (e.g. from home See-all) stay single-pane.
     var selectedMovieId by rememberSaveable { mutableStateOf<Long?>(null) }
-    val twoPane = configuration.screenWidthDp >= 840 && backstack.size == 1
+    val twoPane = !isTv && configuration.screenWidthDp >= 840 && backstack.size == 1
     BackHandler(enabled = twoPane && selectedMovieId != null) {
       selectedMovieId = null
     }
@@ -186,7 +189,7 @@ object MoviesGridScreen : Screen {
         // The scanner treats every non-episode file as a movie. Keep reels,
         // trailers, social exports and personal clips out of the Movies grid;
         // they are not deleted or moved, and Folders still lists every file.
-        val libraryMovies = detected.movies.filter { MovieLibraryClassifier.isMovieLibraryItem(it) }
+        val libraryMovies = detected.movies.filter { MovieLibraryClassifier.isMovieLibraryItem(it, isTv = isTv) }
         // Drop cached TMDB entries for deleted movies.
         // Remaining movies reuse their cache with no re-scrape.
         runCatching {

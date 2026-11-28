@@ -25,6 +25,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import app.aryan447.mpvium.ui.utils.LocalIsTv
+import app.aryan447.mpvium.ui.utils.rememberTvTextFieldState
+import app.aryan447.mpvium.ui.utils.tvTextFieldControl
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -42,6 +45,8 @@ fun RenameDialog(
   val isError = remember { mutableStateOf(false) }
   val errorMessage = remember { mutableStateOf("") }
   val focusRequester = remember { FocusRequester() }
+  val isTv = LocalIsTv.current
+  val tvState = rememberTvTextFieldState(isTv)
 
   // Auto-focus text field
   LaunchedEffect(Unit) {
@@ -89,10 +94,12 @@ fun RenameDialog(
               isError.value = false
               errorMessage.value = ""
             },
+            readOnly = tvState.readOnly,
             modifier =
               Modifier
                 .fillMaxWidth()
-                .focusRequester(focusRequester),
+                .focusRequester(focusRequester)
+                .tvTextFieldControl(tvState),
             label = { Text("New name", fontWeight = FontWeight.Medium) },
             singleLine = false,
             maxLines = 5,
