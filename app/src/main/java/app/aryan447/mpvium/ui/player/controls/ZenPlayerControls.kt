@@ -260,11 +260,11 @@ fun ZenPlayerControls(
                   }
                 },
               shape = RoundedCornerShape(21.dp),
-              color = surfaceColor,
-              border = borderStroke,
+              color = if (isTitleVisible) surfaceColor else Color.Transparent,
+              border = if (isTitleVisible) borderStroke else null,
             ) {
               Box(
-                modifier = Modifier.padding(horizontal = 14.dp),
+                modifier = Modifier.padding(horizontal = if (isTitleVisible) 14.dp else 8.dp),
                 contentAlignment = Alignment.CenterStart,
               ) {
                 if (isTitleVisible) {
