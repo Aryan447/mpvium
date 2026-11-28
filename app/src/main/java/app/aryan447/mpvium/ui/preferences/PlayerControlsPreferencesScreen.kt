@@ -131,6 +131,7 @@ object PlayerControlsPreferencesScreen : Screen {
     val zenSecondaryMap = remember(zenSecondaryState) {
       appearancePrefs.parseSecondaryButtons(zenSecondaryState)
     }
+    val zenAlternateTrigger by appearancePrefs.zenAlternateActionTrigger.collectAsState()
     var editingZenSecondaryFor by remember { mutableStateOf<app.aryan447.mpvium.preferences.PlayerButton?>(null) }
 
     val listState = rememberLazyListState()
@@ -249,15 +250,31 @@ object PlayerControlsPreferencesScreen : Screen {
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                   ) {
                     Text(
-                      text = "Alternate Actions (Swipe / Long Press)",
+                      text = "Alternate Actions",
                       style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
-                      text = "Swipe left/right or long-press a button in the bottom-right pill to switch it",
+                      text = "Switch a button in the bottom-right pill between its primary and alternate action",
                       style = MaterialTheme.typography.bodySmall,
                       color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
+                    val triggerLabels = mapOf(
+                      app.aryan447.mpvium.preferences.ZenAlternateActionTrigger.SWIPE to "Swipe",
+                      app.aryan447.mpvium.preferences.ZenAlternateActionTrigger.LONG_PRESS to "Long Press",
+                      app.aryan447.mpvium.preferences.ZenAlternateActionTrigger.BOTH to "Both",
+                    )
+                    ExpressiveChoiceRow(
+                      options = app.aryan447.mpvium.preferences.ZenAlternateActionTrigger.entries,
+                      selected = zenAlternateTrigger,
+                      labelOf = { triggerLabels.getValue(it) },
+                      onSelect = { appearancePrefs.zenAlternateActionTrigger.set(it) },
+                      equalWidth = true,
+                      modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                     zenActionButtons.forEach { primary ->
                       val alternate = zenSecondaryMap[primary]
                       Row(

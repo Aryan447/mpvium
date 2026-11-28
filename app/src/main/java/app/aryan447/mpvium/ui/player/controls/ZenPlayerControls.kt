@@ -80,6 +80,7 @@ import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.PlayerButton
 import app.aryan447.mpvium.preferences.SeekbarStyle
+import app.aryan447.mpvium.preferences.ZenAlternateActionTrigger
 import app.aryan447.mpvium.preferences.preference.collectAsState
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
@@ -153,6 +154,7 @@ fun ZenPlayerControls(
   val zenSecondaryMap = remember(zenSecondaryState) {
     appearancePreferences.parseSecondaryButtons(zenSecondaryState)
   }
+  val zenAlternateTrigger by appearancePreferences.zenAlternateActionTrigger.collectAsState()
 
   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
   val navBarBottom = navBarPadding.calculateBottomPadding()
@@ -427,6 +429,7 @@ fun ZenPlayerControls(
             ZenBottomActionsPill(
               buttons = actionButtons,
               secondaryButtons = zenSecondaryMap,
+              alternateTrigger = zenAlternateTrigger,
               onOpenSubtitles = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 resetControlsTimestamp()
@@ -525,6 +528,7 @@ fun ZenPlayerControls(
             ZenBottomActionsPill(
               buttons = actionButtons,
               secondaryButtons = zenSecondaryMap,
+              alternateTrigger = zenAlternateTrigger,
               onOpenSubtitles = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 resetControlsTimestamp()
@@ -751,6 +755,7 @@ private fun ZenSeekbarPill(
 private fun ZenBottomActionsPill(
   buttons: List<PlayerButton>,
   secondaryButtons: Map<PlayerButton, PlayerButton>,
+  alternateTrigger: ZenAlternateActionTrigger,
   onOpenSubtitles: () -> Unit,
   onOpenAudio: () -> Unit,
   onOpenExplain: () -> Unit,
@@ -846,31 +851,39 @@ private fun ZenBottomActionsPill(
         } else {
           var useAlternate by remember(primary, alternate) { mutableStateOf(false) }
           val activeButton = if (useAlternate) alternate else primary
+          val allowSwipe = alternateTrigger == ZenAlternateActionTrigger.SWIPE || alternateTrigger == ZenAlternateActionTrigger.BOTH
+          val allowLongPress = alternateTrigger == ZenAlternateActionTrigger.LONG_PRESS || alternateTrigger == ZenAlternateActionTrigger.BOTH
 
           Box(
             modifier = Modifier
               .size(28.dp)
               .clip(CircleShape)
-              .pointerInput(primary, alternate, swipeThresholdPx) {
-                var accumX = 0f
-                var toggledThisDrag = false
-                detectHorizontalDragGestures(
-                  onDragStart = {
-                    accumX = 0f
-                    toggledThisDrag = false
-                  },
-                  onHorizontalDrag = { change, dragAmount ->
-                    accumX += dragAmount
-                    if (!toggledThisDrag && kotlin.math.abs(accumX) >= swipeThresholdPx) {
-                      change.consume()
-                      toggledThisDrag = true
-                      haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                      resetControlsTimestamp()
-                      useAlternate = !useAlternate
-                    }
-                  },
-                )
-              }
+              .then(
+                if (allowSwipe) {
+                  Modifier.pointerInput(primary, alternate, swipeThresholdPx) {
+                    var accumX = 0f
+                    var toggledThisDrag = false
+                    detectHorizontalDragGestures(
+                      onDragStart = {
+                        accumX = 0f
+                        toggledThisDrag = false
+                      },
+                      onHorizontalDrag = { change, dragAmount ->
+                        accumX += dragAmount
+                        if (!toggledThisDrag && kotlin.math.abs(accumX) >= swipeThresholdPx) {
+                          change.consume()
+                          toggledThisDrag = true
+                          haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                          resetControlsTimestamp()
+                          useAlternate = !useAlternate
+                        }
+                      },
+                    )
+                  }
+                } else {
+                  Modifier
+                },
+              )
               .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(bounded = true, radius = 18.dp),
@@ -890,10 +903,14 @@ private fun ZenBottomActionsPill(
                     context = context,
                   )
                 },
-                onLongClick = {
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  useAlternate = !useAlternate
+                onLongClick = if (allowLongPress) {
+                  {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    resetControlsTimestamp()
+                    useAlternate = !useAlternate
+                  }
+                } else {
+                  null
                 },
               ),
             contentAlignment = Alignment.Center,

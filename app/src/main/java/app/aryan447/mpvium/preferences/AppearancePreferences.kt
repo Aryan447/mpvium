@@ -115,6 +115,12 @@ class AppearancePreferences(
       "SUBTITLES=AUDIO_TRACK",
     )
 
+  val zenAlternateActionTrigger =
+    preferenceStore.getEnum(
+      "zen_alternate_action_trigger",
+      ZenAlternateActionTrigger.SWIPE,
+    )
+
   fun selectTheme(theme: AppTheme) {
     selectedCustomThemeId.set("")
     appTheme.set(theme)
@@ -211,4 +217,10 @@ class AppearancePreferences(
     map.entries
       .filter { it.key != it.value && it.value != PlayerButton.NONE }
       .joinToString(",") { "${it.key.name}=${it.value.name}" }
+}
+
+enum class ZenAlternateActionTrigger {
+  SWIPE,
+  LONG_PRESS,
+  BOTH,
 }
