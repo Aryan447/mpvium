@@ -79,9 +79,11 @@ import androidx.compose.ui.unit.sp
 import app.aryan447.mpvium.preferences.AppearancePreferences
 import app.aryan447.mpvium.preferences.CustomScriptButton
 import app.aryan447.mpvium.preferences.PlayerButton
+import app.aryan447.mpvium.preferences.PlayerPreferences
 import app.aryan447.mpvium.preferences.SeekbarStyle
 import app.aryan447.mpvium.preferences.ZenAlternateActionTrigger
 import app.aryan447.mpvium.preferences.preference.collectAsState
+import app.aryan447.mpvium.ui.player.HoldGestureMode
 import app.aryan447.mpvium.ui.player.Panels
 import app.aryan447.mpvium.ui.player.PlayerActivity
 import app.aryan447.mpvium.ui.player.PlayerViewModel
@@ -812,7 +814,7 @@ private fun ZenBottomActionsPill(
   }
 
   val haptic = LocalHapticFeedback.current
-  val context = LocalContext.current
+  val playerPreferences = koinInject<PlayerPreferences>()
   val swipeThresholdPx = with(LocalDensity.current) { 16.dp.toPx() }
 
   Surface(
@@ -897,10 +899,10 @@ private fun ZenBottomActionsPill(
                     onOpenExplain = onOpenExplain,
                     onOpenMore = onOpenMore,
                     onOpenSheet = onOpenSheet,
-                    onOpenPanel = onOpenPanel,
                     viewModel = viewModel,
                     activity = activity,
-                    context = context,
+                    aspect = aspect,
+                    playerPreferences = playerPreferences,
                   )
                 },
                 onLongClick = if (allowLongPress) {
@@ -1028,10 +1030,10 @@ private fun triggerZenButtonAction(
   onOpenExplain: () -> Unit,
   onOpenMore: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
-  onOpenPanel: (Panels) -> Unit,
   viewModel: PlayerViewModel,
   activity: PlayerActivity,
-  context: android.content.Context,
+  aspect: VideoAspect,
+  playerPreferences: PlayerPreferences,
 ) {
   when (button) {
     PlayerButton.SUBTITLES -> onOpenSubtitles()
@@ -1043,18 +1045,33 @@ private fun triggerZenButtonAction(
     PlayerButton.DECODER -> onOpenSheet(Sheets.Decoders)
     PlayerButton.SCREEN_ROTATION -> viewModel.cycleScreenRotations()
     PlayerButton.FRAME_NAVIGATION -> onOpenSheet(Sheets.FrameNavigation)
-    PlayerButton.VIDEO_ZOOM -> onOpenPanel(Panels.VideoZoom)
+    PlayerButton.VIDEO_ZOOM -> onOpenSheet(Sheets.VideoZoom)
     PlayerButton.PICTURE_IN_PICTURE -> activity.enterPipModeHidingOverlay()
-    PlayerButton.ASPECT_RATIO -> viewModel.changeVideoAspect()
+    PlayerButton.ASPECT_RATIO -> when (aspect) {
+      VideoAspect.Fit -> viewModel.changeVideoAspect(VideoAspect.Stretch)
+      VideoAspect.Stretch -> viewModel.changeVideoAspect(VideoAspect.Crop)
+      VideoAspect.Crop -> viewModel.changeVideoAspect(VideoAspect.Fit)
+    }
     PlayerButton.LOCK_CONTROLS -> viewModel.lockControls()
     PlayerButton.REPEAT_MODE -> viewModel.cycleRepeatMode()
     PlayerButton.SHUFFLE -> viewModel.toggleShuffle()
     PlayerButton.MIRROR -> viewModel.toggleMirroring()
     PlayerButton.VERTICAL_FLIP -> viewModel.toggleVerticalFlip()
-    PlayerButton.AB_LOOP -> viewModel.handleABLoopClick()
-    PlayerButton.CUSTOM_SKIP, PlayerButton.SKIP_INTRO, PlayerButton.SKIP_RECAP -> viewModel.skipSmart()
-    PlayerButton.BACKGROUND_PLAYBACK -> viewModel.toggleBackgroundPlayback(context)
-    PlayerButton.HOLD_GESTURE_TOGGLE -> viewModel.toggleHoldGestureMode()
+    PlayerButton.AB_LOOP -> viewModel.toggleABLoopExpanded()
+    PlayerButton.CUSTOM_SKIP -> viewModel.seekBy(playerPreferences.customSkipDuration.get())
+    PlayerButton.SKIP_INTRO -> viewModel.seekBy(playerPreferences.skipIntroDuration.get())
+    PlayerButton.SKIP_RECAP -> viewModel.seekBy(playerPreferences.skipRecapDuration.get())
+    PlayerButton.BACKGROUND_PLAYBACK -> activity.triggerBackgroundPlayback()
+    PlayerButton.HOLD_GESTURE_TOGGLE -> {
+      val current = playerPreferences.holdGestureMode.get()
+      playerPreferences.holdGestureMode.set(
+        if (current == HoldGestureMode.SpeedBoost) {
+          HoldGestureMode.BrightnessVolume
+        } else {
+          HoldGestureMode.SpeedBoost
+        },
+      )
+    }
     else -> onOpenMore()
   }
 }
