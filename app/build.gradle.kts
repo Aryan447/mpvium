@@ -253,6 +253,7 @@ dependencies {
     exclude(group = "xpp3", module = "xpp3")
   }
   implementation(libs.nanohttpd)
+  implementation(libs.newpipe.extractor)
   implementation(libs.lazycolumnscrollbar)
   implementation(libs.reorderable)
   implementation(libs.haze)

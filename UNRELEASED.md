@@ -6,6 +6,7 @@
 
 ### Added
 
+- YouTube links can now be played from Network → Stream Link and shared directly from the YouTube app.
 - Built-in custom button presets and installable example scripts in Settings → Player controls → Custom buttons and Manage scripts.
 - Create custom series action in the unified Titles tab top bar and empty states.
 - Detail screen poster toggle in Settings → Appearance and directly from the screen menu, allowing users to hide artwork and display the title cleanly beneath the navigation bar.

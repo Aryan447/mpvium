@@ -27,6 +27,7 @@ dependencyResolutionManagement {
         includeGroup("com.github.K1rakishou")
         includeGroup("com.github.thegrizzlylabs")
         includeGroup("com.github.nanihadesuka")
+        includeGroup("com.github.TeamNewPipe")
       }
     }
   }

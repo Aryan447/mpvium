@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 import java.net.URLDecoder
 
@@ -13,6 +14,31 @@ object HttpUtils {
   private const val TAG = "HttpUtils"
   private const val CONNECTION_TIMEOUT = 3000
   private const val READ_TIMEOUT = 3000
+  private val SHARED_URL_REGEX = Regex("""https?://[^\s<>"]+""", RegexOption.IGNORE_CASE)
+  private val TRAILING_URL_PUNCTUATION = charArrayOf('.', ',', ')', ']', '>', '"', '\'')
+
+  /**
+   * Extracts a playable URL from shared plain text (e.g. from YouTube's share sheet,
+   * which may include a video title or message alongside the link).
+   */
+  fun extractUrlFromSharedText(text: String): String? {
+    val trimmed = text.trim()
+    if (trimmed.isEmpty()) return null
+
+    if (!trimmed.any { it.isWhitespace() } && isAbsoluteHierarchicalUrl(trimmed)) {
+      return trimmed
+    }
+
+    val match = SHARED_URL_REGEX.find(trimmed)?.value ?: return null
+    val cleaned = match.trimEnd(*TRAILING_URL_PUNCTUATION)
+    return cleaned.takeIf { isAbsoluteHierarchicalUrl(it) }
+  }
+
+  private fun isAbsoluteHierarchicalUrl(candidate: String): Boolean =
+    runCatching {
+      val uri = URI(candidate)
+      uri.isAbsolute && !uri.isOpaque && (!uri.host.isNullOrBlank() || !uri.path.isNullOrBlank())
+    }.getOrDefault(false)
 
   suspend fun extractFilenameFromUrl(url: String): String? = withContext(Dispatchers.IO) {
     try {
