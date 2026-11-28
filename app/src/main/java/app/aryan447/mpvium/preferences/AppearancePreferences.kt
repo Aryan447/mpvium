@@ -60,6 +60,7 @@ class AppearancePreferences(
   val showFoldersSection = preferenceStore.getBoolean("show_folders_section", true)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Wavy)
   val modernSeekbarStyle = preferenceStore.getEnum("modern_seekbar_style", SeekbarStyle.Standard)
+  val zenSeekbarStyle = preferenceStore.getEnum("zen_seekbar_style", SeekbarStyle.Standard)
   val chaptersInSeekbar = preferenceStore.getBoolean("chapters_in_seekbar", false)
   val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Standard)
   val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Standard)
@@ -100,6 +101,12 @@ class AppearancePreferences(
     preferenceStore.getString(
       "modern_action_controls",
       "SUBTITLES,AUDIO_TRACK,EXPLAIN,MORE_OPTIONS",
+    )
+
+  val zenActionControls =
+    preferenceStore.getString(
+      "zen_action_controls",
+      "SUBTITLES,MORE_OPTIONS",
     )
 
   fun selectTheme(theme: AppTheme) {

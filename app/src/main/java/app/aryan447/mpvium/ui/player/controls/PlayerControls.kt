@@ -173,6 +173,8 @@ fun PlayerControls(
   val appearancePreferences = koinInject<AppearancePreferences>()
   val playerLayout by appearancePreferences.playerLayout.collectAsState()
   val isModern = playerLayout == PlayerLayout.MODERN
+  val isZen = playerLayout == PlayerLayout.ZEN
+  val isOverlayLayout = isModern || isZen
   val showButtonsBackground by appearancePreferences.playerButtonsBackground.collectAsState()
   val hideBackground = !showButtonsBackground
   val amoledMode by appearancePreferences.amoledMode.collectAsState()
@@ -320,13 +322,13 @@ fun PlayerControls(
   DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime, interactionSource)
 
   CompositionLocalProvider(
-    LocalPlayerColors provides playerColorsFor(playerFullColors, modern = isModern),
+    LocalPlayerColors provides playerColorsFor(playerFullColors, modern = isOverlayLayout),
     LocalPlayerLayout provides playerLayout,
     LocalRippleConfiguration provides playerRippleConfiguration,
     LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
     LocalContentColor provides Color.White,
   ) {
-    val layoutDirection = if (isModern) {
+    val layoutDirection = if (isOverlayLayout) {
       LocalLayoutDirection.current
     } else {
       LayoutDirection.Ltr
@@ -356,7 +358,7 @@ fun PlayerControls(
           modifier
             .fillMaxSize()
             .then(
-              if (isModern) {
+              if (isOverlayLayout) {
                 Modifier.drawBehind {
                   val alpha = transparentOverlay
                   if (alpha > 0f) {
@@ -842,7 +844,7 @@ fun PlayerControls(
             onOpenSheet = onOpenSheet,
             onOpenPanel = onOpenPanel,
             activity = activity,
-            controlsShown = if (isModern) controlsShown else (controlsShown && !areSlidersShown),
+            controlsShown = controlsShown,
             areControlsLocked = areControlsLocked,
             isSeeking = isSeeking,
             onSeekingChanged = { isSeeking = it },
@@ -881,12 +883,55 @@ fun PlayerControls(
             customButtons = customButtons,
             modifier = Modifier.fillMaxSize(),
           )
+        } else if (isZen) {
+          val zenActionControlsState by appearancePreferences.zenActionControls.collectAsState()
+          val zenActionButtons = remember(zenActionControlsState) {
+            appearancePreferences.parseButtons(zenActionControlsState, mutableSetOf())
+          }
+          ZenPlayerControls(
+            viewModel = viewModel,
+            onBackPress = onBackPress,
+            onOpenSheet = onOpenSheet,
+            onOpenPanel = onOpenPanel,
+            activity = activity,
+            controlsShown = controlsShown,
+            areControlsLocked = areControlsLocked,
+            isSeeking = isSeeking,
+            onSeekingChanged = { isSeeking = it },
+            resetControlsTimestamp = { resetControlsTimestamp = System.currentTimeMillis() },
+            paused = paused == true,
+            position = seekbarPosition,
+            duration = if (preciseDuration > 0) preciseDuration else duration?.toFloat() ?: 0f,
+            chapters = chapters.toImmutableList(),
+            currentChapter = currentChapter,
+            cacheRanges = cacheRanges.toImmutableList(),
+            invertDuration = invertDuration,
+            onToggleInvertDuration = {
+              resetControlsTimestamp = System.currentTimeMillis()
+              playerPreferences.invertDuration.set(!invertDuration)
+            },
+            mediaTitle = lookupRaw,
+            tmdbEpisodeTitle = tmdbEpisodeTitle,
+            showEpisodeHeader = showEpisodeHeader,
+            actionButtons = zenActionButtons,
+            amoledMode = amoledMode,
+            playerFullColors = playerFullColors,
+            showSystemStatusBar = showSystemStatusBar,
+            tabletBottomOffset = tabletBottomOffset,
+            isSpeedNonOne = isSpeedNonOne,
+            playbackSpeed = playbackSpeed ?: 1f,
+            currentZoom = currentZoom,
+            aspect = aspect,
+            decoder = decoder,
+            customButtons = customButtons,
+            modifier = Modifier.fillMaxSize(),
+          )
         }
 
         val showLoadingCircle by playerPreferences.showLoadingCircle.collectAsState()
 
         AnimatedVisibility(
-          visible = (pausedForCache == true && showLoadingCircle) || (controlsShown && !areControlsLocked && !isModern),
+          visible = (pausedForCache == true && showLoadingCircle) || (controlsShown && !areControlsLocked && !isOverlayLayout),
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier =
@@ -966,7 +1011,7 @@ fun PlayerControls(
         val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isModern,
+          visible = controlsShown && !areControlsLocked && !isOverlayLayout,
           enter =
             if (!reduceMotion) {
               slideInVertically(playerControlsEnterAnimationSpec()) { it } +
@@ -1073,7 +1118,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isModern,
+          visible = controlsShown && !areControlsLocked && !isOverlayLayout,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +
@@ -1144,7 +1189,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !isModern,
+          visible = controlsShown && !areControlsLocked && !isPortrait && !isOverlayLayout,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1214,7 +1259,7 @@ fun PlayerControls(
           modifier =
             Modifier
               .then(
-                if (showSystemStatusBar && (isPortrait || isModern)) {
+                if (showSystemStatusBar && (isPortrait || isOverlayLayout)) {
                   Modifier.windowInsetsPadding(WindowInsets.statusBars)
                 } else {
                   Modifier
@@ -1225,7 +1270,7 @@ fun PlayerControls(
                 // so the chips never sit on the title pill or buttons.
                 if (isPortrait) {
                   top.linkTo(parent.top, 96.dp)
-                } else if (isModern) {
+                } else if (isOverlayLayout) {
                   top.linkTo(parent.top, if (showSystemStatusBar) 76.dp else 68.dp)
                 } else {
                   top.linkTo(topRightControls.bottom, 12.dp)
@@ -1267,7 +1312,7 @@ fun PlayerControls(
           modifier =
             Modifier
               .then(
-                if (showSystemStatusBar && smartSkip == null && (isPortrait || isModern)) {
+                if (showSystemStatusBar && smartSkip == null && (isPortrait || isOverlayLayout)) {
                   Modifier.windowInsetsPadding(WindowInsets.statusBars)
                 } else {
                   Modifier
@@ -1278,7 +1323,7 @@ fun PlayerControls(
                   top.linkTo(introSkipButton.bottom, 8.dp)
                 } else if (isPortrait) {
                   top.linkTo(parent.top, 96.dp)
-                } else if (isModern) {
+                } else if (isOverlayLayout) {
                   top.linkTo(parent.top, if (showSystemStatusBar) 76.dp else 68.dp)
                 } else {
                   top.linkTo(topRightControls.bottom, 12.dp)
@@ -1312,7 +1357,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !areSlidersShown && !isModern,
+          visible = controlsShown && !areControlsLocked && !areSlidersShown && !isOverlayLayout,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
@@ -1392,7 +1437,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown && !isModern,
+          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown && !isOverlayLayout,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +
@@ -1448,7 +1493,7 @@ fun PlayerControls(
 
         if (customButtons.isNotEmpty()) {
           AnimatedVisibility(
-            visible = controlsShown && !areControlsLocked && !areSlidersShown && !isModern,
+            visible = controlsShown && !areControlsLocked && !areSlidersShown && !isOverlayLayout,
             enter = fadeIn(playerControlsEnterAnimationSpec()),
             exit = fadeOut(playerControlsExitAnimationSpec()),
             modifier =

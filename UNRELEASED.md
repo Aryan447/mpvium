@@ -6,6 +6,7 @@
 
 ### Added
 
+- Zen player layout in Settings → Player controls → Layout Style (Modern, Zen, Classic) with floating frosted-glass pills, an on-demand single-line clean title toggle, customizable action shortcuts, seekbar style, and custom script buttons.
 - Built-in custom button presets and installable example scripts in Settings → Player controls → Custom buttons and Manage scripts.
 - Create custom series action in the unified Titles tab top bar and empty states.
 - Detail screen poster toggle in Settings → Appearance and directly from the screen menu, allowing users to hide artwork and display the title cleanly beneath the navigation bar.

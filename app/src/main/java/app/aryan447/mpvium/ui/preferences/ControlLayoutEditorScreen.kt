@@ -95,6 +95,10 @@ data class ControlLayoutEditorScreen(
             listOf(
               preferences.modernActionControls,
             )
+          ControlRegion.ZEN_ACTIONS ->
+            listOf(
+              preferences.zenActionControls,
+            )
         }
       }
 
@@ -103,7 +107,7 @@ data class ControlLayoutEditorScreen(
     // State for buttons used in *other* regions
     val disabledButtons by remember {
       mutableStateOf(
-        if (region == ControlRegion.PORTRAIT_BOTTOM || region == ControlRegion.MODERN_ACTIONS) {
+        if (region == ControlRegion.PORTRAIT_BOTTOM || region == ControlRegion.MODERN_ACTIONS || region == ControlRegion.ZEN_ACTIONS) {
           emptySet()
         } else {
           val otherPref1: Preference<String> = prefs[1]
@@ -152,6 +156,7 @@ data class ControlLayoutEditorScreen(
           ControlRegion.BOTTOM_LEFT -> "Edit Bottom Left"
           ControlRegion.PORTRAIT_BOTTOM -> "Edit Portrait Bottom"
           ControlRegion.MODERN_ACTIONS -> "Edit Action Shortcuts"
+          ControlRegion.ZEN_ACTIONS -> "Edit Action Shortcuts"
         }
       }
 
