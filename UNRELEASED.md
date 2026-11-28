@@ -6,6 +6,7 @@
 
 ### Added
 
+- Zen player layout in Settings → Player controls → Layout Style (Modern, Zen, Classic) with floating frosted-glass pills, an expandable `...` single-line clean title pill, customizable action shortcuts with swipe/long-press alternate actions, seekbar style, and custom script buttons.
 - App language selector in top-level Settings with System default and 17 translations (Spanish, French, German, Portuguese, Italian, Russian, Ukrainian, Polish, Turkish, Arabic, Hindi, Indonesian, Vietnamese, Simplified Chinese, Traditional Chinese, Japanese, and Korean).
 - Built-in custom button presets and installable example scripts in Settings → Player controls → Custom buttons and Manage scripts.
 - Create custom series action in the unified Titles tab top bar and empty states.

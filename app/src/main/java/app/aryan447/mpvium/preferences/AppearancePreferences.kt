@@ -60,6 +60,7 @@ class AppearancePreferences(
   val showFoldersSection = preferenceStore.getBoolean("show_folders_section", true)
   val seekbarStyle = preferenceStore.getEnum("seekbar_style", SeekbarStyle.Wavy)
   val modernSeekbarStyle = preferenceStore.getEnum("modern_seekbar_style", SeekbarStyle.Standard)
+  val zenSeekbarStyle = preferenceStore.getEnum("zen_seekbar_style", SeekbarStyle.Standard)
   val chaptersInSeekbar = preferenceStore.getBoolean("chapters_in_seekbar", false)
   val volumeSliderStyle = preferenceStore.getEnum("volume_slider_style", SeekbarStyle.Standard)
   val brightnessSliderStyle = preferenceStore.getEnum("brightness_slider_style", SeekbarStyle.Standard)
@@ -100,6 +101,24 @@ class AppearancePreferences(
     preferenceStore.getString(
       "modern_action_controls",
       "SUBTITLES,AUDIO_TRACK,EXPLAIN,MORE_OPTIONS",
+    )
+
+  val zenActionControls =
+    preferenceStore.getString(
+      "zen_action_controls",
+      "SUBTITLES,MORE_OPTIONS",
+    )
+
+  val zenSecondaryActionControls =
+    preferenceStore.getString(
+      "zen_secondary_action_controls",
+      "SUBTITLES=AUDIO_TRACK",
+    )
+
+  val zenAlternateActionTrigger =
+    preferenceStore.getEnum(
+      "zen_alternate_action_trigger",
+      ZenAlternateActionTrigger.SWIPE,
     )
 
   fun selectTheme(theme: AppTheme) {
@@ -177,4 +196,31 @@ class AppearancePreferences(
       }.filter { it != PlayerButton.NONE }
       .filter { usedButtons.add(it) }
       .toList()
+
+  fun parseSecondaryButtons(raw: String): Map<PlayerButton, PlayerButton> =
+    raw
+      .splitToSequence(',')
+      .mapNotNull { entry ->
+        val parts = entry.split('=')
+        if (parts.size != 2) return@mapNotNull null
+        val primary = runCatching { PlayerButton.valueOf(parts[0].trim().uppercase()) }.getOrNull()
+        val secondary = runCatching { PlayerButton.valueOf(parts[1].trim().uppercase()) }.getOrNull()
+        if (primary != null && secondary != null && primary != secondary && secondary != PlayerButton.NONE) {
+          primary to secondary
+        } else {
+          null
+        }
+      }
+      .toMap()
+
+  fun encodeSecondaryButtons(map: Map<PlayerButton, PlayerButton>): String =
+    map.entries
+      .filter { it.key != it.value && it.value != PlayerButton.NONE }
+      .joinToString(",") { "${it.key.name}=${it.value.name}" }
+}
+
+enum class ZenAlternateActionTrigger {
+  SWIPE,
+  LONG_PRESS,
+  BOTH,
 }
