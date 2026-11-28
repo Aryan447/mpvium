@@ -1,7 +1,8 @@
 ---
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import { meta as siteMeta } from "../data/site";
+import { DEFAULT_LOCALE, getLocaleInfo, type LocaleCode } from "../i18n/locales";
+import { getTranslations } from "../i18n";
 import { defaultTheme } from "../data/themes";
 import "../styles/global.css";
 
@@ -9,13 +10,25 @@ interface Props {
   title?: string;
   description?: string;
   active?: string;
+  locale?: LocaleCode;
+  subPath?: string;
 }
 
-const { title = siteMeta.title, description = siteMeta.description, active } = Astro.props;
+const {
+  locale = DEFAULT_LOCALE,
+  subPath = "/",
+  active,
+} = Astro.props;
+const t = getTranslations(locale);
+const localeInfo = getLocaleInfo(locale);
+const {
+  title = t.meta.title,
+  description = t.meta.description,
+} = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en" data-theme={defaultTheme}>
+<html lang={localeInfo.htmlLang} dir={localeInfo.dir} data-theme={defaultTheme}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -36,8 +49,8 @@ const { title = siteMeta.title, description = siteMeta.description, active } = A
     </script>
   </head>
   <body class="min-h-screen antialiased">
-    <Header active={active} />
+    <Header active={active} locale={locale} subPath={subPath} />
     <main><slot /></main>
-    <Footer />
+    <Footer locale={locale} />
   </body>
 </html>

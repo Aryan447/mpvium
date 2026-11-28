@@ -1,5 +1,6 @@
 package app.aryan447.mpvium.ui.browser
 
+import app.aryan447.mpvium.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -15,35 +16,35 @@ class MainTabsTest {
 
     assertEquals("HOME", entries[0].key)
     assertEquals(0, entries[0].canonicalIndex)
-    assertEquals("Home", entries[0].label)
+    assertEquals(R.string.nav_home, entries[0].labelRes)
 
     assertEquals("TITLES", entries[1].key)
     assertEquals(1, entries[1].canonicalIndex)
-    assertEquals("Titles", entries[1].label)
+    assertEquals(R.string.nav_titles, entries[1].labelRes)
 
     assertEquals("SHOWS", entries[2].key)
     assertEquals(1, entries[2].canonicalIndex)
-    assertEquals("TV Shows", entries[2].label)
+    assertEquals(R.string.nav_shows, entries[2].labelRes)
 
     assertEquals("MOVIES", entries[3].key)
     assertEquals(2, entries[3].canonicalIndex)
-    assertEquals("Movies", entries[3].label)
+    assertEquals(R.string.nav_movies, entries[3].labelRes)
 
     assertEquals("FOLDERS", entries[4].key)
     assertEquals(3, entries[4].canonicalIndex)
-    assertEquals("Folders", entries[4].label)
+    assertEquals(R.string.nav_folders, entries[4].labelRes)
 
     assertEquals("LIBRARY", entries[5].key)
     assertEquals(4, entries[5].canonicalIndex)
-    assertEquals("Library", entries[5].label)
+    assertEquals(R.string.nav_library, entries[5].labelRes)
 
     assertEquals("PLAYLISTS", entries[6].key)
     assertEquals(5, entries[6].canonicalIndex)
-    assertEquals("Playlists", entries[6].label)
+    assertEquals(R.string.nav_playlists, entries[6].labelRes)
 
     assertEquals("AUDIO", entries[7].key)
     assertEquals(6, entries[7].canonicalIndex)
-    assertEquals("Audio", entries[7].label)
+    assertEquals(R.string.nav_audio, entries[7].labelRes)
   }
 
   @Test

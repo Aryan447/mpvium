@@ -34,28 +34,28 @@ class CustomCommandParserTest {
   }
 
   @Test
-  fun parse_mpvExSnippetDoubleQuotes() {
+  fun parse_mpviumSnippetDoubleQuotes() {
     val result = CustomCommandParser.parse("""mp.command("script-binding Script/delete_file")""")
     assertEquals(1, result.size)
     assertEquals(listOf("script-binding", "Script/delete_file"), result[0])
   }
 
   @Test
-  fun parse_mpvExSnippetSingleQuotes() {
+  fun parse_mpviumSnippetSingleQuotes() {
     val result = CustomCommandParser.parse("""mp.command('script-binding Script/delete_file')""")
     assertEquals(1, result.size)
     assertEquals(listOf("script-binding", "Script/delete_file"), result[0])
   }
 
   @Test
-  fun parse_mpvExSnippetDoubleBrackets() {
+  fun parse_mpviumSnippetDoubleBrackets() {
     val result = CustomCommandParser.parse("""mp.command([[script-binding Script/toggle_crop]])""")
     assertEquals(1, result.size)
     assertEquals(listOf("script-binding", "Script/toggle_crop"), result[0])
   }
 
   @Test
-  fun parse_mpvExCommandv() {
+  fun parse_mpviumCommandv() {
     val result = CustomCommandParser.parse("""mp.commandv("script-binding", "Script/delete_file")""")
     assertEquals(1, result.size)
     assertEquals(listOf("script-binding", "Script/delete_file"), result[0])

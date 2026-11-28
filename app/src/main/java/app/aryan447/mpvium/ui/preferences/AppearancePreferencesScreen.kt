@@ -353,7 +353,7 @@ object AppearancePreferencesScreen : Screen {
                                         }
                                     },
                                     icon = { PreferenceRowIcon(icon = tab.icon) },
-                                    title = { Text(text = tab.label) },
+                                    title = { Text(text = stringResource(tab.labelRes)) },
                                     enabled = canToggle,
                                 )
                                 if (tabIndex < tabsToShow.size - 1) {

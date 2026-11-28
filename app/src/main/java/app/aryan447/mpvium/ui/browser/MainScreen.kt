@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.domain.audio.AudioRepository
@@ -163,10 +164,10 @@ object MainScreen : Screen {
   ) {
     navItems.forEach { tab ->
       ShortNavigationBarItem(
-        icon = { Icon(tab.icon, contentDescription = tab.label) },
+        icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
         label = if (showLabels) ({
           Text(
-            text = tab.label,
+            text = stringResource(tab.labelRes),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
           )
@@ -412,10 +413,10 @@ object MainScreen : Screen {
               ) {
                 navItems.forEach { tab ->
                   NavigationRailItem(
-                    icon = { Icon(tab.icon, contentDescription = tab.label) },
+                    icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
                     label = if (showBottomNavLabels) ({
                       Text(
-                        text = tab.label,
+                        text = stringResource(tab.labelRes),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                       )
@@ -512,10 +513,10 @@ internal fun MainBottomBarPreviewLayout(
         ) {
           navItems.forEach { tab ->
             ShortNavigationBarItem(
-              icon = { Icon(tab.icon, contentDescription = tab.label) },
+              icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
               label = if (showLabels) ({
                 Text(
-                  text = tab.label,
+                  text = stringResource(tab.labelRes),
                   maxLines = 1,
                   overflow = TextOverflow.Ellipsis,
                 )
@@ -543,10 +544,10 @@ internal fun MainBottomBarPreviewLayout(
     ) {
       navItems.forEach { tab ->
         ShortNavigationBarItem(
-          icon = { Icon(tab.icon, contentDescription = tab.label) },
+          icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
           label = if (showLabels) ({
             Text(
-              text = tab.label,
+              text = stringResource(tab.labelRes),
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
             )
