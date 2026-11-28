@@ -76,6 +76,7 @@ import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.player.VideoAspect
 import app.aryan447.mpvium.ui.player.controls.components.CustomButtonsRow
 import app.aryan447.mpvium.utils.media.EpisodeTitleFormatter
+import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import kotlin.math.roundToInt
 import kotlinx.collections.immutable.ImmutableList
