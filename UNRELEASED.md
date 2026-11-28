@@ -59,4 +59,5 @@
 - Android TV storage permission prompts now use the standard runtime media dialog instead of launching missing or black All Files Access settings screens when opening Folders.
 - Titles, Movies, and Shows grids on Android TV now display full-width 7-column poster grids instead of tablet split-screen panes, opening full details on click.
 - Player More menu and other bottom sheets now automatically receive D-Pad focus on Android TV with visible focus highlights on all options, and Stream Link / Play Link / Subtitle Search fields require Enter or Select before opening the keyboard.
+- Android TV now defaults to the HW (`mediacodec-copy`) decoder when unset to prevent zero-copy MediaCodec green alignment lines at the bottom of videos.
 - Navigation rail and TV cards display bolder 3dp D-Pad focus rings with z-index elevation, and the redundant floating Add Connection button is hidden on TV so it never overlaps Browse or Connect buttons.

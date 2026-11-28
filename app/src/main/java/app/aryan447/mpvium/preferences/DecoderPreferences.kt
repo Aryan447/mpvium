@@ -10,6 +10,14 @@ class DecoderPreferences(
 ) {
   val profile = preferenceStore.getString("mpv_profile", "fast")
   val defaultDecoder = preferenceStore.getEnum("default_decoder", Decoder.HWPlus)
+
+  /**
+   * Returns the effective default decoder for the current device.
+   * On Android TV, defaults to [Decoder.HW] (`mediacodec-copy`) when unset to avoid
+   * zero-copy MediaCodec surface padding green-line artifacts on TV SoCs.
+   */
+  fun effectiveDefaultDecoder(isTv: Boolean): Decoder =
+    if (isTv && !defaultDecoder.isSet()) Decoder.HW else defaultDecoder.get()
   val gpuNext = preferenceStore.getBoolean("gpu_next")
   val useVulkan = preferenceStore.getBoolean("use_vulkan", false)
   val useYUV420P = preferenceStore.getBoolean("use_yuv420p", false)

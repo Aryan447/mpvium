@@ -1948,7 +1948,7 @@ class PlayerActivity :
     // Start media notification service (like YouTube - always show notification)
     startBackgroundPlayback()
 
-    val configuredDecoder = decoderPreferences.defaultDecoder.get()
+    val configuredDecoder = decoderPreferences.effectiveDefaultDecoder(app.aryan447.mpvium.utils.DeviceUtils.isTv(this))
     val activeHwdec = MPVLib.getPropertyString("hwdec")
     val hwdecCurrent = MPVLib.getPropertyString("hwdec-current")
     val videoCodec = MPVLib.getPropertyString("video-codec")
@@ -3920,7 +3920,7 @@ class PlayerActivity :
    */
   internal fun applyDecoderOptionsBeforeLoadfile() {
     if (!app.aryan447.mpvium.utils.DeviceUtils.isTv(this)) return
-    val configuredDecoder = decoderPreferences.defaultDecoder.get()
+    val configuredDecoder = decoderPreferences.effectiveDefaultDecoder(app.aryan447.mpvium.utils.DeviceUtils.isTv(this))
     if (configuredDecoder == Decoder.SW) {
       MPVLib.setOptionString("hwdec", "no")
       MPVLib.setPropertyString("hwdec", "no")
@@ -3957,7 +3957,7 @@ class PlayerActivity :
 
   private fun syncDecoderPreferenceIfChanged() {
     if (!app.aryan447.mpvium.utils.DeviceUtils.isTv(this) || !mpvInitialized || !isReady) return
-    val configured = decoderPreferences.defaultDecoder.get()
+    val configured = decoderPreferences.effectiveDefaultDecoder(isTv = true)
     val currentHwdec = MPVLib.getPropertyString("hwdec")
     val targetHwdec = if (configured == Decoder.SW) "no" else configured.defaultHwdec
     if (currentHwdec != targetHwdec) {

@@ -130,13 +130,15 @@ object DecoderPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              val isTv = app.aryan447.mpvium.ui.utils.LocalIsTv.current
               val defaultDecoder by preferences.defaultDecoder.collectAsState()
+              val effectiveDecoder = if (isTv && !preferences.defaultDecoder.isSet()) Decoder.HW else defaultDecoder
               ExpressiveListPreference(
                 modifier = Modifier.settingsHighlightTarget(
                   state = highlightState,
                   key = "decoder.default",
                 ),
-                value = defaultDecoder,
+                value = effectiveDecoder,
                 onValueChange = { preferences.defaultDecoder.set(it) },
                 values = Decoder.defaultOptions,
                 valueToText = { AnnotatedString(it.title) },
@@ -144,7 +146,7 @@ object DecoderPreferencesScreen : Screen {
                 title = { Text(stringResource(R.string.pref_decoder_default_title)) },
                 summary = {
                   Text(
-                    stringResource(defaultDecoder.descriptionRes),
+                    stringResource(effectiveDecoder.descriptionRes),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 },

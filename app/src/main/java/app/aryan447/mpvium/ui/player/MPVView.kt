@@ -116,7 +116,7 @@ class MPVView(
 
     // Initial decoder from settings. HW falls back to SW; HW+ also tries direct output first.
     if (app.aryan447.mpvium.utils.DeviceUtils.isTv(context)) {
-      val initialDecoder = decoderPreferences.defaultDecoder.get()
+      val initialDecoder = decoderPreferences.effectiveDefaultDecoder(isTv = true)
       if (initialDecoder == Decoder.SW) {
         MpvConfigWriter.setOptionString("hwdec", "no")
       } else {
