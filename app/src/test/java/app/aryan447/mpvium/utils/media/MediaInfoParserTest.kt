@@ -460,5 +460,25 @@ class MediaInfoParserTest {
         key,
       )
     }
+
+    val hotdFilenames = listOf(
+      "House.of.the.Dragon.S01E01.1080p.WEB-DL.mkv",
+      "@SeriesChannel_House_of_the_Dragon_S01E02_1080p_ESub.mp4",
+      "t.me/SeriesChannel House of the Dragon Ep 02.mkv",
+      "House.of.the.Dragon.Episode.02.720p.mp4",
+      "House.of.the.Dragon.E02.1080p.mkv",
+    )
+
+    val expectedHotdKey = "houseofthedragon"
+    for (filename in hotdFilenames) {
+      val parsed = MediaInfoParser.parse(filename)
+      val key = SeriesDetector.normalizeKey(parsed.title)
+      assertEquals(
+        "Normalized key mismatch for House of the Dragon filename: $filename",
+        expectedHotdKey,
+        key,
+      )
+      assertEquals("Expected tv type for: $filename", "tv", parsed.type)
+    }
   }
 }

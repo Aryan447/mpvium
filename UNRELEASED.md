@@ -29,6 +29,7 @@
 
 ### Fixed
 
+- Series playback from Speed Binge and show details now queues all detected episodes across folders, episode filenames with channel handles or separated markers (`@channel`, `Ep 02`, `Episode.02`, `E02`) combine into the same show, and externally downloaded videos automatically refresh the library.
 - Custom script buttons resolve case-insensitive script bindings and import text-formatted script files directly into Manage scripts.
 - Unified Titles tab keeps filter chips accessible, provides Show all and Back navigation, and allows creating custom series when filtering with zero matching TV shows or movies.
 - Series and movie poster cards and detail backdrops now display in high-definition on tablets and phones without blurriness or downsampling.

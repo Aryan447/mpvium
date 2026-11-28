@@ -96,7 +96,8 @@ object MediaInfoParser {
         "10bit", "8bit", "hdr", "hdr10", "dolby",
         "vision", "sdr", "bt709", "bt2020", "hlg", "pq",
         "batch", "dvd", "uncensored", "censored",
-        "horriblesubs", "subsplease", "audio", "dualaudio", "dual-audio"
+        "horriblesubs", "subsplease", "audio", "dualaudio", "dual-audio",
+        "esub", "esubs", "msub", "msubs"
     )
 
     private val FILE_EXTENSIONS = setOf(
@@ -123,14 +124,17 @@ object MediaInfoParser {
         """\b(\d{1,2})[xX](\d{1,4})(?:(?:[xX]|-)\s*(?!480|576|720|1080|2160|\d{3,4}[pPiI]|19\d\d|20\d\d)(?:\d{1,2}[xX])?\d{1,4})*\b"""
     )
 
-    // EP marker: EP05, Ep5 — with word boundary to avoid matching inside words
-    private val EP_MARKER_REGEX = Regex("""\b[Ee][Pp](\d{1,4})\b""")
+    // EP marker: EP05, Ep 5, Ep.05, Ep_05 — with word boundary to avoid matching inside words
+    private val EP_MARKER_REGEX = Regex("""\b[Ee][Pp][\s._-]*(\d{1,4})\b""")
 
-    // Episode word: Episode 5, EPISODE 05
-    private val EPISODE_WORD_REGEX = Regex("""\b[Ee]pisode\s*(\d{1,4})\b""")
+    // Episode word: Episode 5, Episode.05, EPISODE_05
+    private val EPISODE_WORD_REGEX = Regex("""\b[Ee]pisode[\s._-]*(\d{1,4})\b""")
 
-    // Season word: Season 3, SEASON 3
-    private val SEASON_WORD_REGEX = Regex("""\b[Ss]eason\s*(\d{1,2})\b""")
+    // Season word: Season 3, Season.3, SEASON_3
+    private val SEASON_WORD_REGEX = Regex("""\b[Ss]eason[\s._-]*(\d{1,2})\b""")
+
+    // Standalone zero-padded/multi-digit episode marker without season: E01, E02, E12
+    private val STANDALONE_E_REGEX = Regex("""(?:^|[\s._-])[Ee](\d{2,3})\b""")
 
     // Four-digit year (19xx / 20xx). A movie title can itself contain a
     // year-like number (1917, 2012, Blade Runner 2049), so candidates are
@@ -223,6 +227,7 @@ object MediaInfoParser {
         val epWordMatch = EPISODE_WORD_REGEX.find(fileName)
         val seasonWordMatch = SEASON_WORD_REGEX.find(fileName)
         val epMarkerMatch = EP_MARKER_REGEX.find(fileName)
+        val standaloneEMatch = STANDALONE_E_REGEX.find(fileName)
 
         var season: Int? = null
         var episode: Int? = null
@@ -245,6 +250,10 @@ object MediaInfoParser {
         else if (epMarkerMatch != null) {
             episode = epMarkerMatch.groupValues[1].toIntOrNull()
         }
+        // Priority 5: Standalone E02 format
+        else if (standaloneEMatch != null) {
+            episode = standaloneEMatch.groupValues[1].toIntOrNull()
+        }
 
         // Season from "Season X" format (e.g., "Attack on Titan Season 3 Episode 12")
         if (season == null && seasonWordMatch != null) {
@@ -254,7 +263,7 @@ object MediaInfoParser {
         // Step 2: Extract year (from original filename)
         // Be careful not to grab episode numbers as years — skip if year is part of S01E2020 etc.
         val yearMatch = findYear(
-            fileName, seMatch, crossMatch, epWordMatch, seasonWordMatch, epMarkerMatch
+            fileName, seMatch, crossMatch, epWordMatch, seasonWordMatch, epMarkerMatch, standaloneEMatch
         )
         val year = yearMatch?.value
 
@@ -268,7 +277,7 @@ object MediaInfoParser {
         // For movies: title is everything before the year
         val titleBoundary = findTitleBoundary(
             fileName, seMatch, crossMatch, epWordMatch,
-            seasonWordMatch, epMarkerMatch, yearMatch
+            seasonWordMatch, epMarkerMatch, standaloneEMatch, yearMatch
         )
 
         // Step 5: Extract and clean the title
@@ -282,7 +291,7 @@ object MediaInfoParser {
         // Step 6: Attempt to extract episode title (text after episode marker)
         // e.g., "Breaking.Bad.S05E16.Felina.720p.mkv" → episodeTitle = "Felina"
         var episodeTitle: String? = null
-        val episodeEndIndex = getEpisodeEndIndex(seMatch, crossMatch, epWordMatch, epMarkerMatch)
+        val episodeEndIndex = getEpisodeEndIndex(seMatch, crossMatch, epWordMatch, epMarkerMatch, standaloneEMatch)
         if (episodeEndIndex != null && episodeEndIndex < fileName.length) {
             val afterEpisode = fileName.substring(episodeEndIndex)
             val candidateEpTitle = cleanRawTitle(afterEpisode, yearToRemove = year)
@@ -420,13 +429,15 @@ object MediaInfoParser {
         crossMatch: MatchResult?,
         epWordMatch: MatchResult?,
         seasonWordMatch: MatchResult?,
-        epMarkerMatch: MatchResult?
+        epMarkerMatch: MatchResult?,
+        standaloneEMatch: MatchResult?
     ): MatchResult? {
         val markerStart = listOfNotNull(
             seMatch?.range?.first,
             crossMatch?.range?.first,
             epWordMatch?.range?.first,
             epMarkerMatch?.range?.first,
+            standaloneEMatch?.range?.first,
             seasonWordMatch?.range?.first
         ).minOrNull()
 
@@ -437,6 +448,7 @@ object MediaInfoParser {
             crossMatch?.range,
             epWordMatch?.range,
             epMarkerMatch?.range,
+            standaloneEMatch?.range,
             seasonWordMatch?.range
         )
         val candidates = YEAR_REGEX.findAll(fileName)
@@ -578,6 +590,7 @@ object MediaInfoParser {
         epWordMatch: MatchResult?,
         seasonWordMatch: MatchResult?,
         epMarkerMatch: MatchResult?,
+        standaloneEMatch: MatchResult?,
         yearMatch: MatchResult?
     ): Int? {
         // For TV shows: title ends at the earliest season/episode marker
@@ -589,6 +602,7 @@ object MediaInfoParser {
         crossMatch?.range?.first?.let { candidates.add(it) }
         epWordMatch?.range?.first?.let { candidates.add(it) }
         epMarkerMatch?.range?.first?.let { candidates.add(it) }
+        standaloneEMatch?.range?.first?.let { candidates.add(it) }
 
         // If season word comes before episode word, use season as boundary
         seasonWordMatch?.range?.first?.let { seasonStart ->
@@ -619,7 +633,8 @@ object MediaInfoParser {
         seMatch: MatchResult?,
         crossMatch: MatchResult?,
         epWordMatch: MatchResult?,
-        epMarkerMatch: MatchResult?
+        epMarkerMatch: MatchResult?,
+        standaloneEMatch: MatchResult?
     ): Int? {
         // Pick the one that was actually used for episode detection (highest priority first)
         return when {
@@ -627,6 +642,7 @@ object MediaInfoParser {
             crossMatch != null -> crossMatch.range.last + 1
             epWordMatch != null -> epWordMatch.range.last + 1
             epMarkerMatch != null -> epMarkerMatch.range.last + 1
+            standaloneEMatch != null -> standaloneEMatch.range.last + 1
             else -> null
         }
     }
@@ -648,6 +664,9 @@ object MediaInfoParser {
 
     private fun cleanRawTitle(raw: String, yearToRemove: String? = null): String {
         var title = raw
+            // Remove Telegram links and @channel handles
+            .replace(Regex("""(?:https?://)?\bt\.me/[A-Za-z0-9_/+]+""", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("""@[A-Za-z0-9_]{2,}"""), " ")
             // Remove brackets and their content
             .replace(Regex("""%5B.*?%5D""", RegexOption.IGNORE_CASE), " ")
             .replace(Regex("""\[.*?]"""), " ")
@@ -698,6 +717,9 @@ object MediaInfoParser {
 
         // Remove EP marker patterns
         title = title.replace(EP_MARKER_REGEX, " ")
+
+        // Remove standalone E02 patterns
+        title = title.replace(STANDALONE_E_REGEX, " ")
 
         // Remove episode word patterns
         title = title.replace(EPISODE_WORD_REGEX, " ")

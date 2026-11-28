@@ -43,6 +43,7 @@ import app.aryan447.mpvium.database.entities.PlaybackStateEntity
 import app.aryan447.mpvium.databinding.PlayerLayoutBinding
 import app.aryan447.mpvium.domain.playbackstate.PlaybackCheckpointDecider
 import app.aryan447.mpvium.domain.playbackstate.repository.PlaybackStateRepository
+import app.aryan447.mpvium.domain.streaming.LibraryIndexRepository
 import app.aryan447.mpvium.domain.audio.AudioArtworkStore
 import app.aryan447.mpvium.domain.media.model.LocalAlbum
 import app.aryan447.mpvium.preferences.AdvancedPreferences
@@ -173,6 +174,11 @@ class PlayerActivity :
    * Manager for file operations.
    */
   private val fileManager: FileManager by inject()
+
+  /**
+   * Library index repository for resolving series episodes across folders.
+   */
+  private val libraryIndexRepository: LibraryIndexRepository by inject()
 
   /**
    * Store for audio artwork.
@@ -3890,6 +3896,44 @@ class PlayerActivity :
         val currentFile = File(currentPath)
         if (!currentFile.exists()) return@runCatching
 
+        val launchSource = intent.getStringExtra("launch_source") ?: ""
+        val isSeriesLaunch = launchSource == "speed_binge_resume" ||
+          launchSource == "series_detail_play" ||
+          launchSource == "series_episode_click"
+
+        if (isSeriesLaunch) {
+          val library = libraryIndexRepository.library.value ?: libraryIndexRepository.getLibrary()
+          val normalizedCurrentPath = currentFile.absolutePath
+          val matchingSeries = library.series.firstOrNull { series ->
+            series.seasons.values.flatten().any { ep ->
+              ep.video.path == currentPath || ep.video.path == normalizedCurrentPath
+            }
+          }
+          if (matchingSeries != null) {
+            val allEpisodes = matchingSeries.seasons.values.flatten()
+            if (allEpisodes.size > 1) {
+              val seriesPlaylist = allEpisodes.map { ep ->
+                val epFile = File(ep.video.path)
+                if (epFile.exists()) epFile.toUri() else ep.video.uri
+              }
+              val seriesIndex = allEpisodes.indexOfFirst { ep ->
+                ep.video.path == currentPath || ep.video.path == normalizedCurrentPath
+              }
+              if (seriesIndex != -1) {
+                withContext(Dispatchers.Main) {
+                  playlist = seriesPlaylist
+                  playlistIndex = seriesIndex
+                  Log.d(TAG, "Auto-playlist generated from series '${matchingSeries.title}': ${playlist.size} episodes")
+                  if (viewModel.shuffleEnabled.value) {
+                    onShuffleToggled(true)
+                  }
+                }
+                return@runCatching
+              }
+            }
+          }
+        }
+
         val parentFolder = currentFile.parentFile ?: return@runCatching
 
         val videoExtensions = FileTypeUtils.VIDEO_EXTENSIONS
@@ -3900,7 +3944,6 @@ class PlayerActivity :
             !FileFilterUtils.shouldSkipFile(file)
         } ?: return@runCatching
 
-        val launchSource = intent.getStringExtra("launch_source") ?: ""
         val siblingFiles = if (launchSource == "video_list" || launchSource == "recently_played_button" || launchSource == "first_video_button") {
           val videoSortType = browserPreferences.videoSortType.get()
           val videoSortOrder = browserPreferences.videoSortOrder.get()

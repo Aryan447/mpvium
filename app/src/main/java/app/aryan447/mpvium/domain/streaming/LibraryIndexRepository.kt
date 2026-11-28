@@ -2,7 +2,10 @@ package app.aryan447.mpvium.domain.streaming
 
 import android.content.ContentUris
 import android.content.Context
+import android.database.ContentObserver
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import app.aryan447.mpvium.database.dao.LibraryIndexDao
@@ -19,8 +22,10 @@ import app.aryan447.mpvium.utils.media.ParsedMediaInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,6 +53,7 @@ class LibraryIndexRepository(
   @Volatile private var inFlightDeferred: Deferred<DetectedMediaLibrary>? = null
   @Volatile private var inFlightForce: Boolean = false
   @Volatile private var isDirty: Boolean = true
+  private var mediaStoreDebounceJob: Job? = null
 
   private val _library = MutableStateFlow<DetectedMediaLibrary?>(null)
   val library: StateFlow<DetectedMediaLibrary?> = _library.asStateFlow()
@@ -102,6 +108,28 @@ class LibraryIndexRepository(
           runCatching { refresh(force = false) }
         }
       }
+    }
+
+    // Observe MediaStore changes so videos downloaded externally (e.g. Telegram, browsers)
+    // invalidate the library cache without requiring a manual pull-to-refresh or restart.
+    runCatching {
+      val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+          if (foldersPreferences.libraryScanMode.get() != LibraryScanMode.AUTO) return
+          mediaStoreDebounceJob?.cancel()
+          mediaStoreDebounceJob = scope.launch {
+            delay(1000L)
+            MediaFileRepository.clearCache()
+            isDirty = true
+            MediaLibraryEvents.notifyChanged()
+          }
+        }
+      }
+      context.contentResolver.registerContentObserver(
+        MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+        true,
+        observer,
+      )
     }
   }
 

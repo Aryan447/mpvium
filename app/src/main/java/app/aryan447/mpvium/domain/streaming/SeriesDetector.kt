@@ -88,6 +88,11 @@ class SeriesDetector(
       // Remove file extension if present
       cleaned = cleaned.replace(Regex("""\.(?:mkv|mp4|avi|mov|wmv|flv|webm|m4v|mpg|mpeg)$""", RegexOption.IGNORE_CASE), "")
 
+      // Strip Telegram links and @channel handles
+      cleaned = cleaned
+        .replace(Regex("""(?:https?://)?\bt\.me/[A-Za-z0-9_/+]+""", RegexOption.IGNORE_CASE), " ")
+        .replace(Regex("""@[A-Za-z0-9_]{2,}"""), " ")
+
       // Strip brackets and their contents (%5B..%5D, [...], (...), 【...】, （...）, {...})
       cleaned = cleaned
         .replace(Regex("""%5B.*?%5D""", RegexOption.IGNORE_CASE), " ")
@@ -104,11 +109,12 @@ class SeriesDetector(
       cleaned = cleaned.replace(Regex("""\b\d{3,4}[pPiI]\b"""), " ")
       cleaned = cleaned.replace(Regex("""\b[48][kK]\b"""), " ")
 
-      // Strip episode markers if raw filename was passed: S01E02, 1x02, EP01, - 01
+      // Strip episode markers if raw filename was passed: S01E02, 1x02, EP01, E01, - 01
       cleaned = cleaned.replace(Regex("""[Ss]\d{1,2}[\s._-]*[Ee]\d{1,4}(?:(?:[\s._-]*[Ee]|\b[Xx]\b|-)\s*\d{1,4})*"""), " ")
       cleaned = cleaned.replace(Regex("""\b\d{1,2}[xX]\d{1,4}\b"""), " ")
-      cleaned = cleaned.replace(Regex("""\b[Ee][Pp]\d{1,4}\b"""), " ")
-      cleaned = cleaned.replace(Regex("""\b[Ee]pisode\s*\d{1,4}\b""", RegexOption.IGNORE_CASE), " ")
+      cleaned = cleaned.replace(Regex("""\b[Ee][Pp][\s._-]*\d{1,4}\b"""), " ")
+      cleaned = cleaned.replace(Regex("""\b[Ee]pisode[\s._-]*\d{1,4}\b""", RegexOption.IGNORE_CASE), " ")
+      cleaned = cleaned.replace(Regex("""(?:^|[\s._-])[Ee]\d{2,3}\b"""), " ")
       cleaned = cleaned.replace(Regex("""[\s_]+-\s*\d{1,4}(?:[vV]\d+)?(?:\s*-\s*\d{1,4})?(?:[\s_]*-(?:[\s_]*.+)?)?"""), " ")
       cleaned = cleaned.replace(Regex("""[\s_]+\d{1,4}(?:[vV]\d+)?(?:\s*-\s*\d{1,4})?\s*$"""), " ")
 
