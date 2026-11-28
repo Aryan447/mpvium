@@ -261,48 +261,26 @@ fun ZenPlayerControls(
           Spacer(modifier = Modifier.width(12.dp))
         }
 
-        // Right: Unhide Title button beside the top-right action button
-        Row(
-          horizontalArrangement = Arrangement.spacedBy(10.dp),
-          verticalAlignment = Alignment.CenterVertically,
+        // Right: Top-right action button
+        ZenCircleButton(
+          surfaceColor = surfaceColor,
+          borderStroke = borderStroke,
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            resetControlsTimestamp()
+            when {
+              viewModel.hasPlaylistSupport() -> onOpenSheet(Sheets.Playlist)
+              chapters.isNotEmpty() -> onOpenSheet(Sheets.Chapters)
+              else -> activity.enterPipModeHidingOverlay()
+            }
+          },
         ) {
-          ZenCircleButton(
-            surfaceColor = surfaceColor,
-            borderStroke = borderStroke,
-            onClick = {
-              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-              resetControlsTimestamp()
-              isTitleVisible = !isTitleVisible
-            },
-          ) {
-            Icon(
-              imageVector = Icons.Outlined.Title,
-              contentDescription = if (isTitleVisible) "Hide Title" else "Show Title",
-              tint = if (isTitleVisible) MaterialTheme.colorScheme.primary else Color.White,
-              modifier = Modifier.size(20.dp),
-            )
-          }
-
-          ZenCircleButton(
-            surfaceColor = surfaceColor,
-            borderStroke = borderStroke,
-            onClick = {
-              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-              resetControlsTimestamp()
-              when {
-                viewModel.hasPlaylistSupport() -> onOpenSheet(Sheets.Playlist)
-                chapters.isNotEmpty() -> onOpenSheet(Sheets.Chapters)
-                else -> activity.enterPipModeHidingOverlay()
-              }
-            },
-          ) {
-            Icon(
-              imageVector = Icons.Outlined.Subscriptions,
-              contentDescription = "Playlist / Chapters",
-              tint = Color.White,
-              modifier = Modifier.size(20.dp),
-            )
-          }
+          Icon(
+            imageVector = Icons.Outlined.Subscriptions,
+            contentDescription = "Playlist / Chapters",
+            tint = Color.White,
+            modifier = Modifier.size(20.dp),
+          )
         }
       }
     }
@@ -404,44 +382,67 @@ fun ZenPlayerControls(
               borderStroke = borderStroke,
             )
 
-            ModernBottomActionsPill(
-              buttons = actionButtons,
-              onOpenSubtitles = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                resetControlsTimestamp()
-                onOpenSheet(Sheets.SubtitleTracks)
-              },
-              onOpenAudio = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                resetControlsTimestamp()
-                onOpenSheet(Sheets.AudioTracks)
-              },
-              onOpenExplain = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                resetControlsTimestamp()
-                onOpenSheet(Sheets.Explain)
-              },
-              onOpenMore = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                resetControlsTimestamp()
-                onOpenSheet(Sheets.More)
-              },
-              onOpenSheet = onOpenSheet,
-              onOpenPanel = onOpenPanel,
-              viewModel = viewModel,
-              activity = activity,
-              chapters = chapters,
-              currentChapter = currentChapter,
-              surfaceColor = surfaceColor,
-              borderStroke = borderStroke,
-              resetControlsTimestamp = resetControlsTimestamp,
-              isSpeedNonOne = isSpeedNonOne,
-              playbackSpeed = playbackSpeed,
-              currentZoom = currentZoom,
-              aspect = aspect,
-              decoder = decoder,
-              pillHeight = 50.dp,
-            )
+            Row(
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              ZenCircleButton(
+                size = 50.dp,
+                surfaceColor = surfaceColor,
+                borderStroke = borderStroke,
+                onClick = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  isTitleVisible = !isTitleVisible
+                },
+              ) {
+                Icon(
+                  imageVector = Icons.Outlined.Title,
+                  contentDescription = if (isTitleVisible) "Hide Title" else "Show Title",
+                  tint = if (isTitleVisible) MaterialTheme.colorScheme.primary else Color.White,
+                  modifier = Modifier.size(20.dp),
+                )
+              }
+
+              ModernBottomActionsPill(
+                buttons = actionButtons,
+                onOpenSubtitles = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  onOpenSheet(Sheets.SubtitleTracks)
+                },
+                onOpenAudio = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  onOpenSheet(Sheets.AudioTracks)
+                },
+                onOpenExplain = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  onOpenSheet(Sheets.Explain)
+                },
+                onOpenMore = {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  resetControlsTimestamp()
+                  onOpenSheet(Sheets.More)
+                },
+                onOpenSheet = onOpenSheet,
+                onOpenPanel = onOpenPanel,
+                viewModel = viewModel,
+                activity = activity,
+                chapters = chapters,
+                currentChapter = currentChapter,
+                surfaceColor = surfaceColor,
+                borderStroke = borderStroke,
+                resetControlsTimestamp = resetControlsTimestamp,
+                isSpeedNonOne = isSpeedNonOne,
+                playbackSpeed = playbackSpeed,
+                currentZoom = currentZoom,
+                aspect = aspect,
+                decoder = decoder,
+                pillHeight = 50.dp,
+              )
+            }
           }
         } else {
           Row(
@@ -501,6 +502,24 @@ fun ZenPlayerControls(
               modifier = Modifier.weight(1f),
             )
 
+            ZenCircleButton(
+              size = 50.dp,
+              surfaceColor = surfaceColor,
+              borderStroke = borderStroke,
+              onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                isTitleVisible = !isTitleVisible
+              },
+            ) {
+              Icon(
+                imageVector = Icons.Outlined.Title,
+                contentDescription = if (isTitleVisible) "Hide Title" else "Show Title",
+                tint = if (isTitleVisible) MaterialTheme.colorScheme.primary else Color.White,
+                modifier = Modifier.size(20.dp),
+              )
+            }
+
             ModernBottomActionsPill(
               buttons = actionButtons,
               onOpenSubtitles = {
@@ -552,15 +571,16 @@ private fun ZenCircleButton(
   borderStroke: BorderStroke,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  size: Dp = 42.dp,
   content: @Composable () -> Unit,
 ) {
   Surface(
     modifier = modifier
-      .size(42.dp)
+      .size(size)
       .clip(CircleShape)
       .clickable(
         interactionSource = remember { MutableInteractionSource() },
-        indication = ripple(bounded = true, radius = 21.dp),
+        indication = ripple(bounded = true, radius = size / 2),
         onClick = onClick,
       ),
     shape = CircleShape,
