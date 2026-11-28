@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.player.controls
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -29,12 +30,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Forward10
 import androidx.compose.material.icons.outlined.Replay10
 import androidx.compose.material.icons.outlined.Subscriptions
-import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -93,6 +95,7 @@ import org.koin.compose.koinInject
  *   [ Replay 10 | Play/Pause | Forward 10 ]  [ Seekbar + Timers ]  [ Action Shortcuts ]
  *   (Stacks into two rows on narrow portrait screens so the seekbar stays usable.)
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ZenPlayerControls(
   viewModel: PlayerViewModel,
@@ -194,9 +197,10 @@ fun ZenPlayerControls(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
       ) {
-        // Left: Close (X) circle + optional single-line clean title beside it
+        // Left: Close (X) circle + expandable "..." pill that reveals the single-line clean title inside
         Row(
           verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
           modifier = Modifier.weight(1f, fill = false),
         ) {
           ZenCircleButton(
@@ -216,34 +220,57 @@ fun ZenPlayerControls(
             )
           }
 
-          AnimatedVisibility(
-            visible = isTitleVisible && singleLineCleanTitle.isNotBlank(),
-            enter = fadeIn(playerControlsEnterAnimationSpec()),
-            exit = fadeOut(playerControlsExitAnimationSpec()),
-          ) {
-            Text(
-              text = singleLineCleanTitle,
-              style = MaterialTheme.typography.titleMedium.copy(
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                shadow = Shadow(color = Color.Black.copy(alpha = 0.65f), blurRadius = 6f),
-              ),
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis,
+          if (singleLineCleanTitle.isNotBlank()) {
+            Surface(
               modifier = Modifier
-                .padding(start = 12.dp, end = 8.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .clickable {
+                .height(42.dp)
+                .clip(RoundedCornerShape(21.dp))
+                .animateContentSize(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec())
+                .clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = ripple(bounded = true),
+                ) {
                   haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                   resetControlsTimestamp()
-                  if (viewModel.hasPlaylistSupport()) {
-                    onOpenSheet(Sheets.Playlist)
+                  if (!isTitleVisible) {
+                    isTitleVisible = true
                   } else {
-                    onOpenSheet(Sheets.Chapters)
+                    when {
+                      viewModel.hasPlaylistSupport() -> onOpenSheet(Sheets.Playlist)
+                      chapters.isNotEmpty() -> onOpenSheet(Sheets.Chapters)
+                      else -> isTitleVisible = false
+                    }
                   }
                 },
-            )
+              shape = RoundedCornerShape(21.dp),
+              color = surfaceColor,
+              border = borderStroke,
+            ) {
+              Box(
+                modifier = Modifier.padding(horizontal = 14.dp),
+                contentAlignment = Alignment.CenterStart,
+              ) {
+                if (isTitleVisible) {
+                  Text(
+                    text = singleLineCleanTitle,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                      color = Color.White,
+                      fontWeight = FontWeight.SemiBold,
+                      fontSize = 15.sp,
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                  )
+                } else {
+                  Icon(
+                    imageVector = Icons.Default.MoreHoriz,
+                    contentDescription = "Show Title",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                  )
+                }
+              }
+            }
           }
         }
 
@@ -382,67 +409,44 @@ fun ZenPlayerControls(
               borderStroke = borderStroke,
             )
 
-            Row(
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              ZenCircleButton(
-                size = 50.dp,
-                surfaceColor = surfaceColor,
-                borderStroke = borderStroke,
-                onClick = {
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  isTitleVisible = !isTitleVisible
-                },
-              ) {
-                Icon(
-                  imageVector = Icons.Outlined.Title,
-                  contentDescription = if (isTitleVisible) "Hide Title" else "Show Title",
-                  tint = if (isTitleVisible) MaterialTheme.colorScheme.primary else Color.White,
-                  modifier = Modifier.size(20.dp),
-                )
-              }
-
-              ModernBottomActionsPill(
-                buttons = actionButtons,
-                onOpenSubtitles = {
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  onOpenSheet(Sheets.SubtitleTracks)
-                },
-                onOpenAudio = {
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  onOpenSheet(Sheets.AudioTracks)
-                },
-                onOpenExplain = {
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  onOpenSheet(Sheets.Explain)
-                },
-                onOpenMore = {
-                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                  resetControlsTimestamp()
-                  onOpenSheet(Sheets.More)
-                },
-                onOpenSheet = onOpenSheet,
-                onOpenPanel = onOpenPanel,
-                viewModel = viewModel,
-                activity = activity,
-                chapters = chapters,
-                currentChapter = currentChapter,
-                surfaceColor = surfaceColor,
-                borderStroke = borderStroke,
-                resetControlsTimestamp = resetControlsTimestamp,
-                isSpeedNonOne = isSpeedNonOne,
-                playbackSpeed = playbackSpeed,
-                currentZoom = currentZoom,
-                aspect = aspect,
-                decoder = decoder,
-                pillHeight = 50.dp,
-              )
-            }
+            ModernBottomActionsPill(
+              buttons = actionButtons,
+              onOpenSubtitles = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                onOpenSheet(Sheets.SubtitleTracks)
+              },
+              onOpenAudio = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                onOpenSheet(Sheets.AudioTracks)
+              },
+              onOpenExplain = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                onOpenSheet(Sheets.Explain)
+              },
+              onOpenMore = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                resetControlsTimestamp()
+                onOpenSheet(Sheets.More)
+              },
+              onOpenSheet = onOpenSheet,
+              onOpenPanel = onOpenPanel,
+              viewModel = viewModel,
+              activity = activity,
+              chapters = chapters,
+              currentChapter = currentChapter,
+              surfaceColor = surfaceColor,
+              borderStroke = borderStroke,
+              resetControlsTimestamp = resetControlsTimestamp,
+              isSpeedNonOne = isSpeedNonOne,
+              playbackSpeed = playbackSpeed,
+              currentZoom = currentZoom,
+              aspect = aspect,
+              decoder = decoder,
+              pillHeight = 50.dp,
+            )
           }
         } else {
           Row(
@@ -501,24 +505,6 @@ fun ZenPlayerControls(
               borderStroke = borderStroke,
               modifier = Modifier.weight(1f),
             )
-
-            ZenCircleButton(
-              size = 50.dp,
-              surfaceColor = surfaceColor,
-              borderStroke = borderStroke,
-              onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                resetControlsTimestamp()
-                isTitleVisible = !isTitleVisible
-              },
-            ) {
-              Icon(
-                imageVector = Icons.Outlined.Title,
-                contentDescription = if (isTitleVisible) "Hide Title" else "Show Title",
-                tint = if (isTitleVisible) MaterialTheme.colorScheme.primary else Color.White,
-                modifier = Modifier.size(20.dp),
-              )
-            }
 
             ModernBottomActionsPill(
               buttons = actionButtons,
