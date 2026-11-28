@@ -332,7 +332,7 @@ fun ZenPlayerControls(
       }
 
       var wasPlayerAlreadyPaused by remember { mutableStateOf(false) }
-      val seekbarPlayedColor = if (playerFullColors) MaterialTheme.colorScheme.primary else Color.White
+      val seekbarPlayedColor = MaterialTheme.colorScheme.primary
 
       Column(
         modifier = Modifier.fillMaxWidth(),
