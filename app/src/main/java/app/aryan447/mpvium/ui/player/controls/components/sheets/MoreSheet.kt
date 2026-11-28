@@ -58,6 +58,11 @@ import app.aryan447.mpvium.ui.player.Sheets
 import app.aryan447.mpvium.ui.theme.glassFilterChipColors
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.theme.spacing
+import app.aryan447.mpvium.ui.utils.tvFocusHighlight
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ripple
+import androidx.compose.ui.draw.clip
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -114,7 +119,16 @@ val scope = rememberCoroutineScope()
           verticalAlignment = Alignment.CenterVertically,
         ) {
           var isSleepTimerDialogShown by remember { mutableStateOf(false) }
-          TextButton(onClick = { isSleepTimerDialogShown = true }) {
+          val timerInteraction = remember { MutableInteractionSource() }
+          TextButton(
+            onClick = { isSleepTimerDialogShown = true },
+            interactionSource = timerInteraction,
+            modifier = Modifier.tvFocusHighlight(
+              shape = RoundedCornerShape(10.dp),
+              interactionSource = timerInteraction,
+              scale = 1.04f,
+            ),
+          ) {
             Row(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
@@ -140,7 +154,16 @@ val scope = rememberCoroutineScope()
               }
             }
           }
-          TextButton(onClick = onEnterFiltersPanel) {
+          val filtersInteraction = remember { MutableInteractionSource() }
+          TextButton(
+            onClick = onEnterFiltersPanel,
+            interactionSource = filtersInteraction,
+            modifier = Modifier.tvFocusHighlight(
+              shape = RoundedCornerShape(10.dp),
+              interactionSource = filtersInteraction,
+              scale = 1.04f,
+            ),
+          ) {
             Row(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
@@ -303,11 +326,22 @@ val scope = rememberCoroutineScope()
         color = MaterialTheme.colorScheme.primary,
       )
       proControlRows.forEach { (button, sheet) ->
+        val rowInteraction = remember(button) { MutableInteractionSource() }
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .clickable { onOpenSheet(sheet) }
-            .padding(vertical = 10.dp, horizontal = 4.dp),
+            .tvFocusHighlight(
+              shape = RoundedCornerShape(10.dp),
+              interactionSource = rowInteraction,
+              scale = 1.02f,
+            )
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(
+              interactionSource = rowInteraction,
+              indication = ripple(),
+              onClick = { onOpenSheet(sheet) },
+            )
+            .padding(vertical = 10.dp, horizontal = 8.dp),
           verticalAlignment = Alignment.CenterVertically,
         ) {
           Icon(

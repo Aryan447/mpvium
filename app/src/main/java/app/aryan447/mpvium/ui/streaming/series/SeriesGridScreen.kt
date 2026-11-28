@@ -128,7 +128,7 @@ object SeriesGridScreen : Screen {
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val isTablet = configuration.smallestScreenWidthDp >= 600
     val columns = when {
-      isTv -> 5
+      isTv -> 7
       isTablet -> if (isLandscape) 5 else 4
       isLandscape -> 4
       else -> 3

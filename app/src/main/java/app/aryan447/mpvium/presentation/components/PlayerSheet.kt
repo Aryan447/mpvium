@@ -46,7 +46,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -188,11 +191,22 @@ fun PlayerSheet(
       },
       tonalElevation = tonalElevation,
       content = {
+        val sheetFocusRequester = remember { FocusRequester() }
         BackHandler(
           enabled = anchoredDraggableState.targetValue == 0,
           onBack = internalOnDismissRequest,
         )
-        Column {
+        LaunchedEffect(isTv) {
+          if (isTv) {
+            kotlinx.coroutines.delay(120)
+            runCatching { sheetFocusRequester.requestFocus() }
+          }
+        }
+        Column(
+          modifier = Modifier
+            .focusRequester(sheetFocusRequester)
+            .focusGroup(),
+        ) {
           if (!isTv) {
             Box(
               modifier =

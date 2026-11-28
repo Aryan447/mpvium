@@ -220,7 +220,7 @@ private fun NetworkBrowserContent(
             NetworkMediaTypes.isVideoFileName(it.name)
           )
       }
-      val networkListState = LazyListState()
+      val networkListState = androidx.compose.foundation.lazy.rememberLazyListState()
 
       // Check if at top of list to hide scrollbar during pull-to-refresh
       val isAtTop by remember {

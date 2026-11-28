@@ -57,5 +57,6 @@
 - Network streaming and browser cards display distinct focus borders on remote selection and resolve duplicate inner click targets.
 - Search mode in Home and Titles can be dismissed with the TV remote Back button, and search and stream link input fields require Enter or Select before invoking the keyboard.
 - Android TV storage permission prompts now use the standard runtime media dialog instead of launching missing or black All Files Access settings screens when opening Folders.
-- Titles, Movies, and Shows grids on Android TV now display full-width 5-column poster grids instead of tablet split-screen panes, opening full details on click.
+- Titles, Movies, and Shows grids on Android TV now display full-width 7-column poster grids instead of tablet split-screen panes, opening full details on click.
+- Player More menu and other bottom sheets now automatically receive D-Pad focus on Android TV with visible focus highlights on all options, and Stream Link / Play Link / Subtitle Search fields require Enter or Select before opening the keyboard.
 - Navigation rail and TV cards display bolder 3dp D-Pad focus rings with z-index elevation, and the redundant floating Add Connection button is hidden on TV so it never overlaps Browse or Connect buttons.

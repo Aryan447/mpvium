@@ -524,6 +524,7 @@ private fun SubtitleSearchField(
   OutlinedTextField(
     value = query,
     onValueChange = onQueryChange,
+    readOnly = tvState.readOnly,
     modifier = modifier
       .fillMaxWidth()
       .tvTextFieldControl(tvState)

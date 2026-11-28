@@ -123,6 +123,7 @@ fun PlayLinkSheet(
             linkInputUrl = newValue
             isLinkInputUrlValid = newValue.isBlank() || MediaUtils.isURLValid(newValue)
           },
+          readOnly = tvState.readOnly,
           modifier = Modifier
             .fillMaxWidth()
             .tvTextFieldControl(tvState),

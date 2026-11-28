@@ -94,7 +94,7 @@ object NetworkStreamingScreen : Screen {
     val navigationBarHeight = app.aryan447.mpvium.ui.browser.LocalNavigationBarHeight.current
 
     // LazyList state for scroll tracking
-    val listState = LazyListState()
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
     // Track scroll direction to show/hide FAB
     var previousFirstVisibleItemIndex by remember { mutableIntStateOf(0) }
@@ -353,6 +353,7 @@ private fun StreamLinkSection(
         OutlinedTextField(
           value = linkUrl,
           onValueChange = { linkUrl = it },
+          readOnly = tvState.readOnly,
           label = { Text("Video URL") },
           placeholder = {
             Text(
