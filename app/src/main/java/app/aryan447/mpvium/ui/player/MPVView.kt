@@ -7,6 +7,7 @@ import android.util.AttributeSet
 
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
+import android.view.SurfaceHolder
 import app.aryan447.mpvium.preferences.AdvancedPreferences
 import app.aryan447.mpvium.preferences.AudioPreferences
 import app.aryan447.mpvium.preferences.DecoderPreferences
@@ -37,6 +38,20 @@ class MPVView(
   private val anime4kManager: Anime4KManager by inject()
 
   var isExiting = false
+
+  @Volatile
+  var isSurfaceReady = false
+    private set
+
+  override fun surfaceCreated(holder: SurfaceHolder) {
+    super.surfaceCreated(holder)
+    isSurfaceReady = true
+  }
+
+  override fun surfaceDestroyed(holder: SurfaceHolder) {
+    isSurfaceReady = false
+    super.surfaceDestroyed(holder)
+  }
 
   fun getVideoOutAspect(): Double? {
     // Try to get aspect from video-params/aspect first

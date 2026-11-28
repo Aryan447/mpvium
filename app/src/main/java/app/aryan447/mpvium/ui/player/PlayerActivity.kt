@@ -2825,7 +2825,7 @@ class PlayerActivity :
         }
         pendingYouTubeAudioUrl = resolved.audioUrl
         applySeekCacheOptionsBeforeLoadfile(resolved.videoUrl)
-        if (isInitialPlay) {
+        if (isInitialPlay && !player.isSurfaceReady) {
           player.playFile(resolved.videoUrl)
         } else {
           withContext(Dispatchers.Default) {

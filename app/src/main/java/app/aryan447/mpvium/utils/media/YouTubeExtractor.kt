@@ -108,11 +108,11 @@ object YouTubeExtractor {
     }
 
     val bestVideoOnly = streamInfo.videoOnlyStreams
-      .filter { it.content.isNotBlank() }
+      .filter { it.isUrl && it.content.isNotBlank() }
       .maxWithOrNull(compareBy<VideoStream> { it.height }.thenBy { it.bitrate })
 
     val bestAudio = streamInfo.audioStreams
-      .filter { it.content.isNotBlank() }
+      .filter { it.isUrl && it.content.isNotBlank() }
       .maxByOrNull { it.averageBitrate }
 
     if (bestVideoOnly != null && bestAudio != null) {
@@ -126,7 +126,7 @@ object YouTubeExtractor {
     }
 
     val bestMuxed = streamInfo.videoStreams
-      .filter { it.content.isNotBlank() }
+      .filter { it.isUrl && it.content.isNotBlank() }
       .maxWithOrNull(compareBy<VideoStream> { it.height }.thenBy { it.bitrate })
 
     if (bestMuxed != null) {
@@ -167,18 +167,23 @@ object YouTubeExtractor {
       }
 
       val dataToSend = request.dataToSend()
-      val body = if (dataToSend != null) {
-        val contentType = request.headers()["Content-Type"]?.firstOrNull()
-          ?: "application/json; charset=utf-8"
-        dataToSend.toRequestBody(contentType.toMediaTypeOrNull())
-      } else {
-        null
+      val method = request.httpMethod().uppercase()
+      val body = when {
+        dataToSend != null -> {
+          val contentType = request.headers()["Content-Type"]?.firstOrNull()
+            ?: "application/json; charset=utf-8"
+          dataToSend.toRequestBody(contentType.toMediaTypeOrNull())
+        }
+        method == "POST" || method == "PUT" || method == "PATCH" -> {
+          ByteArray(0).toRequestBody(null)
+        }
+        else -> null
       }
 
       val okRequest = okhttp3.Request.Builder()
         .url(request.url())
         .headers(headersBuilder.build())
-        .method(request.httpMethod(), body)
+        .method(method, body)
         .build()
 
       client.newCall(okRequest).execute().use { response ->
