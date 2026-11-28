@@ -1,17 +1,21 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { getTranslations } from "../i18n";
+import { DEFAULT_LOCALE, localePath } from "../i18n/locales";
+
+const t = getTranslations(DEFAULT_LOCALE);
 ---
 
-<BaseLayout title="404 — mpvium" description="Page not found.">
+<BaseLayout title={t.meta.notFoundTitle} description={t.meta.notFoundDescription}>
   <div class="mx-auto max-w-3xl px-5 py-24 text-center">
     <p class="text-6xl font-extrabold text-[var(--primary)]">404</p>
-    <h1 class="mt-4 text-2xl font-extrabold">This reel is missing.</h1>
-    <p class="mt-2 text-[var(--muted)]">The page you&apos;re looking for doesn&apos;t exist.</p>
+    <h1 class="mt-4 text-2xl font-extrabold">{t.notFoundPage.title}</h1>
+    <p class="mt-2 text-[var(--muted)]">{t.notFoundPage.body}</p>
     <a
-      href="/"
+      href={localePath(DEFAULT_LOCALE, "/")}
       class="mt-6 inline-block rounded-full bg-[var(--primary)] px-7 py-3 text-base font-bold text-[#1A1206] hover:brightness-110"
     >
-      Back home
+      {t.notFoundPage.backHome}
     </a>
   </div>
 </BaseLayout>

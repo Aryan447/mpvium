@@ -1,6 +1,7 @@
 package app.aryan447.mpvium.ui.preferences
 
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -35,42 +36,55 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.outlined.ViewQuilt
 import androidx.compose.material.icons.outlined.Audiotrack
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Gesture
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Subtitles
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -85,20 +99,67 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import app.aryan447.mpvium.R
 import app.aryan447.mpvium.presentation.Screen
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassCardColors
 import app.aryan447.mpvium.ui.theme.glassRimStroke
 import app.aryan447.mpvium.ui.theme.glassSheen
+import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
 import app.aryan447.mpvium.ui.utils.LocalBackStack
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
+import java.util.Locale
+
+private data class AppLanguageOption(
+  val tag: String,
+  val nativeName: String,
+)
+
+private val APP_LANGUAGE_OPTIONS = listOf(
+  AppLanguageOption("", ""),
+  AppLanguageOption("en", "English"),
+  AppLanguageOption("es", "Español"),
+  AppLanguageOption("fr", "Français"),
+  AppLanguageOption("de", "Deutsch"),
+  AppLanguageOption("pt-BR", "Português (Brasil)"),
+  AppLanguageOption("it", "Italiano"),
+  AppLanguageOption("ru", "Русский"),
+  AppLanguageOption("uk", "Українська"),
+  AppLanguageOption("pl", "Polski"),
+  AppLanguageOption("tr", "Türkçe"),
+  AppLanguageOption("ar", "العربية"),
+  AppLanguageOption("hi", "हिन्दी"),
+  AppLanguageOption("id", "Bahasa Indonesia"),
+  AppLanguageOption("vi", "Tiếng Việt"),
+  AppLanguageOption("zh-CN", "简体中文"),
+  AppLanguageOption("zh-TW", "繁體中文"),
+  AppLanguageOption("ja", "日本語"),
+  AppLanguageOption("ko", "한국어"),
+)
+
+private fun currentAppLanguageTag(): String {
+  val locales = AppCompatDelegate.getApplicationLocales()
+  if (locales.isEmpty) return ""
+  val locale = locales[0] ?: return ""
+  val lang = when (locale.language) {
+    "in" -> "id"
+    else -> locale.language
+  }
+  val full = if (locale.country.isNotBlank()) "$lang-${locale.country}" else lang
+  return APP_LANGUAGE_OPTIONS.firstOrNull { it.tag.equals(full, ignoreCase = true) }?.tag
+    ?: APP_LANGUAGE_OPTIONS.firstOrNull { it.tag.equals(lang, ignoreCase = true) }?.tag
+    ?: APP_LANGUAGE_OPTIONS.firstOrNull { it.tag.startsWith("$lang-", ignoreCase = true) }?.tag
+    ?: ""
+}
 
 private data class DashboardEntry(
   val icon: ImageVector,
@@ -110,8 +171,9 @@ private data class DashboardEntry(
 )
 
 private data class DashboardSection(
-  val title: String,
+  @StringRes val titleRes: Int,
   val entries: List<DashboardEntry>,
+  val isSystemSection: Boolean = false,
 )
 
 @Serializable
@@ -122,6 +184,14 @@ object PreferencesScreen : Screen {
     val backstack = LocalBackStack.current
     val context = LocalContext.current
     var query by rememberSaveable { mutableStateOf("") }
+    var showLanguageSheet by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+      if (SettingsHighlight.consume(PreferencesScreen) == "app.language") {
+        query = ""
+        showLanguageSheet = true
+      }
+    }
 
     val results by remember(query) {
       derivedStateOf {
@@ -184,13 +254,21 @@ object PreferencesScreen : Screen {
                 modifier = Modifier.fillMaxSize(),
               )
             } else {
+              val activeLanguageTag = currentAppLanguageTag()
+              val activeLanguageLabel = if (activeLanguageTag.isEmpty()) {
+                stringResource(R.string.pref_language_system)
+              } else {
+                APP_LANGUAGE_OPTIONS.firstOrNull { it.tag == activeLanguageTag }?.nativeName
+                  ?: stringResource(R.string.pref_language_system)
+              }
+
               LazyColumn(
                 modifier = Modifier.fillMaxSize(),
               ) {
                 sections.forEach { section ->
                   item {
                     PreferenceSectionHeader(
-                      title = section.title,
+                      title = stringResource(section.titleRes),
                       count = section.entries.size,
                     )
                   }
@@ -200,6 +278,21 @@ object PreferencesScreen : Screen {
                       onOpen = { backstack.add(it.screen) },
                       modifier = Modifier.padding(horizontal = 16.dp),
                     )
+                  }
+                  if (section.isSystemSection) {
+                    item {
+                      Spacer(modifier = Modifier.height(6.dp))
+                      PreferenceCard {
+                        SettingsPreferenceRow(
+                          title = stringResource(R.string.pref_language_title),
+                          summary = activeLanguageLabel,
+                          icon = Icons.Outlined.Language,
+                          container = MaterialTheme.colorScheme.primaryContainer,
+                          content = MaterialTheme.colorScheme.onPrimaryContainer,
+                          onClick = { showLanguageSheet = true },
+                        )
+                      }
+                    }
                   }
                 }
 
@@ -212,6 +305,21 @@ object PreferencesScreen : Screen {
         }
       }
     }
+
+    if (showLanguageSheet) {
+      LanguagePickerSheet(
+        selectedTag = currentAppLanguageTag(),
+        onSelect = { tag ->
+          val locales = if (tag.isEmpty()) {
+            LocaleListCompat.getEmptyLocaleList()
+          } else {
+            LocaleListCompat.forLanguageTags(tag)
+          }
+          AppCompatDelegate.setApplicationLocales(locales)
+        },
+        onDismiss = { showLanguageSheet = false },
+      )
+    }
   }
 }
 
@@ -221,7 +329,7 @@ private fun rememberDashboardSections(): List<DashboardSection> {
   return remember(scheme) {
     listOf(
       DashboardSection(
-        title = "Personalize",
+        titleRes = R.string.pref_section_personalize,
         entries = listOf(
           DashboardEntry(
             icon = Icons.Outlined.Palette,
@@ -242,7 +350,7 @@ private fun rememberDashboardSections(): List<DashboardSection> {
         ),
       ),
       DashboardSection(
-        title = "Playback",
+        titleRes = R.string.pref_section_playback,
         entries = listOf(
           DashboardEntry(
             icon = Icons.Outlined.PlayCircle,
@@ -263,7 +371,7 @@ private fun rememberDashboardSections(): List<DashboardSection> {
         ),
       ),
       DashboardSection(
-        title = "Library & Media",
+        titleRes = R.string.pref_section_library_media,
         entries = listOf(
           DashboardEntry(
             icon = Icons.Outlined.Folder,
@@ -300,7 +408,8 @@ private fun rememberDashboardSections(): List<DashboardSection> {
         ),
       ),
       DashboardSection(
-        title = "System",
+        titleRes = R.string.pref_section_system,
+        isSystemSection = true,
         entries = listOf(
           DashboardEntry(
             icon = Icons.Outlined.Code,
@@ -642,6 +751,115 @@ private fun DashboardSearchResults(
         }
         item {
           Spacer(modifier = Modifier.height(16.dp))
+        }
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun LanguagePickerSheet(
+  selectedTag: String,
+  onSelect: (String) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+  val scope = rememberCoroutineScope()
+  val haptic = LocalHapticFeedback.current
+  val scheme = MaterialTheme.colorScheme
+  val systemDefaultLabel = stringResource(R.string.pref_language_system)
+
+  ModalBottomSheet(
+    onDismissRequest = onDismiss,
+    sheetState = sheetState,
+    dragHandle = { BottomSheetDefaults.DragHandle() },
+    containerColor = glassSheetContainerColor(scheme.surfaceContainerLow),
+  ) {
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 24.dp)
+        .verticalScroll(rememberScrollState()),
+    ) {
+      ProvideTextStyle(
+        value = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+      ) {
+        Text(
+          text = stringResource(R.string.pref_language_title),
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        )
+      }
+
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .clip(SettingsCardShape)
+          .background(scheme.surfaceContainerHigh)
+          .selectableGroup(),
+      ) {
+        APP_LANGUAGE_OPTIONS.forEachIndexed { index, option ->
+          val selected = option.tag == selectedTag
+          val containerColor by animateColorAsState(
+            targetValue = if (selected) scheme.secondaryContainer else Color.Transparent,
+            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+            label = "languageRowContainer",
+          )
+          val contentColor by animateColorAsState(
+            targetValue = if (selected) scheme.onSecondaryContainer else scheme.onSurface,
+            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+            label = "languageRowContent",
+          )
+          val label = if (option.tag.isEmpty()) systemDefaultLabel else option.nativeName
+
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .background(containerColor)
+              .selectable(
+                selected = selected,
+                onClick = {
+                  if (!selected) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSelect(option.tag)
+                  }
+                  scope.launch {
+                    sheetState.hide()
+                    onDismiss()
+                  }
+                },
+                role = Role.RadioButton,
+              )
+              .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            Text(
+              text = label,
+              style = MaterialTheme.typography.bodyLarge,
+              fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+              color = contentColor,
+              modifier = Modifier.weight(1f),
+            )
+            if (selected) {
+              Spacer(modifier = Modifier.width(12.dp))
+              Icon(
+                imageVector = Icons.Outlined.Check,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp),
+              )
+            }
+          }
+
+          if (index < APP_LANGUAGE_OPTIONS.lastIndex) {
+            HorizontalDivider(
+              modifier = Modifier.padding(start = 20.dp),
+              thickness = 0.75.dp,
+              color = scheme.outlineVariant.copy(alpha = 0.45f),
+            )
+          }
         }
       }
     }

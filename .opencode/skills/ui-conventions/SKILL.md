@@ -92,7 +92,7 @@ Fire on the state-changing click only, and stay silent when the value is already
 - All user-facing text **and** `contentDescription` go to
   `app/src/main/res/values/strings.xml`, prefixed `pref_`, `player_`, `theme_`, `generic_`.
 - URLs, brand names, and format templates: `translatable="false"`.
-- Only `en-US` ships. Do not add a locale directory without a complete translation.
+- 18 locales ship (`en` default + `es`, `fr`, `de`, `pt-rBR`, `it`, `ru`, `uk`, `pl`, `tr`, `ar`, `hi`, `in`, `vi`, `zh-rCN`, `zh-rTW`, `ja`, `ko`). Do not add a new locale directory without a complete translation and registering it in `PreferencesScreen.kt`.
 - Older screens still hold hardcoded literals (e.g. `FloatingBottomBar`). Don't copy them;
   convert the ones you touch.
 

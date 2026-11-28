@@ -113,6 +113,18 @@ Be extra careful with C/C++ and JNI under `app/src/main/jni/` (if touched):
 - Explain testing per-ABI in the PR.
 - Do not bump NDK / CMake versions incidentally.
 
+### Translations & localization
+
+mpvium ships with English (`values/strings.xml`) and 17 translations (`es`, `fr`, `de`, `pt-rBR`, `it`, `ru`, `uk`, `pl`, `tr`, `ar`, `hi`, `in`, `vi`, `zh-rCN`, `zh-rTW`, `ja`, `ko`) under `app/src/main/res/values-*/strings.xml`.
+
+- **Source of truth**: All user-facing strings live in `app/src/main/res/values/strings.xml`. Mark non-translatable strings (URLs, brand names, format templates) with `translatable="false"` and omit them from `values-*/strings.xml`.
+- **Adding or updating a translation**:
+  - Keep every `name` attribute, `<plurals>` key, and format placeholder (`%s`, `%d`, `%1$s`, `%2$d`, etc.) identical to `values/strings.xml`.
+  - Escape apostrophes (`\'`) and XML entities (`&amp;`, `&lt;`, `&gt;`).
+  - Keep brand and technical terms (`mpvium`, `mpv`, `mpv.conf`, `FFmpeg`, `WebDAV`, `SMB`, `FTP`, `PiP`, `AMOLED`, `Material You`) intact.
+  - When adding a **new** language, add its complete `values-<qualifier>/strings.xml` and register it in `APP_LANGUAGE_OPTIONS` in `app/src/main/java/app/aryan447/mpvium/ui/preferences/PreferencesScreen.kt` (Android's `generateLocaleConfig = true` in `app/build.gradle.kts` generates the system locale config automatically).
+- **RTL support**: Arabic (`ar`) and any future RTL languages rely on `start`/`end` layout semantics and `Icons.AutoMirrored.*`; verify RTL mirroring when editing UI.
+
 ### Dependencies
 
 - Update `gradle/libs.versions.toml`, not ad-hoc `build.gradle.kts` versions.

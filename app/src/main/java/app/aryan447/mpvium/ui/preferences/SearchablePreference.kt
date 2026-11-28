@@ -25,6 +25,15 @@ data class SearchablePreference(
 object SearchablePreferences {
     val allPreferences: List<SearchablePreference> by lazy {
         buildList {
+            // Top-level preferences
+            add(SearchablePreference(
+                key = "app.language",
+                titleRes = R.string.pref_language_title,
+                summaryRes = R.string.pref_language_summary,
+                keywords = listOf("language", "locale", "translation", "region", "system language", "english", "spanish", "french", "german", "portuguese", "italian", "russian", "ukrainian", "polish", "turkish", "arabic", "hindi", "indonesian", "vietnamese", "chinese", "japanese", "korean"),
+                category = "General",
+                screen = PreferencesScreen,
+            ))
             // Appearance preferences
             add(SearchablePreference(
                 key = "appearance.theme",

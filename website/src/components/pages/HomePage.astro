@@ -1,0 +1,131 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Hero from "../Hero.astro";
+import FeatureGrid from "../FeatureGrid.astro";
+import ThemeSwitcher from "../ThemeSwitcher.astro";
+import WhyMpvium from "../WhyMpvium.astro";
+import { features } from "../../data/features";
+import { shots } from "../../data/screenshots";
+import { links } from "../../data/site";
+import { DEFAULT_LOCALE, localePath, type LocaleCode } from "../../i18n/locales";
+import { getTranslations } from "../../i18n";
+
+interface Props {
+  locale?: LocaleCode;
+}
+
+const { locale = DEFAULT_LOCALE } = Astro.props;
+const t = getTranslations(locale);
+
+const localizedFeatures = features.map((f, i) => ({
+  ...f,
+  title: t.featuresPage.items[i]?.title ?? f.title,
+  description: t.featuresPage.items[i]?.description ?? f.description,
+}));
+
+const localizedShots = shots.map((s, i) => ({
+  ...s,
+  alt: t.screenshotsPage.shots[i]?.alt ?? s.alt,
+  title: t.screenshotsPage.shots[i]?.title ?? s.title,
+  caption: t.screenshotsPage.shots[i]?.caption ?? s.caption,
+}));
+---
+
+<BaseLayout active="home" locale={locale} subPath="/">
+  <Hero locale={locale} />
+
+  <div class="film-strip"></div>
+
+  <WhyMpvium locale={locale} />
+
+  <section class="mx-auto max-w-5xl px-5 pb-2 pt-14" aria-labelledby="features-h">
+    <h2 id="features-h" class="mb-1.5 text-[28px] font-extrabold tracking-[-0.5px]">
+      {t.home.featuresHeading}<span class="text-[var(--primary)]">.</span>
+    </h2>
+    <p class="mb-6 text-[var(--muted)]">{t.home.featuresSubtitle}</p>
+    <FeatureGrid features={localizedFeatures} />
+    <p class="mt-5">
+      <a href={localePath(locale, "/features")} class="font-bold text-[var(--primary)] hover:underline">
+        {t.home.exploreFeatures}
+      </a>
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-5xl px-5 pb-2 pt-14" aria-labelledby="shots-h">
+    <h2 id="shots-h" class="mb-1.5 text-[28px] font-extrabold tracking-[-0.5px]">
+      {t.home.shotsHeading}<span class="text-[var(--primary)]">.</span>
+    </h2>
+    <p class="mb-6 text-[var(--muted)]">{t.home.shotsSubtitle}</p>
+    <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        localizedShots.filter((s) => !s.wide).slice(0, 4).map((s) => (
+          <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2">
+            <img
+              src={s.src}
+              alt={s.alt}
+              loading="lazy"
+              class="w-full rounded-[10px]"
+            />
+            <h3 class="mb-0.5 mt-2 px-2 text-base font-bold text-[var(--primary)]">{s.title}</h3>
+            <p class="px-2 pb-2 text-sm text-[var(--muted)]">{s.caption}</p>
+          </div>
+        ))
+      }
+    </div>
+    <p class="mt-5">
+      <a href={localePath(locale, "/screenshots")} class="font-bold text-[var(--primary)] hover:underline">
+        {t.home.viewGallery}
+      </a>
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-5xl px-5 pb-2 pt-14" aria-labelledby="themes-h">
+    <h2 id="themes-h" class="mb-1.5 text-[28px] font-extrabold tracking-[-0.5px]">
+      {t.home.themesHeading}<span class="text-[var(--primary)]">.</span>
+    </h2>
+    <p class="mb-6 text-[var(--muted)]">
+      {t.home.themesSubtitle}
+    </p>
+    <ThemeSwitcher />
+  </section>
+
+  <section class="mx-auto max-w-5xl px-5 pb-2 pt-14" aria-labelledby="cta-h">
+    <div
+      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center"
+    >
+      <h2 id="cta-h" class="text-2xl font-extrabold">
+        {t.home.ctaHeading}<span class="text-[var(--primary)]">?</span>
+      </h2>
+      <p class="mx-auto mt-2 max-w-xl text-[var(--muted)]">
+        {t.home.ctaBody}
+      </p>
+      <div class="mt-5 flex flex-wrap justify-center gap-3">
+        <a
+          href={localePath(locale, "/download")}
+          class="inline-block rounded-full bg-[var(--primary)] px-7 py-3 text-base font-bold text-[#1A1206] hover:brightness-110"
+        >
+          {t.home.ctaGet}
+        </a>
+        <a
+          href={links.discord}
+          class="inline-block rounded-full border border-[var(--border)] px-7 py-3 text-base font-bold text-[var(--text)] hover:border-[var(--primary)]"
+        >
+          {t.home.ctaDiscord}
+        </a>
+        <a
+          href={links.telegram}
+          class="inline-block rounded-full border border-[var(--border)] px-7 py-3 text-base font-bold text-[var(--text)] hover:border-[var(--primary)]"
+        >
+          {t.home.ctaTelegram}
+        </a>
+        <a
+          href={links.reddit}
+          class="inline-block rounded-full border border-[var(--border)] px-7 py-3 text-base font-bold text-[var(--text)] hover:border-[var(--primary)]"
+        >
+          {t.home.ctaReddit}
+        </a>
+      </div>
+    </div>
+  </section>
+  <div class="h-6"></div>
+</BaseLayout>

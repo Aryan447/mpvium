@@ -1,17 +1,26 @@
 ---
 import { links } from "../data/site";
+import { DEFAULT_LOCALE, type LocaleCode } from "../i18n/locales";
+import { getTranslations } from "../i18n";
+
+interface Props {
+  locale?: LocaleCode;
+}
+
+const { locale = DEFAULT_LOCALE } = Astro.props;
+const t = getTranslations(locale);
 ---
 
 <div class="mx-auto max-w-5xl px-5 pb-10 pt-16 text-center sm:pt-20">
   <p
     class="mb-5 inline-block rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-1 text-[13px] text-[var(--muted)]"
   >
-    Free &amp; open source · GPL-3.0-or-later · powered by mpv
+    {t.hero.badge}
   </p>
   <div class="flex flex-wrap items-center justify-center gap-4">
     <img
       src="/icon.png"
-      alt="mpvium logo"
+      alt={t.hero.logoAlt}
       class="h-[84px] w-[84px] flex-none rounded-[22px] border border-[var(--border)] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.7)]"
     />
     <h1 class="text-left text-[clamp(44px,8vw,84px)] font-extrabold leading-none tracking-[-2px]">
@@ -19,11 +28,10 @@ import { links } from "../data/site";
     </h1>
   </div>
   <p class="mt-4 text-[clamp(19px,3.4vw,27px)] font-bold text-[var(--primary)]">
-    Sane defaults, pro-level control.
+    {t.hero.tagline}
   </p>
   <p class="mx-auto mt-3 max-w-[620px] text-[var(--muted)]">
-    Opinionated for everyday watching, fully customizable for pros — mpv power without the
-    config-file homework. Material 3 interface, background playback, picture-in-picture.
+    {t.hero.subtitle}
   </p>
   <div class="mt-7 flex flex-wrap justify-center gap-3">
     <a
@@ -31,28 +39,43 @@ import { links } from "../data/site";
       href={links.latestRelease}
       class="inline-block w-full rounded-full bg-[var(--primary)] px-5 py-3.5 text-base font-bold text-[#1A1206] hover:brightness-110 sm:w-auto sm:px-7"
     >
-      Download Stable (arm64-v8a)
+      {t.hero.downloadStable}
     </a>
     <a
       id="dl-preview"
       aria-disabled="true"
       class="inline-block w-full cursor-not-allowed rounded-full border border-[var(--border)] px-5 py-3.5 text-base font-bold text-[var(--text)] opacity-50 sm:w-auto sm:px-7"
     >
-      Checking preview…
+      {t.hero.checkingPreview}
     </a>
   </div>
-  <p id="dl-meta" class="mt-3 text-[13px] text-[var(--muted)]">Resolving latest versions…</p>
+  <p id="dl-meta" class="mt-3 text-[13px] text-[var(--muted)]">{t.hero.resolvingVersions}</p>
   <img
     src="/screenshots/mpvium-player.jpg"
-    alt="mpvium player screenshot"
+    alt={t.hero.screenshotAlt}
     class="mx-auto mt-8 w-full max-w-[720px] rounded-xl border border-[var(--border)] shadow-[0_24px_80px_-20px_rgba(0,0,0,0.7)]"
     loading="eager"
   />
 </div>
 
-<script is:inline data-repo="aryan447/mpvium">
+<script
+  is:inline
+  data-repo="aryan447/mpvium"
+  data-stable-tpl={t.hero.downloadStableTag}
+  data-preview-tpl={t.hero.downloadPreviewTag}
+  data-no-preview={t.hero.noPreview}
+  data-latest-meta={t.hero.latestMeta}
+  data-unavailable={t.hero.releasesUnavailable}
+>
   (function () {
-    var repo = document.currentScript.getAttribute("data-repo");
+    var script = document.currentScript;
+    var repo = script.getAttribute("data-repo");
+    var stableTpl = script.getAttribute("data-stable-tpl") || "Download Stable {tag} (arm64-v8a)";
+    var previewTpl = script.getAttribute("data-preview-tpl") || "Download Preview {tag} (arm64-v8a)";
+    var noPreviewLabel = script.getAttribute("data-no-preview") || "No preview build";
+    var latestMetaTpl = script.getAttribute("data-latest-meta") || "Latest: {parts}";
+    var unavailableLabel = script.getAttribute("data-unavailable") || "Releases available on GitHub.";
+
     var stableBtn = document.getElementById("dl-stable");
     var previewBtn = document.getElementById("dl-preview");
     var meta = document.getElementById("dl-meta");
@@ -91,7 +114,7 @@ import { links } from "../data/site";
       previewBtn.removeAttribute("aria-disabled");
       previewBtn.classList.remove("cursor-not-allowed", "opacity-50");
       previewBtn.classList.add("hover:border-[var(--primary)]");
-      previewBtn.textContent = "Download Preview " + tag + " (arm64-v8a)";
+      previewBtn.textContent = previewTpl.replace("{tag}", tag);
     }
 
     Promise.all([
@@ -107,7 +130,7 @@ import { links } from "../data/site";
         if (stable) {
           var a = arm64Apk(stable.assets);
           sName = setBtn(stableBtn, a);
-          if (a) stableBtn.textContent = "Download Stable " + stable.tag_name + " (arm64-v8a)";
+          if (a) stableBtn.textContent = stableTpl.replace("{tag}", stable.tag_name);
         }
         if (list) {
           for (var i = 0; i < list.length; i++) {
@@ -120,22 +143,18 @@ import { links } from "../data/site";
               }
             }
           }
-          if (!pName) setPreviewDisabled("No preview release");
-        } else {
-          setPreviewDisabled("Preview unavailable");
         }
-        meta.textContent =
-          (sName ? "Stable: " + sName : "Stable: see releases page") +
-          " · " +
-          (pName
-            ? "Preview: " + pName
-            : list
-              ? "Preview: none available"
-              : "Preview: unavailable");
+        if (!pName) setPreviewDisabled(noPreviewLabel);
+        var parts = [];
+        if (sName) parts.push(sName);
+        if (pName) parts.push(pName);
+        meta.textContent = parts.length
+          ? latestMetaTpl.replace("{parts}", parts.join(" · "))
+          : unavailableLabel;
       })
       .catch(function () {
-        setPreviewDisabled("Preview unavailable");
-        meta.textContent = "See the releases page for all APKs and checksums.";
+        setPreviewDisabled(noPreviewLabel);
+        meta.textContent = unavailableLabel;
       });
   })();
 </script>

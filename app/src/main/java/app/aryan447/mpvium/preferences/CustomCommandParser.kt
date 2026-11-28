@@ -1,7 +1,7 @@
 package app.aryan447.mpvium.preferences
 
 /**
- * Utility for parsing generic mpv commands, chained commands, and mpvEx Lua snippets
+ * Utility for parsing generic mpv commands, chained commands, and mpvium Lua snippets
  * into argument lists suitable for [is.xyz.mpv.MPVLib.command].
  */
 object CustomCommandParser {
@@ -11,8 +11,8 @@ object CustomCommandParser {
    *
    * Supports:
    * 1. Plain commands: e.g. "cycle pause", "script-binding Script/delete_file", "show-text \"hello world\""
-   * 2. mpvEx Lua single commands: e.g. mp.command("script-binding Script/delete_file"), mp.command('...'), mp.command([[...]])
-   * 3. mpvEx Lua multi-arg commands: e.g. mp.commandv("script-binding", "Script/delete_file")
+   * 2. mpvium Lua single commands: e.g. mp.command("script-binding Script/delete_file"), mp.command('...'), mp.command([[...]])
+   * 3. mpvium Lua multi-arg commands: e.g. mp.commandv("script-binding", "Script/delete_file")
    * 4. Chained commands separated by ';' or newlines outside of quotes: e.g. "cycle pause; show-text \"Paused\""
    */
   fun parse(raw: String): List<List<String>> {
