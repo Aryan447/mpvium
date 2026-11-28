@@ -40,9 +40,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.ui.theme.LocalGlass
 import app.aryan447.mpvium.ui.theme.glassCardColors
 import app.aryan447.mpvium.ui.theme.glassSheetContainerColor
@@ -186,7 +188,7 @@ fun PlaylistActionSheet(
           verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
           Text(
-            text = "Create Playlist",
+            text = stringResource(R.string.create_playlist),
             style = MaterialTheme.typography.headlineSmall,
           )
           OutlinedTextField(

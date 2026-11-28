@@ -1,0 +1,162 @@
+---
+import { getCollection, render } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { links } from "../../data/site";
+import { DEFAULT_LOCALE, type LocaleCode } from "../../i18n/locales";
+import { getTranslations } from "../../i18n";
+
+interface Props {
+  locale?: LocaleCode;
+}
+
+const { locale = DEFAULT_LOCALE } = Astro.props;
+const t = getTranslations(locale);
+
+const [entry] = await getCollection("doctrine");
+if (!entry) {
+  throw new Error("DOCTRINE.md not found at the repository root.");
+}
+const { Content } = await render(entry);
+---
+
+<BaseLayout
+  active="doctrine"
+  locale={locale}
+  subPath="/doctrine"
+  title={t.meta.doctrineTitle}
+  description={t.meta.doctrineDescription}
+>
+  <article class="doctrine mx-auto max-w-3xl px-5 pb-2 pt-14">
+    <Content />
+  </article>
+
+  <p class="mx-auto max-w-3xl px-5 pb-12 pt-8 text-sm text-[var(--muted)]">
+    {t.doctrinePage.generatedFrom} <code class="font-mono text-[13px]">DOCTRINE.md</code>.{" "}
+    <a class="font-semibold text-[var(--primary)] hover:underline" href={links.doctrineFile}>
+      {t.doctrinePage.readFile}
+    </a>
+  </p>
+
+  <script is:inline data-link-to={t.doctrinePage.linkTo}>
+    (function () {
+      var linkPrefix = document.currentScript.getAttribute("data-link-to") || "Link to";
+      var icon =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l1.42-1.42a5 5 0 0 0-7.07-7.07L10 5.93"/><path d="M14 11a5 5 0 0 0-7.07 0L5.51 12.4a5 5 0 0 0 7.07 7.07L14 18.07"/></svg>';
+
+      document.querySelectorAll(".doctrine h2[id]").forEach(function (heading) {
+        var link = document.createElement("a");
+        link.className = "heading-anchor";
+        link.href = "#" + heading.id;
+        link.setAttribute("aria-label", linkPrefix + " " + heading.textContent.trim());
+        link.innerHTML = icon;
+        heading.appendChild(link);
+      });
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  .doctrine :global(h1) {
+    font-size: 2.25rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .doctrine :global(h1)::after {
+    content: ".";
+    color: var(--primary);
+  }
+
+  .doctrine :global(h1 + p) {
+    margin-top: 0.75rem;
+    color: var(--muted);
+    font-size: 1.0625rem;
+  }
+
+  .doctrine :global(h2) {
+    margin-top: 2.75rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.75rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    text-wrap: balance;
+    scroll-margin-top: 5rem;
+  }
+
+  .doctrine :global(.heading-anchor) {
+    display: inline-flex;
+    margin-inline-start: 0.4rem;
+    vertical-align: 0.1em;
+    color: var(--primary);
+    opacity: 0.35;
+    transition: opacity 0.15s;
+  }
+
+  .doctrine :global(h2:hover .heading-anchor),
+  .doctrine :global(.heading-anchor:focus-visible) {
+    opacity: 1;
+  }
+
+  .doctrine :global(.heading-anchor svg) {
+    width: 0.75em;
+    height: 0.75em;
+  }
+
+  .doctrine :global(p),
+  .doctrine :global(ul),
+  .doctrine :global(ol),
+  .doctrine :global(blockquote) {
+    margin-top: 0.85rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .doctrine :global(ul),
+  .doctrine :global(ol) {
+    padding-inline-start: 1.25rem;
+  }
+
+  .doctrine :global(ul) {
+    list-style: disc;
+  }
+
+  .doctrine :global(ol) {
+    list-style: decimal;
+  }
+
+  .doctrine :global(li + li) {
+    margin-top: 0.35rem;
+  }
+
+  .doctrine :global(strong) {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .doctrine :global(code) {
+    border-radius: 0.375rem;
+    background: var(--surface2);
+    padding: 0.125rem 0.375rem;
+    font-size: 0.875em;
+    color: var(--text);
+  }
+
+  .doctrine :global(blockquote) {
+    border-inline-start: 2px solid var(--primary);
+    padding-inline-start: 1rem;
+    color: var(--text);
+  }
+
+  .doctrine :global(a) {
+    color: var(--primary);
+    text-decoration: none;
+  }
+
+  .doctrine :global(a:hover) {
+    text-decoration: underline;
+  }
+</style>

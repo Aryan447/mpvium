@@ -6,6 +6,32 @@ import tailwindcss from "@tailwindcss/vite";
 // canonical URLs, sitemap, and social cards.
 // site: "https://mpvium.pages.dev",
 export default defineConfig({
+  i18n: {
+    defaultLocale: "en",
+    locales: [
+      "en",
+      "es",
+      "fr",
+      "de",
+      "pt-br",
+      "it",
+      "ru",
+      "uk",
+      "pl",
+      "tr",
+      "ar",
+      "hi",
+      "id",
+      "vi",
+      "zh-cn",
+      "zh-tw",
+      "ja",
+      "ko",
+    ],
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
   vite: {
     plugins: [tailwindcss()],
   },

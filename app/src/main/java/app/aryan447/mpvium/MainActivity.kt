@@ -11,6 +11,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -62,7 +63,7 @@ import org.koin.android.ext.android.inject
 /**
  * Main entry point for the application
  */
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
   private val appearancePreferences by inject<AppearancePreferences>()
   private val networkRepository by inject<NetworkRepository>()
 

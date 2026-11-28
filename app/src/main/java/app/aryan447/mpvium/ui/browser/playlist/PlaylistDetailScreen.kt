@@ -58,8 +58,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.aryan447.mpvium.R
 import app.aryan447.mpvium.database.repository.PlaylistRepository
 import app.aryan447.mpvium.domain.media.model.Video
 import app.aryan447.mpvium.preferences.GesturePreferences
@@ -201,7 +203,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
                 onSearch = { },
                 expanded = false,
                 onExpandedChange = { },
-                placeholder = { Text("Search videos...") },
+                placeholder = { Text(stringResource(R.string.search_videos)) },
                 leadingIcon = {
                   Icon(
                     imageVector = Icons.Filled.Search,
@@ -703,7 +705,7 @@ private fun StreamUrlDialog(
   androidx.compose.material3.AlertDialog(
     onDismissRequest = onDismiss,
     containerColor = glassSheetContainerColor(MaterialTheme.colorScheme.surface),
-    title = { Text("Stream URL") },
+    title = { Text(stringResource(R.string.playlist_stream_url)) },
     text = {
       Text(
         text = url,
@@ -723,12 +725,12 @@ private fun StreamUrlDialog(
           contentDescription = null,
           modifier = Modifier.padding(end = 4.dp).size(18.dp)
         )
-        Text("Copy")
+        Text(stringResource(R.string.copy))
       }
     },
     dismissButton = {
       androidx.compose.material3.TextButton(onClick = onDismiss) {
-        Text("Close")
+        Text(stringResource(R.string.close))
       }
     },
   )
@@ -800,7 +802,7 @@ private fun RemoveFromPlaylistDialog(
         onClick = onDismiss,
         shape = MaterialTheme.shapes.extraLarge,
       ) {
-        Text("Cancel", fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
+        Text(stringResource(R.string.cancel), fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
       }
     },
     tonalElevation = 6.dp,

@@ -1,5 +1,14 @@
 ---
 import { links } from "../data/site";
+import { DEFAULT_LOCALE, localePath, type LocaleCode } from "../i18n/locales";
+import { getTranslations } from "../i18n";
+
+interface Props {
+  locale?: LocaleCode;
+}
+
+const { locale = DEFAULT_LOCALE } = Astro.props;
+const t = getTranslations(locale);
 ---
 
 <footer class="px-5 pb-14 pt-12 text-center text-sm text-[var(--muted)]">
@@ -7,9 +16,9 @@ import { links } from "../data/site";
     <p>
       mpvium · <a class="text-[var(--primary)] hover:underline" href={links.github}>GitHub</a>
       {" · "}
-      <a class="text-[var(--primary)] hover:underline" href={links.releases}>Releases</a>
+      <a class="text-[var(--primary)] hover:underline" href={links.releases}>{t.footer.releases}</a>
       {" · "}
-      <a class="text-[var(--primary)] hover:underline" href="/doctrine">Doctrine</a>
+      <a class="text-[var(--primary)] hover:underline" href={localePath(locale, "/doctrine")}>{t.footer.doctrine}</a>
       {" · "}
       <a class="text-[var(--primary)] hover:underline" href={links.discord}>Discord</a>
       {" · "}
@@ -18,6 +27,6 @@ import { links } from "../data/site";
       <a class="text-[var(--primary)] hover:underline" href={links.reddit}>Reddit</a>
       {" · GPL-3.0-or-later"}
     </p>
-    <p class="mt-2">Stable and preview APKs are arm64-v8a. Other ABIs on the releases page.</p>
+    <p class="mt-2">{t.footer.abiNote}</p>
   </div>
 </footer>
