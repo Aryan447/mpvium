@@ -1205,6 +1205,7 @@ fun ModernBottomActionsPill(
   aspect: VideoAspect = VideoAspect.Fit,
   decoder: app.aryan447.mpvium.ui.player.Decoder = app.aryan447.mpvium.ui.player.Decoder.SW,
   customButtons: List<CustomScriptButton> = emptyList(),
+  pillHeight: Dp = 42.dp,
   modifier: Modifier = Modifier,
 ) {
   val haptic = LocalHapticFeedback.current
@@ -1221,8 +1222,8 @@ fun ModernBottomActionsPill(
   }
 
   Surface(
-    modifier = modifier.height(42.dp),
-    shape = RoundedCornerShape(21.dp),
+    modifier = modifier.height(pillHeight),
+    shape = RoundedCornerShape(pillHeight / 2),
     color = surfaceColor,
     border = borderStroke,
   ) {
@@ -1463,11 +1464,14 @@ fun ModernSeekbarTrack(
   onSeekTo: (Float, Boolean) -> Unit,
   onSeekingChanged: (Boolean) -> Unit,
   onDragPositionChange: (Float) -> Unit = {},
+  seekbarStyleOverride: SeekbarStyle? = null,
+  playedColorOverride: Color? = null,
   modifier: Modifier = Modifier,
 ) {
   val appearancePreferences = koinInject<AppearancePreferences>()
   val chaptersInSeekbar by appearancePreferences.chaptersInSeekbar.collectAsState()
-  val seekbarStyle by appearancePreferences.modernSeekbarStyle.collectAsState()
+  val prefSeekbarStyle by appearancePreferences.modernSeekbarStyle.collectAsState()
+  val seekbarStyle = seekbarStyleOverride ?: prefSeekbarStyle
 
   var isDragging by remember { mutableStateOf(false) }
   var dragPosition by remember { mutableFloatStateOf(position) }
@@ -1550,7 +1554,7 @@ fun ModernSeekbarTrack(
     }
   }
 
-  val themePrimary = MaterialTheme.colorScheme.primary
+  val themePrimary = playedColorOverride ?: MaterialTheme.colorScheme.primary
 
   Box(
     modifier = modifier

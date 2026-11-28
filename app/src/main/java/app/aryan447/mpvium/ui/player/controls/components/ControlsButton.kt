@@ -67,7 +67,7 @@ fun ControlsButton(
   val playerButtonsBackground by appearancePreferences?.playerButtonsBackground?.collectAsState()
     ?: remember { androidx.compose.runtime.mutableStateOf(false) }
   val playerLayout = LocalPlayerLayout.current
-  val isModern = playerLayout == PlayerLayout.MODERN
+  val isModern = playerLayout == PlayerLayout.MODERN || playerLayout == PlayerLayout.ZEN
   val effectiveHideBackground = hideBackground ?: (!playerButtonsBackground || isModern)
   val colors = LocalPlayerColors.current
 
@@ -154,7 +154,8 @@ fun ControlsGroup(
   content: @Composable RowScope.() -> Unit,
 ) {
   val spacing = MaterialTheme.spacing
-  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
+  val playerLayout = LocalPlayerLayout.current
+  val isModern = playerLayout == PlayerLayout.MODERN || playerLayout == PlayerLayout.ZEN
 
   Row(
     modifier = modifier,

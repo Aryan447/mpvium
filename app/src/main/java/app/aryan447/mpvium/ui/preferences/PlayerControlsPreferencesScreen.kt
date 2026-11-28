@@ -80,6 +80,7 @@ enum class ControlRegion {
   BOTTOM_LEFT,
   PORTRAIT_BOTTOM,
   MODERN_ACTIONS,
+  ZEN_ACTIONS,
 }
 
 @Serializable
@@ -118,6 +119,11 @@ object PlayerControlsPreferencesScreen : Screen {
     val modernActionState by appearancePrefs.modernActionControls.collectAsState()
     val modernActionButtons = remember(modernActionState) {
       appearancePrefs.parseButtons(modernActionState, mutableSetOf())
+    }
+
+    val zenActionState by appearancePrefs.zenActionControls.collectAsState()
+    val zenActionButtons = remember(zenActionState) {
+      appearancePrefs.parseButtons(zenActionState, mutableSetOf())
     }
 
     val listState = rememberLazyListState()
@@ -161,8 +167,9 @@ object PlayerControlsPreferencesScreen : Screen {
 
           item {
             val layoutLabels = mapOf(
-              PlayerLayout.CLASSIC to stringResource(R.string.pref_player_layout_classic),
               PlayerLayout.MODERN to stringResource(R.string.pref_player_layout_modern),
+              PlayerLayout.ZEN to stringResource(R.string.pref_player_layout_zen),
+              PlayerLayout.CLASSIC to stringResource(R.string.pref_player_layout_classic),
             )
             PreferenceCard(
               modifier = Modifier.settingsHighlightTarget(
@@ -188,10 +195,15 @@ object PlayerControlsPreferencesScreen : Screen {
 
           // Landscape Controls Section
           val isModernLayout = playerLayout == PlayerLayout.MODERN
+          val isZenLayout = playerLayout == PlayerLayout.ZEN
           item {
             PreferenceSectionHeader(
-              title = if (isModernLayout) "Landscape Controls (Modern)" else "Landscape Controls",
-              count = if (isModernLayout) 1 else 3,
+              title = when {
+                isModernLayout -> "Landscape Controls (Modern)"
+                isZenLayout -> "Landscape Controls (Zen)"
+                else -> "Landscape Controls"
+              },
+              count = if (isModernLayout || isZenLayout) 1 else 3,
             )
           }
 
@@ -203,15 +215,19 @@ object PlayerControlsPreferencesScreen : Screen {
                 isCard = true,
               ),
             ) {
-              if (isModernLayout) {
+              if (isModernLayout || isZenLayout) {
                 PreferenceCategoryWithEditButton(
                   title = "Action Shortcuts (Bottom Right)",
                   onClick = {
-                    backstack.add(ControlLayoutEditorScreen(ControlRegion.MODERN_ACTIONS))
+                    backstack.add(
+                      ControlLayoutEditorScreen(
+                        if (isZenLayout) ControlRegion.ZEN_ACTIONS else ControlRegion.MODERN_ACTIONS,
+                      ),
+                    )
                   },
                   modifier = Modifier.settingsHighlightTarget(highlightState, "player.controls.bottom_right"),
                 )
-                PreferenceIconSummary(buttons = modernActionButtons)
+                PreferenceIconSummary(buttons = if (isZenLayout) zenActionButtons else modernActionButtons)
               } else {
                 PreferenceCategoryWithEditButton(
                   title = stringResource(id = R.string.pref_layout_top_right_controls),
@@ -268,24 +284,28 @@ object PlayerControlsPreferencesScreen : Screen {
           // Seekbar Section
           item {
             PreferenceSectionHeader(
-              title = if (isModernLayout) "Seekbar Style (Modern)" else "Seekbar Style",
+              title = when {
+                isModernLayout -> "Seekbar Style (Modern)"
+                isZenLayout -> "Seekbar Style (Zen)"
+                else -> "Seekbar Style"
+              },
               count = SeekbarStyle.entries.size,
             )
           }
 
           item {
-            val seekbarStyle by if (isModernLayout) {
-              appearancePrefs.modernSeekbarStyle.collectAsState()
-            } else {
-              appearancePrefs.seekbarStyle.collectAsState()
+            val seekbarStyle by when {
+              isModernLayout -> appearancePrefs.modernSeekbarStyle.collectAsState()
+              isZenLayout -> appearancePrefs.zenSeekbarStyle.collectAsState()
+              else -> appearancePrefs.seekbarStyle.collectAsState()
             }
             SliderStylePicker(
               selected = seekbarStyle,
               onSelect = {
-                if (isModernLayout) {
-                  appearancePrefs.modernSeekbarStyle.set(it)
-                } else {
-                  appearancePrefs.seekbarStyle.set(it)
+                when {
+                  isModernLayout -> appearancePrefs.modernSeekbarStyle.set(it)
+                  isZenLayout -> appearancePrefs.zenSeekbarStyle.set(it)
+                  else -> appearancePrefs.seekbarStyle.set(it)
                 }
               },
             )

@@ -116,7 +116,8 @@ fun RenderPlayerButton(
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
   val colors = LocalPlayerColors.current
-  val isModern = LocalPlayerLayout.current == PlayerLayout.MODERN
+  val playerLayout = LocalPlayerLayout.current
+  val isModern = playerLayout == PlayerLayout.MODERN || playerLayout == PlayerLayout.ZEN
   when (button) {
     PlayerButton.BACK_ARROW -> {
       ControlsButton(
